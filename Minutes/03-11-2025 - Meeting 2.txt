@@ -1,0 +1,61 @@
+========================================
+MEETING MINUTES
+========================================
+
+PROJECT: LogSmart
+COURSE:  COMP2003
+DATE:    03-Nov-2025
+TIME:    11:00 - 11:15
+LOCATION: SMB 108
+
+---
+ATTENDEES
+---
+Lilla Radek
+Ben Daffada
+Daniel Kern
+
+---
+ABSENTEES
+---
+NONE
+
+-----------------------------
+DISCUSSION & DECISIONS
+-----------------------------
+
+1. Review of online based platforms
+   - Login of Trello, GitHub and Pebblepad
+
+2. Topic: App?
+   - Discussed whether our project could take the form of an app, as currently designed as a PWA
+
+3. Topic: Another meeting in 2 weeks, same time.
+
+-----------------------------
+ACTION ITEMS (WHAT / WHO / WHEN)
+-----------------------------
+
+* [TASK 1: Finish Setting up Trello, GitHub, Pebbled etc.]
+  - OWNER: Whole Group
+
+* [TASK: Design wireframes for initial pages]
+  - TEAM MEMBER 1 (LILLA): Design Login/Register, Design Users Admin, Design Log Entry
+
+* [TASK: Design wireframes for initial pages]
+  - TEAM MEMBER 1 (BEN): Design Home Page, Design List Templates, Design Reports Page
+
+* [TASK: Design wireframes for initial pages]
+  - TEAM MEMBER 1 (DANIEL): Design List Logs, Design New template page, Design Dashboard
+
+* [TASK 4: Write up tech stack and choose colour scheme]
+  - OWNER: WHOLE GROUP
+
+-----------------------------
+NEXT MEETING
+-----------------------------
+
+DATE: 17-Nov-2025
+TIME:  11:00 AM
+LOCATION: SMB 108
+GOAL:  Sprint 2
