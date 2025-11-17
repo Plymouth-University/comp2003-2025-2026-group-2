@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use chrono::Duration;
 use crate::{
-    auth::{hash_password, verify_password, JwtConfig},
+    auth::{hash_password, verify_password, validate_email, validate_password_policy, generate_invitation_token, JwtConfig},
     db,
     middleware::AuthToken,
     AppState,
@@ -78,10 +78,17 @@ pub async fn register_company_admin(
         ));
     }
 
-    if payload.password.len() < 8 {
+    if let Err(e) = validate_email(&payload.email) {
         return Err((
             StatusCode::BAD_REQUEST,
-            Json(json!({ "error": "Password must be at least 8 characters" })),
+            Json(json!({ "error": e.to_string() })),
+        ));
+    }
+
+    if let Err(e) = validate_password_policy(&payload.password) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": e.to_string() })),
         ));
     }
 
@@ -223,6 +230,13 @@ pub async fn invite_user(
         ));
     }
 
+    if let Err(e) = validate_email(&payload.email) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": e.to_string() })),
+        ));
+    }
+
     let admin_user = db::get_user_by_id(&state.sqlite, &claims.user_id)
         .await
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" }))))?
@@ -251,7 +265,7 @@ pub async fn invite_user(
             Json(json!({ "error": "Company not found" })),
         ))?;
 
-    let token = uuid::Uuid::new_v4().to_string();
+    let token = generate_invitation_token();
     let expires_at = (chrono::Utc::now() + Duration::days(7)).to_rfc3339();
 
     let invitation = db::create_invitation(
@@ -292,10 +306,10 @@ pub async fn accept_invitation(
         ));
     }
 
-    if payload.password.len() < 8 {
+    if let Err(e) = validate_password_policy(&payload.password) {
         return Err((
             StatusCode::BAD_REQUEST,
-            Json(json!({ "error": "Password must be at least 8 characters" })),
+            Json(json!({ "error": e.to_string() })),
         ));
     }
 

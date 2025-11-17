@@ -1,9 +1,12 @@
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use chrono::{Duration, Utc};
-use anyhow::Result;
-use sha2::{Sha256, Digest};
-use hex;
+use anyhow::{Result, anyhow};
+use argon2::{
+    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+    Argon2,
+};
+use regex::Regex;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
@@ -54,13 +57,70 @@ impl JwtConfig {
 }
 
 pub fn hash_password(password: &str) -> Result<String> {
-    let mut hasher = Sha256::new();
-    hasher.update(password.as_bytes());
-    let result = hasher.finalize();
-    Ok(hex::encode(result))
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    let password_hash = argon2
+        .hash_password(password.as_bytes(), &salt)
+        .map_err(|e| anyhow!("Failed to hash password: {}", e))?;
+    Ok(password_hash.to_string())
 }
 
 pub fn verify_password(password: &str, hash: &str) -> Result<bool> {
-    let computed_hash = hash_password(password)?;
-    Ok(computed_hash == hash)
+    let parsed_hash = PasswordHash::new(hash)
+        .map_err(|e| anyhow!("Invalid password hash format: {}", e))?;
+    let argon2 = Argon2::default();
+    Ok(argon2.verify_password(password.as_bytes(), &parsed_hash).is_ok())
+}
+
+pub fn validate_email(email: &str) -> Result<()> {
+    let email_regex = Regex::new(
+        r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
+    ).unwrap();
+    
+    if !email_regex.is_match(email) {
+        return Err(anyhow!("Invalid email format"));
+    }
+    
+    if email.len() > 254 {
+        return Err(anyhow!("Email address too long"));
+    }
+    
+    Ok(())
+}
+
+pub fn validate_password_policy(password: &str) -> Result<()> {
+    if password.len() < 8 {
+        return Err(anyhow!("Password must be at least 8 characters long"));
+    }
+    
+    if password.len() > 128 {
+        return Err(anyhow!("Password must not exceed 128 characters"));
+    }
+    
+    let has_uppercase = password.chars().any(|c| c.is_uppercase());
+    let has_lowercase = password.chars().any(|c| c.is_lowercase());
+    let has_digit = password.chars().any(|c| c.is_numeric());
+    let has_special = password.chars().any(|c| !c.is_alphanumeric());
+    
+    if !has_uppercase {
+        return Err(anyhow!("Password must contain at least one uppercase letter"));
+    }
+    
+    if !has_lowercase {
+        return Err(anyhow!("Password must contain at least one lowercase letter"));
+    }
+    
+    if !has_digit {
+        return Err(anyhow!("Password must contain at least one digit"));
+    }
+    
+    if !has_special {
+        return Err(anyhow!("Password must contain at least one special character"));
+    }
+    
+    Ok(())
+}
+
+pub fn generate_invitation_token() -> String {
+    uuid::Uuid::now_v6(&[0u8; 6]).to_string()
 }

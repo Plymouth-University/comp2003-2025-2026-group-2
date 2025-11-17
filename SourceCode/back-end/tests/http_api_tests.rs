@@ -98,7 +98,7 @@ async fn test_register_user_success() {
             "email": "admin@example.com",
             "first_name": "Admin",
             "last_name": "User",
-            "password": "SecurePassword123",
+            "password": "SecurePassword123!",
             "company_name": "Test Company",
             "company_address": "123 Main St"
         })),
@@ -171,7 +171,7 @@ async fn test_login_user_success() {
             "email": "user@example.com",
             "first_name": "Test",
             "last_name": "User",
-            "password": "TestPassword123",
+            "password": "TestPassword123!",
             "company_name": "Test Co",
             "company_address": "456 Oak Ave"
         })),
@@ -187,7 +187,7 @@ async fn test_login_user_success() {
         "/auth/login",
         Some(json!({
             "email": "user@example.com",
-            "password": "TestPassword123"
+            "password": "TestPassword123!"
         })),
         None,
     )
@@ -210,7 +210,7 @@ async fn test_login_user_invalid_password() {
             "email": "user@example.com",
             "first_name": "Test",
             "last_name": "User",
-            "password": "CorrectPassword123",
+            "password": "CorrectPassword123!",
             "company_name": "Test Co",
             "company_address": "456 Oak Ave"
         })),
@@ -224,7 +224,7 @@ async fn test_login_user_invalid_password() {
         "/auth/login",
         Some(json!({
             "email": "user@example.com",
-            "password": "WrongPassword"
+            "password": "WrongPassword1!"
         })),
         None,
     )
@@ -243,7 +243,7 @@ async fn test_login_user_nonexistent() {
         "/auth/login",
         Some(json!({
             "email": "nonexistent@example.com",
-            "password": "SomePassword123"
+            "password": "SomePassword123!"
         })),
         None,
     )
@@ -273,7 +273,7 @@ async fn test_get_current_user_with_valid_token() {
             "email": "user@example.com",
             "first_name": "Test",
             "last_name": "User",
-            "password": "TestPassword123",
+            "password": "TestPassword123!",
             "company_name": "Test Co",
             "company_address": "456 Oak Ave"
         })),
@@ -310,7 +310,7 @@ async fn test_invite_user_by_admin() {
             "email": "admin@example.com",
             "first_name": "Admin",
             "last_name": "User",
-            "password": "AdminPassword123",
+            "password": "AdminPassword123!",
             "company_name": "Test Co",
             "company_address": "123 Main St"
         })),
@@ -348,7 +348,7 @@ async fn test_invite_user_missing_email() {
             "email": "admin@example.com",
             "first_name": "Admin",
             "last_name": "User",
-            "password": "AdminPassword123",
+            "password": "AdminPassword123!",
             "company_name": "Test Co",
             "company_address": "123 Main St"
         })),
@@ -384,7 +384,7 @@ async fn test_invite_user_by_non_admin() {
             "email": "admin@example.com",
             "first_name": "Admin",
             "last_name": "User",
-            "password": "AdminPassword123",
+            "password": "AdminPassword123!",
             "company_name": "Test Co",
             "company_address": "123 Main St"
         })),
@@ -438,7 +438,7 @@ async fn test_invite_user_by_non_admin() {
             "token": actual_token,
             "first_name": "Member",
             "last_name": "User",
-            "password": "MemberPassword123"
+            "password": "MemberPassword123!"
         })),
         None,
     )
@@ -515,7 +515,7 @@ async fn test_accept_invitation_invalid_token() {
             "token": "invalid_token",
             "first_name": "Jane",
             "last_name": "Doe",
-            "password": "SecurePass123"
+            "password": "SecurePass123!"
         })),
         None,
     )
@@ -536,7 +536,7 @@ async fn test_complete_registration_and_login_flow() {
             "email": "admin@example.com",
             "first_name": "Admin",
             "last_name": "User",
-            "password": "AdminPassword123",
+            "password": "AdminPassword123!",
             "company_name": "Tech Corp",
             "company_address": "789 Elm St"
         })),
@@ -553,7 +553,7 @@ async fn test_complete_registration_and_login_flow() {
         "/auth/login",
         Some(json!({
             "email": "admin@example.com",
-            "password": "AdminPassword123"
+            "password": "AdminPassword123!"
         })),
         None,
     )
@@ -581,7 +581,7 @@ async fn test_register_duplicate_email() {
             "email": "user@example.com",
             "first_name": "User",
             "last_name": "One",
-            "password": "Password123",
+            "password": "Password123!",
             "company_name": "Company One",
             "company_address": "123 Main St"
         })),
@@ -597,7 +597,7 @@ async fn test_register_duplicate_email() {
             "email": "user@example.com",
             "first_name": "User",
             "last_name": "Two",
-            "password": "Password456",
+            "password": "Password456!",
             "company_name": "Company Two",
             "company_address": "456 Oak Ave"
         })),

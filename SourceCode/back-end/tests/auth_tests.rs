@@ -1,4 +1,4 @@
-use back_end::auth::{hash_password, verify_password, JwtConfig, Claims};
+use back_end::auth::{hash_password, verify_password, validate_email, validate_password_policy, generate_invitation_token, JwtConfig, Claims};
 
 #[test]
 fn test_jwt_config_new() {
@@ -65,7 +65,9 @@ fn test_hash_password_consistent() {
     let password = "mypassword123";
     let hash1 = hash_password(password).unwrap();
     let hash2 = hash_password(password).unwrap();
-    assert_eq!(hash1, hash2);
+    assert_ne!(hash1, hash2);
+    assert!(verify_password(password, &hash1).unwrap());
+    assert!(verify_password(password, &hash2).unwrap());
 }
 
 #[test]
@@ -99,8 +101,7 @@ fn test_verify_password_incorrect() {
 fn test_verify_password_empty_hash() {
     let password = "mypassword123";
     let result = verify_password(password, "invalid_hash");
-    assert!(result.is_ok());
-    assert!(!result.unwrap());
+    assert!(result.is_err());
 }
 
 #[test]
@@ -132,4 +133,79 @@ fn test_hash_password_long_password() {
     assert!(hash.is_ok());
     let hash = hash.unwrap();
     assert!(!hash.is_empty());
+}
+
+#[test]
+fn test_validate_email_valid() {
+    assert!(validate_email("user@example.com").is_ok());
+    assert!(validate_email("test.user+tag@domain.co.uk").is_ok());
+    assert!(validate_email("user123@test-domain.com").is_ok());
+}
+
+#[test]
+fn test_validate_email_invalid() {
+    assert!(validate_email("").is_err());
+    assert!(validate_email("invalid").is_err());
+    assert!(validate_email("@example.com").is_err());
+    assert!(validate_email("user@").is_err());
+    assert!(validate_email("user name@example.com").is_err());
+}
+
+#[test]
+fn test_validate_email_too_long() {
+    let long_email = format!("{}@example.com", "a".repeat(300));
+    assert!(validate_email(&long_email).is_err());
+}
+
+#[test]
+fn test_validate_password_policy_valid() {
+    assert!(validate_password_policy("Password123!").is_ok());
+    assert!(validate_password_policy("Secure@Pass1").is_ok());
+    assert!(validate_password_policy("MyP@ssw0rd").is_ok());
+}
+
+#[test]
+fn test_validate_password_policy_too_short() {
+    assert!(validate_password_policy("Pass1!").is_err());
+}
+
+#[test]
+fn test_validate_password_policy_too_long() {
+    let long_password = format!("Password1!{}", "a".repeat(200));
+    assert!(validate_password_policy(&long_password).is_err());
+}
+
+#[test]
+fn test_validate_password_policy_no_uppercase() {
+    assert!(validate_password_policy("password123!").is_err());
+}
+
+#[test]
+fn test_validate_password_policy_no_lowercase() {
+    assert!(validate_password_policy("PASSWORD123!").is_err());
+}
+
+#[test]
+fn test_validate_password_policy_no_digit() {
+    assert!(validate_password_policy("Password!").is_err());
+}
+
+#[test]
+fn test_validate_password_policy_no_special() {
+    assert!(validate_password_policy("Password123").is_err());
+}
+
+#[test]
+fn test_generate_invitation_token_format() {
+    let token = generate_invitation_token();
+    assert!(!token.is_empty());
+    assert_eq!(token.len(), 36);
+    assert_eq!(token.chars().filter(|&c| c == '-').count(), 4);
+}
+
+#[test]
+fn test_generate_invitation_token_unique() {
+    let token1 = generate_invitation_token();
+    let token2 = generate_invitation_token();
+    assert_ne!(token1, token2);
 }
