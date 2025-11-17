@@ -1,0 +1,98 @@
+========================================
+MEETING MINUTES
+========================================
+
+PROJECT: LogSmart
+COURSE:  COMP2003
+DATE:    17-Nov-2025
+TIME:    11:00 - 11:15
+LOCATION: SMB 108
+
+---
+ATTENDEES
+---
+* Lilla Radek
+* Ben Daffada
+* Daniel Kern
+
+---
+ABSENTEES
+---
+* NONE
+
+-----------------------------
+DISCUSSION & DECISIONS
+-----------------------------
+
+1. Sprint 1 Review
+   - Discussed all work undertaken during Sprint 1.
+   - Tasks completed include:
+     * Low fidelity wireframes
+     * Gantt Chart
+     * Project plan and user stories
+     * Colour scheme
+     * High fidelity home pages
+     * Project Plan
+     * Domain setup
+     * Tech Stack definition
+   - Tools Status:
+     * GitHub and PebblePad submissions are completed.
+     * Trello board needs to be updated: tasks must be moved to "In Progress" or "Complete", and any problems should be documented.
+
+2. Sprint 2 Planning
+   - Outlined the goals for the upcoming Sprint 2:
+     * Implement high fidelity pages for all pages of the site.
+     * Start developing the core features.
+     * Begin building the backend, database, and authentication.
+     * Start writing project documentation.
+
+3. Admin & Questions
+   - Asked for clarification regarding the PebblePad submission format.
+   - Discussed the "design document".
+
+-----------------------------
+PAST ITEMS (COMPLETED)
+-----------------------------
+
+* [TASK 1: Update Trello board with current task statuses]
+  - OWNER: Whole Group
+
+* [TASK 2: Write up final tech stack and choose colour scheme]
+  - OWNER: Whole Group
+
+* [TASK 3: Design wireframes for initial pages]
+  - LILLA: Design Login/Register, Design Users Admin, Design Log Entry
+  - BEN:   Design Home Page, Design List Templates, Design Reports Page
+  - DANIEL: Design List Logs, Design New template page, Design Dashboard
+
+-----------------------------
+NEW ACTION ITEMS (FOR SPRINT 2)
+-----------------------------
+
+* [TASK 1: Implement high fidelity pages for all pages]
+  - Lilla:
+	Logs Page
+	New Template Page
+	Admin Page
+- Ben:
+	Dashboard
+	Reports Page
+	Templates Page
+
+* [TASK 2: Start development of core features]
+- Daniel:
+ 	Implement backend and authentication/users db
+- Whole Group:
+	Start planning and implementing main features (templates, logs etc.)
+
+* [TASK 3: Start project documentation]
+  - OWNER: Whole Group
+
+-----------------------------
+NEXT MEETING
+-----------------------------
+
+DATE:  17-Nov-2025
+TIME:  11:00 AM
+LOCATION: SMB 108
+GOAL:  Sprint 2
