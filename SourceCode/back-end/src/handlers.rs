@@ -6,6 +6,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use chrono::Duration;
+use uuid::Uuid;
 use crate::{
     auth::{hash_password, verify_password, validate_email, validate_password_policy, generate_invitation_token, JwtConfig},
     db,
@@ -106,41 +107,71 @@ pub async fn register_company_admin(
     let password_hash = hash_password(&payload.password)
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to process password" }))))?;
 
-    let user = db::create_user(
-        &state.sqlite,
-        payload.email.clone(),
-        payload.first_name.clone(),
-        payload.last_name.clone(),
-        password_hash,
-        None,
-        db::UserRole::Admin,
+    let mut tx = state.sqlite.begin()
+        .await
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database transaction error" }))))?;
+
+    let user_id = Uuid::new_v4().to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+    let role_str = db::UserRole::Admin.to_string();
+
+    sqlx::query(
+        r#"
+        INSERT INTO users (id, email, first_name, last_name, password_hash, company_id, role, created_at)
+        VALUES (?, ?, ?, ?, ?, NULL, ?, ?)
+        "#,
     )
+    .bind(&user_id)
+    .bind(&payload.email)
+    .bind(&payload.first_name)
+    .bind(&payload.last_name)
+    .bind(&password_hash)
+    .bind(&role_str)
+    .bind(&now)
+    .execute(&mut *tx)
     .await
     .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to create user" }))))?;
 
-    let company = db::create_company(&state.sqlite, payload.company_name, payload.company_address)
-        .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to create company" }))))?;
+    let company_id = Uuid::new_v4().to_string();
 
-    let _ = sqlx::query("UPDATE users SET company_id = ? WHERE id = ?")
-        .bind(&company.id)
-        .bind(&user.id)
-        .execute(&state.sqlite)
-        .await;
+    sqlx::query(
+        r#"
+        INSERT INTO companies (id, name, address, created_at)
+        VALUES (?, ?, ?, ?)
+        "#,
+    )
+    .bind(&company_id)
+    .bind(&payload.company_name)
+    .bind(&payload.company_address)
+    .bind(&now)
+    .execute(&mut *tx)
+    .await
+    .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to create company" }))))?;
+
+    sqlx::query("UPDATE users SET company_id = ? WHERE id = ?")
+        .bind(&company_id)
+        .bind(&user_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to link user to company" }))))?;
+
+    tx.commit()
+        .await
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to commit transaction" }))))?;
 
     let jwt_config = JwtConfig::new(get_jwt_secret());
     let token = jwt_config
-        .generate_token(user.id.clone(), 24)
+        .generate_token(user_id.clone(), 24)
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to generate token" }))))?;
 
     let _ = db::log_security_event(
         &state.sqlite,
         "registration".to_string(),
-        Some(user.id.clone()),
+        Some(user_id.clone()),
         Some(payload.email.clone()),
         None,
         None,
-        Some(format!("Company admin registered: {}", company.name)),
+        Some(format!("Company admin registered: {}", payload.company_name)),
         true,
     )
     .await;
@@ -150,12 +181,12 @@ pub async fn register_company_admin(
         Json(AuthResponse {
             token,
             user: UserResponse {
-                id: user.id,
-                email: user.email,
-                first_name: user.first_name,
-                last_name: user.last_name,
-                company_id: Some(company.id),
-                role: user.role,
+                id: user_id,
+                email: payload.email,
+                first_name: payload.first_name,
+                last_name: payload.last_name,
+                company_id: Some(company_id),
+                role: role_str,
             },
         }),
     ))
@@ -290,33 +321,28 @@ pub async fn invite_user(
         ));
     }
 
-    let admin_user = db::get_user_by_id(&state.sqlite, &claims.user_id)
-        .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" }))))?
-        .ok_or((
-            StatusCode::NOT_FOUND,
-            Json(json!({ "error": "User not found" })),
-        ))?;
+    let result = sqlx::query_as::<_, (String, String, String, String, String, Option<String>, String)>(
+        r#"
+        SELECT u.id, u.email, u.first_name, u.last_name, u.password_hash, u.company_id, u.role
+        FROM users u
+        INNER JOIN companies c ON u.company_id = c.id
+        WHERE u.id = ? AND u.role = 'admin'
+        "#,
+    )
+    .bind(&claims.user_id)
+    .fetch_optional(&state.sqlite)
+    .await
+    .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" }))))?;
 
-    if !admin_user.is_admin() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Only company admin can invite users" })),
-        ));
-    }
+    let (admin_id, admin_email, _admin_first_name, _admin_last_name, _admin_password_hash, company_id_opt, _admin_role) = result.ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "Only company admin can invite users" })),
+    ))?;
 
-    let company_id = admin_user.company_id.ok_or((
+    let company_id = company_id_opt.ok_or((
         StatusCode::FORBIDDEN,
         Json(json!({ "error": "User is not associated with a company" })),
     ))?;
-
-    let _ = db::get_company_by_id(&state.sqlite, &company_id)
-        .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" }))))?
-        .ok_or((
-            StatusCode::NOT_FOUND,
-            Json(json!({ "error": "Company not found" })),
-        ))?;
 
     let token = generate_invitation_token();
     let expires_at = (chrono::Utc::now() + Duration::days(7)).to_rfc3339();
@@ -340,11 +366,11 @@ pub async fn invite_user(
     let _ = db::log_security_event(
         &state.sqlite,
         "invitation_sent".to_string(),
-        Some(admin_user.id.clone()),
+        Some(admin_id.clone()),
         Some(payload.email.clone()),
         None,
         None,
-        Some(format!("Invitation sent by {}", admin_user.email)),
+        Some(format!("Invitation sent by {}", admin_email)),
         true,
     )
     .await;

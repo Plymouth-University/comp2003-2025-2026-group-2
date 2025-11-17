@@ -2,27 +2,33 @@ use back_end::{db, handlers, rate_limit, AppState};
 use anyhow::Context;
 use axum::{middleware, Router};
 use axum::routing::{get, post};
-use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
 
-    let auth_db_sqlite_pool = SqlitePool::connect_with(
-        SqliteConnectOptions::new()
-            .filename("auth.db")
-            .create_if_missing(true)
-            .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
-            .synchronous(sqlx::sqlite::SqliteSynchronous::Normal)
-            .pragma("cache_size", "2000")
-            .pragma("temp_store", "memory")
-            .pragma("mmap_size", "268435456")
-            .pragma("foreign_keys", "ON")
-            .pragma("busy_timeout", "30000"),
-    )
-    .await
-    .with_context(|| "Failed to create auth_db_sqlite_pool")
-    .expect("Cannot create authentication db");
+    let connect_options = SqliteConnectOptions::new()
+        .filename("auth.db")
+        .create_if_missing(true)
+        .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
+        .synchronous(sqlx::sqlite::SqliteSynchronous::Normal)
+        .pragma("cache_size", "2000")
+        .pragma("temp_store", "memory")
+        .pragma("mmap_size", "268435456")
+        .pragma("foreign_keys", "ON")
+        .pragma("busy_timeout", "30000");
+
+    let auth_db_sqlite_pool = SqlitePoolOptions::new()
+        .max_connections(20)
+        .min_connections(2)
+        .max_lifetime(Some(std::time::Duration::from_secs(1800)))
+        .idle_timeout(Some(std::time::Duration::from_secs(600)))
+        .acquire_timeout(std::time::Duration::from_secs(30))
+        .connect_with(connect_options)
+        .await
+        .with_context(|| "Failed to create auth_db_sqlite_pool")
+        .expect("Cannot create authentication db");
 
     db::init_db(&auth_db_sqlite_pool)
         .await
