@@ -1,6 +1,6 @@
-use back_end::{db, handlers, AppState};
+use back_end::{db, handlers, rate_limit, AppState};
 use anyhow::Context;
-use axum::Router;
+use axum::{middleware, Router};
 use axum::routing::{get, post};
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 
@@ -28,8 +28,11 @@ async fn main() {
         .await
         .expect("Failed to initialize database");
 
+    let rate_limit_state = rate_limit::RateLimitState::new();
+
     let state = AppState {
         sqlite: auth_db_sqlite_pool,
+        rate_limit: rate_limit_state.clone(),
     };
 
     let app = Router::new()
@@ -38,6 +41,10 @@ async fn main() {
         .route("/auth/me", get(handlers::get_current_user))
         .route("/auth/invitations/send", post(handlers::invite_user))
         .route("/auth/invitations/accept", post(handlers::accept_invitation))
+        .layer(middleware::from_fn_with_state(
+            rate_limit_state,
+            rate_limit::rate_limit_middleware,
+        ))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")

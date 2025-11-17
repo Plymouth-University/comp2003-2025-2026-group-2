@@ -26,7 +26,7 @@ async fn setup_test_app() -> (Router, NamedTempFile) {
         .await
         .expect("Failed to initialize test db");
 
-    let state = AppState { sqlite: pool };
+    let state = AppState { sqlite: pool, rate_limit: back_end::rate_limit::RateLimitState::new() };
 
     let app = Router::new()
         .route("/auth/register", post(register_company_admin))
@@ -607,4 +607,349 @@ async fn test_register_duplicate_email() {
 
     assert_eq!(status, StatusCode::CONFLICT);
     assert!(body["error"].is_string());
+}
+
+#[tokio::test]
+async fn test_security_logging_on_successful_registration() {
+    let (mut app, temp) = setup_test_app().await;
+    let db_path = temp.path().to_str().unwrap();
+    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
+    let pool = SqlitePool::connect(&connection_string).await.unwrap();
+
+    let (status, response) = make_request(
+        &mut app,
+        "POST",
+        "/auth/register",
+        Some(json!({
+            "email": "newuser@example.com",
+            "first_name": "New",
+            "last_name": "User",
+            "password": "SecurePass123!",
+            "company_name": "Test Company",
+            "company_address": "123 Test St"
+        })),
+        None,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::CREATED);
+    
+    let user_id = response["user"]["id"].as_str().unwrap();
+    let logs = db::get_security_logs_by_user(&pool, user_id, 10).await.unwrap();
+    
+    assert_eq!(logs.len(), 1);
+    assert_eq!(logs[0].event_type, "registration");
+    assert_eq!(logs[0].user_id, Some(user_id.to_string()));
+    assert_eq!(logs[0].email, Some("newuser@example.com".to_string()));
+    assert!(logs[0].success);
+}
+
+#[tokio::test]
+async fn test_security_logging_on_successful_login() {
+    let (mut app, temp) = setup_test_app().await;
+    let db_path = temp.path().to_str().unwrap();
+    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
+    let pool = SqlitePool::connect(&connection_string).await.unwrap();
+
+    let (_, register_response) = make_request(
+        &mut app,
+        "POST",
+        "/auth/register",
+        Some(json!({
+            "email": "logintest@example.com",
+            "first_name": "Login",
+            "last_name": "Test",
+            "password": "MyPassword123!",
+            "company_name": "Login Company",
+            "company_address": "456 Login Ave"
+        })),
+        None,
+    )
+    .await;
+
+    let user_id = register_response["user"]["id"].as_str().unwrap();
+
+    let (status, _) = make_request(
+        &mut app,
+        "POST",
+        "/auth/login",
+        Some(json!({
+            "email": "logintest@example.com",
+            "password": "MyPassword123!"
+        })),
+        None,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+
+    let logs = db::get_security_logs_by_user(&pool, user_id, 10).await.unwrap();
+    
+    assert!(logs.len() >= 2);
+    assert_eq!(logs[0].event_type, "login_success");
+    assert_eq!(logs[0].user_id, Some(user_id.to_string()));
+    assert!(logs[0].success);
+}
+
+#[tokio::test]
+async fn test_security_logging_on_failed_login_wrong_password() {
+    let (mut app, temp) = setup_test_app().await;
+    let db_path = temp.path().to_str().unwrap();
+    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
+    let pool = SqlitePool::connect(&connection_string).await.unwrap();
+
+    let (_, register_response) = make_request(
+        &mut app,
+        "POST",
+        "/auth/register",
+        Some(json!({
+            "email": "failtest@example.com",
+            "first_name": "Fail",
+            "last_name": "Test",
+            "password": "CorrectPass123!",
+            "company_name": "Fail Company",
+            "company_address": "789 Fail Rd"
+        })),
+        None,
+    )
+    .await;
+
+    let user_id = register_response["user"]["id"].as_str().unwrap();
+
+    let (status, body) = make_request(
+        &mut app,
+        "POST",
+        "/auth/login",
+        Some(json!({
+            "email": "failtest@example.com",
+            "password": "WrongPassword123!"
+        })),
+        None,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert!(body["error"].as_str().unwrap().contains("Invalid email or password"));
+
+    let logs = db::get_security_logs_by_user(&pool, user_id, 10).await.unwrap();
+    
+    let failed_login = logs.iter().find(|l| l.event_type == "login_failed");
+    assert!(failed_login.is_some());
+    
+    let failed_log = failed_login.unwrap();
+    assert_eq!(failed_log.user_id, Some(user_id.to_string()));
+    assert_eq!(failed_log.email, Some("failtest@example.com".to_string()));
+    assert!(!failed_log.success);
+    assert_eq!(failed_log.details, Some("Invalid password".to_string()));
+}
+
+#[tokio::test]
+async fn test_security_logging_on_failed_login_user_not_found() {
+    let (mut app, temp) = setup_test_app().await;
+    let db_path = temp.path().to_str().unwrap();
+    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
+    let pool = SqlitePool::connect(&connection_string).await.unwrap();
+
+    let (status, body) = make_request(
+        &mut app,
+        "POST",
+        "/auth/login",
+        Some(json!({
+            "email": "nonexistent@example.com",
+            "password": "SomePassword123!"
+        })),
+        None,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert!(body["error"].as_str().unwrap().contains("Invalid email or password"));
+
+    let logs = db::get_recent_security_logs(&pool, Some("login_failed".to_string()), 10)
+        .await
+        .unwrap();
+    
+    let failed_login = logs.iter().find(|l| l.email == Some("nonexistent@example.com".to_string()));
+    assert!(failed_login.is_some());
+    
+    let failed_log = failed_login.unwrap();
+    assert_eq!(failed_log.user_id, None);
+    assert!(!failed_log.success);
+    assert_eq!(failed_log.details, Some("User not found".to_string()));
+}
+
+#[tokio::test]
+async fn test_security_logging_on_invitation_sent() {
+    let (mut app, temp) = setup_test_app().await;
+    let db_path = temp.path().to_str().unwrap();
+    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
+    let pool = SqlitePool::connect(&connection_string).await.unwrap();
+
+    let (_, register_response) = make_request(
+        &mut app,
+        "POST",
+        "/auth/register",
+        Some(json!({
+            "email": "admin@company.com",
+            "first_name": "Admin",
+            "last_name": "User",
+            "password": "AdminPass123!",
+            "company_name": "Invite Company",
+            "company_address": "321 Invite St"
+        })),
+        None,
+    )
+    .await;
+
+    let admin_token = register_response["token"].as_str().unwrap();
+    let admin_id = register_response["user"]["id"].as_str().unwrap();
+
+    let (status, _) = make_request(
+        &mut app,
+        "POST",
+        "/auth/invitations/send",
+        Some(json!({
+            "email": "newmember@company.com"
+        })),
+        Some(admin_token),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::CREATED);
+
+    let logs = db::get_security_logs_by_user(&pool, admin_id, 10).await.unwrap();
+    
+    let invite_log = logs.iter().find(|l| l.event_type == "invitation_sent");
+    assert!(invite_log.is_some());
+    
+    let log = invite_log.unwrap();
+    assert_eq!(log.user_id, Some(admin_id.to_string()));
+    assert_eq!(log.email, Some("newmember@company.com".to_string()));
+    assert!(log.success);
+}
+
+#[tokio::test]
+async fn test_security_logging_on_invitation_accepted() {
+    let (mut app, temp) = setup_test_app().await;
+    let db_path = temp.path().to_str().unwrap();
+    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
+    let pool = SqlitePool::connect(&connection_string).await.unwrap();
+
+    let (_, register_response) = make_request(
+        &mut app,
+        "POST",
+        "/auth/register",
+        Some(json!({
+            "email": "boss@company.com",
+            "first_name": "Boss",
+            "last_name": "User",
+            "password": "BossPass123!",
+            "company_name": "Accept Company",
+            "company_address": "654 Accept Blvd"
+        })),
+        None,
+    )
+    .await;
+
+    let admin_token = register_response["token"].as_str().unwrap();
+
+    make_request(
+        &mut app,
+        "POST",
+        "/auth/invitations/send",
+        Some(json!({
+            "email": "employee@company.com"
+        })),
+        Some(admin_token),
+    )
+    .await;
+
+    let invitation_token: String = sqlx::query_scalar("SELECT token FROM invitations WHERE email = ?")
+        .bind("employee@company.com")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+
+    let (status, accept_response) = make_request(
+        &mut app,
+        "POST",
+        "/auth/invitations/accept",
+        Some(json!({
+            "token": invitation_token,
+            "first_name": "New",
+            "last_name": "Employee",
+            "password": "EmployeePass123!"
+        })),
+        None,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::CREATED);
+    
+    let employee_id = accept_response["user"]["id"].as_str().unwrap();
+    let logs = db::get_security_logs_by_user(&pool, employee_id, 10).await.unwrap();
+    
+    assert_eq!(logs.len(), 1);
+    assert_eq!(logs[0].event_type, "invitation_accepted");
+    assert_eq!(logs[0].user_id, Some(employee_id.to_string()));
+    assert_eq!(logs[0].email, Some("employee@company.com".to_string()));
+    assert!(logs[0].success);
+}
+
+#[tokio::test]
+async fn test_security_logs_order_by_time() {
+    let (mut app, temp) = setup_test_app().await;
+    let db_path = temp.path().to_str().unwrap();
+    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
+    let pool = SqlitePool::connect(&connection_string).await.unwrap();
+
+    let (_, register_response) = make_request(
+        &mut app,
+        "POST",
+        "/auth/register",
+        Some(json!({
+            "email": "timetest@example.com",
+            "first_name": "Time",
+            "last_name": "Test",
+            "password": "TimePass123!",
+            "company_name": "Time Company",
+            "company_address": "999 Time Ave"
+        })),
+        None,
+    )
+    .await;
+
+    let user_id = register_response["user"]["id"].as_str().unwrap();
+
+    make_request(
+        &mut app,
+        "POST",
+        "/auth/login",
+        Some(json!({
+            "email": "timetest@example.com",
+            "password": "TimePass123!"
+        })),
+        None,
+    )
+    .await;
+
+    make_request(
+        &mut app,
+        "POST",
+        "/auth/login",
+        Some(json!({
+            "email": "timetest@example.com",
+            "password": "WrongPass123!"
+        })),
+        None,
+    )
+    .await;
+
+    let logs = db::get_security_logs_by_user(&pool, user_id, 10).await.unwrap();
+    
+    assert!(logs.len() >= 3);
+    
+    for i in 0..logs.len() - 1 {
+        assert!(logs[i].created_at >= logs[i + 1].created_at);
+    }
 }

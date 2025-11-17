@@ -133,6 +133,18 @@ pub async fn register_company_admin(
         .generate_token(user.id.clone(), 24)
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to generate token" }))))?;
 
+    let _ = db::log_security_event(
+        &state.sqlite,
+        "registration".to_string(),
+        Some(user.id.clone()),
+        Some(payload.email.clone()),
+        None,
+        None,
+        Some(format!("Company admin registered: {}", company.name)),
+        true,
+    )
+    .await;
+
     Ok((
         StatusCode::CREATED,
         Json(AuthResponse {
@@ -162,16 +174,45 @@ pub async fn login(
 
     let user = db::get_user_by_email(&state.sqlite, &payload.email)
         .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" }))))?
-        .ok_or((
+        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" }))))?;
+    
+    if user.is_none() {
+        let _ = db::log_security_event(
+            &state.sqlite,
+            "login_failed".to_string(),
+            None,
+            Some(payload.email.clone()),
+            None,
+            None,
+            Some("User not found".to_string()),
+            false,
+        )
+        .await;
+
+        return Err((
             StatusCode::UNAUTHORIZED,
             Json(json!({ "error": "Invalid email or password" })),
-        ))?;
+        ));
+    }
+
+    let user = user.unwrap();
 
     let password_valid = verify_password(&payload.password, &user.password_hash)
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Authentication failed" }))))?;
 
     if !password_valid {
+        let _ = db::log_security_event(
+            &state.sqlite,
+            "login_failed".to_string(),
+            Some(user.id.clone()),
+            Some(payload.email.clone()),
+            None,
+            None,
+            Some("Invalid password".to_string()),
+            false,
+        )
+        .await;
+
         return Err((
             StatusCode::UNAUTHORIZED,
             Json(json!({ "error": "Invalid email or password" })),
@@ -182,6 +223,18 @@ pub async fn login(
     let token = jwt_config
         .generate_token(user.id.clone(), 24)
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to generate token" }))))?;
+
+    let _ = db::log_security_event(
+        &state.sqlite,
+        "login_success".to_string(),
+        Some(user.id.clone()),
+        Some(payload.email.clone()),
+        None,
+        None,
+        None,
+        true,
+    )
+    .await;
 
     Ok(Json(AuthResponse {
         token,
@@ -284,6 +337,18 @@ pub async fn invite_user(
         }
     })?;
 
+    let _ = db::log_security_event(
+        &state.sqlite,
+        "invitation_sent".to_string(),
+        Some(admin_user.id.clone()),
+        Some(payload.email.clone()),
+        None,
+        None,
+        Some(format!("Invitation sent by {}", admin_user.email)),
+        true,
+    )
+    .await;
+
     Ok((
         StatusCode::CREATED,
         Json(InvitationResponse {
@@ -370,6 +435,18 @@ pub async fn accept_invitation(
     let token = jwt_config
         .generate_token(user.id.clone(), 24)
         .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to generate token" }))))?;
+
+    let _ = db::log_security_event(
+        &state.sqlite,
+        "invitation_accepted".to_string(),
+        Some(user.id.clone()),
+        Some(invitation.email.clone()),
+        None,
+        None,
+        Some(format!("Member joined company {}", invitation.company_id)),
+        true,
+    )
+    .await;
 
     Ok((
         StatusCode::CREATED,

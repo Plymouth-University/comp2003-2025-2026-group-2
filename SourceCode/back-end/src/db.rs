@@ -73,6 +73,19 @@ pub struct Invitation {
     pub accepted_at: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct SecurityLog {
+    pub id: String,
+    pub event_type: String,
+    pub user_id: Option<String>,
+    pub email: Option<String>,
+    pub ip_address: Option<String>,
+    pub user_agent: Option<String>,
+    pub details: Option<String>,
+    pub success: bool,
+    pub created_at: String,
+}
+
 pub async fn init_db(pool: &SqlitePool) -> Result<()> {
     sqlx::query(
         r#"
@@ -118,6 +131,49 @@ pub async fn init_db(pool: &SqlitePool) -> Result<()> {
             FOREIGN KEY (company_id) REFERENCES companies(id),
             UNIQUE(company_id, email)
         )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS security_logs (
+            id TEXT PRIMARY KEY,
+            event_type TEXT NOT NULL,
+            user_id TEXT,
+            email TEXT,
+            ip_address TEXT,
+            user_agent TEXT,
+            details TEXT,
+            success INTEGER NOT NULL DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r#"
+        CREATE INDEX IF NOT EXISTS idx_security_logs_event_type ON security_logs(event_type)
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r#"
+        CREATE INDEX IF NOT EXISTS idx_security_logs_user_id ON security_logs(user_id)
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r#"
+        CREATE INDEX IF NOT EXISTS idx_security_logs_created_at ON security_logs(created_at)
         "#,
     )
     .execute(pool)
@@ -312,4 +368,107 @@ pub async fn accept_invitation(
     .await?;
 
     Ok(())
+}
+
+pub async fn log_security_event(
+    pool: &SqlitePool,
+    event_type: String,
+    user_id: Option<String>,
+    email: Option<String>,
+    ip_address: Option<String>,
+    user_agent: Option<String>,
+    details: Option<String>,
+    success: bool,
+) -> Result<SecurityLog> {
+    let id = Uuid::new_v4().to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+    let success_int = if success { 1 } else { 0 };
+
+    sqlx::query(
+        r#"
+        INSERT INTO security_logs (id, event_type, user_id, email, ip_address, user_agent, details, success, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        "#,
+    )
+    .bind(&id)
+    .bind(&event_type)
+    .bind(&user_id)
+    .bind(&email)
+    .bind(&ip_address)
+    .bind(&user_agent)
+    .bind(&details)
+    .bind(success_int)
+    .bind(&now)
+    .execute(pool)
+    .await?;
+
+    Ok(SecurityLog {
+        id,
+        event_type,
+        user_id,
+        email,
+        ip_address,
+        user_agent,
+        details,
+        success,
+        created_at: now,
+    })
+}
+
+pub async fn get_security_logs_by_user(
+    pool: &SqlitePool,
+    user_id: &str,
+    limit: i64,
+) -> Result<Vec<SecurityLog>> {
+    let logs = sqlx::query_as::<_, SecurityLog>(
+        r#"
+        SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
+        FROM security_logs
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+        LIMIT ?
+        "#,
+    )
+    .bind(user_id)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(logs)
+}
+
+pub async fn get_recent_security_logs(
+    pool: &SqlitePool,
+    event_type: Option<String>,
+    limit: i64,
+) -> Result<Vec<SecurityLog>> {
+    let logs = if let Some(evt) = event_type {
+        sqlx::query_as::<_, SecurityLog>(
+            r#"
+            SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
+            FROM security_logs
+            WHERE event_type = ?
+            ORDER BY created_at DESC
+            LIMIT ?
+            "#,
+        )
+        .bind(evt)
+        .bind(limit)
+        .fetch_all(pool)
+        .await?
+    } else {
+        sqlx::query_as::<_, SecurityLog>(
+            r#"
+            SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
+            FROM security_logs
+            ORDER BY created_at DESC
+            LIMIT ?
+            "#,
+        )
+        .bind(limit)
+        .fetch_all(pool)
+        .await?
+    };
+
+    Ok(logs)
 }
