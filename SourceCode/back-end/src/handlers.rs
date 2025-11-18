@@ -1,6 +1,7 @@
 use axum::{
     extract::{ConnectInfo, State},
-    http::{HeaderMap, StatusCode},
+    http::{HeaderMap, StatusCode, header::SET_COOKIE},
+    response::IntoResponse,
     Json,
 };
 use serde::{Deserialize, Serialize};
@@ -165,7 +166,7 @@ pub async fn register_company_admin(
     ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
     headers: HeaderMap,
     Json(payload): Json<RegisterRequest>,
-) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, Json<serde_json::Value>)> {
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let _timer = crate::metrics::RequestTimer::new();
     state.metrics.increment_total_requests();
     
@@ -306,10 +307,16 @@ pub async fn register_company_admin(
     state.metrics.increment_successful_requests();
     tracing::info!("Registration successful for user: {}", user_id);
 
-    Ok((
+    let cookie = format!(
+        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age={}",
+        token,
+        60 * 60 * 24 * 7
+    );
+
+    let mut response = (
         StatusCode::CREATED,
         Json(AuthResponse {
-            token,
+            token: token.clone(),
             user: UserResponse {
                 id: user_id,
                 email: payload.email,
@@ -319,7 +326,11 @@ pub async fn register_company_admin(
                 role: role_str,
             },
         }),
-    ))
+    ).into_response();
+
+    response.headers_mut().insert(SET_COOKIE, cookie.parse().unwrap());
+
+    Ok(response)
 }
 
 #[utoipa::path(
@@ -339,7 +350,7 @@ pub async fn login(
     ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
     headers: HeaderMap,
     Json(payload): Json<LoginRequest>,
-) -> Result<Json<AuthResponse>, (StatusCode, Json<serde_json::Value>)> {
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let _timer = crate::metrics::RequestTimer::new();
     state.metrics.increment_total_requests();
     state.metrics.increment_login_attempts();
@@ -437,8 +448,14 @@ pub async fn login(
     state.metrics.increment_successful_requests();
     tracing::info!("Login successful for user: {}", user.id);
 
-    Ok(Json(AuthResponse {
+    let cookie = format!(
+        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age={}",
         token,
+        60 * 60 * 24 * 7
+    );
+
+    let mut response = Json(AuthResponse {
+        token: token.clone(),
         user: UserResponse {
             id: user.id,
             email: user.email,
@@ -447,7 +464,11 @@ pub async fn login(
             company_id: user.company_id,
             role: user.role,
         },
-    }))
+    }).into_response();
+
+    response.headers_mut().insert(SET_COOKIE, cookie.parse().unwrap());
+
+    Ok(response)
 }
 
 #[utoipa::path(
@@ -633,7 +654,7 @@ pub async fn accept_invitation(
     ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
     headers: HeaderMap,
     Json(payload): Json<AcceptInvitationRequest>,
-) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, Json<serde_json::Value>)> {
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let _timer = crate::metrics::RequestTimer::new();
     state.metrics.increment_total_requests();
     
@@ -781,10 +802,16 @@ pub async fn accept_invitation(
     state.metrics.increment_successful_requests();
     tracing::info!("Invitation accepted by user: {}", user_id);
 
-    Ok((
+    let cookie = format!(
+        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age={}",
+        token,
+        60 * 60 * 24 * 7
+    );
+
+    let mut response = (
         StatusCode::CREATED,
         Json(AuthResponse {
-            token,
+            token: token.clone(),
             user: UserResponse {
                 id: user_id,
                 email: invitation.email,
@@ -794,7 +821,11 @@ pub async fn accept_invitation(
                 role: role_str,
             },
         }),
-    ))
+    ).into_response();
+
+    response.headers_mut().insert(SET_COOKIE, cookie.parse().unwrap());
+
+    Ok(response)
 }
 
 pub fn get_jwt_secret() -> String {

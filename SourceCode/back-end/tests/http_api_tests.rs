@@ -1,9 +1,5 @@
 use axum::{
-    body::{Body, to_bytes},
-    extract::{ConnectInfo, State},
-    http::{Request, StatusCode, HeaderMap},
-    routing::{get, post},
-    Json, Router,
+    Json, Router, body::{Body, to_bytes}, extract::{ConnectInfo, State}, http::{HeaderMap, Request, StatusCode}, response::IntoResponse, routing::{get, post}
 };
 use back_end::{
     handlers, db, AppState,
@@ -18,19 +14,27 @@ use tower::ServiceExt;
 async fn test_register_handler(
     State(state): State<AppState>,
     Json(payload): Json<handlers::RegisterRequest>,
-) -> Result<(StatusCode, Json<handlers::AuthResponse>), (StatusCode, Json<Value>)> {
+) -> axum::response::Response {
     let mock_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
     let headers = HeaderMap::new();
-    handlers::register_company_admin(State(state), ConnectInfo(mock_addr), headers, Json(payload)).await
+    let result = handlers::register_company_admin(State(state), ConnectInfo(mock_addr), headers, Json(payload)).await;
+    match result {
+        Ok(ok) => ok.into_response(),
+        Err(err) => err.into_response(),
+    }
 }
 
 async fn test_login_handler(
     State(state): State<AppState>,
     Json(payload): Json<handlers::LoginRequest>,
-) -> Result<Json<handlers::AuthResponse>, (StatusCode, Json<Value>)> {
+) -> axum::response::Response {
     let mock_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
     let headers = HeaderMap::new();
-    handlers::login(State(state), ConnectInfo(mock_addr), headers, Json(payload)).await
+    let result = handlers::login(State(state), ConnectInfo(mock_addr), headers, Json(payload)).await;
+    match result {
+        Ok(ok) => ok.into_response(),
+        Err(err) => err.into_response(),
+    }
 }
 
 async fn test_invite_handler(
@@ -46,12 +50,15 @@ async fn test_invite_handler(
 async fn test_accept_invitation_handler(
     State(state): State<AppState>,
     Json(payload): Json<handlers::AcceptInvitationRequest>,
-) -> Result<(StatusCode, Json<handlers::AuthResponse>), (StatusCode, Json<Value>)> {
+) -> axum::response::Response {
     let mock_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
     let headers = HeaderMap::new();
-    handlers::accept_invitation(State(state), ConnectInfo(mock_addr), headers, Json(payload)).await
+    let result = handlers::accept_invitation(State(state), ConnectInfo(mock_addr), headers, Json(payload)).await;
+    match result {
+        Ok(ok) => ok.into_response(),
+        Err(err) => err.into_response(),
+    }
 }
-
 async fn setup_test_app() -> (Router, NamedTempFile) {
     let temp_file = NamedTempFile::new().expect("Failed to create temp file");
     let db_path = temp_file.path().to_str().expect("Failed to get temp path");

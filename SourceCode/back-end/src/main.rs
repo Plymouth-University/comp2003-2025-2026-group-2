@@ -134,11 +134,17 @@ async fn main() {
         .url("/api-docs/openapi.json", ApiDoc::openapi())
         .into();
 
+    let allowed_origins = [
+        "http://localhost:5173".parse().unwrap(),
+        "http://logsmart.app".parse().unwrap(),
+        "https://logsmart.app".parse().unwrap(),
+    ];
+
     let app = swagger_router
         .merge(api_routes)
         .layer(
             tower_http::cors::CorsLayer::new()
-                .allow_origin(tower_http::cors::Any)
+                .allow_origin(allowed_origins)
                 .allow_methods([
                     axum::http::Method::GET,
                     axum::http::Method::POST,
@@ -146,8 +152,11 @@ async fn main() {
                     axum::http::Method::DELETE,
                     axum::http::Method::OPTIONS,
                 ])
-                .allow_headers(tower_http::cors::Any)
-                .allow_credentials(false),
+                .allow_headers([
+                    axum::http::header::CONTENT_TYPE,
+                    axum::http::header::AUTHORIZATION,
+                ])
+                .allow_credentials(true),
         );
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:6767")
