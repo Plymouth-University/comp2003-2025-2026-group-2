@@ -33,12 +33,13 @@ async fn setup_test_app_with_rate_limit() -> (Router, NamedTempFile) {
     let state = AppState {
         sqlite: pool,
         rate_limit: rate_limit_state.clone(),
+        metrics: back_end::metrics::Metrics::new(),
     };
 
     let app = Router::new()
         .route("/auth/login", post(login))
         .layer(middleware::from_fn_with_state(
-            rate_limit_state,
+            state.clone(),
             rate_limit_middleware,
         ))
         .with_state(state);

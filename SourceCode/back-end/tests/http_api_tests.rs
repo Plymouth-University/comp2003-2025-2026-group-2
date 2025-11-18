@@ -26,7 +26,11 @@ async fn setup_test_app() -> (Router, NamedTempFile) {
         .await
         .expect("Failed to initialize test db");
 
-    let state = AppState { sqlite: pool, rate_limit: back_end::rate_limit::RateLimitState::new() };
+    let state = AppState { 
+        sqlite: pool, 
+        rate_limit: back_end::rate_limit::RateLimitState::new(),
+        metrics: back_end::metrics::Metrics::new(),
+    };
 
     let app = Router::new()
         .route("/auth/register", post(register_company_admin))

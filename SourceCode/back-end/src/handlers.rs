@@ -1,12 +1,13 @@
 use axum::{
-    extract::State,
-    http::StatusCode,
+    extract::{ConnectInfo, State},
+    http::{HeaderMap, StatusCode},
     Json,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use chrono::Duration;
 use uuid::Uuid;
+use utoipa::ToSchema;
 use crate::{
     auth::{hash_password, verify_password, validate_email, validate_password_policy, generate_invitation_token, JwtConfig},
     db,
@@ -14,42 +15,71 @@ use crate::{
     AppState,
 };
 
-#[derive(Debug, Deserialize, Serialize)]
+fn extract_ip_from_headers_and_addr(headers: &HeaderMap, addr: &std::net::SocketAddr) -> String {
+    headers
+        .get("x-forwarded-for")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| addr.ip().to_string())
+}
+
+fn extract_user_agent(headers: &HeaderMap) -> Option<String> {
+    headers
+        .get("user-agent")
+        .and_then(|h| h.to_str().ok())
+        .map(|s| s.to_string())
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct RegisterRequest {
+    #[schema(example = "admin@example.com")]
     pub email: String,
+    #[schema(example = "John")]
     pub first_name: String,
+    #[schema(example = "Doe")]
     pub last_name: String,
+    #[schema(example = "SecurePass123!")]
     pub password: String,
+    #[schema(example = "Example Corp")]
     pub company_name: String,
+    #[schema(example = "123 Main St, City, Country")]
     pub company_address: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct LoginRequest {
+    #[schema(example = "admin@example.com")]
     pub email: String,
+    #[schema(example = "SecurePass123!")]
     pub password: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct InviteUserRequest {
+    #[schema(example = "newmember@example.com")]
     pub email: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct AcceptInvitationRequest {
+    #[schema(example = "invitation-token-here")]
     pub token: String,
+    #[schema(example = "Alice")]
     pub first_name: String,
+    #[schema(example = "Smith")]
     pub last_name: String,
+    #[schema(example = "MemberPass123!")]
     pub password: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct AuthResponse {
     pub token: String,
     pub user: UserResponse,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct UserResponse {
     pub id: String,
     pub email: String,
@@ -59,17 +89,42 @@ pub struct UserResponse {
     pub role: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct InvitationResponse {
     pub id: String,
     pub email: String,
     pub expires_at: String,
 }
 
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ErrorResponse {
+    pub error: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/auth/register",
+    request_body = RegisterRequest,
+    responses(
+        (status = 201, description = "Company admin registered successfully", body = AuthResponse),
+        (status = 400, description = "Invalid request data", body = ErrorResponse),
+        (status = 409, description = "Email already exists", body = ErrorResponse),
+        (status = 429, description = "Rate limit exceeded", body = ErrorResponse),
+    ),
+    tag = "Authentication"
+)]
 pub async fn register_company_admin(
     State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
+    headers: HeaderMap,
     Json(payload): Json<RegisterRequest>,
 ) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, Json<serde_json::Value>)> {
+    let _timer = crate::metrics::RequestTimer::new();
+    state.metrics.increment_total_requests();
+    
+    let ip_address = extract_ip_from_headers_and_addr(&headers, &addr);
+    let user_agent = extract_user_agent(&headers);
+
     if payload.email.is_empty() || payload.first_name.is_empty() 
         || payload.last_name.is_empty() || payload.password.is_empty() 
         || payload.company_name.is_empty() || payload.company_address.is_empty() {
@@ -95,7 +150,10 @@ pub async fn register_company_admin(
 
     if db::get_user_by_email(&state.sqlite, &payload.email)
         .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" }))))?
+        .map_err(|e| {
+            tracing::error!("Database error checking existing user: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+        })?
         .is_some()
     {
         return Err((
@@ -105,11 +163,17 @@ pub async fn register_company_admin(
     }
 
     let password_hash = hash_password(&payload.password)
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to process password" }))))?;
+        .map_err(|e| {
+            tracing::error!("Failed to hash password: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to process password" })))
+        })?;
 
     let mut tx = state.sqlite.begin()
         .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database transaction error" }))))?;
+        .map_err(|e| {
+            tracing::error!("Failed to begin transaction: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database transaction error" })))
+        })?;
 
     let user_id = Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
@@ -130,7 +194,10 @@ pub async fn register_company_admin(
     .bind(&now)
     .execute(&mut *tx)
     .await
-    .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to create user" }))))?;
+    .map_err(|e| {
+        tracing::error!("Failed to create user in transaction: {:?}", e);
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to create user" })))
+    })?;
 
     let company_id = Uuid::new_v4().to_string();
 
@@ -146,35 +213,51 @@ pub async fn register_company_admin(
     .bind(&now)
     .execute(&mut *tx)
     .await
-    .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to create company" }))))?;
+    .map_err(|e| {
+        tracing::error!("Failed to create company in transaction: {:?}", e);
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to create company" })))
+    })?;
 
     sqlx::query("UPDATE users SET company_id = ? WHERE id = ?")
         .bind(&company_id)
         .bind(&user_id)
         .execute(&mut *tx)
         .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to link user to company" }))))?;
+        .map_err(|e| {
+            tracing::error!("Failed to link user to company: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to link user to company" })))
+        })?;
 
     tx.commit()
         .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to commit transaction" }))))?;
+        .map_err(|e| {
+            tracing::error!("Failed to commit registration transaction: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to commit transaction" })))
+        })?;
 
     let jwt_config = JwtConfig::new(get_jwt_secret());
     let token = jwt_config
         .generate_token(user_id.clone(), 24)
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to generate token" }))))?;
+        .map_err(|e| {
+            tracing::error!("Failed to generate JWT token: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to generate token" })))
+        })?;
 
     let _ = db::log_security_event(
         &state.sqlite,
         "registration".to_string(),
         Some(user_id.clone()),
         Some(payload.email.clone()),
-        None,
-        None,
+        Some(ip_address),
+        user_agent,
         Some(format!("Company admin registered: {}", payload.company_name)),
         true,
     )
     .await;
+
+    state.metrics.increment_registrations();
+    state.metrics.increment_successful_requests();
+    tracing::info!("Registration successful for user: {}", user_id);
 
     Ok((
         StatusCode::CREATED,
@@ -192,10 +275,31 @@ pub async fn register_company_admin(
     ))
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/login",
+    request_body = LoginRequest,
+    responses(
+        (status = 200, description = "Login successful", body = AuthResponse),
+        (status = 400, description = "Invalid request data", body = ErrorResponse),
+        (status = 401, description = "Invalid credentials", body = ErrorResponse),
+        (status = 429, description = "Rate limit exceeded", body = ErrorResponse),
+    ),
+    tag = "Authentication"
+)]
 pub async fn login(
     State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
+    headers: HeaderMap,
     Json(payload): Json<LoginRequest>,
 ) -> Result<Json<AuthResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let _timer = crate::metrics::RequestTimer::new();
+    state.metrics.increment_total_requests();
+    state.metrics.increment_login_attempts();
+    
+    let ip_address = extract_ip_from_headers_and_addr(&headers, &addr);
+    let user_agent = extract_user_agent(&headers);
+
     if payload.email.is_empty() || payload.password.is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
@@ -205,7 +309,10 @@ pub async fn login(
 
     let user = db::get_user_by_email(&state.sqlite, &payload.email)
         .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" }))))?;
+        .map_err(|e| {
+            tracing::error!("Database error during login lookup: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+        })?;
     
     if user.is_none() {
         let _ = db::log_security_event(
@@ -213,12 +320,15 @@ pub async fn login(
             "login_failed".to_string(),
             None,
             Some(payload.email.clone()),
-            None,
-            None,
+            Some(ip_address.clone()),
+            user_agent.clone(),
             Some("User not found".to_string()),
             false,
         )
         .await;
+
+        state.metrics.increment_login_failures();
+        state.metrics.increment_failed_requests();
 
         return Err((
             StatusCode::UNAUTHORIZED,
@@ -229,7 +339,10 @@ pub async fn login(
     let user = user.unwrap();
 
     let password_valid = verify_password(&payload.password, &user.password_hash)
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Authentication failed" }))))?;
+        .map_err(|e| {
+            tracing::error!("Password verification error: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Authentication failed" })))
+        })?;
 
     if !password_valid {
         let _ = db::log_security_event(
@@ -237,12 +350,15 @@ pub async fn login(
             "login_failed".to_string(),
             Some(user.id.clone()),
             Some(payload.email.clone()),
-            None,
-            None,
+            Some(ip_address.clone()),
+            user_agent.clone(),
             Some("Invalid password".to_string()),
             false,
         )
         .await;
+
+        state.metrics.increment_login_failures();
+        state.metrics.increment_failed_requests();
 
         return Err((
             StatusCode::UNAUTHORIZED,
@@ -253,19 +369,26 @@ pub async fn login(
     let jwt_config = JwtConfig::new(get_jwt_secret());
     let token = jwt_config
         .generate_token(user.id.clone(), 24)
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to generate token" }))))?;
+        .map_err(|e| {
+            tracing::error!("Failed to generate login JWT token: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to generate token" })))
+        })?;
 
     let _ = db::log_security_event(
         &state.sqlite,
         "login_success".to_string(),
         Some(user.id.clone()),
         Some(payload.email.clone()),
-        None,
-        None,
+        Some(ip_address),
+        user_agent,
         None,
         true,
     )
     .await;
+
+    state.metrics.increment_login_successes();
+    state.metrics.increment_successful_requests();
+    tracing::info!("Login successful for user: {}", user.id);
 
     Ok(Json(AuthResponse {
         token,
@@ -280,13 +403,29 @@ pub async fn login(
     }))
 }
 
+#[utoipa::path(
+    get,
+    path = "/auth/me",
+    responses(
+        (status = 200, description = "Current user information", body = UserResponse),
+        (status = 401, description = "Unauthorized - invalid or missing token", body = ErrorResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Authentication"
+)]
 pub async fn get_current_user(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
 ) -> Result<Json<UserResponse>, (StatusCode, Json<serde_json::Value>)> {
     let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
         .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" }))))?
+        .map_err(|e| {
+            tracing::error!("Database error fetching current user: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+        })?
         .ok_or((
             StatusCode::NOT_FOUND,
             Json(json!({ "error": "User not found" })),
@@ -302,11 +441,35 @@ pub async fn get_current_user(
     }))
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/invitations/send",
+    request_body = InviteUserRequest,
+    responses(
+        (status = 201, description = "Invitation sent successfully", body = InvitationResponse),
+        (status = 400, description = "Invalid request data", body = ErrorResponse),
+        (status = 401, description = "Unauthorized - invalid or missing token", body = ErrorResponse),
+        (status = 409, description = "User already invited or exists", body = ErrorResponse),
+        (status = 429, description = "Rate limit exceeded", body = ErrorResponse),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Invitations"
+)]
 pub async fn invite_user(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
+    headers: HeaderMap,
     Json(payload): Json<InviteUserRequest>,
 ) -> Result<(StatusCode, Json<InvitationResponse>), (StatusCode, Json<serde_json::Value>)> {
+    let _timer = crate::metrics::RequestTimer::new();
+    state.metrics.increment_total_requests();
+    
+    let ip_address = extract_ip_from_headers_and_addr(&headers, &addr);
+    let user_agent = extract_user_agent(&headers);
+
     if payload.email.is_empty() {
         return Err((
             StatusCode::BAD_REQUEST,
@@ -332,7 +495,10 @@ pub async fn invite_user(
     .bind(&claims.user_id)
     .fetch_optional(&state.sqlite)
     .await
-    .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" }))))?;
+    .map_err(|e| {
+        tracing::error!("Database error verifying admin user for invitation: {:?}", e);
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+    })?;
 
     let (admin_id, admin_email, _admin_first_name, _admin_last_name, _admin_password_hash, company_id_opt, _admin_role) = result.ok_or((
         StatusCode::FORBIDDEN,
@@ -357,8 +523,10 @@ pub async fn invite_user(
     .await
     .map_err(|e| {
         if e.to_string().contains("UNIQUE constraint failed") {
+            tracing::warn!("Duplicate invitation attempt for email: {}", payload.email);
             (StatusCode::CONFLICT, Json(json!({ "error": "User already invited" })))
         } else {
+            tracing::error!("Failed to create invitation: {:?}", e);
             (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to create invitation" })))
         }
     })?;
@@ -368,12 +536,16 @@ pub async fn invite_user(
         "invitation_sent".to_string(),
         Some(admin_id.clone()),
         Some(payload.email.clone()),
-        None,
-        None,
+        Some(ip_address),
+        user_agent,
         Some(format!("Invitation sent by {}", admin_email)),
         true,
     )
     .await;
+
+    state.metrics.increment_invitations_sent();
+    state.metrics.increment_successful_requests();
+    tracing::info!("Invitation sent by {} to {}", admin_email, payload.email);
 
     Ok((
         StatusCode::CREATED,
@@ -385,10 +557,30 @@ pub async fn invite_user(
     ))
 }
 
+#[utoipa::path(
+    post,
+    path = "/auth/invitations/accept",
+    request_body = AcceptInvitationRequest,
+    responses(
+        (status = 201, description = "Invitation accepted successfully", body = AuthResponse),
+        (status = 400, description = "Invalid request data", body = ErrorResponse),
+        (status = 401, description = "Invalid or expired invitation token", body = ErrorResponse),
+        (status = 429, description = "Rate limit exceeded", body = ErrorResponse),
+    ),
+    tag = "Invitations"
+)]
 pub async fn accept_invitation(
     State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
+    headers: HeaderMap,
     Json(payload): Json<AcceptInvitationRequest>,
 ) -> Result<(StatusCode, Json<AuthResponse>), (StatusCode, Json<serde_json::Value>)> {
+    let _timer = crate::metrics::RequestTimer::new();
+    state.metrics.increment_total_requests();
+    
+    let ip_address = extract_ip_from_headers_and_addr(&headers, &addr);
+    let user_agent = extract_user_agent(&headers);
+
     if payload.token.is_empty() || payload.first_name.is_empty() 
         || payload.last_name.is_empty() || payload.password.is_empty() {
         return Err((
@@ -406,7 +598,10 @@ pub async fn accept_invitation(
 
     let invitation = db::get_invitation_by_token(&state.sqlite, &payload.token)
         .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" }))))?
+        .map_err(|e| {
+            tracing::error!("Database error fetching invitation by token: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+        })?
         .ok_or((
             StatusCode::UNAUTHORIZED,
             Json(json!({ "error": "Invalid or expired invitation" })),
@@ -429,7 +624,10 @@ pub async fn accept_invitation(
 
     if db::get_user_by_email(&state.sqlite, &invitation.email)
         .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" }))))?
+        .map_err(|e| {
+            tracing::error!("Database error checking existing user during invitation acceptance: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+        })?
         .is_some()
     {
         return Err((
@@ -439,52 +637,102 @@ pub async fn accept_invitation(
     }
 
     let password_hash = hash_password(&payload.password)
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to process password" }))))?;
+        .map_err(|e| {
+            tracing::error!("Failed to hash password during invitation acceptance: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to process password" })))
+        })?;
 
-    let user = db::create_user(
-        &state.sqlite,
-        invitation.email.clone(),
-        payload.first_name,
-        payload.last_name,
-        password_hash,
-        Some(invitation.company_id.clone()),
-        db::UserRole::Member,
-    )
-    .await
-    .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to create user" }))))?;
-
-    db::accept_invitation(&state.sqlite, &invitation.id)
+    let mut tx = state.sqlite.begin()
         .await
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to accept invitation" }))))?;
+        .map_err(|e| {
+            tracing::error!("Failed to begin transaction for invitation acceptance: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database transaction error" })))
+        })?;
+
+    let user_id = Uuid::new_v4().to_string();
+    let created_at = chrono::Utc::now().to_rfc3339();
+    let role_str = db::UserRole::Member.to_string();
+
+    sqlx::query(
+        r#"
+        INSERT INTO users (id, email, first_name, last_name, password_hash, company_id, role, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        "#,
+    )
+    .bind(&user_id)
+    .bind(&invitation.email)
+    .bind(&payload.first_name)
+    .bind(&payload.last_name)
+    .bind(&password_hash)
+    .bind(&invitation.company_id)
+    .bind(&role_str)
+    .bind(&created_at)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to create user in invitation acceptance transaction: {:?}", e);
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to create user" })))
+    })?;
+
+    let accept_time = chrono::Utc::now().to_rfc3339();
+    sqlx::query(
+        r#"
+        UPDATE invitations
+        SET accepted_at = ?
+        WHERE id = ?
+        "#,
+    )
+    .bind(&accept_time)
+    .bind(&invitation.id)
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to mark invitation as accepted: {:?}", e);
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to accept invitation" })))
+    })?;
+
+    tx.commit()
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to commit invitation acceptance transaction: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to commit transaction" })))
+        })?;
 
     let jwt_config = JwtConfig::new(get_jwt_secret());
     let token = jwt_config
-        .generate_token(user.id.clone(), 24)
-        .map_err(|_| (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to generate token" }))))?;
+        .generate_token(user_id.clone(), 24)
+        .map_err(|e| {
+            tracing::error!("Failed to generate JWT token for invitation acceptance: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to generate token" })))
+        })?;
 
     let _ = db::log_security_event(
         &state.sqlite,
         "invitation_accepted".to_string(),
-        Some(user.id.clone()),
+        Some(user_id.clone()),
         Some(invitation.email.clone()),
-        None,
-        None,
+        Some(ip_address),
+        user_agent,
         Some(format!("Member joined company {}", invitation.company_id)),
         true,
     )
     .await;
+
+    state.metrics.increment_invitations_accepted();
+    state.metrics.increment_successful_requests();
+    tracing::info!("Invitation accepted by user: {}", user_id);
 
     Ok((
         StatusCode::CREATED,
         Json(AuthResponse {
             token,
             user: UserResponse {
-                id: user.id,
-                email: user.email,
-                first_name: user.first_name,
-                last_name: user.last_name,
+                id: user_id,
+                email: invitation.email,
+                first_name: payload.first_name,
+                last_name: payload.last_name,
                 company_id: Some(invitation.company_id),
-                role: user.role,
+                role: role_str,
             },
         }),
     ))

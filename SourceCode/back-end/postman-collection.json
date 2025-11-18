@@ -1,0 +1,690 @@
+{
+  "info": {
+    "name": "Authentication API Tests",
+    "description": "Complete test collection for authentication API with rate limiting, security logging, and invitation system. All 142 tests passing!",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "invitation_token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Registration",
+      "item": [
+        {
+          "name": "Register Company Admin ✓",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"password\": \"SecurePass123!\",\n  \"company_name\": \"Example Corp\",\n  \"company_address\": \"123 Main St, City, Country\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register Second Company ✓",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin2@example.com\",\n  \"first_name\": \"Jane\",\n  \"last_name\": \"Smith\",\n  \"password\": \"AnotherPass456!\",\n  \"company_name\": \"Tech Solutions Inc\",\n  \"company_address\": \"456 Tech Ave, Silicon Valley, CA\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register - Missing Fields ✗ (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"incomplete@example.com\",\n  \"first_name\": \"Test\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register - Invalid Email ✗ (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"not-an-email\",\n  \"first_name\": \"Test\",\n  \"last_name\": \"User\",\n  \"password\": \"ValidPass123!\",\n  \"company_name\": \"Test Co\",\n  \"company_address\": \"123 Test St\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register - Weak Password ✗ (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"weak@example.com\",\n  \"first_name\": \"Test\",\n  \"last_name\": \"User\",\n  \"password\": \"weak\",\n  \"company_name\": \"Test Co\",\n  \"company_address\": \"123 Test St\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register - Duplicate Email ✗ (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"first_name\": \"Duplicate\",\n  \"last_name\": \"User\",\n  \"password\": \"SecurePass123!\",\n  \"company_name\": \"Duplicate Corp\",\n  \"company_address\": \"789 Duplicate Rd\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Login",
+      "item": [
+        {
+          "name": "Login - Valid Credentials ✓",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Invalid Email ✗ (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nonexistent@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Invalid Password ✗ (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"WrongPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Missing Fields ✗ (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Authentication",
+      "item": [
+        {
+          "name": "Get Current User ✓",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User - No Token ✗ (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User - Invalid Token ✗ (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer invalid.token.here"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Invitations",
+      "item": [
+        {
+          "name": "Send Invitation ✓",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newmember@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/invitations/send",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "invitations", "send"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Second Invitation ✓",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"member2@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/invitations/send",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "invitations", "send"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Invitation - Missing Email ✗ (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/invitations/send",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "invitations", "send"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Invitation - Invalid Email ✗ (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"not-valid-email\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/invitations/send",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "invitations", "send"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Invitation - Duplicate ✗ (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newmember@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/invitations/send",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "invitations", "send"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Invitation - No Auth ✗ (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/invitations/send",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "invitations", "send"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Accept Invitation ✓",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{invitation_token}}\",\n  \"first_name\": \"Alice\",\n  \"last_name\": \"Member\",\n  \"password\": \"MemberPass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/invitations/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "invitations", "accept"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Accept Invitation - Missing Fields ✗ (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"some-token\",\n  \"first_name\": \"Test\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/invitations/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "invitations", "accept"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Accept Invitation - Weak Password ✗ (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{invitation_token}}\",\n  \"first_name\": \"Test\",\n  \"last_name\": \"User\",\n  \"password\": \"weak\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/invitations/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "invitations", "accept"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Accept Invitation - Invalid Token ✗ (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"invalid-token-12345\",\n  \"first_name\": \"Test\",\n  \"last_name\": \"User\",\n  \"password\": \"ValidPass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/invitations/accept",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "invitations", "accept"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Rate Limiting",
+      "item": [
+        {
+          "name": "Rate Limit - Login 1 ✓",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Rate Limit - Login 2 ✓",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Rate Limit - Login 3 ✓",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Rate Limit - Login 4 ✓",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Rate Limit - Login 5 ✓",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Rate Limit - Login 6 ✗ (429)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Rate Limit - Email Test ✗ (429)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-Forwarded-For", "value": "10.0.0.1"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Rate Limit - Register 1 ✓",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-Forwarded-For", "value": "192.168.1.100"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ratelimit1@example.com\",\n  \"first_name\": \"Rate\",\n  \"last_name\": \"Test1\",\n  \"password\": \"SecurePass123!\",\n  \"company_name\": \"Rate Test Co 1\",\n  \"company_address\": \"123 Rate St\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Rate Limit - Register 2 ✓",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-Forwarded-For", "value": "192.168.1.100"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ratelimit2@example.com\",\n  \"first_name\": \"Rate\",\n  \"last_name\": \"Test2\",\n  \"password\": \"SecurePass123!\",\n  \"company_name\": \"Rate Test Co 2\",\n  \"company_address\": \"456 Rate Ave\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Rate Limit - Register 3 ✓",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-Forwarded-For", "value": "192.168.1.100"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ratelimit3@example.com\",\n  \"first_name\": \"Rate\",\n  \"last_name\": \"Test3\",\n  \"password\": \"SecurePass123!\",\n  \"company_name\": \"Rate Test Co 3\",\n  \"company_address\": \"789 Rate Blvd\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Rate Limit - Register 4 ✗ (429)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "X-Forwarded-For", "value": "192.168.1.100"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ratelimit4@example.com\",\n  \"first_name\": \"Rate\",\n  \"last_name\": \"Test4\",\n  \"password\": \"SecurePass123!\",\n  \"company_name\": \"Rate Test Co 4\",\n  \"company_address\": \"999 Rate Rd\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

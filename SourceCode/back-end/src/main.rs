@@ -3,10 +3,76 @@ use anyhow::Context;
 use axum::{middleware, Router};
 use axum::routing::{get, post};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        handlers::register_company_admin,
+        handlers::login,
+        handlers::get_current_user,
+        handlers::invite_user,
+        handlers::accept_invitation,
+    ),
+    components(
+        schemas(
+            handlers::RegisterRequest,
+            handlers::LoginRequest,
+            handlers::InviteUserRequest,
+            handlers::AcceptInvitationRequest,
+            handlers::AuthResponse,
+            handlers::UserResponse,
+            handlers::InvitationResponse,
+            handlers::ErrorResponse,
+        )
+    ),
+    tags(
+        (name = "Authentication", description = "User authentication and registration endpoints"),
+        (name = "Invitations", description = "Company member invitation management")
+    ),
+    modifiers(&SecurityAddon)
+)]
+struct ApiDoc;
+
+struct SecurityAddon;
+
+impl utoipa::Modify for SecurityAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        if let Some(components) = openapi.components.as_mut() {
+            components.add_security_scheme(
+                "bearer_auth",
+                utoipa::openapi::security::SecurityScheme::Http(
+                    utoipa::openapi::security::Http::new(
+                        utoipa::openapi::security::HttpAuthScheme::Bearer,
+                    )
+                ),
+            )
+        }
+    }
+}
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    let log_format = std::env::var("LOG_FORMAT").unwrap_or_else(|_| "text".to_string());
+    
+    if log_format == "json" {
+        tracing_subscriber::fmt()
+            .json()
+            .with_target(true)
+            .with_current_span(false)
+            .with_thread_ids(true)
+            .with_line_number(true)
+            .with_file(true)
+            .init();
+    } else {
+        tracing_subscriber::fmt()
+            .with_target(true)
+            .with_thread_ids(true)
+            .with_line_number(true)
+            .with_file(true)
+            .init();
+    }
 
     let connect_options = SqliteConnectOptions::new()
         .filename("auth.db")
@@ -35,23 +101,48 @@ async fn main() {
         .expect("Failed to initialize database");
 
     let rate_limit_state = rate_limit::RateLimitState::new();
+    rate_limit_state.clone().spawn_cleanup_task();
+
+    let metrics = back_end::metrics::Metrics::new();
+    metrics.clone().spawn_logging_task();
 
     let state = AppState {
         sqlite: auth_db_sqlite_pool,
         rate_limit: rate_limit_state.clone(),
+        metrics,
     };
 
-    let app = Router::new()
+    let api_routes = Router::new()
         .route("/auth/register", post(handlers::register_company_admin))
         .route("/auth/login", post(handlers::login))
         .route("/auth/me", get(handlers::get_current_user))
         .route("/auth/invitations/send", post(handlers::invite_user))
         .route("/auth/invitations/accept", post(handlers::accept_invitation))
         .layer(middleware::from_fn_with_state(
-            rate_limit_state,
+            state.clone(),
             rate_limit::rate_limit_middleware,
         ))
         .with_state(state);
+
+    let swagger_router: Router = SwaggerUi::new("/swagger-ui")
+        .url("/api-docs/openapi.json", ApiDoc::openapi())
+        .into();
+
+    let app = swagger_router
+        .merge(api_routes)
+        .layer(
+            tower_http::cors::CorsLayer::new()
+                .allow_origin(tower_http::cors::Any)
+                .allow_methods([
+                    axum::http::Method::GET,
+                    axum::http::Method::POST,
+                    axum::http::Method::PUT,
+                    axum::http::Method::DELETE,
+                    axum::http::Method::OPTIONS,
+                ])
+                .allow_headers(tower_http::cors::Any)
+                .allow_credentials(false),
+        );
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
@@ -59,7 +150,10 @@ async fn main() {
 
     tracing::info!("Server running on http://0.0.0.0:3000");
 
-    axum::serve(listener, app)
-        .await
-        .expect("Server error");
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .await
+    .expect("Server error");
 }

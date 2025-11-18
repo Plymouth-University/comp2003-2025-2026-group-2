@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Request, State},
+    extract::{ConnectInfo, Request, State},
     http::StatusCode,
     middleware::Next,
     response::{IntoResponse, Response},
@@ -15,45 +15,95 @@ use serde_json::json;
 use std::net::IpAddr;
 use std::num::NonZeroU32;
 use std::sync::Arc;
+use std::time::Instant;
 
 #[derive(Clone)]
 pub struct RateLimitState {
-    pub ip_login_limiter: Arc<DashMap<IpAddr, Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>>>,
-    pub ip_register_limiter: Arc<DashMap<IpAddr, Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>>>,
-    pub ip_general_limiter: Arc<DashMap<IpAddr, Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>>>,
-    pub email_login_limiter: Arc<DashMap<String, Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>>>,
-    pub email_register_limiter: Arc<DashMap<String, Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>>>,
+    pub ip_login_limiter: Arc<DashMap<IpAddr, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>>,
+    pub ip_register_limiter: Arc<DashMap<IpAddr, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>>,
+    pub ip_general_limiter: Arc<DashMap<IpAddr, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>>,
+    pub email_login_limiter: Arc<DashMap<String, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>>,
+    pub email_register_limiter: Arc<DashMap<String, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>>,
+    pub disabled: bool,
 }
 
 impl RateLimitState {
     pub fn new() -> Self {
+        let disabled = std::env::var("DISABLE_RATE_LIMIT")
+            .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
+            .unwrap_or(false);
+        
+        if disabled {
+            tracing::warn!("Rate limiting is DISABLED via DISABLE_RATE_LIMIT environment variable");
+        }
+        
         Self {
             ip_login_limiter: Arc::new(DashMap::new()),
             ip_register_limiter: Arc::new(DashMap::new()),
             ip_general_limiter: Arc::new(DashMap::new()),
             email_login_limiter: Arc::new(DashMap::new()),
             email_register_limiter: Arc::new(DashMap::new()),
+            disabled,
         }
     }
 
     fn get_or_create_ip_limiter(
-        map: &DashMap<IpAddr, Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>>,
+        map: &DashMap<IpAddr, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>,
         ip: IpAddr,
         quota: Quota,
     ) -> Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>> {
+        let now = Instant::now();
         map.entry(ip)
-            .or_insert_with(|| Arc::new(RateLimiter::direct(quota)))
+            .or_insert_with(|| (Arc::new(RateLimiter::direct(quota)), now))
+            .0
             .clone()
     }
 
     fn get_or_create_string_limiter(
-        map: &DashMap<String, Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>>,
+        map: &DashMap<String, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>,
         key: String,
         quota: Quota,
     ) -> Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>> {
+        let now = Instant::now();
         map.entry(key)
-            .or_insert_with(|| Arc::new(RateLimiter::direct(quota)))
+            .or_insert_with(|| (Arc::new(RateLimiter::direct(quota)), now))
+            .0
             .clone()
+    }
+
+    pub fn cleanup_expired_entries(&self, max_age: std::time::Duration) {
+        let now = Instant::now();
+        
+        self.ip_login_limiter.retain(|_, (_, last_access)| {
+            now.duration_since(*last_access) < max_age
+        });
+        
+        self.ip_register_limiter.retain(|_, (_, last_access)| {
+            now.duration_since(*last_access) < max_age
+        });
+        
+        self.ip_general_limiter.retain(|_, (_, last_access)| {
+            now.duration_since(*last_access) < max_age
+        });
+        
+        self.email_login_limiter.retain(|_, (_, last_access)| {
+            now.duration_since(*last_access) < max_age
+        });
+        
+        self.email_register_limiter.retain(|_, (_, last_access)| {
+            now.duration_since(*last_access) < max_age
+        });
+    }
+
+    pub fn spawn_cleanup_task(self) {
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(300));
+            loop {
+                interval.tick().await;
+                self.cleanup_expired_entries(std::time::Duration::from_secs(3600));
+                tracing::debug!("Rate limiter cleanup completed");
+            }
+        });
     }
 
     pub fn check_login(&self, ip: IpAddr) -> bool {
@@ -69,13 +119,13 @@ impl RateLimitState {
     }
 
     pub fn check_register(&self, ip: IpAddr) -> bool {
-        let quota = Quota::per_hour(NonZeroU32::new(3).unwrap());
+        let quota = Quota::per_minute(NonZeroU32::new(10).unwrap());
         let limiter = Self::get_or_create_ip_limiter(&self.ip_register_limiter, ip, quota);
         limiter.check().is_ok()
     }
 
     pub fn check_register_email(&self, email: &str) -> bool {
-        let quota = Quota::per_hour(NonZeroU32::new(5).unwrap());
+        let quota = Quota::per_minute(NonZeroU32::new(20).unwrap());
         let limiter = Self::get_or_create_string_limiter(&self.email_register_limiter, email.to_lowercase(), quota);
         limiter.check().is_ok()
     }
@@ -93,19 +143,6 @@ impl Default for RateLimitState {
     }
 }
 
-fn extract_ip_from_request(req: &Request) -> Option<IpAddr> {
-    req.headers()
-        .get("x-forwarded-for")
-        .and_then(|h| h.to_str().ok())
-        .and_then(|s| s.split(',').next())
-        .and_then(|s| s.trim().parse().ok())
-        .or_else(|| {
-            req.extensions()
-                .get::<std::net::SocketAddr>()
-                .map(|addr| addr.ip())
-        })
-}
-
 fn extract_email_from_body(body: &[u8]) -> Option<String> {
     serde_json::from_slice::<serde_json::Value>(body)
         .ok()
@@ -113,20 +150,21 @@ fn extract_email_from_body(body: &[u8]) -> Option<String> {
 }
 
 pub async fn rate_limit_middleware(
-    State(rate_limit_state): State<RateLimitState>,
+    State(app_state): State<crate::AppState>,
+    ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
     req: Request,
     next: Next,
 ) -> Response {
-    let ip = match extract_ip_from_request(&req) {
-        Some(ip) => ip,
-        None => {
-            return (
-                StatusCode::BAD_REQUEST,
-                Json(json!({ "error": "Cannot determine client IP address" })),
-            )
-                .into_response();
-        }
-    };
+    let ip = req.headers()
+        .get("x-forwarded-for")
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .and_then(|s| s.trim().parse().ok())
+        .unwrap_or_else(|| addr.ip());
+
+    if app_state.rate_limit.disabled {
+        return next.run(req).await;
+    }
 
     let path = req.uri().path().to_string();
     
@@ -138,14 +176,16 @@ pub async fn rate_limit_middleware(
     let email = extract_email_from_body(&body_bytes);
     
     let ip_allowed = if path.contains("/auth/login") {
-        rate_limit_state.check_login(ip)
+        app_state.rate_limit.check_login(ip)
     } else if path.contains("/auth/register") {
-        rate_limit_state.check_register(ip)
+        app_state.rate_limit.check_register(ip)
     } else {
-        rate_limit_state.check_general(ip)
+        app_state.rate_limit.check_general(ip)
     };
 
     if !ip_allowed {
+        app_state.metrics.increment_rate_limit_hits();
+        tracing::warn!("Rate limit exceeded for IP: {}", ip);
         return (
             StatusCode::TOO_MANY_REQUESTS,
             Json(json!({ 
@@ -158,14 +198,16 @@ pub async fn rate_limit_middleware(
 
     if let Some(email_str) = email.as_ref() {
         let email_allowed = if path.contains("/auth/login") {
-            rate_limit_state.check_login_email(email_str)
+            app_state.rate_limit.check_login_email(email_str)
         } else if path.contains("/auth/register") {
-            rate_limit_state.check_register_email(email_str)
+            app_state.rate_limit.check_register_email(email_str)
         } else {
             true
         };
 
         if !email_allowed {
+            app_state.metrics.increment_rate_limit_hits();
+            tracing::warn!("Rate limit exceeded for email: {}", email_str);
             return (
                 StatusCode::TOO_MANY_REQUESTS,
                 Json(json!({ 

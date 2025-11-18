@@ -235,20 +235,20 @@ pub async fn create_user(
     let now = chrono::Utc::now().to_rfc3339();
     let role_str = role.to_string();
 
-    sqlx::query(
+    sqlx::query!(
         r#"
         INSERT INTO users (id, email, first_name, last_name, password_hash, company_id, role, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         "#,
+        id,
+        email,
+        first_name,
+        last_name,
+        password_hash,
+        company_id,
+        role_str,
+        now
     )
-    .bind(&id)
-    .bind(&email)
-    .bind(&first_name)
-    .bind(&last_name)
-    .bind(&password_hash)
-    .bind(&company_id)
-    .bind(&role_str)
-    .bind(&now)
     .execute(pool)
     .await?;
 
@@ -265,14 +265,16 @@ pub async fn create_user(
 }
 
 pub async fn get_user_by_email(pool: &SqlitePool, email: &str) -> Result<Option<User>> {
-    let user = sqlx::query_as::<_, User>(
+    let user = sqlx::query_as!(
+        User,
         r#"
-        SELECT id, email, first_name, last_name, password_hash, company_id, role, created_at
+        SELECT id as "id!", email as "email!", first_name as "first_name!", last_name as "last_name!", 
+               password_hash as "password_hash!", company_id, role as "role!", created_at as "created_at!: String"
         FROM users
         WHERE email = ?
         "#,
+        email
     )
-    .bind(email)
     .fetch_optional(pool)
     .await?;
 
@@ -280,20 +282,21 @@ pub async fn get_user_by_email(pool: &SqlitePool, email: &str) -> Result<Option<
 }
 
 pub async fn get_user_by_id(pool: &SqlitePool, id: &str) -> Result<Option<User>> {
-    let user = sqlx::query_as::<_, User>(
+    let user = sqlx::query_as!(
+        User,
         r#"
-        SELECT id, email, first_name, last_name, password_hash, company_id, role, created_at
+        SELECT id as "id!", email as "email!", first_name as "first_name!", last_name as "last_name!", 
+               password_hash as "password_hash!", company_id, role as "role!", created_at as "created_at!: String"
         FROM users
         WHERE id = ?
         "#,
+        id
     )
-    .bind(id)
     .fetch_optional(pool)
     .await?;
 
     Ok(user)
 }
-
 pub async fn create_company(
     pool: &SqlitePool,
     name: String,
@@ -302,16 +305,16 @@ pub async fn create_company(
     let id = Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
 
-    sqlx::query(
+    sqlx::query!(
         r#"
         INSERT INTO companies (id, name, address, created_at)
         VALUES (?, ?, ?, ?)
         "#,
+        id,
+        name,
+        address,
+        now
     )
-    .bind(&id)
-    .bind(&name)
-    .bind(&address)
-    .bind(&now)
     .execute(pool)
     .await?;
 
@@ -324,14 +327,15 @@ pub async fn create_company(
 }
 
 pub async fn get_company_by_id(pool: &SqlitePool, id: &str) -> Result<Option<Company>> {
-    let company = sqlx::query_as::<_, Company>(
+    let company = sqlx::query_as!(
+        Company,
         r#"
-        SELECT id, name, address, created_at
+        SELECT id as "id!", name as "name!", address as "address!", created_at as "created_at!: String"
         FROM companies
         WHERE id = ?
         "#,
+        id
     )
-    .bind(id)
     .fetch_optional(pool)
     .await?;
 
@@ -348,18 +352,18 @@ pub async fn create_invitation(
     let id = Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
 
-    sqlx::query(
+    sqlx::query!(
         r#"
         INSERT INTO invitations (id, company_id, email, token, created_at, expires_at)
         VALUES (?, ?, ?, ?, ?, ?)
         "#,
+        id,
+        company_id,
+        email,
+        token,
+        now,
+        expires_at
     )
-    .bind(&id)
-    .bind(&company_id)
-    .bind(&email)
-    .bind(&token)
-    .bind(&now)
-    .bind(&expires_at)
     .execute(pool)
     .await?;
 
@@ -375,14 +379,16 @@ pub async fn create_invitation(
 }
 
 pub async fn get_invitation_by_token(pool: &SqlitePool, token: &str) -> Result<Option<Invitation>> {
-    let invitation = sqlx::query_as::<_, Invitation>(
+    let invitation = sqlx::query_as!(
+        Invitation,
         r#"
-        SELECT id, company_id, email, token, created_at, expires_at, accepted_at
+        SELECT id as "id!", company_id as "company_id!", email as "email!", token as "token!", 
+               created_at as "created_at!: String", expires_at as "expires_at!: String", accepted_at as "accepted_at: String"
         FROM invitations
         WHERE token = ? AND accepted_at IS NULL
         "#,
+        token
     )
-    .bind(token)
     .fetch_optional(pool)
     .await?;
 
@@ -395,15 +401,15 @@ pub async fn accept_invitation(
 ) -> Result<()> {
     let now = chrono::Utc::now().to_rfc3339();
 
-    sqlx::query(
+    sqlx::query!(
         r#"
         UPDATE invitations
         SET accepted_at = ?
         WHERE id = ?
         "#,
+        now,
+        invitation_id
     )
-    .bind(&now)
-    .bind(invitation_id)
     .execute(pool)
     .await?;
 
@@ -424,21 +430,21 @@ pub async fn log_security_event(
     let now = chrono::Utc::now().to_rfc3339();
     let success_int = if success { 1 } else { 0 };
 
-    sqlx::query(
+    sqlx::query!(
         r#"
         INSERT INTO security_logs (id, event_type, user_id, email, ip_address, user_agent, details, success, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
+        id,
+        event_type,
+        user_id,
+        email,
+        ip_address,
+        user_agent,
+        details,
+        success_int,
+        now
     )
-    .bind(&id)
-    .bind(&event_type)
-    .bind(&user_id)
-    .bind(&email)
-    .bind(&ip_address)
-    .bind(&user_agent)
-    .bind(&details)
-    .bind(success_int)
-    .bind(&now)
     .execute(pool)
     .await?;
 
