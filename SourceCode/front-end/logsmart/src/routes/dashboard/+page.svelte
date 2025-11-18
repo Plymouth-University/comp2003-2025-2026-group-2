@@ -32,7 +32,7 @@
 					<a href="/users" class="hover:opacity-80" style="color: #000100;">
 						Users
 					</a>
-					<a href="/templates" class="hover:opacity-80" style="color: #000100;">
+					<a href="/templates-dashboard" class="hover:opacity-80" style="color: #000100;">
 						Templates
 					</a>
 					<a href="/reports" class="hover:opacity-80" style="color: #000100;">
