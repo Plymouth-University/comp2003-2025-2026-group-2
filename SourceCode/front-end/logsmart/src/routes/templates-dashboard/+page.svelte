@@ -89,8 +89,9 @@
 					<h3 class="text-xl font-bold mb-4" style="color: #000100;">New Log Template</h3>
 					
 					<div class="mb-6">
-						<label class="block text-lg font-bold mb-2" style="color: #A1A6B4;">Log Title</label>
-						<input 
+						<label for="log-title-input" class="block text-lg font-bold mb-2" style="color: #A1A6B4;">Log Title</label>
+						<input
+							id="log-title-input"
 							type="text" 
 							placeholder="Description"
 							class="w-full px-4 py-2 border-2"
