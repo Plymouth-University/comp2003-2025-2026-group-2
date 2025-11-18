@@ -14,18 +14,19 @@ async function submit() {
     if (!formValid) return;
     loading = true;
     try {
-        const res = await fetch('/api/login', {
+        const res = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            error = data?.message || 'Login failed';
+            error = data?.error || data?.message || 'Login failed';
         } else {
             await goto('/dashboard');
         }
-    } catch {
+    } catch (err) {
+        console.error('Login error:', err);
         error = 'Network error';
     } finally {
         loading = false;

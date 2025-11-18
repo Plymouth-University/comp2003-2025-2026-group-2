@@ -37,32 +37,6 @@
 </style>
 
 <div class="min-h-screen" style="background-color: #F8F8F8;">
-	<!-- Navigation Header -->
-	<div class="border-b-2" style="border-color: #000100;">
-		<div class="mx-auto max-w-7xl px-6 py-4" style="background-color: #B4D2E7;">
-			<div class="flex items-center justify-end">
-				<!-- Navigation Menu -->
-				<nav class="flex items-center gap-6">
-					<a href="/dashboard" class="hover:opacity-80" style="color: #000100;">
-						Dashboard
-					</a>
-					<a href="/logs" class="hover:opacity-80" style="color: #000100;">
-						Logs
-					</a>
-					<a href="/users" class="hover:opacity-80" style="color: #000100;">
-						Users
-					</a>
-					<a href="/templates-dashboard" class="font-medium border-b-2 pb-1" style="color: #000100; border-color: #000100;">
-						Templates
-					</a>
-					<a href="/reports" class="hover:opacity-80" style="color: #000100;">
-						Reports
-					</a>
-				</nav>
-			</div>
-		</div>
-	</div>
-
 	<!-- Main Content - Three Column Layout -->
 	<div class="flex h-[calc(100vh-73px)]">
 		<!-- Left Sidebar - Templates -->

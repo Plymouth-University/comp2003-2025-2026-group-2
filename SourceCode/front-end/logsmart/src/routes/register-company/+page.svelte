@@ -61,14 +61,14 @@
 
 		loading = true;
 		try {
-			const res = await fetch('/api/register-company', {
+			const res = await fetch('/api/auth/register', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					companyName,
-					companyAddress,
-					firstName,
-					lastName,
+					company_name: companyName,
+					company_address: companyAddress,
+					first_name: firstName,
+					last_name: lastName,
 					email,
 					password
 				})
