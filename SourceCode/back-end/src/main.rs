@@ -11,6 +11,7 @@ use utoipa_swagger_ui::SwaggerUi;
     paths(
         handlers::register_company_admin,
         handlers::login,
+        handlers::verify_token,
         handlers::get_current_user,
         handlers::invite_user,
         handlers::accept_invitation,
@@ -21,10 +22,12 @@ use utoipa_swagger_ui::SwaggerUi;
             handlers::LoginRequest,
             handlers::InviteUserRequest,
             handlers::AcceptInvitationRequest,
+            handlers::VerifyTokenRequest,
             handlers::AuthResponse,
             handlers::UserResponse,
             handlers::InvitationResponse,
             handlers::ErrorResponse,
+            handlers::JwtVerifyResponse,
         )
     ),
     tags(
@@ -118,6 +121,7 @@ async fn main() {
         .route("/auth/register", post(handlers::register_company_admin))
         .route("/auth/login", post(handlers::login))
         .route("/auth/me", get(handlers::get_current_user))
+        .route("/auth/verify", get(handlers::verify_token))
         .route("/auth/invitations/send", post(handlers::invite_user))
         .route("/auth/invitations/accept", post(handlers::accept_invitation))
         .layer(middleware::from_fn_with_state(
@@ -146,11 +150,11 @@ async fn main() {
                 .allow_credentials(false),
         );
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:6767")
         .await
-        .expect("Failed to bind to port 3000");
+        .expect("Failed to bind to port 6767");
 
-    tracing::info!("Server running on http://0.0.0.0:3000");
+    tracing::info!("Server running on http://0.0.0.0:6767");
 
     axum::serve(
         listener,

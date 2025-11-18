@@ -45,6 +45,12 @@ pub struct RegisterRequest {
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct VerifyTokenRequest {
+    #[schema(example = "jwt-token-here")]
+    pub token: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct LoginRequest {
     #[schema(example = "admin@example.com")]
     pub email: String,
@@ -68,6 +74,11 @@ pub struct AcceptInvitationRequest {
     pub last_name: String,
     #[schema(example = "MemberPass123!")]
     pub password: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct JwtVerifyResponse {
+    pub email: String,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -97,6 +108,45 @@ pub struct InvitationResponse {
 pub struct ErrorResponse {
     pub error: String,
 }
+
+#[utoipa::path(
+    post,
+    path = "/auth/verify",
+    request_body = VerifyTokenRequest,
+    responses(
+        (status = 200, description = "Token is valid", body = JwtVerifyResponse),
+        (status = 401, description = "Invalid or expired token", body = ErrorResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+    ),
+    tag = "Authentication"
+)]
+pub async fn verify_token(
+    State(state): State<AppState>,
+    Json(payload): Json<VerifyTokenRequest>,
+) -> Result<Json<JwtVerifyResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let jwt_config = JwtConfig::new(get_jwt_secret());
+    let claims = jwt_config
+        .validate_token(&payload.token)
+        .map_err(|e| {
+            tracing::error!("Token verification failed: {:?}", e);
+            (StatusCode::UNAUTHORIZED, Json(json!({ "error": "Invalid or expired token" })))
+        })?;
+    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user during token verification: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "User not found" })),
+        ))?;
+
+    Ok(Json(JwtVerifyResponse {
+        email: user.email,
+    }))
+}
+
 
 #[utoipa::path(
     post,
