@@ -121,7 +121,7 @@ async fn main() {
         .route("/auth/register", post(handlers::register_company_admin))
         .route("/auth/login", post(handlers::login))
         .route("/auth/me", get(handlers::get_current_user))
-        .route("/auth/verify", get(handlers::verify_token))
+        .route("/auth/verify", post(handlers::verify_token))
         .route("/auth/invitations/send", post(handlers::invite_user))
         .route("/auth/invitations/accept", post(handlers::accept_invitation))
         .layer(middleware::from_fn_with_state(
