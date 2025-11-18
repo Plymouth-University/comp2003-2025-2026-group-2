@@ -6,9 +6,11 @@
 
 	let { children, data } = $props<{ children: any; data: LayoutData }>();
 	
-	let isAuthenticatedRoute = page.url.pathname.startsWith('/dashboard') || 
-	                          page.url.pathname.startsWith('/reports') || 
-	                          page.url.pathname.startsWith('/templates-dashboard');
+	const isAuthenticatedRoute = $derived(
+		page.url.pathname.startsWith('/dashboard') || 
+		page.url.pathname.startsWith('/reports') || 
+		page.url.pathname.startsWith('/templates-dashboard')
+	);
 	
 	async function handleLogout() {
 		await fetch('/api/logout', { method: 'POST' });

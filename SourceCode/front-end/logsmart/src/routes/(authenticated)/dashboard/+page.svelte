@@ -1,19 +1,19 @@
 <script lang="ts">
 	// Sample data for today's logs
-	const todaysLogs = [
+	const todaysLogs = $state([
 		'Kitchen Daily Log (27th)',
 		'Kitchen Cleaning Log (w/e 27th)',
 		'Weekly Log'
-	];
+	]);
 
 	// Sample user data
-	const user = {
+	const user = $state({
 		name: 'John Smith',
 		email: 'john.smith@example.com',
 		company: 'LogSmart Industries',
 		role: 'Manager',
 		initials: 'JS'
-	};
+	});
 </script>
 
 <div class="min-h-screen" style="background-color: #F8F8F8;">

@@ -1,12 +1,10 @@
 <script lang="ts">
-	// Sample template data
 	const templates = [
 		{ id: 1, name: 'Kitchen Daily Log', selected: false },
 		{ id: 2, name: 'Kitchen Cleaning Log', selected: false },
 		{ id: 3, name: 'Bar Log', selected: false }
 	];
 
-	// Sample components
 	const components = [
 		{ id: 1, name: 'Text Input', icon: 'T' },
 		{ id: 2, name: 'Checkbox', icon: '✓' },
@@ -14,12 +12,11 @@
 		{ id: 4, name: 'Dropdown', icon: '≡' }
 	];
 
-	// Sample canvas items
-	let canvasItems = [
+	let canvasItems = $state([
 		{ id: 1, value: 3, label: 'Log 1', unit: '°C' },
 		{ id: 2, value: 5, label: 'Log 2', unit: '°C' },
 		{ id: 3, value: 4, label: 'Log 3', unit: '°C' }
-	];
+	]);
 </script>
 
 <style>

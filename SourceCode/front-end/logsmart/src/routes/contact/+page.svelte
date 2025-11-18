@@ -1,8 +1,8 @@
 <script lang="ts">
-	let email = '';
-	let name = '';
-	let message = '';
-	let submitted = false;
+	let email = $state('');
+	let name = $state('');
+	let message = $state('');
+	let submitted = $state(false);
 
 	function handleSubmit(e: Event) {
 		e.preventDefault();
@@ -50,7 +50,7 @@
 				</div>
 			{/if}
 
-			<form on:submit={handleSubmit} class="space-y-6">
+			<form onsubmit={handleSubmit} class="space-y-6">
 				<div>
 					<label for="name" class="mb-2 block text-sm font-semibold text-gray-700">
 						Your Name

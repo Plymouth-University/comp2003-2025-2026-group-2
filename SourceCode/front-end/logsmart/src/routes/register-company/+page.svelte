@@ -1,17 +1,17 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 
-	let step = 1;
-	let companyName = '';
-	let companyAddress = '';
-	let firstName = '';
-	let lastName = '';
-	let email = '';
-	let password = '';
-	let confirmPassword = '';
-	let loading = false;
-	let error = '';
-	let touched = {
+	let step = $state(1);
+	let companyName = $state('');
+	let companyAddress = $state('');
+	let firstName = $state('');
+	let lastName = $state('');
+	let email = $state('');
+	let password = $state('');
+	let confirmPassword = $state('');
+	let loading = $state(false);
+	let error = $state('');
+	let touched = $state({
 		companyName: false,
 		companyAddress: false,
 		firstName: false,
@@ -19,20 +19,21 @@
 		email: false,
 		password: false,
 		confirmPassword: false
-	};
+	});
 
-	$: companyNameValid = companyName.trim().length > 0;
-	$: companyAddressValid = companyAddress.trim().length > 0;
-	$: firstNameValid = firstName.trim().length > 0;
-	$: lastNameValid = lastName.trim().length > 0;
-	$: emailValid = /^\S+@\S+\.\S+$/.test(email);
-	$: passwordValid = password.length >= 8;
-	$: passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
+	const companyNameValid = $derived(companyName.trim().length > 0);
+	const companyAddressValid = $derived(companyAddress.trim().length > 0);
+	const firstNameValid = $derived(firstName.trim().length > 0);
+	const lastNameValid = $derived(lastName.trim().length > 0);
+	const emailValid = $derived(/^\S+@\S+\.\S+$/.test(email));
+	const passwordValid = $derived(password.length >= 8);
+	const passwordsMatch = $derived(password === confirmPassword && confirmPassword.length > 0);
 
-	$: step1Valid = companyNameValid && companyAddressValid;
-	$: step2Valid = firstNameValid && lastNameValid && emailValid && passwordValid && passwordsMatch;
+	const step1Valid = $derived(companyNameValid && companyAddressValid);
+	const step2Valid = $derived(firstNameValid && lastNameValid && emailValid && passwordValid && passwordsMatch);
 
-	function nextStep() {
+	function nextStep(e: Event) {
+		e.preventDefault();
 		touched.companyName = true;
 		touched.companyAddress = true;
 		if (step1Valid) {
@@ -45,7 +46,8 @@
 		error = '';
 	}
 
-	async function submit() {
+	async function submit(e: Event) {
+		e.preventDefault();
 		error = '';
 		touched = {
 			companyName: true,
@@ -78,6 +80,7 @@
 				const data = await res.json().catch(() => ({}));
 				error = data?.message || 'Registration failed';
 			} else {
+				await invalidateAll();
 				await goto('/dashboard');
 			}
 		} catch {
@@ -107,7 +110,7 @@
 		</div>
 
 		{#if step === 1}
-			<form on:submit|preventDefault={nextStep} class="form">
+			<form onsubmit={nextStep} class="form">
 				<h1>Company Information</h1>
 				<p class="subtitle">Tell us about your company</p>
 
@@ -120,7 +123,7 @@
 					<input
 						type="text"
 						bind:value={companyName}
-						on:blur={() => (touched.companyName = true)}
+						onblur={() => (touched.companyName = true)}
 						aria-invalid={!companyNameValid}
 						placeholder="LogSmart Ltd"
 						required
@@ -134,7 +137,7 @@
 					<span class="label-text">Company Address</span>
 					<textarea
 						bind:value={companyAddress}
-						on:blur={() => (touched.companyAddress = true)}
+						onblur={() => (touched.companyAddress = true)}
 						aria-invalid={!companyAddressValid}
 						placeholder="Plymouth, UK"
 						rows="3"
@@ -150,7 +153,7 @@
 				</button>
 			</form>
 		{:else}
-			<form on:submit|preventDefault={submit} class="form">
+			<form onsubmit={submit} class="form">
 				<h1>Your Details</h1>
 				<p class="subtitle">Create your admin account</p>
 
@@ -164,7 +167,7 @@
 						<input
 							type="text"
 							bind:value={firstName}
-							on:blur={() => (touched.firstName = true)}
+							onblur={() => (touched.firstName = true)}
 							aria-invalid={!firstNameValid}
 							placeholder="John"
 							required
@@ -179,7 +182,7 @@
 						<input
 							type="text"
 							bind:value={lastName}
-							on:blur={() => (touched.lastName = true)}
+							onblur={() => (touched.lastName = true)}
 							aria-invalid={!lastNameValid}
 							placeholder="Doe"
 							required
@@ -195,7 +198,7 @@
 					<input
 						type="email"
 						bind:value={email}
-						on:blur={() => (touched.email = true)}
+						onblur={() => (touched.email = true)}
 						aria-invalid={!emailValid}
 						placeholder="john@company.com"
 						required
@@ -210,7 +213,7 @@
 					<input
 						type="password"
 						bind:value={password}
-						on:blur={() => (touched.password = true)}
+						onblur={() => (touched.password = true)}
 						aria-invalid={!passwordValid}
 						placeholder="Minimum 8 characters"
 						required
@@ -225,7 +228,7 @@
 					<input
 						type="password"
 						bind:value={confirmPassword}
-						on:blur={() => (touched.confirmPassword = true)}
+						onblur={() => (touched.confirmPassword = true)}
 						aria-invalid={!passwordsMatch}
 						placeholder="Re-enter password"
 						required
@@ -236,7 +239,7 @@
 				</label>
 
 				<div class="button-group">
-					<button type="button" class="btn btn-secondary" on:click={prevStep}>
+					<button type="button" class="btn btn-secondary" onclick={prevStep}>
 						Back
 					</button>
 					<button type="submit" class="btn btn-primary" disabled={!step2Valid || loading}>

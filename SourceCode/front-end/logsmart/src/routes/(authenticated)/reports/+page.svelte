@@ -1,15 +1,13 @@
 <script lang="ts">
-	// Log types for selection
-	let logTypes = [
+	let logTypes = $state([
 		{ id: 'all', label: 'All', checked: true },
 		{ id: 'type1', label: 'Log Type 1', checked: false },
 		{ id: 'type2', label: 'Log Type 2', checked: false },
 		{ id: 'type3', label: 'Log Type 3', checked: false },
 		{ id: 'type4', label: 'Log Type 4', checked: false },
 		{ id: 'type5', label: 'Log Type 5', checked: false }
-	];
+	]);
 
-	// Get current date
 	const today = new Date();
 	const dd = String(today.getDate()).padStart(2, '0');
 	const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -17,23 +15,19 @@
 	const currentDateFormatted = `${dd}/${mm}/${yyyy}`;
 	const currentDateISO = `${yyyy}-${mm}-${dd}`;
 
-	// Date range - Store both formatted (DD/MM/YYYY) and ISO (YYYY-MM-DD) formats
 	let dateFrom = $state(currentDateFormatted);
 	let dateTo = $state(currentDateFormatted);
 	let dateFromISO = $state(currentDateISO);
 	let dateToISO = $state(currentDateISO);
 
-	// Date picker visibility and view mode
 	let showDateFromPicker = $state(false);
 	let showDateToPicker = $state(false);
-	let pickerView = $state<'day' | 'month' | 'year'>('day'); // day, month, or year view
+	let pickerView = $state<'day' | 'month' | 'year'>('day');
 	let slideDirection = $state<'left' | 'right'>('left');
 	
-	// Current month/year for calendar
 	let calendarDate = $state(new Date());
 	let activePickerIsFrom = $state(true);
 
-	// Generated report state
 	let reportGenerated = $state(false);
 
 	// Convert DD/MM/YYYY to YYYY-MM-DD

@@ -4,7 +4,7 @@
 
 	let { data, children } = $props<{ data: LayoutData; children: any }>();
 	
-	let currentPath = page.url.pathname;
+	const currentPath = $derived(page.url.pathname);
 	
 	async function handleLogout() {
 		await fetch('/api/logout', { method: 'POST' });

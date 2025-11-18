@@ -1,14 +1,15 @@
 <script lang="ts">
-import { goto } from '$app/navigation';
-let email = '';
-let password = '';
-let loading = false;
-let error = '';
-let touched = { email: false, password: false };
-$: emailValid = /^\S+@\S+\.\S+$/.test(email);
-$: passwordValid = password.length >= 6;
-$: formValid = emailValid && passwordValid;
-async function submit() {
+import { goto, invalidateAll } from '$app/navigation';
+let email = $state('');
+let password = $state('');
+let loading = $state(false);
+let error = $state('');
+let touched = $state({ email: false, password: false });
+const emailValid = $derived(/^\S+@\S+\.\S+$/.test(email));
+const passwordValid = $derived(password.length >= 6);
+const formValid = $derived(emailValid && passwordValid);
+async function submit(e: Event) {
+    e.preventDefault();
     error = '';
     touched = { email: true, password: true };
     if (!formValid) return;
@@ -23,6 +24,7 @@ async function submit() {
             const data = await res.json().catch(() => ({}));
             error = data?.error || data?.message || 'Login failed';
         } else {
+            await invalidateAll();
             await goto('/dashboard');
         }
     } catch (err) {
@@ -35,7 +37,7 @@ async function submit() {
 </script>
 
 <main class="bg-gray-50 grid place-items-center p-6">
-    <form on:submit|preventDefault={submit} class="form">
+    <form onsubmit={submit} class="form">
         <h1>Log in</h1>
         {#if error}
             <div class="error" role="alert">{error}</div>
@@ -45,7 +47,7 @@ async function submit() {
             <input
                 type="email"
                 bind:value={email}
-                on:blur={() => (touched.email = true)}
+                onblur={() => (touched.email = true)}
                 aria-invalid={!emailValid}
                 aria-describedby="email-help"
                 required
@@ -60,7 +62,7 @@ async function submit() {
             <input
                 type="password"
                 bind:value={password}
-                on:blur={() => (touched.password = true)}
+                onblur={() => (touched.password = true)}
                 aria-invalid={!passwordValid}
                 aria-describedby="password-help"
                 required
