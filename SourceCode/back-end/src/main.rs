@@ -54,6 +54,8 @@ impl utoipa::Modify for SecurityAddon {
 
 #[tokio::main]
 async fn main() {
+    dotenvy::dotenv().ok();
+    
     let log_format = std::env::var("LOG_FORMAT").unwrap_or_else(|_| "text".to_string());
     
     if log_format == "json" {

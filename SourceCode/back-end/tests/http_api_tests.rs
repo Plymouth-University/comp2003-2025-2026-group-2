@@ -1,17 +1,56 @@
 use axum::{
     body::{Body, to_bytes},
-    http::{Request, StatusCode},
+    extract::{ConnectInfo, State},
+    http::{Request, StatusCode, HeaderMap},
     routing::{get, post},
-    Router,
+    Json, Router,
 };
 use back_end::{
-    handlers::{register_company_admin, login, get_current_user, invite_user, accept_invitation},
-    db, AppState,
+    handlers, db, AppState,
+    middleware::AuthToken,
 };
 use serde_json::{json, Value};
 use sqlx::SqlitePool;
+use std::net::SocketAddr;
 use tempfile::NamedTempFile;
 use tower::ServiceExt;
+
+async fn test_register_handler(
+    State(state): State<AppState>,
+    Json(payload): Json<handlers::RegisterRequest>,
+) -> Result<(StatusCode, Json<handlers::AuthResponse>), (StatusCode, Json<Value>)> {
+    let mock_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
+    let headers = HeaderMap::new();
+    handlers::register_company_admin(State(state), ConnectInfo(mock_addr), headers, Json(payload)).await
+}
+
+async fn test_login_handler(
+    State(state): State<AppState>,
+    Json(payload): Json<handlers::LoginRequest>,
+) -> Result<Json<handlers::AuthResponse>, (StatusCode, Json<Value>)> {
+    let mock_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
+    let headers = HeaderMap::new();
+    handlers::login(State(state), ConnectInfo(mock_addr), headers, Json(payload)).await
+}
+
+async fn test_invite_handler(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    Json(payload): Json<handlers::InviteUserRequest>,
+) -> Result<(StatusCode, Json<handlers::InvitationResponse>), (StatusCode, Json<Value>)> {
+    let mock_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
+    let headers = HeaderMap::new();
+    handlers::invite_user(AuthToken(claims), State(state), ConnectInfo(mock_addr), headers, Json(payload)).await
+}
+
+async fn test_accept_invitation_handler(
+    State(state): State<AppState>,
+    Json(payload): Json<handlers::AcceptInvitationRequest>,
+) -> Result<(StatusCode, Json<handlers::AuthResponse>), (StatusCode, Json<Value>)> {
+    let mock_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
+    let headers = HeaderMap::new();
+    handlers::accept_invitation(State(state), ConnectInfo(mock_addr), headers, Json(payload)).await
+}
 
 async fn setup_test_app() -> (Router, NamedTempFile) {
     let temp_file = NamedTempFile::new().expect("Failed to create temp file");
@@ -33,11 +72,11 @@ async fn setup_test_app() -> (Router, NamedTempFile) {
     };
 
     let app = Router::new()
-        .route("/auth/register", post(register_company_admin))
-        .route("/auth/login", post(login))
-        .route("/auth/me", get(get_current_user))
-        .route("/auth/invitations/send", post(invite_user))
-        .route("/auth/invitations/accept", post(accept_invitation))
+        .route("/auth/register", post(test_register_handler))
+        .route("/auth/login", post(test_login_handler))
+        .route("/auth/me", get(handlers::get_current_user))
+        .route("/auth/invitations/send", post(test_invite_handler))
+        .route("/auth/invitations/accept", post(test_accept_invitation_handler))
         .with_state(state);
 
     (app, temp_file)

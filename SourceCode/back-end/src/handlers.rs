@@ -9,10 +9,7 @@ use chrono::Duration;
 use uuid::Uuid;
 use utoipa::ToSchema;
 use crate::{
-    auth::{hash_password, verify_password, validate_email, validate_password_policy, generate_invitation_token, JwtConfig},
-    db,
-    middleware::AuthToken,
-    AppState,
+    AppState, auth::{JwtConfig, generate_invitation_token, hash_password, validate_email, validate_password_policy, verify_password}, db, email, middleware::AuthToken
 };
 
 fn extract_ip_from_headers_and_addr(headers: &HeaderMap, addr: &std::net::SocketAddr) -> String {
@@ -530,6 +527,18 @@ pub async fn invite_user(
             (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to create invitation" })))
         }
     })?;
+
+    let invite_link = format!(
+        "{}/accept-invitation?token={}",
+        "https://logsmart.app",
+        invitation.token
+    );
+    email::send_invitation_email(&payload.email, &invite_link, "Your Company Name")
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to send invitation email: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to send invitation email" })))
+        })?;
 
     let _ = db::log_security_event(
         &state.sqlite,

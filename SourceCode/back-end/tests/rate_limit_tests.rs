@@ -3,8 +3,9 @@ use axum::{
     http::{Request, StatusCode},
     middleware,
     routing::post,
-    Router,
+    Router
 };
+use axum::extract::connect_info::IntoMakeServiceWithConnectInfo;
 use back_end::{
     handlers::login,
     rate_limit::{rate_limit_middleware, RateLimitState},
@@ -12,11 +13,12 @@ use back_end::{
 };
 use serde_json::json;
 use sqlx::SqlitePool;
-use std::net::{IpAddr, Ipv4Addr};
+use std::{net::{IpAddr, Ipv4Addr, SocketAddr}, str::FromStr};
 use tempfile::NamedTempFile;
 use tower::ServiceExt;
+use tower::Service;
 
-async fn setup_test_app_with_rate_limit() -> (Router, NamedTempFile) {
+async fn setup_test_app_with_rate_limit() -> (IntoMakeServiceWithConnectInfo<Router, SocketAddr>, NamedTempFile) {
     let temp_file = NamedTempFile::new().expect("Failed to create temp file");
     let db_path = temp_file.path().to_str().expect("Failed to get temp path");
     
@@ -42,7 +44,8 @@ async fn setup_test_app_with_rate_limit() -> (Router, NamedTempFile) {
             state.clone(),
             rate_limit_middleware,
         ))
-        .with_state(state);
+        .with_state(state)
+        .into_make_service_with_connect_info::<SocketAddr>();
 
     (app, temp_file)
 }
@@ -97,12 +100,12 @@ async fn test_rate_limit_register_blocks_after_limit() {
     let state = RateLimitState::new();
     let ip = IpAddr::V4(Ipv4Addr::new(192, 168, 1, 4));
     
-    for _ in 0..3 {
+    for _ in 0..10 {
         assert!(state.check_register(ip), "Should allow within limit");
     }
     
     let blocked = state.check_register(ip);
-    assert!(!blocked, "Should block 4th request");
+    assert!(!blocked, "Should block 11th request");
 }
 
 #[tokio::test]
@@ -147,13 +150,15 @@ async fn test_rate_limit_different_ips_independent() {
 
 #[tokio::test]
 async fn test_rate_limit_middleware_allows_first_request() {
-    let (app, _temp) = setup_test_app_with_rate_limit().await;
+    let (mut app, _temp) = setup_test_app_with_rate_limit().await;
+    
+    let sock_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)), 8080);
+    let mut service = app.call(sock_addr).await.unwrap();
     
     let request = Request::builder()
         .method("POST")
         .uri("/auth/login")
         .header("content-type", "application/json")
-        .header("x-forwarded-for", "10.0.0.1")
         .body(Body::from(
             serde_json::to_vec(&json!({
                 "email": "test@example.com",
@@ -163,7 +168,7 @@ async fn test_rate_limit_middleware_allows_first_request() {
         ))
         .unwrap();
 
-    let response = app.oneshot(request).await.unwrap();
+    let response = ServiceExt::<Request<Body>>::oneshot(&mut service, request).await.unwrap();
     
     let status = response.status();
     assert_ne!(status, StatusCode::TOO_MANY_REQUESTS, "First request should not be rate limited");
@@ -171,15 +176,16 @@ async fn test_rate_limit_middleware_allows_first_request() {
 
 #[tokio::test]
 async fn test_rate_limit_middleware_blocks_after_limit() {
-    let (mut app, _temp) = setup_test_app_with_rate_limit().await;
-    let ip = "10.0.0.2";
+        let (mut app, _temp) = setup_test_app_with_rate_limit().await;
+    
+    let sock_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)), 8080);
+    let mut service = app.call(sock_addr).await.unwrap();
     
     for i in 0..5 {
         let request = Request::builder()
             .method("POST")
             .uri("/auth/login")
             .header("content-type", "application/json")
-            .header("x-forwarded-for", ip)
             .body(Body::from(
                 serde_json::to_vec(&json!({
                     "email": "test@example.com",
@@ -189,7 +195,7 @@ async fn test_rate_limit_middleware_blocks_after_limit() {
             ))
             .unwrap();
 
-        let response = ServiceExt::<Request<Body>>::oneshot(&mut app, request).await.unwrap();
+        let response = ServiceExt::<Request<Body>>::oneshot(&mut service, request).await.unwrap();
         let status = response.status();
         
         assert_ne!(
@@ -204,7 +210,6 @@ async fn test_rate_limit_middleware_blocks_after_limit() {
         .method("POST")
         .uri("/auth/login")
         .header("content-type", "application/json")
-        .header("x-forwarded-for", ip)
         .body(Body::from(
             serde_json::to_vec(&json!({
                 "email": "test@example.com",
@@ -214,7 +219,7 @@ async fn test_rate_limit_middleware_blocks_after_limit() {
         ))
         .unwrap();
 
-    let response = ServiceExt::<Request<Body>>::oneshot(&mut app, blocked_request).await.unwrap();
+    let response = ServiceExt::<Request<Body>>::oneshot(&mut service, blocked_request).await.unwrap();
     
     assert_eq!(
         response.status(),
@@ -284,7 +289,7 @@ async fn test_rate_limit_multiple_endpoint_types() {
     }
     assert!(!state.check_login(ip), "Login should be blocked");
     
-    for _ in 0..3 {
+    for _ in 0..10 {
         assert!(state.check_register(ip), "Register should still work (different limiter)");
     }
     assert!(!state.check_register(ip), "Register should now be blocked");
@@ -327,15 +332,17 @@ async fn test_rate_limit_concurrent_requests_same_ip() {
 
 #[tokio::test]
 async fn test_rate_limit_response_includes_retry_after() {
-    let (mut app, _temp) = setup_test_app_with_rate_limit().await;
-    let ip = "10.0.0.20";
+        let (mut app, _temp) = setup_test_app_with_rate_limit().await;
+    
+    let sock_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 20)), 8080);
+    let mut service = app.call(sock_addr).await.unwrap();
+    
     
     for _ in 0..5 {
         let request = Request::builder()
             .method("POST")
             .uri("/auth/login")
             .header("content-type", "application/json")
-            .header("x-forwarded-for", ip)
             .body(Body::from(
                 serde_json::to_vec(&json!({
                     "email": "test@example.com",
@@ -345,14 +352,13 @@ async fn test_rate_limit_response_includes_retry_after() {
             ))
             .unwrap();
 
-        let _ = ServiceExt::<Request<Body>>::oneshot(&mut app, request).await.unwrap();
+        let _ = ServiceExt::<Request<Body>>::oneshot(&mut service, request).await.unwrap();
     }
     
     let blocked_request = Request::builder()
         .method("POST")
         .uri("/auth/login")
         .header("content-type", "application/json")
-        .header("x-forwarded-for", ip)
         .body(Body::from(
             serde_json::to_vec(&json!({
                 "email": "test@example.com",
@@ -362,7 +368,7 @@ async fn test_rate_limit_response_includes_retry_after() {
         ))
         .unwrap();
 
-    let response = ServiceExt::<Request<Body>>::oneshot(&mut app, blocked_request).await.unwrap();
+    let response = ServiceExt::<Request<Body>>::oneshot(&mut service, blocked_request).await.unwrap();
     
     assert_eq!(response.status(), StatusCode::TOO_MANY_REQUESTS);
     
@@ -425,7 +431,7 @@ async fn test_rate_limit_email_register_allows_within_limit() {
 async fn test_rate_limit_email_register_blocks_after_limit() {
     let state = RateLimitState::new();
     
-    for _ in 0..5 {
+    for _ in 0..20 {
         assert!(state.check_register_email("spam@example.com"), "Should allow within limit");
     }
     
@@ -484,15 +490,18 @@ async fn test_rate_limit_botnet_scenario() {
 #[tokio::test]
 async fn test_rate_limit_middleware_checks_email_from_body() {
     let (mut app, _temp) = setup_test_app_with_rate_limit().await;
+    
     let email = "ratelimited@example.com";
     
     for i in 0..10 {
         let ip = format!("10.0.0.{}", 30 + i);
+        let sock_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::from_str(&ip).unwrap()), 8080);
+        let mut service = app.call(sock_addr).await.unwrap();
+        
         let request = Request::builder()
             .method("POST")
             .uri("/auth/login")
             .header("content-type", "application/json")
-            .header("x-forwarded-for", &ip)
             .body(Body::from(
                 serde_json::to_vec(&json!({
                     "email": email,
@@ -502,7 +511,7 @@ async fn test_rate_limit_middleware_checks_email_from_body() {
             ))
             .unwrap();
 
-        let response = ServiceExt::<Request<Body>>::oneshot(&mut app, request).await.unwrap();
+        let response = ServiceExt::<Request<Body>>::oneshot(&mut service, request).await.unwrap();
         let status = response.status();
         
         assert_ne!(
@@ -512,12 +521,14 @@ async fn test_rate_limit_middleware_checks_email_from_body() {
             i + 1
         );
     }
+    let sock_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 99)), 8080);
+    let mut service = app.call(sock_addr).await.unwrap();
+    
     
     let blocked_request = Request::builder()
         .method("POST")
         .uri("/auth/login")
         .header("content-type", "application/json")
-        .header("x-forwarded-for", "10.0.0.99")
         .body(Body::from(
             serde_json::to_vec(&json!({
                 "email": email,
@@ -527,7 +538,7 @@ async fn test_rate_limit_middleware_checks_email_from_body() {
         ))
         .unwrap();
 
-    let response = ServiceExt::<Request<Body>>::oneshot(&mut app, blocked_request).await.unwrap();
+    let response = ServiceExt::<Request<Body>>::oneshot(&mut service, blocked_request).await.unwrap();
     
     assert_eq!(
         response.status(),

@@ -34,6 +34,8 @@ governor = "0.6"
 dashmap = "6.1"
 utoipa = { version = "5", features = ["axum_extras", "chrono", "uuid"] }
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
+lettre = { version = "0.11", features = ["tokio1-native-tls", "smtp-transport", "builder"] }
+dotenvy = "0.15"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
