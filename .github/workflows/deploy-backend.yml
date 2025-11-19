@@ -58,6 +58,16 @@ jobs:
           ls -la result/bin
           cp result/bin/logsmart-srv ./logsmart-srv
 
+      - name: Stop service before deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          script: |
+            sudo systemctl stop logsmart.service
+
       - name: Deploy to Server
         uses: wlixcc/SFTP-Deploy-Action@v1.2.6
         with:
@@ -66,9 +76,9 @@ jobs:
           ssh_private_key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
           local_path: "SourceCode/back-end/logsmart-srv"
-          remote_path: "${{ secrets.DEPLOY_PATH }}/"
+          remote_path: "${{ vars.DEPLOY_PATH }}/"
 
-      - name: Restart Service
+      - name: Start Service
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -76,5 +86,5 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
           script: |
-            chmod +x ${{ secrets.DEPLOY_PATH }}/logsmart-srv
-            sudo systemctl restart logsmart.service
+            chmod +x ${{ vars.DEPLOY_PATH }}/logsmart-srv
+            sudo systemctl start logsmart.service
