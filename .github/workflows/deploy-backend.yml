@@ -20,11 +20,44 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@v27
         with:
+          # Ensure you use GitHub's token for initial fetching
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          # Recommended for modern Nix usage (Flakes)
+          extra_nix_config: 'experimental-features = nix-command flakes'
+
+# --------------------------------------------------------------------------
+# 1. CACHIX: HIGH-SPEED NIX BINARY CACHE (Relies on a separate secret)
+# --------------------------------------------------------------------------
+      - name: Use Cachix Cache 📦
+        uses: cachix/cachix-action@v14
+        with:
+          # IMPORTANT: Replace with the actual name of your Cachix cache
+          name: your-cachix-cache-name 
+          # You must create this secret in your GitHub repository settings
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          # Pushes new built artifacts to Cachix if the build succeeds
+          push: true 
+
+# --------------------------------------------------------------------------
+# 2. GITHUB NATIVE CACHE: CARGO/RUST CACHE
+# --------------------------------------------------------------------------
+      - name: Cache Cargo Registry and Target 🦀
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry # Downloaded crates
+            SourceCode/back-end/target # Incremental build files
+          # Key is based on the platform and the project's dependency manifest
+          key: ${{ runner.os }}-cargo-${{ hashFiles('SourceCode/back-end/Cargo.lock') }}
+          # Fallback to restore a cache based on the OS if the exact key misses
+          restore-keys: |
+            ${{ runner.os }}-cargo-
 
       - name: Build for ARM64
         working-directory: ./SourceCode/back-end
         run: |
+          # This command first checks Cachix for the output, then builds if necessary.
+          # If it builds, Cachix automatically pushes the new result.
           nix build .#aarch64-linux
 
       - name: Deploy to Server
