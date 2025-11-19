@@ -66,7 +66,7 @@ jobs:
           ssh_private_key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
           local_path: "SourceCode/back-end/logsmart-srv"
-          remote_path: "${{ secrets.DEPLOY_PATH }}/logsmart-srv"
+          remote_path: "${{ secrets.DEPLOY_PATH }}/"
 
       - name: Restart Service
         uses: appleboy/ssh-action@v1.0.3
