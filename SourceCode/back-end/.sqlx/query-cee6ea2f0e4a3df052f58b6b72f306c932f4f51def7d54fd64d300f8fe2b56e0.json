@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT id as \"id!\", email as \"email!\", first_name as \"first_name!\", last_name as \"last_name!\", \n               password_hash as \"password_hash!\", company_id, role as \"role!\", created_at as \"created_at!: String\"\n        FROM users\n        WHERE email = ?\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "email!",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "first_name!",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "last_name!",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "password_hash!",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "company_id",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "role!",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at!: String",
+        "ordinal": 7,
+        "type_info": "Datetime"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      true
+    ]
+  },
+  "hash": "cee6ea2f0e4a3df052f58b6b72f306c932f4f51def7d54fd64d300f8fe2b56e0"
+}

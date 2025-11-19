@@ -1,6 +1,6 @@
 .direnv/
 target/
 flake.lock
-Cargo.lock
 *.db*
 .env
+result/
