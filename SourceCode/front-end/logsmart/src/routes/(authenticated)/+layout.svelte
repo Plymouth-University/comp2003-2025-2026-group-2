@@ -28,8 +28,10 @@
 							Dashboard
 						</a>
                         <a 
-							href="/#logs" 
+							href="/log-template" 
 							class="text-gray-700 hover:text-gray-900"
+							class:font-bold={currentPath === '/log-template'}
+							class:underline={currentPath === '/log-template'}
 						>
 							Logs
 						</a>
