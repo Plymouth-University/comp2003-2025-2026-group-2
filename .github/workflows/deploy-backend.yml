@@ -32,11 +32,9 @@ jobs:
         uses: cachix/cachix-action@v14
         with:
           # IMPORTANT: Replace with the actual name of your Cachix cache
-          name: your-cachix-cache-name 
+          name: logsmart-cache
           # You must create this secret in your GitHub repository settings
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-          # Pushes new built artifacts to Cachix if the build succeeds
-          push: true 
 
 # --------------------------------------------------------------------------
 # 2. GITHUB NATIVE CACHE: CARGO/RUST CACHE
@@ -56,9 +54,9 @@ jobs:
       - name: Build for ARM64
         working-directory: ./SourceCode/back-end
         run: |
-          # This command first checks Cachix for the output, then builds if necessary.
-          # If it builds, Cachix automatically pushes the new result.
           nix build .#aarch64-linux
+          ls -la result/bin
+          cp result/bin/logsmart-srv ./logsmart-srv
 
       - name: Deploy to Server
         uses: appleboy/scp-action@v0.1.7
@@ -67,9 +65,9 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
-          source: "SourceCode/back-end/result/bin/logsmart-srv"
+          source: "SourceCode/back-end/logsmart-srv"
           target: "${{ secrets.DEPLOY_PATH }}"
-          strip_components: 3
+          strip_components: 2
 
       - name: Restart Service
         uses: appleboy/ssh-action@v1.0.3
