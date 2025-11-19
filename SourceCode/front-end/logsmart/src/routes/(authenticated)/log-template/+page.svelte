@@ -1,6 +1,15 @@
-<script lang="ts"></script>
+<script lang="ts">
+    let canvasItems = $state([
+        { id: 1, value: 7, label: 'Freezer 1', unit: '°C'},
+        { id: 2, value: 0, label: 'Freezer 2', unit: '°C'},
+        { id: 3, value: -15, label: 'Freezer 3', unit: '°C'}
+    ])
+</script>
 
 <main>
+    <h1>Freezer Temperature</h1>
+    <p>Input freezer temperatures.</p>
+    <h2>Input data:</h2>
     
 </main>
 
