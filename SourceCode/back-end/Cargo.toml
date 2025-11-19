@@ -8,7 +8,7 @@ name = "back_end"
 path = "src/lib.rs"
 
 [[bin]]
-name = "back-end"
+name = "logsmart-srv"
 path = "src/main.rs"
 
 [dependencies]

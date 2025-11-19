@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        INSERT INTO security_logs (id, event_type, user_id, email, ip_address, user_agent, details, success, created_at)\n        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 9
+    },
+    "nullable": []
+  },
+  "hash": "4bb23f9345842a93ff035946c69e6a7e4de0e59e9806aeebc78831b8addd9e10"
+}
