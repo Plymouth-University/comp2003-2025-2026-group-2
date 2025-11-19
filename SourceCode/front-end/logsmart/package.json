@@ -8,6 +8,7 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
+		"logs": "wrangler pages deployment tail --project-name=logsmart",
 		"deploy": "svelte-kit sync && bun run build && wrangler pages deploy .svelte-kit/cloudflare --project-name=logsmart",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
