@@ -2,3 +2,6 @@ name = "logsmart"
 compatibility_date = "2025-09-15"
 
 pages_build_output_dir = ".svelte-kit/cloudflare"
+
+[vars]
+    PUBLIC_API_URL = "https://api.logsmart.app"
