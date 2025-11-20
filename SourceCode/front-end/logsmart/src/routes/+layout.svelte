@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import type { LayoutData } from './$types';
 	import '../app.css';
-	import favicon from '$lib/assets/favicon.svg';
+	import favicon from '$lib/assets/favicon.png';
 
 	let { children, data } = $props<{ children: any; data: LayoutData }>();
 	

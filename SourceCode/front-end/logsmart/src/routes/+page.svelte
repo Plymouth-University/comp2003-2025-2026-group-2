@@ -2,10 +2,8 @@
 	<section class="mx-auto max-w-7xl px-6 py-20">
 		<div class="text-center">
 			<div class="mb-8 flex justify-center">
-				<div class="flex h-24 w-24 items-center justify-center rounded border-2 border-gray-900">
-					<svg class="h-12 w-12 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-					</svg>
+				<div class="flex items-center justify-center rounded">
+					<img src="/src/lib/assets/favicon.png" alt="LogSmart Logo" class="h-auto w-64 max-w-full" />
 				</div>
 			</div>
 			<h2 class="mb-6 text-5xl font-bold text-gray-900">LogSmart</h2>
