@@ -90,12 +90,23 @@ pub struct AuthResponse {
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct UserResponse {
-    pub id: String,
     pub email: String,
     pub first_name: String,
     pub last_name: String,
-    pub company_id: Option<String>,
+    pub company_name: Option<String>,
     pub role: String,
+}
+
+impl From<db::UserRecord> for UserResponse {
+    fn from(user: db::UserRecord) -> Self {
+        Self {
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            company_name: user.company_name,
+            role: user.role,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -318,11 +329,10 @@ pub async fn register_company_admin(
         Json(AuthResponse {
             token: token.clone(),
             user: UserResponse {
-                id: user_id,
                 email: payload.email,
                 first_name: payload.first_name,
                 last_name: payload.last_name,
-                company_id: Some(company_id),
+                company_name: Some(payload.company_name),
                 role: role_str,
             },
         }),
@@ -457,11 +467,10 @@ pub async fn login(
     let mut response = Json(AuthResponse {
         token: token.clone(),
         user: UserResponse {
-            id: user.id,
             email: user.email,
             first_name: user.first_name,
             last_name: user.last_name,
-            company_id: user.company_id,
+            company_name: user.company_name,
             role: user.role,
         },
     }).into_response();
@@ -499,14 +508,7 @@ pub async fn get_current_user(
             Json(json!({ "error": "User not found" })),
         ))?;
 
-    Ok(Json(UserResponse {
-        id: user.id,
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        company_id: user.company_id,
-        role: user.role,
-    }))
+    Ok(Json(user.into()))
 }
 
 #[utoipa::path(
@@ -813,11 +815,10 @@ pub async fn accept_invitation(
         Json(AuthResponse {
             token: token.clone(),
             user: UserResponse {
-                id: user_id,
                 email: invitation.email,
                 first_name: payload.first_name,
                 last_name: payload.last_name,
-                company_id: Some(invitation.company_id),
+                company_name: None,
                 role: role_str,
             },
         }),

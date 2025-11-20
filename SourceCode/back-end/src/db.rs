@@ -32,19 +32,29 @@ impl std::str::FromStr for UserRole {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserDisplay {
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub company_name: Option<String>,
+    pub role: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
-pub struct User {
+pub struct UserRecord {
     pub id: String,
     pub email: String,
     pub first_name: String,
     pub last_name: String,
     pub password_hash: String,
     pub company_id: Option<String>,
+    pub company_name: Option<String>,
     pub role: String,
     pub created_at: String,
 }
 
-impl User {
+impl UserRecord {
     pub fn get_role(&self) -> UserRole {
         self.role.parse().unwrap_or(UserRole::Member)
     }
@@ -230,7 +240,7 @@ pub async fn create_user(
     password_hash: String,
     company_id: Option<String>,
     role: UserRole,
-) -> Result<User> {
+) -> Result<UserRecord> {
     let id = Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
     let role_str = role.to_string();
@@ -252,25 +262,27 @@ pub async fn create_user(
     .execute(pool)
     .await?;
 
-    Ok(User {
+    Ok(UserRecord {
         id,
         email,
         first_name,
         last_name,
         password_hash,
         company_id,
+        company_name: None,
         role: role_str,
         created_at: now,
     })
 }
 
-pub async fn get_user_by_email(pool: &SqlitePool, email: &str) -> Result<Option<User>> {
+pub async fn get_user_by_email(pool: &SqlitePool, email: &str) -> Result<Option<UserRecord>> {
     let user = sqlx::query_as!(
-        User,
+        UserRecord,
         r#"
-        SELECT id as "id!", email as "email!", first_name as "first_name!", last_name as "last_name!", 
-               password_hash as "password_hash!", company_id, role as "role!", created_at as "created_at!: String"
+        SELECT users.id as "id!", email as "email!", first_name as "first_name!", last_name as "last_name!", 
+               password_hash as "password_hash!", company_id, role as "role!", users.created_at as "created_at!: String", name as "company_name?"
         FROM users
+        LEFT JOIN companies ON users.company_id = companies.id
         WHERE email = ?
         "#,
         email
@@ -281,14 +293,15 @@ pub async fn get_user_by_email(pool: &SqlitePool, email: &str) -> Result<Option<
     Ok(user)
 }
 
-pub async fn get_user_by_id(pool: &SqlitePool, id: &str) -> Result<Option<User>> {
+pub async fn get_user_by_id(pool: &SqlitePool, id: &str) -> Result<Option<UserRecord>> {
     let user = sqlx::query_as!(
-        User,
+        UserRecord,
         r#"
-        SELECT id as "id!", email as "email!", first_name as "first_name!", last_name as "last_name!", 
-               password_hash as "password_hash!", company_id, role as "role!", created_at as "created_at!: String"
+        SELECT users.id as "id!", email as "email!", first_name as "first_name!", last_name as "last_name!", 
+            role as "role!", users.created_at as "created_at!: String", password_hash as "password_hash!", company_id as "company_id?", name as "company_name?"
         FROM users
-        WHERE id = ?
+        LEFT JOIN companies ON users.company_id = companies.id
+        WHERE users.id = ?
         "#,
         id
     )
@@ -297,6 +310,7 @@ pub async fn get_user_by_id(pool: &SqlitePool, id: &str) -> Result<Option<User>>
 
     Ok(user)
 }
+
 pub async fn create_company(
     pool: &SqlitePool,
     name: String,

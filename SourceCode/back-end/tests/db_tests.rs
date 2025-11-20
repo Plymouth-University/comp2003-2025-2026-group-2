@@ -1,4 +1,4 @@
-use back_end::db::{User, Company, Invitation, UserRole};
+use back_end::db::{UserRecord, Company, Invitation, UserRole};
 
 #[test]
 fn test_user_role_admin() {
@@ -32,13 +32,14 @@ fn test_user_role_from_str_invalid() {
 
 #[test]
 fn test_user_get_role_admin() {
-    let user = User {
+    let user = UserRecord {
         id: "user1".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         password_hash: "hash".to_string(),
         company_id: Some("company1".to_string()),
+        company_name: None,
         role: "admin".to_string(),
         created_at: "2025-01-01T00:00:00Z".to_string(),
     };
@@ -47,13 +48,14 @@ fn test_user_get_role_admin() {
 
 #[test]
 fn test_user_get_role_member() {
-    let user = User {
+    let user = UserRecord {
         id: "user2".to_string(),
         email: "test@example.com".to_string(),
         first_name: "Jane".to_string(),
         last_name: "Smith".to_string(),
         password_hash: "hash".to_string(),
         company_id: Some("company1".to_string()),
+        company_name: None,
         role: "member".to_string(),
         created_at: "2025-01-01T00:00:00Z".to_string(),
     };
@@ -62,13 +64,14 @@ fn test_user_get_role_member() {
 
 #[test]
 fn test_user_is_admin_true() {
-    let user = User {
+    let user = UserRecord {
         id: "user1".to_string(),
         email: "admin@example.com".to_string(),
         first_name: "Admin".to_string(),
         last_name: "User".to_string(),
         password_hash: "hash".to_string(),
         company_id: Some("company1".to_string()),
+        company_name: None,
         role: "admin".to_string(),
         created_at: "2025-01-01T00:00:00Z".to_string(),
     };
@@ -77,13 +80,14 @@ fn test_user_is_admin_true() {
 
 #[test]
 fn test_user_is_admin_false() {
-    let user = User {
+    let user = UserRecord {
         id: "user2".to_string(),
         email: "member@example.com".to_string(),
         first_name: "Member".to_string(),
         last_name: "User".to_string(),
         password_hash: "hash".to_string(),
         company_id: Some("company1".to_string()),
+        company_name: None,
         role: "member".to_string(),
         created_at: "2025-01-01T00:00:00Z".to_string(),
     };
@@ -92,13 +96,14 @@ fn test_user_is_admin_false() {
 
 #[test]
 fn test_user_creation() {
-    let user = User {
+    let user = UserRecord {
         id: "user1".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         password_hash: "hash123".to_string(),
         company_id: Some("company1".to_string()),
+        company_name: Some("Test Company".to_string()),
         role: "admin".to_string(),
         created_at: "2025-01-01T00:00:00Z".to_string(),
     };
@@ -108,6 +113,8 @@ fn test_user_creation() {
     assert_eq!(user.last_name, "Doe");
     assert_eq!(user.password_hash, "hash123");
     assert_eq!(user.company_id, Some("company1".to_string()));
+    assert_eq!(user.company_name, Some("Test Company".to_string()));
+    assert_eq!(user.role, "admin");
 }
 
 #[test]
@@ -157,13 +164,14 @@ fn test_invitation_accepted() {
 
 #[test]
 fn test_user_without_company() {
-    let user = User {
+    let user = UserRecord {
         id: "user1".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         password_hash: "hash".to_string(),
         company_id: None,
+        company_name: None,
         role: "member".to_string(),
         created_at: "2025-01-01T00:00:00Z".to_string(),
     };
