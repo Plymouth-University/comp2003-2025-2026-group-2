@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n        SELECT id as \"id!\", email as \"email!\", first_name as \"first_name!\", last_name as \"last_name!\", \n               password_hash as \"password_hash!\", company_id, role as \"role!\", created_at as \"created_at!: String\"\n        FROM users\n        WHERE id = ?\n        ",
+  "query": "\n        SELECT users.id as \"id!\", email as \"email!\", first_name as \"first_name!\", last_name as \"last_name!\", \n            role as \"role!\", users.created_at as \"created_at!: String\", password_hash as \"password_hash!\", company_id as \"company_id?\", name as \"company_name?\"\n        FROM users\n        LEFT JOIN companies ON users.company_id = companies.id\n        WHERE users.id = ?\n        ",
   "describe": {
     "columns": [
       {
@@ -24,24 +24,29 @@
         "type_info": "Text"
       },
       {
-        "name": "password_hash!",
+        "name": "role!",
         "ordinal": 4,
         "type_info": "Text"
       },
       {
-        "name": "company_id",
+        "name": "created_at!: String",
         "ordinal": 5,
-        "type_info": "Text"
+        "type_info": "Datetime"
       },
       {
-        "name": "role!",
+        "name": "password_hash!",
         "ordinal": 6,
         "type_info": "Text"
       },
       {
-        "name": "created_at!: String",
+        "name": "company_id?",
         "ordinal": 7,
-        "type_info": "Datetime"
+        "type_info": "Text"
+      },
+      {
+        "name": "company_name?",
+        "ordinal": 8,
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -55,8 +60,9 @@
       false,
       true,
       false,
-      true
+      true,
+      false
     ]
   },
-  "hash": "11b57d4acb8e43d9c1dfbbc8b866945e1a157fb25a010d1d1b61d9cd02030561"
+  "hash": "16b1686dd284a0bb947f4483291947721e5c8f8723940f7157b9c6e0583cbc7f"
 }

@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n        SELECT id as \"id!\", email as \"email!\", first_name as \"first_name!\", last_name as \"last_name!\", \n               password_hash as \"password_hash!\", company_id, role as \"role!\", created_at as \"created_at!: String\"\n        FROM users\n        WHERE email = ?\n        ",
+  "query": "\n        SELECT users.id as \"id!\", email as \"email!\", first_name as \"first_name!\", last_name as \"last_name!\", \n               password_hash as \"password_hash!\", company_id, role as \"role!\", users.created_at as \"created_at!: String\", name as \"company_name?\"\n        FROM users\n        LEFT JOIN companies ON users.company_id = companies.id\n        WHERE email = ?\n        ",
   "describe": {
     "columns": [
       {
@@ -42,6 +42,11 @@
         "name": "created_at!: String",
         "ordinal": 7,
         "type_info": "Datetime"
+      },
+      {
+        "name": "company_name?",
+        "ordinal": 8,
+        "type_info": "Text"
       }
     ],
     "parameters": {
@@ -55,8 +60,9 @@
       false,
       true,
       false,
-      true
+      true,
+      false
     ]
   },
-  "hash": "cee6ea2f0e4a3df052f58b6b72f306c932f4f51def7d54fd64d300f8fe2b56e0"
+  "hash": "4cb7d1b82c3c708d0453ef3f134337a41d8d10a64cb4f35a4702020ca11165ea"
 }
