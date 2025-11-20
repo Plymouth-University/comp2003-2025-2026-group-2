@@ -1,6 +1,7 @@
 import { json, type RequestEvent } from '@sveltejs/kit';
+import { PUBLIC_API_URL } from '$env/static/public';
 
-const API_URL = 'https://api.logsmart.app';
+const API_URL = PUBLIC_API_URL || 'https://api.logsmart.app';
 
 async function proxyRequest(event: RequestEvent) {
 	const { request, params, cookies } = event;

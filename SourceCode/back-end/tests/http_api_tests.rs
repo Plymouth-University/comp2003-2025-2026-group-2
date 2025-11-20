@@ -666,7 +666,7 @@ async fn test_security_logging_on_successful_registration() {
     let connection_string = format!("sqlite://{}?mode=rwc", db_path);
     let pool = SqlitePool::connect(&connection_string).await.unwrap();
 
-    let (status, response) = make_request(
+    let (status, _) = make_request(
         &mut app,
         "POST",
         "/auth/register",
@@ -684,7 +684,8 @@ async fn test_security_logging_on_successful_registration() {
 
     assert_eq!(status, StatusCode::CREATED);
     
-    let user_id = response["user"]["id"].as_str().unwrap();
+    let user = db::get_user_by_email(&pool, "newuser@example.com").await.unwrap().unwrap();
+    let user_id = &user.id;
     let logs = db::get_security_logs_by_user(&pool, user_id, 10).await.unwrap();
     
     assert_eq!(logs.len(), 1);
@@ -701,7 +702,7 @@ async fn test_security_logging_on_successful_login() {
     let connection_string = format!("sqlite://{}?mode=rwc", db_path);
     let pool = SqlitePool::connect(&connection_string).await.unwrap();
 
-    let (_, register_response) = make_request(
+    let _ = make_request(
         &mut app,
         "POST",
         "/auth/register",
@@ -717,8 +718,6 @@ async fn test_security_logging_on_successful_login() {
     )
     .await;
 
-    let user_id = register_response["user"]["id"].as_str().unwrap();
-
     let (status, _) = make_request(
         &mut app,
         "POST",
@@ -733,6 +732,8 @@ async fn test_security_logging_on_successful_login() {
 
     assert_eq!(status, StatusCode::OK);
 
+    let user = db::get_user_by_email(&pool, "logintest@example.com").await.unwrap().unwrap();
+    let user_id = &user.id;
     let logs = db::get_security_logs_by_user(&pool, user_id, 10).await.unwrap();
     
     assert!(logs.len() >= 2);
@@ -748,7 +749,7 @@ async fn test_security_logging_on_failed_login_wrong_password() {
     let connection_string = format!("sqlite://{}?mode=rwc", db_path);
     let pool = SqlitePool::connect(&connection_string).await.unwrap();
 
-    let (_, register_response) = make_request(
+    let _ = make_request(
         &mut app,
         "POST",
         "/auth/register",
@@ -763,8 +764,6 @@ async fn test_security_logging_on_failed_login_wrong_password() {
         None,
     )
     .await;
-
-    let user_id = register_response["user"]["id"].as_str().unwrap();
 
     let (status, body) = make_request(
         &mut app,
@@ -781,6 +780,8 @@ async fn test_security_logging_on_failed_login_wrong_password() {
     assert_eq!(status, StatusCode::UNAUTHORIZED);
     assert!(body["error"].as_str().unwrap().contains("Invalid email or password"));
 
+    let user = db::get_user_by_email(&pool, "failtest@example.com").await.unwrap().unwrap();
+    let user_id = &user.id;
     let logs = db::get_security_logs_by_user(&pool, user_id, 10).await.unwrap();
     
     let failed_login = logs.iter().find(|l| l.event_type == "login_failed");
@@ -852,7 +853,6 @@ async fn test_security_logging_on_invitation_sent() {
     .await;
 
     let admin_token = register_response["token"].as_str().unwrap();
-    let admin_id = register_response["user"]["id"].as_str().unwrap();
 
     let (status, _) = make_request(
         &mut app,
@@ -867,6 +867,8 @@ async fn test_security_logging_on_invitation_sent() {
 
     assert_eq!(status, StatusCode::CREATED);
 
+    let admin = db::get_user_by_email(&pool, "admin@company.com").await.unwrap().unwrap();
+    let admin_id = &admin.id;
     let logs = db::get_security_logs_by_user(&pool, admin_id, 10).await.unwrap();
     
     let invite_log = logs.iter().find(|l| l.event_type == "invitation_sent");
@@ -920,7 +922,7 @@ async fn test_security_logging_on_invitation_accepted() {
         .await
         .unwrap();
 
-    let (status, accept_response) = make_request(
+    let (status, _) = make_request(
         &mut app,
         "POST",
         "/auth/invitations/accept",
@@ -936,7 +938,8 @@ async fn test_security_logging_on_invitation_accepted() {
 
     assert_eq!(status, StatusCode::CREATED);
     
-    let employee_id = accept_response["user"]["id"].as_str().unwrap();
+    let employee = db::get_user_by_email(&pool, "employee@company.com").await.unwrap().unwrap();
+    let employee_id = &employee.id;
     let logs = db::get_security_logs_by_user(&pool, employee_id, 10).await.unwrap();
     
     assert_eq!(logs.len(), 1);
@@ -953,7 +956,7 @@ async fn test_security_logs_order_by_time() {
     let connection_string = format!("sqlite://{}?mode=rwc", db_path);
     let pool = SqlitePool::connect(&connection_string).await.unwrap();
 
-    let (_, register_response) = make_request(
+    let _ = make_request(
         &mut app,
         "POST",
         "/auth/register",
@@ -968,8 +971,6 @@ async fn test_security_logs_order_by_time() {
         None,
     )
     .await;
-
-    let user_id = register_response["user"]["id"].as_str().unwrap();
 
     make_request(
         &mut app,
@@ -995,6 +996,8 @@ async fn test_security_logs_order_by_time() {
     )
     .await;
 
+    let user = db::get_user_by_email(&pool, "timetest@example.com").await.unwrap().unwrap();
+    let user_id = &user.id;
     let logs = db::get_security_logs_by_user(&pool, user_id, 10).await.unwrap();
     
     assert!(logs.len() >= 3);

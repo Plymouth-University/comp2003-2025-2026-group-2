@@ -11,8 +11,8 @@ pub struct UserDto {
     pub created_at: String,
 }
 
-impl From<crate::db::User> for UserDto {
-    fn from(user: crate::db::User) -> Self {
+impl From<crate::db::UserRecord> for UserDto {
+    fn from(user: crate::db::UserRecord) -> Self {
         Self {
             id: user.id,
             email: user.email,

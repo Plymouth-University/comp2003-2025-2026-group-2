@@ -127,29 +127,27 @@ fn test_accept_invitation_missing_fields() {
 #[test]
 fn test_user_response_structure() {
     let user_response = UserResponse {
-        id: "user1".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
-        company_id: Some("company1".to_string()),
+        company_name: Some("Test Company".to_string()),
         role: "admin".to_string(),
     };
-    assert_eq!(user_response.id, "user1");
     assert_eq!(user_response.email, "test@example.com");
     assert_eq!(user_response.role, "admin");
+    assert_eq!(user_response.company_name, Some("Test Company".to_string()));
 }
 
 #[test]
 fn test_user_response_without_company() {
     let user_response = UserResponse {
-        id: "user1".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
-        company_id: None,
+        company_name: None,
         role: "member".to_string(),
     };
-    assert_eq!(user_response.company_id, None);
+    assert_eq!(user_response.company_name, None);
 }
 
 #[test]
@@ -166,11 +164,10 @@ fn test_invitation_response_structure() {
 #[test]
 fn test_auth_response_structure() {
     let user_response = UserResponse {
-        id: "user1".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
-        company_id: Some("company1".to_string()),
+        company_name: Some("Test Company".to_string()),
         role: "admin".to_string(),
     };
     let auth_response = AuthResponse {
@@ -227,15 +224,14 @@ fn test_login_request_serialization() {
 #[test]
 fn test_user_response_serialization() {
     let user_response = UserResponse {
-        id: "user1".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
-        company_id: Some("company1".to_string()),
+        company_name: Some("Test Company".to_string()),
         role: "admin".to_string(),
     };
     let json = serde_json::to_string(&user_response).unwrap();
-    assert!(json.contains("user1"));
+    assert!(json.contains("Test Company"));
     assert!(json.contains("admin"));
 }
 
@@ -275,11 +271,10 @@ fn test_password_validation_length() {
 #[test]
 fn test_response_contains_token() {
     let user_response = UserResponse {
-        id: "user1".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
-        company_id: Some("company1".to_string()),
+        company_name: Some("Test Company".to_string()),
         role: "admin".to_string(),
     };
     let auth_response = AuthResponse {

@@ -63,7 +63,7 @@
 
 		loading = true;
 		try {
-			const res = await fetch('https://logsmart.app/api/auth/register', {
+			const res = await fetch('/api/auth/register', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
