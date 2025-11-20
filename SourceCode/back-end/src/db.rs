@@ -27,7 +27,7 @@ impl std::str::FromStr for UserRole {
         match s {
             "admin" => Ok(UserRole::Admin),
             "member" => Ok(UserRole::Member),
-            _ => Err(format!("Unknown role: {}", s)),
+            _ => Err(format!("Unknown role: {s}")),
         }
     }
 }
@@ -55,10 +55,12 @@ pub struct UserRecord {
 }
 
 impl UserRecord {
+    #[must_use] 
     pub fn get_role(&self) -> UserRole {
         self.role.parse().unwrap_or(UserRole::Member)
     }
 
+    #[must_use] 
     pub fn is_admin(&self) -> bool {
         self.get_role() == UserRole::Admin
     }
@@ -98,20 +100,20 @@ pub struct SecurityLog {
 
 pub async fn init_db(pool: &SqlitePool) -> Result<()> {
     sqlx::query(
-        r#"
+        r"
         CREATE TABLE IF NOT EXISTS companies (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             address TEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
-        "#,
+        ",
     )
     .execute(pool)
     .await?;
 
     sqlx::query(
-        r#"
+        r"
         CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
             email TEXT NOT NULL UNIQUE,
@@ -123,13 +125,13 @@ pub async fn init_db(pool: &SqlitePool) -> Result<()> {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (company_id) REFERENCES companies(id)
         )
-        "#,
+        ",
     )
     .execute(pool)
     .await?;
 
     sqlx::query(
-        r#"
+        r"
         CREATE TABLE IF NOT EXISTS invitations (
             id TEXT PRIMARY KEY,
             company_id TEXT NOT NULL,
@@ -141,13 +143,13 @@ pub async fn init_db(pool: &SqlitePool) -> Result<()> {
             FOREIGN KEY (company_id) REFERENCES companies(id),
             UNIQUE(company_id, email)
         )
-        "#,
+        ",
     )
     .execute(pool)
     .await?;
 
     sqlx::query(
-        r#"
+        r"
         CREATE TABLE IF NOT EXISTS security_logs (
             id TEXT PRIMARY KEY,
             event_type TEXT NOT NULL,
@@ -160,71 +162,103 @@ pub async fn init_db(pool: &SqlitePool) -> Result<()> {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id)
         )
-        "#,
+        ",
     )
     .execute(pool)
     .await?;
 
     sqlx::query(
-        r#"
+        r"
         CREATE INDEX IF NOT EXISTS idx_security_logs_event_type ON security_logs(event_type)
-        "#,
+        ",
     )
     .execute(pool)
     .await?;
 
     sqlx::query(
-        r#"
+        r"
         CREATE INDEX IF NOT EXISTS idx_security_logs_user_id ON security_logs(user_id)
-        "#,
+        ",
     )
     .execute(pool)
     .await?;
 
     sqlx::query(
-        r#"
+        r"
         CREATE INDEX IF NOT EXISTS idx_security_logs_created_at ON security_logs(created_at)
-        "#,
+        ",
     )
     .execute(pool)
     .await?;
 
     sqlx::query(
-        r#"
+        r"
         CREATE INDEX IF NOT EXISTS idx_users_company_id ON users(company_id)
-        "#,
+        ",
     )
     .execute(pool)
     .await?;
 
     sqlx::query(
-        r#"
+        r"
         CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)
-        "#,
+        ",
     )
     .execute(pool)
     .await?;
 
     sqlx::query(
-        r#"
+        r"
         CREATE INDEX IF NOT EXISTS idx_invitations_company_id ON invitations(company_id)
-        "#,
+        ",
     )
     .execute(pool)
     .await?;
 
     sqlx::query(
-        r#"
+        r"
         CREATE INDEX IF NOT EXISTS idx_invitations_email ON invitations(email)
-        "#,
+        ",
     )
     .execute(pool)
     .await?;
 
     sqlx::query(
-        r#"
+        r"
         CREATE INDEX IF NOT EXISTS idx_invitations_token ON invitations(token)
-        "#,
+        ",
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r"
+        CREATE TABLE IF NOT EXISTS password_resets (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            token TEXT NOT NULL UNIQUE,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            expires_at DATETIME NOT NULL,
+            used_at DATETIME,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+        ",
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r"
+        CREATE INDEX IF NOT EXISTS idx_password_resets_user_id ON password_resets(user_id)
+        ",
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r"
+        CREATE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token)
+        ",
     )
     .execute(pool)
     .await?;
@@ -442,7 +476,7 @@ pub async fn log_security_event(
 ) -> Result<SecurityLog> {
     let id = Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
-    let success_int = if success { 1 } else { 0 };
+    let success_int = i32::from(success);
 
     sqlx::query!(
         r#"
@@ -481,13 +515,13 @@ pub async fn get_security_logs_by_user(
     limit: i64,
 ) -> Result<Vec<SecurityLog>> {
     let logs = sqlx::query_as::<_, SecurityLog>(
-        r#"
+        r"
         SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
         FROM security_logs
         WHERE user_id = ?
         ORDER BY created_at DESC
         LIMIT ?
-        "#,
+        ",
     )
     .bind(user_id)
     .bind(limit)
@@ -504,13 +538,13 @@ pub async fn get_recent_security_logs(
 ) -> Result<Vec<SecurityLog>> {
     let logs = if let Some(evt) = event_type {
         sqlx::query_as::<_, SecurityLog>(
-            r#"
+            r"
             SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
             FROM security_logs
             WHERE event_type = ?
             ORDER BY created_at DESC
             LIMIT ?
-            "#,
+            ",
         )
         .bind(evt)
         .bind(limit)
@@ -518,12 +552,12 @@ pub async fn get_recent_security_logs(
         .await?
     } else {
         sqlx::query_as::<_, SecurityLog>(
-            r#"
+            r"
             SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
             FROM security_logs
             ORDER BY created_at DESC
             LIMIT ?
-            "#,
+            ",
         )
         .bind(limit)
         .fetch_all(pool)
@@ -531,4 +565,115 @@ pub async fn get_recent_security_logs(
     };
 
     Ok(logs)
+}
+
+pub async fn update_user_profile(
+    pool: &SqlitePool,
+    user_id: &str,
+    first_name: String,
+    last_name: String,
+) -> Result<UserRecord> {
+    sqlx::query!(
+        r#"
+        UPDATE users
+        SET first_name = ?, last_name = ?
+        WHERE id = ?
+        "#,
+        first_name,
+        last_name,
+        user_id
+    )
+    .execute(pool)
+    .await?;
+
+    let user = get_user_by_id(pool, user_id)
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("User not found"))?;
+
+    Ok(user)
+}
+
+pub async fn update_user_password(
+    pool: &SqlitePool,
+    user_id: &str,
+    password_hash: String,
+) -> Result<()> {
+    sqlx::query!(
+        r#"
+        UPDATE users
+        SET password_hash = ?
+        WHERE id = ?
+        "#,
+        password_hash,
+        user_id
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn create_password_reset_token(
+    pool: &SqlitePool,
+    user_id: String,
+    token: String,
+    expires_at: String,
+) -> Result<String> {
+    let id = Uuid::new_v4().to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+
+    sqlx::query!(
+        r#"
+        INSERT INTO password_resets (id, user_id, token, created_at, expires_at)
+        VALUES (?, ?, ?, ?, ?)
+        "#,
+        id,
+        user_id,
+        token,
+        now,
+        expires_at
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(id)
+}
+
+pub async fn get_password_reset_by_token(
+    pool: &SqlitePool,
+    token: &str,
+) -> Result<Option<(String, String)>> {
+    let result = sqlx::query_as::<_, (String, String)>(
+        r"
+        SELECT id, user_id
+        FROM password_resets
+        WHERE token = ? AND used_at IS NULL AND expires_at > datetime('now')
+        ",
+    )
+    .bind(token)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(result)
+}
+
+pub async fn mark_password_reset_used(
+    pool: &SqlitePool,
+    reset_id: &str,
+) -> Result<()> {
+    let now = chrono::Utc::now().to_rfc3339();
+
+    sqlx::query!(
+        r#"
+        UPDATE password_resets
+        SET used_at = ?
+        WHERE id = ?
+        "#,
+        now,
+        reset_id
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
 }

@@ -21,6 +21,7 @@ pub struct JwtConfig {
 }
 
 impl JwtConfig {
+    #[must_use] 
     pub fn new(secret: String) -> Self {
         Self { secret }
     }
@@ -61,21 +62,21 @@ pub fn hash_password(password: &str) -> Result<String> {
     let argon2 = Argon2::default();
     let password_hash = argon2
         .hash_password(password.as_bytes(), &salt)
-        .map_err(|e| anyhow!("Failed to hash password: {}", e))?;
+        .map_err(|e| anyhow!("Failed to hash password: {e}"))?;
     Ok(password_hash.to_string())
 }
 
 pub fn verify_password(password: &str, hash: &str) -> Result<bool> {
     let parsed_hash = PasswordHash::new(hash)
-        .map_err(|e| anyhow!("Invalid password hash format: {}", e))?;
+        .map_err(|e| anyhow!("Invalid password hash format: {e}"))?;
     let argon2 = Argon2::default();
     Ok(argon2.verify_password(password.as_bytes(), &parsed_hash).is_ok())
 }
 
 pub fn validate_email(email: &str) -> Result<()> {
     let email_regex = Regex::new(
-        r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
-    ).unwrap();
+        r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$"
+    ).expect("Invalid regex pattern");
     
     if !email_regex.is_match(email) {
         return Err(anyhow!("Invalid email format"));
@@ -97,9 +98,9 @@ pub fn validate_password_policy(password: &str) -> Result<()> {
         return Err(anyhow!("Password must not exceed 128 characters"));
     }
     
-    let has_uppercase = password.chars().any(|c| c.is_uppercase());
-    let has_lowercase = password.chars().any(|c| c.is_lowercase());
-    let has_digit = password.chars().any(|c| c.is_numeric());
+    let has_uppercase = password.chars().any(char::is_uppercase);
+    let has_lowercase = password.chars().any(char::is_lowercase);
+    let has_digit = password.chars().any(char::is_numeric);
     let has_special = password.chars().any(|c| !c.is_alphanumeric());
     
     if !has_uppercase {
@@ -121,6 +122,7 @@ pub fn validate_password_policy(password: &str) -> Result<()> {
     Ok(())
 }
 
+#[must_use] 
 pub fn generate_invitation_token() -> String {
     uuid::Uuid::now_v6(&[0u8; 6]).to_string()
 }

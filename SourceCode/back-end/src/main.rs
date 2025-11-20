@@ -15,6 +15,9 @@ use utoipa_swagger_ui::SwaggerUi;
         handlers::get_current_user,
         handlers::invite_user,
         handlers::accept_invitation,
+        handlers::update_profile,
+        handlers::request_password_reset,
+        handlers::reset_password,
     ),
     components(
         schemas(
@@ -28,6 +31,10 @@ use utoipa_swagger_ui::SwaggerUi;
             handlers::InvitationResponse,
             handlers::ErrorResponse,
             handlers::JwtVerifyResponse,
+            handlers::UpdateProfileRequest,
+            handlers::RequestPasswordResetRequest,
+            handlers::ResetPasswordRequest,
+            handlers::PasswordResetResponse,
         )
     ),
     tags(
@@ -50,7 +57,7 @@ impl utoipa::Modify for SecurityAddon {
                         utoipa::openapi::security::HttpAuthScheme::Bearer,
                     )
                 ),
-            )
+            );
         }
     }
 }
@@ -124,6 +131,9 @@ async fn main() {
         .route("/auth/verify", post(handlers::verify_token))
         .route("/auth/invitations/send", post(handlers::invite_user))
         .route("/auth/invitations/accept", post(handlers::accept_invitation))
+        .route("/auth/profile", axum::routing::put(handlers::update_profile))
+        .route("/auth/password/request-reset", post(handlers::request_password_reset))
+        .route("/auth/password/reset", post(handlers::reset_password))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             rate_limit::rate_limit_middleware,

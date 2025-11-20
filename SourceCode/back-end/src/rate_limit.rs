@@ -17,13 +17,16 @@ use std::num::NonZeroU32;
 use std::sync::Arc;
 use std::time::Instant;
 
+type IpLimiter = Arc<DashMap<IpAddr, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>>;
+type StringLimiter = Arc<DashMap<String, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>>;
+
 #[derive(Clone)]
 pub struct RateLimitState {
-    pub ip_login_limiter: Arc<DashMap<IpAddr, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>>,
-    pub ip_register_limiter: Arc<DashMap<IpAddr, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>>,
-    pub ip_general_limiter: Arc<DashMap<IpAddr, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>>,
-    pub email_login_limiter: Arc<DashMap<String, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>>,
-    pub email_register_limiter: Arc<DashMap<String, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>>,
+    pub ip_login_limiter: IpLimiter,
+    pub ip_register_limiter: IpLimiter,
+    pub ip_general_limiter: IpLimiter,
+    pub email_login_limiter: StringLimiter,
+    pub email_register_limiter: StringLimiter,
     pub disabled: bool,
 }
 
@@ -106,30 +109,35 @@ impl RateLimitState {
         });
     }
 
+    #[must_use] 
     pub fn check_login(&self, ip: IpAddr) -> bool {
         let quota = Quota::per_minute(NonZeroU32::new(5).unwrap());
         let limiter = Self::get_or_create_ip_limiter(&self.ip_login_limiter, ip, quota);
         limiter.check().is_ok()
     }
 
+    #[must_use] 
     pub fn check_login_email(&self, email: &str) -> bool {
         let quota = Quota::per_minute(NonZeroU32::new(10).unwrap());
         let limiter = Self::get_or_create_string_limiter(&self.email_login_limiter, email.to_lowercase(), quota);
         limiter.check().is_ok()
     }
 
+    #[must_use] 
     pub fn check_register(&self, ip: IpAddr) -> bool {
         let quota = Quota::per_minute(NonZeroU32::new(10).unwrap());
         let limiter = Self::get_or_create_ip_limiter(&self.ip_register_limiter, ip, quota);
         limiter.check().is_ok()
     }
 
+    #[must_use] 
     pub fn check_register_email(&self, email: &str) -> bool {
         let quota = Quota::per_minute(NonZeroU32::new(20).unwrap());
         let limiter = Self::get_or_create_string_limiter(&self.email_register_limiter, email.to_lowercase(), quota);
         limiter.check().is_ok()
     }
 
+    #[must_use] 
     pub fn check_general(&self, ip: IpAddr) -> bool {
         let quota = Quota::per_minute(NonZeroU32::new(60).unwrap());
         let limiter = Self::get_or_create_ip_limiter(&self.ip_general_limiter, ip, quota);
@@ -146,7 +154,7 @@ impl Default for RateLimitState {
 fn extract_email_from_body(body: &[u8]) -> Option<String> {
     serde_json::from_slice::<serde_json::Value>(body)
         .ok()
-        .and_then(|json| json.get("email").and_then(|e| e.as_str().map(|s| s.to_string())))
+        .and_then(|json| json.get("email").and_then(|e| e.as_str().map(std::string::ToString::to_string)))
 }
 
 pub async fn rate_limit_middleware(

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        UPDATE users\n        SET first_name = ?, last_name = ?\n        WHERE id = ?\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "63c4cf880d236ee5c442fa89b4d4e0d9ebfeec57cf1a0c21e031a1a363bbf939"
+}

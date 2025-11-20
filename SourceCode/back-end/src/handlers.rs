@@ -17,16 +17,14 @@ fn extract_ip_from_headers_and_addr(headers: &HeaderMap, addr: &std::net::Socket
     headers
         .get("x-forwarded-for")
         .and_then(|h| h.to_str().ok())
-        .and_then(|s| s.split(',').next())
-        .map(|s| s.trim().to_string())
-        .unwrap_or_else(|| addr.ip().to_string())
+        .and_then(|s| s.split(',').next()).map_or_else(|| addr.ip().to_string(), |s| s.trim().to_string())
 }
 
 fn extract_user_agent(headers: &HeaderMap) -> Option<String> {
     headers
         .get("user-agent")
         .and_then(|h| h.to_str().ok())
-        .map(|s| s.to_string())
+        .map(std::string::ToString::to_string)
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -119,6 +117,33 @@ pub struct InvitationResponse {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ErrorResponse {
     pub error: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UpdateProfileRequest {
+    #[schema(example = "John")]
+    pub first_name: String,
+    #[schema(example = "Doe")]
+    pub last_name: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct RequestPasswordResetRequest {
+    #[schema(example = "user@example.com")]
+    pub email: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PasswordResetResponse {
+    pub message: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ResetPasswordRequest {
+    #[schema(example = "reset-token-here")]
+    pub token: String,
+    #[schema(example = "NewPassword123!")]
+    pub new_password: String,
 }
 
 #[utoipa::path(
@@ -239,10 +264,10 @@ pub async fn register_company_admin(
     let role_str = db::UserRole::Admin.to_string();
 
     sqlx::query(
-        r#"
+        r"
         INSERT INTO users (id, email, first_name, last_name, password_hash, company_id, role, created_at)
         VALUES (?, ?, ?, ?, ?, NULL, ?, ?)
-        "#,
+        ",
     )
     .bind(&user_id)
     .bind(&payload.email)
@@ -261,10 +286,10 @@ pub async fn register_company_admin(
     let company_id = Uuid::new_v4().to_string();
 
     sqlx::query(
-        r#"
+        r"
         INSERT INTO companies (id, name, address, created_at)
         VALUES (?, ?, ?, ?)
-        "#,
+        ",
     )
     .bind(&company_id)
     .bind(&payload.company_name)
@@ -404,7 +429,14 @@ pub async fn login(
         ));
     }
 
-    let user = user.unwrap();
+    let user = match user {
+        None => return Err((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "Invalid email or password" })),
+        )),
+        Some(user) => user,
+    };
+
 
     let password_valid = verify_password(&payload.password, &user.password_hash)
         .map_err(|e| {
@@ -555,12 +587,12 @@ pub async fn invite_user(
     }
 
     let result = sqlx::query_as::<_, (String, String, String, String, String, Option<String>, String)>(
-        r#"
+        r"
         SELECT u.id, u.email, u.first_name, u.last_name, u.password_hash, u.company_id, u.role
         FROM users u
         INNER JOIN companies c ON u.company_id = c.id
         WHERE u.id = ? AND u.role = 'admin'
-        "#,
+        ",
     )
     .bind(&claims.user_id)
     .fetch_optional(&state.sqlite)
@@ -620,7 +652,7 @@ pub async fn invite_user(
         Some(payload.email.clone()),
         Some(ip_address),
         user_agent,
-        Some(format!("Invitation sent by {}", admin_email)),
+        Some(format!("Invitation sent by {admin_email}")),
         true,
     )
     .await;
@@ -736,10 +768,10 @@ pub async fn accept_invitation(
     let role_str = db::UserRole::Member.to_string();
 
     sqlx::query(
-        r#"
+        r"
         INSERT INTO users (id, email, first_name, last_name, password_hash, company_id, role, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        "#,
+        ",
     )
     .bind(&user_id)
     .bind(&invitation.email)
@@ -758,11 +790,11 @@ pub async fn accept_invitation(
 
     let accept_time = chrono::Utc::now().to_rfc3339();
     sqlx::query(
-        r#"
+        r"
         UPDATE invitations
         SET accepted_at = ?
         WHERE id = ?
-        "#,
+        ",
     )
     .bind(&accept_time)
     .bind(&invitation.id)
@@ -829,6 +861,195 @@ pub async fn accept_invitation(
     Ok(response)
 }
 
+#[must_use] 
 pub fn get_jwt_secret() -> String {
     std::env::var("JWT_SECRET").unwrap_or_else(|_| "logsmart_secret_key_for_testing".to_string())
+}
+
+#[utoipa::path(
+    put,
+    path = "/auth/profile",
+    request_body = UpdateProfileRequest,
+    responses(
+        (status = 200, description = "Profile updated successfully", body = UserResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Authentication"
+)]
+pub async fn update_profile(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    Json(payload): Json<UpdateProfileRequest>,
+) -> Result<Json<UserResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let user = db::update_user_profile(
+        &state.sqlite,
+        &claims.user_id,
+        payload.first_name,
+        payload.last_name,
+    )
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to update profile: {:?}", e);
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to update profile" })))
+    })?;
+
+    let _ = db::log_security_event(
+        &state.sqlite,
+        "profile_updated".to_string(),
+        Some(claims.user_id),
+        Some(user.email.clone()),
+        None,
+        None,
+        None,
+        true,
+    )
+    .await;
+
+    Ok(Json(user.into()))
+}
+
+#[utoipa::path(
+    post,
+    path = "/auth/password/request-reset",
+    request_body = RequestPasswordResetRequest,
+    responses(
+        (status = 200, description = "Password reset email sent", body = PasswordResetResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    tag = "Authentication"
+)]
+pub async fn request_password_reset(
+    State(state): State<AppState>,
+    Json(payload): Json<RequestPasswordResetRequest>,
+) -> Result<Json<PasswordResetResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let user = db::get_user_by_email(&state.sqlite, &payload.email)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+        })?;
+
+    if let Some(user_record) = user {
+        let reset_token = generate_invitation_token();
+        let expires_at = (chrono::Utc::now() + Duration::hours(24)).to_rfc3339();
+
+        let _ = db::create_password_reset_token(
+            &state.sqlite,
+            user_record.id.clone(),
+            reset_token.clone(),
+            expires_at,
+        )
+        .await;
+
+        let reset_url = format!(
+            "https://logsmart.app/reset-password?token={reset_token}"
+        );
+
+        let _ = email::send_password_reset_email(
+            &payload.email,
+            &reset_url,
+        )
+        .await;
+
+        let _ = db::log_security_event(
+            &state.sqlite,
+            "password_reset_requested".to_string(),
+            Some(user_record.id),
+            Some(payload.email),
+            None,
+            None,
+            None,
+            true,
+        )
+        .await;
+    } else {
+        let _ = db::log_security_event(
+            &state.sqlite,
+            "password_reset_requested".to_string(),
+            None,
+            Some(payload.email.clone()),
+            None,
+            None,
+            Some("User not found".to_string()),
+            false,
+        )
+        .await;
+    }
+
+    Ok(Json(PasswordResetResponse {
+        message: "If an account exists with this email, a password reset link has been sent.".to_string(),
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/auth/password/reset",
+    request_body = ResetPasswordRequest,
+    responses(
+        (status = 200, description = "Password reset successfully", body = PasswordResetResponse),
+        (status = 401, description = "Invalid or expired token", body = ErrorResponse),
+        (status = 400, description = "Password validation failed", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    tag = "Authentication"
+)]
+pub async fn reset_password(
+    State(state): State<AppState>,
+    Json(payload): Json<ResetPasswordRequest>,
+) -> Result<Json<PasswordResetResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let (reset_id, user_id) = db::get_password_reset_by_token(&state.sqlite, &payload.token)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+        })?
+        .ok_or_else(|| {
+            (StatusCode::UNAUTHORIZED, Json(json!({ "error": "Invalid or expired reset token" })))
+        })?;
+
+    validate_password_policy(&payload.new_password)
+        .map_err(|e| {
+            (StatusCode::BAD_REQUEST, Json(json!({ "error": e.to_string() })))
+        })?;
+
+    let password_hash = hash_password(&payload.new_password)
+        .map_err(|e| {
+            tracing::error!("Failed to hash password: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to process password" })))
+        })?;
+
+    db::update_user_password(&state.sqlite, &user_id, password_hash)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to update password: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to update password" })))
+        })?;
+
+    db::mark_password_reset_used(&state.sqlite, &reset_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to mark reset token as used: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to process request" })))
+        })?;
+
+    let _ = db::log_security_event(
+        &state.sqlite,
+        "password_reset_completed".to_string(),
+        Some(user_id),
+        None,
+        None,
+        None,
+        None,
+        true,
+    )
+    .await;
+
+    state.metrics.increment_registrations();
+
+    Ok(Json(PasswordResetResponse {
+        message: "Password has been reset successfully.".to_string(),
+    }))
 }

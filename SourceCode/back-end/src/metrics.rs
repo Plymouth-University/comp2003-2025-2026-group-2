@@ -17,6 +17,7 @@ pub struct Metrics {
 }
 
 impl Metrics {
+    #[must_use] 
     pub fn new() -> Self {
         Self {
             total_requests: Arc::new(AtomicU64::new(0)),
@@ -72,6 +73,7 @@ impl Metrics {
         self.rate_limit_hits.fetch_add(1, Ordering::Relaxed);
     }
 
+    #[must_use] 
     pub fn get_stats(&self) -> MetricsSnapshot {
         MetricsSnapshot {
             total_requests: self.total_requests.load(Ordering::Relaxed),
@@ -135,14 +137,22 @@ pub struct RequestTimer {
     start: Instant,
 }
 
+impl Default for RequestTimer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RequestTimer {
+    #[must_use] 
     pub fn new() -> Self {
         Self {
             start: Instant::now(),
         }
     }
 
+    #[must_use] 
     pub fn elapsed_ms(&self) -> u64 {
-        self.start.elapsed().as_millis() as u64
+        u64::try_from(self.start.elapsed().as_millis()).unwrap_or_default()
     }
 }
