@@ -1,12 +1,12 @@
 <main class="bg-white">
-	<section class="mx-auto max-w-7xl px-6 py-20">
+	<section class="mx-auto max-w-7xl px-6 py-8">
 		<div class="text-center">
-			<div class="mb-8 flex justify-center">
+			<div class="mb-4 flex justify-center">
 				<div class="flex items-center justify-center rounded">
 					<img src="/src/lib/assets/favicon.png" alt="LogSmart Logo" class="h-auto w-64 max-w-full" />
 				</div>
 			</div>
-			<p class="mx-auto mb-12 max-w-2xl text-lg text-gray-700">
+			<p class="mx-auto mb-6 max-w-2xl text-lg text-gray-700">
 				Introducing LogSmart, the template-based digital logging system initially designed for the food service industry. Replace your paper logs with an instant, secure, and eco-friendly solution that optimizes your daily operations.
 			</p>
 		</div>
