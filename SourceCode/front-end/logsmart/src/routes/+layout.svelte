@@ -26,7 +26,10 @@
 	<header class="border-b border-gray-300 bg-white">
 		<div class="mx-auto max-w-7xl px-6 py-4">
 			<div class="flex items-center justify-between">
-				<a href="/" class="text-2xl font-bold text-gray-900">LogSmart</a>
+				<div class="flex items-center">
+					<img src={favicon} alt="LogSmart Logo" class="mr-2 h-8 w-8" />
+					<a href="/" class="text-2xl font-bold text-gray-900">LogSmart</a>
+				</div>
 				<nav class="hidden items-center gap-6 md:flex">
 					<a href="/#features" class="text-gray-700 hover:text-gray-900">Features</a>
 					<a href="/contact" class="text-gray-700 hover:text-gray-900">Contact</a>
