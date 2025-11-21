@@ -1,9 +1,13 @@
+<script lang="ts">
+	import favicon from '$lib/assets/favicon.png';
+</script>
+
 <main class="bg-white">
 	<section class="mx-auto max-w-7xl px-6 py-20">
 		<div class="text-center">
 			<div class="mb-8 flex justify-center">
 				<div class="flex items-center justify-center rounded">
-					<img src="/src/lib/assets/favicon.png" alt="LogSmart Logo" class="h-auto w-64 max-w-full" />
+					<img src={favicon} alt="LogSmart Logo" class="h-auto w-64 max-w-full" />
 				</div>
 			</div>
 			<h2 class="mb-6 text-5xl font-bold text-gray-900">LogSmart</h2>
