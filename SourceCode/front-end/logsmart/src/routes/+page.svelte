@@ -1,8 +1,9 @@
 <script lang="ts">
 	import Icon from '$lib/assets/icon.svelte';
+	import banner from '$lib/assets/banner.webp';
 </script>
 <main class="bg-white">
-	<section class="relative px-6 py-6" style="background-image: url('/src/lib/assets/banner.webp'); background-size: cover; background-position: center;">
+	<section class="relative px-6 py-6" style="background-image: url('{banner}'); background-size: cover; background-position: center;">
 		<!-- Dark overlay for contrast -->
 		<div class="absolute inset-0 bg-black opacity-50"></div>
 		
