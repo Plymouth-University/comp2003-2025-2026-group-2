@@ -6,7 +6,6 @@
 					<img src="/src/lib/assets/favicon.png" alt="LogSmart Logo" class="h-auto w-64 max-w-full" />
 				</div>
 			</div>
-			<h2 class="mb-6 text-5xl font-bold text-gray-900">LogSmart</h2>
 			<p class="mx-auto mb-12 max-w-2xl text-lg text-gray-700">
 				Introducing LogSmart, the template-based digital logging system initially designed for the food service industry. Replace your paper logs with an instant, secure, and eco-friendly solution that optimizes your daily operations.
 			</p>
