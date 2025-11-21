@@ -1,25 +1,29 @@
 <script lang="ts">
-	import favicon from '$lib/assets/favicon.png';
+	import Icon from '$lib/assets/icon.svelte';
 </script>
-
 <main class="bg-white">
-	<section class="mx-auto max-w-7xl px-6 py-20">
-		<div class="text-center">
-			<div class="mb-8 flex justify-center">
-				<div class="flex items-center justify-center rounded">
-					<img src={favicon} alt="LogSmart Logo" class="h-auto w-64 max-w-full" />
+	<section class="relative px-6 py-6" style="background-image: url('/src/lib/assets/banner.webp'); background-size: cover; background-position: center;">
+		<!-- Dark overlay for contrast -->
+		<div class="absolute inset-0 bg-black opacity-50"></div>
+		
+		<!-- Content -->
+		<div class="relative mx-auto max-w-7xl">
+			<div class="text-center">
+				<div class="mb-4 flex justify-center">
+					<div class="flex items-center justify-center rounded w-50 h-50">
+						<Icon/>
+					</div>
 				</div>
+				<p class="mx-auto mb-4 max-w-2xl text-lg text-white">
+					Introducing LogSmart, the template-based digital logging system initially designed for the food service industry. Replace your paper logs with an instant, secure, and eco-friendly solution that optimizes your daily operations.
+				</p>
 			</div>
-			<h2 class="mb-6 text-5xl font-bold text-gray-900">LogSmart</h2>
-			<p class="mx-auto mb-12 max-w-2xl text-lg text-gray-700">
-				Introducing LogSmart, the template-based digital logging system initially designed for the food service industry. Replace your paper logs with an instant, secure, and eco-friendly solution that optimizes your daily operations.
-			</p>
 		</div>
 	</section>
 
-	<section id="features" class="border-t border-gray-300 bg-gray-50 px-6 py-20">
+	<section id="features" class="border-t border-gray-300 bg-gray-50 px-6 py-10">
 		<div class="mx-auto max-w-7xl">
-			<h3 class="mb-12 text-3xl font-bold text-gray-900">Features</h3>
+			<h3 class="mb-8 text-3xl font-bold text-gray-900">Features</h3>
 			<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-2">
 				<div class="rounded bg-white p-6 shadow-sm">
 					<h4 class="mb-2 text-lg font-semibold text-gray-900">Feature 1: Stay Audit-Ready</h4>
