@@ -61,6 +61,12 @@
 					{#if data?.user}
 						<span class="text-sm text-gray-600">{data.user.email}</span>
 					{/if}
+					<a
+						href="/settings"
+						class="rounded bg-gray-100 px-4 py-2 text-gray-700 hover:bg-gray-200"
+					>
+						Settings
+					</a>
 					<button
 						onclick={handleLogout}
 						class="rounded bg-gray-100 px-4 py-2 text-gray-700 hover:bg-gray-200"
