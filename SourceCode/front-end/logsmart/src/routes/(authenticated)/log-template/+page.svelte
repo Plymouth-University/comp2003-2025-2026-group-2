@@ -27,8 +27,10 @@
 
 <style>
     .container {
-        display:inline-block;
+        display:flex;
+        flex-direction: row;
         flex-shrink:0;
+        margin-top: 1%;
     }
 
     .left_element{
@@ -45,7 +47,7 @@
         min-width:200px;
         
     }
-
+    
 </style>
 
 <main>
