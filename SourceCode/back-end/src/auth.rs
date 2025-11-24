@@ -75,7 +75,7 @@ pub fn verify_password(password: &str, hash: &str) -> Result<bool> {
 
 pub fn validate_email(email: &str) -> Result<()> {
     let email_regex = Regex::new(
-        r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$"
+        r#"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"#
     ).expect("Invalid regex pattern");
     
     if !email_regex.is_match(email) {
