@@ -1,9 +1,4 @@
 <style>
-    .center_element {
-        position: relative;
-        margin-top:1%;
-    }
-    
     .log_button {
         position:absolute;
         transform: translate(-50%, 0%);
@@ -18,7 +13,7 @@
         font-size: 28px;
         padding: 20px;
         padding-top:30px;
-        width: 200px;
+        width: 220px;
         cursor: pointer;
         transition:0.5s;
         vertical-align: middle;
@@ -31,15 +26,15 @@
     }
     
     .log_button span:after {
-        content: '\00bb';
+        content: '\00ab';
         position: absolute;
         opacity: 0;
-        right: -20px;
+        left: -10px;
         transition: 0.5s;
     }
     
     .log_button:hover span {
-        padding-right: 25px;
+        padding-left: 25px;
     }
     
     .log_button:hover span:after {
@@ -52,12 +47,10 @@
     }
 </style>
 
-<div class="center_element">
-    <button
-    type="button"
-    class="log_button"
-    aria-label="Next Log"
-    >
-    <span class="text-2xl font-bold text-left mb-6">Next Log</span>
-    </button>
-</div>
+<button
+type="button"
+class="log_button"
+aria-label="Previous Log"
+>
+<span class="text-2xl font-bold text-left mb-6">Previous Log</span>
+</button>

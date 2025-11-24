@@ -1,7 +1,7 @@
 <script lang="ts">
     import TemperaturePicker from '$lib/components/temperature_picker.svelte';
-    import Log_button from '$lib/components/log_button.svelte';
-	import LogButton from '$lib/components/log_button.svelte';
+	import LogButton1 from '$lib/components/next_button.svelte';
+    import LogButton2 from '$lib/components/previous_button.svelte';
 
 	let canvasItems = $state([
 		{
@@ -24,6 +24,29 @@
 		}
 	]);
 </script>
+
+<style>
+    .container {
+        display:inline-block;
+        flex-shrink:0;
+    }
+
+    .left_element{
+        position:fixed;
+        margin-left:35%;
+        padding-right:100px;
+        min-width:220px;
+    }
+
+    .right_element{
+        position:fixed;
+        margin-left:50%;
+        padding-left:100px;
+        min-width:200px;
+        
+    }
+
+</style>
 
 <main>
     <h1 class="text-3xl font-bold text-center mb-6" style="padding-top:1%">Freezer Temperature</h1>
@@ -51,6 +74,13 @@
             {/each}
         </div>
     </div>
+    <div class="container">
+        <div class="left_element">
+            <LogButton2/>
+        </div>
+        <div class="right_element">
+            <LogButton1/>
+        </div>
+    </div>
 
-    <LogButton/>
 </main>
