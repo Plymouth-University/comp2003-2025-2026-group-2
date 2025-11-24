@@ -10,7 +10,8 @@
 	const isAuthenticatedRoute = $derived(
 		page.url.pathname.startsWith('/dashboard') || 
 		page.url.pathname.startsWith('/reports') || 
-		page.url.pathname.startsWith('/templates-dashboard')
+		page.url.pathname.startsWith('/templates-dashboard') ||
+		page.url.pathname.startsWith('/settings')
 	);
 	
 	async function handleLogout() {
