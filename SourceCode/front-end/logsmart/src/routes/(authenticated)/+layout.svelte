@@ -19,9 +19,10 @@
 				<div class="flex items-center gap-8">
 					<a href="/dashboard" class="text-2xl font-bold text-blue-600">LogSmart</a>
 					<nav class="flex items-center gap-6">
-						<a
-							href="/dashboard"
-							class="text-gray-700 hover:text-gray-900"
+						<a 
+							href="/dashboard" 
+							class="hover:opacity-80"
+							style="color: var(--text-primary);"
 							class:font-bold={currentPath === '/dashboard'}
 							class:underline={currentPath === '/dashboard'}
 						>
@@ -37,9 +38,10 @@
 						>
 							Reports
 						</a>
-						<a
-							href="/templates-dashboard"
-							class="text-gray-700 hover:text-gray-900"
+						<a 
+							href="/templates-dashboard" 
+							class="hover:opacity-80"
+							style="color: var(--text-primary);"
 							class:font-bold={currentPath === '/templates-dashboard'}
 							class:underline={currentPath === '/templates-dashboard'}
 						>
@@ -49,14 +51,19 @@
 				</div>
 				<div class="flex items-center gap-4">
 					{#if data?.user}
-						<span class="text-sm text-gray-600">{data.user.email}</span>
+						<span class="text-sm" style="color: var(--text-secondary);">{data.user.email}</span>
 					{/if}
-					<a href="/settings" class="rounded bg-gray-100 px-4 py-2 text-gray-700 hover:bg-gray-200">
+					<a
+						href="/settings"
+						class="rounded px-4 py-2 hover:opacity-80"
+						style="background-color: var(--bg-secondary); color: var(--text-primary);"
+					>
 						Settings
 					</a>
 					<button
 						onclick={handleLogout}
-						class="rounded bg-gray-100 px-4 py-2 text-gray-700 hover:bg-gray-200"
+						class="rounded px-4 py-2 hover:opacity-80"
+						style="background-color: var(--bg-secondary); color: var(--text-primary);"
 					>
 						Logout
 					</button>

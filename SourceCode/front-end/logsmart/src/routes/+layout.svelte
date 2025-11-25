@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import type { LayoutData } from './$types';
 	import '../app.css';
 	import Icon from '$lib/assets/icon.svelte';
 	import favicon from '$lib/assets/favicon.svg';
+	import { isDarkMode } from '$lib/stores/theme';
 
 	let { children, data } = $props<{ children: any; data: LayoutData }>();
 
@@ -21,6 +23,10 @@
 		await fetch('/api/logout', { method: 'POST' });
 		window.location.href = '/login';
 	}
+	
+	onMount(() => {
+		isDarkMode.initialize();
+	});
 </script>
 
 <svelte:head>
