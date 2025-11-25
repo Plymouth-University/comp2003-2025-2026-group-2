@@ -2,48 +2,73 @@
 	import Icon from '$lib/assets/icon.svelte';
 	import banner from '$lib/assets/banner.webp';
 </script>
-<div class="bg-white w-full h-full flex flex-col">
-	<section class="relative px-6 py-6" style="background-image: url('{banner}'); background-size: cover; background-position: center;">
+
+<div class="flex h-full w-full flex-col bg-white">
+	<section
+		class="relative px-6 py-6"
+		style="background-image: url('{banner}'); background-size: cover; background-position: center;"
+	>
 		<!-- Dark overlay for contrast -->
 		<div class="absolute inset-0 bg-black opacity-50"></div>
-		
+
 		<!-- Content -->
 		<div class="relative mx-auto max-w-7xl">
 			<div class="text-center">
 				<div class="mb-4 flex justify-center">
-					<div class="flex items-center justify-center rounded w-50 h-50">
-						<Icon/>
+					<div class="flex h-50 w-50 items-center justify-center rounded">
+						<Icon />
 					</div>
 				</div>
 				<p class="mx-auto mb-4 max-w-2xl text-lg text-white">
-					Introducing LogSmart, the template-based digital logging system initially designed for the food service industry. Replace your paper logs with an instant, secure, and eco-friendly solution that optimizes your daily operations.
+					Introducing LogSmart, the template-based digital logging system initially designed for the
+					food service industry. Replace your paper logs with an instant, secure, and eco-friendly
+					solution that optimizes your daily operations.
 				</p>
 			</div>
 		</div>
 	</section>
 
-	<section id="features" class="border-t border-gray-300 bg-gray-50 px-6 py-10 flex-1">
+	<section id="features" class="flex-1 border-t border-gray-300 bg-gray-50 px-6 py-10">
 		<div class="mx-auto max-w-7xl">
 			<h3 class="mb-8 text-3xl font-bold text-gray-900">Features</h3>
 			<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-2">
 				<div class="rounded bg-white p-6 shadow-sm">
 					<h4 class="mb-2 text-lg font-semibold text-gray-900">Feature 1: Stay Audit-Ready</h4>
-					<p class="mb-3 text-sm text-gray-700">24/7 Access instant, tamper-proof, and audit-ready records stored securely in the cloud. Breeze through your next inspection with complete, organised digital logs at your fingertips.</p>
+					<p class="mb-3 text-sm text-gray-700">
+						24/7 Access instant, tamper-proof, and audit-ready records stored securely in the cloud.
+						Breeze through your next inspection with complete, organised digital logs at your
+						fingertips.
+					</p>
 				</div>
 
 				<div class="rounded bg-white p-6 shadow-sm">
-					<h4 class="mb-2 text-lg font-semibold text-gray-900">Feature 2: Optimize Your Workflow</h4>
-					<p class="mb-3 text-sm text-gray-700">Stop wasting time on manual paperwork. Our digital system frees up your team to focus on what matters—quality service. Streamline daily checks, reduce errors, and improve operational efficiency.</p>
+					<h4 class="mb-2 text-lg font-semibold text-gray-900">
+						Feature 2: Optimize Your Workflow
+					</h4>
+					<p class="mb-3 text-sm text-gray-700">
+						Stop wasting time on manual paperwork. Our digital system frees up your team to focus on
+						what matters—quality service. Streamline daily checks, reduce errors, and improve
+						operational efficiency.
+					</p>
 				</div>
 
 				<div class="rounded bg-white p-6 shadow-sm">
-					<h4 class="mb-2 text-lg font-semibold text-gray-900">Feature 3: Smart, Customizable Templates</h4>
-					<p class="mb-3 text-sm text-gray-700">Get started immediately with pre-loaded, regulatory-standard templates for all your food safety needs. Customize them easily to fit your specific operations, ensuring full compliance.</p>
+					<h4 class="mb-2 text-lg font-semibold text-gray-900">
+						Feature 3: Smart, Customizable Templates
+					</h4>
+					<p class="mb-3 text-sm text-gray-700">
+						Get started immediately with pre-loaded, regulatory-standard templates for all your food
+						safety needs. Customize them easily to fit your specific operations, ensuring full
+						compliance.
+					</p>
 				</div>
 
 				<div class="rounded bg-white p-6 shadow-sm">
 					<h4 class="mb-2 text-lg font-semibold text-gray-900">Feature 4: Go Green, Go Digital</h4>
-					<p class="mb-3 text-sm text-gray-700">Make a positive environmental impact by eliminating paper waste. Our digital solution is not only good for your business, but it's also good for the planet.</p>
+					<p class="mb-3 text-sm text-gray-700">
+						Make a positive environmental impact by eliminating paper waste. Our digital solution is
+						not only good for your business, but it's also good for the planet.
+					</p>
 				</div>
 			</div>
 		</div>

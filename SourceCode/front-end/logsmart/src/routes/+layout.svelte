@@ -6,14 +6,14 @@
 	import favicon from '$lib/assets/favicon.svg';
 
 	let { children, data } = $props<{ children: any; data: LayoutData }>();
-	
+
 	const isAuthenticatedRoute = $derived(
-		page.url.pathname.startsWith('/dashboard') || 
-		page.url.pathname.startsWith('/reports') || 
-		page.url.pathname.startsWith('/templates-dashboard') ||
-		page.url.pathname.startsWith('/settings')
+		page.url.pathname.startsWith('/dashboard') ||
+			page.url.pathname.startsWith('/reports') ||
+			page.url.pathname.startsWith('/templates-dashboard') ||
+			page.url.pathname.startsWith('/settings')
 	);
-	
+
 	async function handleLogout() {
 		await fetch('/api/logout', { method: 'POST' });
 		window.location.href = '/login';
@@ -24,14 +24,14 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<div class="flex flex-col h-screen">
+<div class="flex h-screen flex-col">
 	{#if !isAuthenticatedRoute}
 		<header id="header" class="border-b border-gray-300 bg-white">
 			<div class="mx-auto max-w-7xl px-6 py-2">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center">
 						<div class="h-12 w-12">
-							<Icon/>
+							<Icon />
 						</div>
 						<a href="/" class="text-2xl font-bold text-gray-900">LogSmart</a>
 					</div>
@@ -41,7 +41,10 @@
 					</nav>
 					<div class="flex items-center gap-3">
 						{#if data.isAuthenticated}
-							<a href="/dashboard" class="rounded border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">
+							<a
+								href="/dashboard"
+								class="rounded border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+							>
 								Dashboard
 							</a>
 							<button
@@ -51,10 +54,16 @@
 								Logout
 							</button>
 						{:else}
-							<a href="/register-company" class="rounded border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50">
+							<a
+								href="/register-company"
+								class="rounded border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+							>
 								Register Company
 							</a>
-							<a href="/login" class="rounded border border-gray-400 bg-gray-100 px-4 py-2 text-gray-900 hover:bg-gray-200">
+							<a
+								href="/login"
+								class="rounded border border-gray-400 bg-gray-100 px-4 py-2 text-gray-900 hover:bg-gray-200"
+							>
 								Login
 							</a>
 						{/if}
@@ -64,7 +73,7 @@
 		</header>
 	{/if}
 
-	<main class="flex-1 flex w-full">
+	<main class="flex w-full flex-1">
 		{@render children()}
 	</main>
 </div>

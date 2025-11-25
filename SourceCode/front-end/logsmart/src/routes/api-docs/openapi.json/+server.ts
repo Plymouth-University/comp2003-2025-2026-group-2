@@ -7,16 +7,19 @@ async function proxyRequest(event: RequestEvent) {
 	const { request } = event;
 
 	const headers = request.headers;
-		
+
 	const url = `${API_URL}/api-docs/openapi.json`;
 
 	try {
 		const response = await fetch(url, {
-			method: "GET",
+			method: 'GET',
 			headers
 		});
 
-        return new Response(await response.text(), { headers: { 'content-type': 'application/json' , 'location': '/api/api-docs/openapi.json'}, status: 301 });
+		return new Response(await response.text(), {
+			headers: { 'content-type': 'application/json', location: '/api/api-docs/openapi.json' },
+			status: 301
+		});
 	} catch (error) {
 		console.error('Proxy error:', error);
 		return json({ error: 'Network error' }, { status: 500 });

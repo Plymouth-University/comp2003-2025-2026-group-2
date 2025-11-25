@@ -3,29 +3,29 @@ import { fail } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ fetch, cookies }) => {
 	const token = cookies.get('ls-token');
-	
+
 	if (!token) {
 		return {
 			user: null
 		};
 	}
-	
+
 	try {
 		const response = await fetch('/api/auth/me', {
 			method: 'GET',
 			headers: {
-				'Authorization': `Bearer ${token}`
+				Authorization: `Bearer ${token}`
 			}
 		});
-		
+
 		if (!response.ok) {
 			return {
 				user: null
 			};
 		}
-		
+
 		const userData = await response.json();
-		
+
 		return {
 			user: userData
 		};
@@ -40,20 +40,20 @@ export const load: PageServerLoad = async ({ fetch, cookies }) => {
 export const actions: Actions = {
 	updateProfile: async ({ request, fetch, cookies }) => {
 		const token = cookies.get('ls-token');
-		
+
 		if (!token) {
 			return fail(401, { message: 'Unauthorized' });
 		}
-		
+
 		const formData = await request.formData();
 		const firstName = formData.get('firstName')?.toString();
 		const lastName = formData.get('lastName')?.toString();
-		
+
 		try {
 			const response = await fetch('/api/auth/profile', {
 				method: 'PUT',
 				headers: {
-					'Authorization': `Bearer ${token}`,
+					Authorization: `Bearer ${token}`,
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({
@@ -61,13 +61,13 @@ export const actions: Actions = {
 					last_name: lastName
 				})
 			});
-			
+
 			// Read response body once
 			const text = await response.text();
-			
+
 			console.log('Profile update response status:', response.status);
 			console.log('Profile update response body:', text);
-			
+
 			if (!response.ok) {
 				let errorMessage = 'Failed to update profile';
 				try {
@@ -81,12 +81,12 @@ export const actions: Actions = {
 					errorMessage = text || errorMessage;
 				}
 				console.error('Profile update failed:', errorMessage);
-				return fail(response.status, { 
+				return fail(response.status, {
 					message: errorMessage,
-					success: false 
+					success: false
 				});
 			}
-			
+
 			// Handle successful response
 			if (text) {
 				try {
@@ -97,37 +97,37 @@ export const actions: Actions = {
 					console.log('Profile update response (text):', text);
 				}
 			}
-			
-			return { 
-				success: true, 
-				message: 'Profile updated successfully' 
+
+			return {
+				success: true,
+				message: 'Profile updated successfully'
 			};
 		} catch (error) {
 			console.error('Error updating profile:', error);
-			return fail(500, { 
+			return fail(500, {
 				message: 'Network error',
-				success: false 
+				success: false
 			});
 		}
 	},
-	
+
 	changePassword: async ({ request, fetch, cookies }) => {
 		const token = cookies.get('ls-token');
-		
+
 		if (!token) {
 			return fail(401, { message: 'Unauthorized' });
 		}
-		
+
 		const formData = await request.formData();
 		const email = formData.get('email')?.toString();
-		
+
 		if (!email) {
-			return fail(400, { 
+			return fail(400, {
 				message: 'Email is required',
-				success: false 
+				success: false
 			});
 		}
-		
+
 		try {
 			const response = await fetch('/api/auth/password/request-reset', {
 				method: 'POST',
@@ -138,13 +138,13 @@ export const actions: Actions = {
 					email
 				})
 			});
-			
+
 			// Read response body once
 			const text = await response.text();
-			
+
 			console.log('Password reset request response status:', response.status);
 			console.log('Password reset request response body:', text);
-			
+
 			if (!response.ok) {
 				let errorMessage = 'Failed to send password reset email';
 				try {
@@ -158,12 +158,12 @@ export const actions: Actions = {
 					errorMessage = text || errorMessage;
 				}
 				console.error('Password reset request failed:', errorMessage);
-				return fail(response.status, { 
+				return fail(response.status, {
 					message: errorMessage,
-					success: false 
+					success: false
 				});
 			}
-			
+
 			// Handle successful response
 			if (text) {
 				try {
@@ -174,16 +174,16 @@ export const actions: Actions = {
 					console.log('Password reset request response (text):', text);
 				}
 			}
-			
-			return { 
-				success: true, 
-				message: 'Password reset link sent to your email' 
+
+			return {
+				success: true,
+				message: 'Password reset link sent to your email'
 			};
 		} catch (error) {
 			console.error('Error requesting password reset:', error);
-			return fail(500, { 
+			return fail(500, {
 				message: 'Network error',
-				success: false 
+				success: false
 			});
 		}
 	}

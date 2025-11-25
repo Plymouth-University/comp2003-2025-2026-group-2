@@ -30,7 +30,9 @@
 	const passwordsMatch = $derived(password === confirmPassword && confirmPassword.length > 0);
 
 	const step1Valid = $derived(companyNameValid && companyAddressValid);
-	const step2Valid = $derived(firstNameValid && lastNameValid && emailValid && passwordValid && passwordsMatch);
+	const step2Valid = $derived(
+		firstNameValid && lastNameValid && emailValid && passwordValid && passwordsMatch
+	);
 
 	function nextStep(e: Event) {
 		e.preventDefault();
@@ -148,9 +150,7 @@
 					{/if}
 				</label>
 
-				<button type="submit" class="btn btn-primary" disabled={!step1Valid}>
-					Next Step
-				</button>
+				<button type="submit" class="btn btn-primary" disabled={!step1Valid}> Next Step </button>
 			</form>
 		{:else}
 			<form onsubmit={submit} class="form">
@@ -239,9 +239,7 @@
 				</label>
 
 				<div class="button-group">
-					<button type="button" class="btn btn-secondary" onclick={prevStep}>
-						Back
-					</button>
+					<button type="button" class="btn btn-secondary" onclick={prevStep}> Back </button>
 					<button type="submit" class="btn btn-primary" disabled={!step2Valid || loading}>
 						{#if loading}
 							Creating Account...
@@ -261,7 +259,13 @@
 
 <style>
 	:global(body) {
-		font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+		font-family:
+			system-ui,
+			-apple-system,
+			'Segoe UI',
+			Roboto,
+			'Helvetica Neue',
+			Arial;
 		margin: 0;
 		padding: 0;
 		background: #f5f7fb;

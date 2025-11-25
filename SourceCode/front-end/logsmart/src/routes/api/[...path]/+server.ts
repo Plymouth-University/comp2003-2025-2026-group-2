@@ -6,20 +6,28 @@ const API_URL = PUBLIC_API_URL || 'https://api.logsmart.app';
 async function proxyRequest(event: RequestEvent) {
 	const { request, params, cookies } = event;
 	let path = params.path || '';
-	if (["swagger-ui.css", "index.css", "swagger-ui-bundle.js", "swagger-ui-standalone-preset.js", "swagger-initializer.js"].includes(path)) {
+	if (
+		[
+			'swagger-ui.css',
+			'index.css',
+			'swagger-ui-bundle.js',
+			'swagger-ui-standalone-preset.js',
+			'swagger-initializer.js'
+		].includes(path)
+	) {
 		path = `swagger-ui/${path}`;
 	}
-	
+
 	const headers = new Headers();
 	headers.set('Content-Type', request.headers.get('Content-Type') || 'application/json');
-	
+
 	const authHeader = request.headers.get('Authorization');
 	if (authHeader) {
 		headers.set('Authorization', authHeader);
 	}
 
 	const url = `${API_URL}/${path}`;
-	
+
 	let body = undefined;
 	if (request.method !== 'GET' && request.method !== 'HEAD') {
 		body = await request.text();
@@ -53,7 +61,10 @@ async function proxyRequest(event: RequestEvent) {
 			return json(data, { status: response.status });
 		} else {
 			const text = await response.text();
-			return new Response(text, { status: response.status, headers: {'content-type': contentType || 'text/plain'} });
+			return new Response(text, {
+				status: response.status,
+				headers: { 'content-type': contentType || 'text/plain' }
+			});
 		}
 	} catch (error) {
 		console.error('Proxy error:', error);
