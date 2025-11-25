@@ -1,4 +1,15 @@
 <script lang="ts">
+	function validatePassword(pwd: string): { valid: boolean; errors: string[] } {
+		const errors: string[] = [];
+		if (pwd.length < 8) errors.push('at least 8 characters');
+		if (!/[A-Z]/.test(pwd)) errors.push('an uppercase letter');
+		if (!/[a-z]/.test(pwd)) errors.push('a lowercase letter');
+		if (!/\d/.test(pwd)) errors.push('a digit');
+		if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(pwd))
+			errors.push('a special character');
+		return { valid: errors.length === 0, errors };
+	}
+
 	let newPassword = $state('');
 	let confirmPassword = $state('');
 	let email = $state('');
@@ -6,6 +17,7 @@
 	let message = $state('');
 	let token = $state('');
 	let hasToken = $state(false);
+	let passwordErrors = $state<string[]>([]);
 
 	$effect.pre(() => {
 		const params = new URLSearchParams(window.location.search);
@@ -15,6 +27,15 @@
 			hasToken = true;
 		} else {
 			hasToken = false;
+		}
+	});
+
+	$effect(() => {
+		if (newPassword) {
+			const validation = validatePassword(newPassword);
+			passwordErrors = validation.errors;
+		} else {
+			passwordErrors = [];
 		}
 	});
 
@@ -48,9 +69,10 @@
 
 	async function handlePasswordSubmit(event: SubmitEvent) {
 		event.preventDefault();
-		if (newPassword.length < 8) {
+		const pwdValidation = validatePassword(newPassword);
+		if (!pwdValidation.valid) {
 			status = 'error';
-			message = 'Choose a password with at least 8 characters.';
+			message = `Password must include ${pwdValidation.errors.join(', ')}.`;
 			return;
 		}
 		if (newPassword !== confirmPassword) {
@@ -123,9 +145,36 @@
 						type="password"
 						bind:value={newPassword}
 						class="mt-1 w-full rounded border px-3 py-2"
-						minlength="8"
 						required
 					/>
+					{#if newPassword}
+						<div class="mt-2 space-y-1 text-xs">
+							<div class={passwordErrors.length === 0 ? 'text-green-600' : 'text-gray-500'}>
+								✓ Password requirements
+							</div>
+							<div class={!/[A-Z]/.test(newPassword) ? 'text-red-600' : 'text-green-600'}>
+								{!/[A-Z]/.test(newPassword) ? '✗' : '✓'} Uppercase letter (A-Z)
+							</div>
+							<div class={!/[a-z]/.test(newPassword) ? 'text-red-600' : 'text-green-600'}>
+								{!/[a-z]/.test(newPassword) ? '✗' : '✓'} Lowercase letter (a-z)
+							</div>
+							<div class={!/\d/.test(newPassword) ? 'text-red-600' : 'text-green-600'}>
+								{!/\d/.test(newPassword) ? '✗' : '✓'} Digit (0-9)
+							</div>
+							<div
+								class={!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(newPassword)
+									? 'text-red-600'
+									: 'text-green-600'}
+							>
+								{!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(newPassword)
+									? '✗'
+									: '✓'} Special character (!@#$%^&* etc)
+							</div>
+							<div class={newPassword.length < 8 ? 'text-red-600' : 'text-green-600'}>
+								{newPassword.length < 8 ? '✗' : '✓'} At least 8 characters
+							</div>
+						</div>
+					{/if}
 				</div>
 				<div>
 					<label for="confirmPassword" class="text-sm font-medium text-gray-700"
@@ -140,9 +189,9 @@
 					/>
 				</div>
 				<button
-					class="w-full rounded bg-indigo-600 px-4 py-2 font-semibold text-white transition hover:bg-indigo-500"
+					class="w-full rounded bg-indigo-600 px-4 py-2 font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-50"
 					type="submit"
-					disabled={status === 'submitting' || status === 'success'}
+					disabled={status === 'submitting' || status === 'success' || passwordErrors.length > 0 || !newPassword || !confirmPassword || newPassword !== confirmPassword}
 				>
 					{#if status === 'submitting'}
 						Updating...

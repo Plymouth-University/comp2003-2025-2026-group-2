@@ -1,6 +1,17 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
 
+	function validatePassword(pwd: string): { valid: boolean; errors: string[] } {
+		const errors: string[] = [];
+		if (pwd.length < 8) errors.push('at least 8 characters');
+		if (!/[A-Z]/.test(pwd)) errors.push('an uppercase letter');
+		if (!/[a-z]/.test(pwd)) errors.push('a lowercase letter');
+		if (!/\d/.test(pwd)) errors.push('a digit');
+		if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(pwd))
+			errors.push('a special character');
+		return { valid: errors.length === 0, errors };
+	}
+
 	let step = $state(1);
 	let companyName = $state('');
 	let companyAddress = $state('');
@@ -11,6 +22,7 @@
 	let confirmPassword = $state('');
 	let loading = $state(false);
 	let error = $state('');
+	let passwordErrors = $state<string[]>([]);
 	let touched = $state({
 		companyName: false,
 		companyAddress: false,
@@ -26,13 +38,22 @@
 	const firstNameValid = $derived(firstName.trim().length > 0);
 	const lastNameValid = $derived(lastName.trim().length > 0);
 	const emailValid = $derived(/^\S+@\S+\.\S+$/.test(email));
-	const passwordValid = $derived(password.length >= 8);
+	const passwordValid = $derived(validatePassword(password).valid);
 	const passwordsMatch = $derived(password === confirmPassword && confirmPassword.length > 0);
 
 	const step1Valid = $derived(companyNameValid && companyAddressValid);
 	const step2Valid = $derived(
 		firstNameValid && lastNameValid && emailValid && passwordValid && passwordsMatch
 	);
+
+	$effect(() => {
+		if (password) {
+			const validation = validatePassword(password);
+			passwordErrors = validation.errors;
+		} else {
+			passwordErrors = [];
+		}
+	});
 
 	function nextStep(e: Event) {
 		e.preventDefault();
@@ -215,11 +236,38 @@
 						bind:value={password}
 						onblur={() => (touched.password = true)}
 						aria-invalid={!passwordValid}
-						placeholder="Minimum 8 characters"
+						placeholder="Min 8 chars, uppercase, lowercase, digit, special char"
 						required
 					/>
+					{#if password}
+						<div class="mt-2 space-y-1 text-xs">
+							<div class={passwordErrors.length === 0 ? 'text-green-600' : 'text-gray-500'}>
+								✓ Password requirements
+							</div>
+							<div class={!/[A-Z]/.test(password) ? 'text-red-600' : 'text-green-600'}>
+								{!/[A-Z]/.test(password) ? '✗' : '✓'} Uppercase letter (A-Z)
+							</div>
+							<div class={!/[a-z]/.test(password) ? 'text-red-600' : 'text-green-600'}>
+								{!/[a-z]/.test(password) ? '✗' : '✓'} Lowercase letter (a-z)
+							</div>
+							<div class={!/\d/.test(password) ? 'text-red-600' : 'text-green-600'}>
+								{!/\d/.test(password) ? '✗' : '✓'} Digit (0-9)
+							</div>
+							<div
+								class={!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(password)
+									? 'text-red-600'
+									: 'text-green-600'}
+							>
+								{!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(password) ? '✗' : '✓'} Special character
+								(!@#$%^&* etc)
+							</div>
+							<div class={password.length < 8 ? 'text-red-600' : 'text-green-600'}>
+								{password.length < 8 ? '✗' : '✓'} At least 8 characters
+							</div>
+						</div>
+					{/if}
 					{#if touched.password && !passwordValid}
-						<div class="field-error">Password must be at least 8 characters.</div>
+						<div class="field-error">Password must meet all requirements.</div>
 					{/if}
 				</label>
 
