@@ -119,45 +119,45 @@ export const actions: Actions = {
 		}
 		
 		const formData = await request.formData();
-		const currentPassword = formData.get('currentPassword')?.toString();
-		const newPassword = formData.get('newPassword')?.toString();
-		const confirmPassword = formData.get('confirmPassword')?.toString();
+		const email = formData.get('email')?.toString();
 		
-		// Validate passwords match
-		if (newPassword !== confirmPassword) {
+		if (!email) {
 			return fail(400, { 
-				message: 'New passwords do not match',
+				message: 'Email is required',
 				success: false 
 			});
 		}
 		
 		try {
-			const response = await fetch('/api/auth/change-password', {
+			const response = await fetch('/api/auth/password/request-reset', {
 				method: 'POST',
 				headers: {
-					'Authorization': `Bearer ${token}`,
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({
-					current_password: currentPassword,
-					new_password: newPassword
+					email
 				})
 			});
 			
 			// Read response body once
 			const text = await response.text();
 			
+			console.log('Password reset request response status:', response.status);
+			console.log('Password reset request response body:', text);
+			
 			if (!response.ok) {
-				let errorMessage = 'Failed to change password';
+				let errorMessage = 'Failed to send password reset email';
 				try {
 					if (text) {
 						const error = JSON.parse(text);
-						errorMessage = error.message || errorMessage;
+						errorMessage = error.message || error.error || errorMessage;
+						console.log('Parsed error:', error);
 					}
 				} catch {
 					// Use text as-is if not JSON
 					errorMessage = text || errorMessage;
 				}
+				console.error('Password reset request failed:', errorMessage);
 				return fail(response.status, { 
 					message: errorMessage,
 					success: false 
@@ -168,19 +168,19 @@ export const actions: Actions = {
 			if (text) {
 				try {
 					const data = JSON.parse(text);
-					console.log('Password change response:', data);
+					console.log('Password reset request response:', data);
 				} catch {
-					// Non-JSON response is OK for updates
-					console.log('Password change response (text):', text);
+					// Non-JSON response is OK
+					console.log('Password reset request response (text):', text);
 				}
 			}
 			
 			return { 
 				success: true, 
-				message: 'Password changed successfully' 
+				message: 'Password reset link sent to your email' 
 			};
 		} catch (error) {
-			console.error('Error changing password:', error);
+			console.error('Error requesting password reset:', error);
 			return fail(500, { 
 				message: 'Network error',
 				success: false 

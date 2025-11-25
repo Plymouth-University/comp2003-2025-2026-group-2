@@ -8,9 +8,6 @@
 	let firstName = $state(data.user?.first_name || '');
 	let lastName = $state(data.user?.last_name || '');
 	let email = $state(data.user?.email || '');
-	let currentPassword = $state('');
-	let newPassword = $state('');
-	let confirmPassword = $state('');
 	let isDarkMode = $state(false);
 	let isSubmitting = $state(false);
 	let showSuccessMessage = $state(false);
@@ -21,13 +18,6 @@
 		if (form?.success) {
 			showSuccessMessage = true;
 			errorMessage = '';
-			
-			// Clear password fields on successful password change
-			if (form.message?.includes('Password')) {
-				currentPassword = '';
-				newPassword = '';
-				confirmPassword = '';
-			}
 			
 			setTimeout(() => {
 				showSuccessMessage = false;
@@ -159,86 +149,35 @@
 			<!-- Password Change Section -->
 			<div class="border-2" style="border-color: #000100;">
 				<div class="border-b-2 bg-white px-6 py-4" style="border-color: #000100;">
-					<h2 class="text-xl font-bold" style="color: #000100;">Change Password</h2>
+					<h2 class="text-xl font-bold" style="color: #000100;">Reset Password</h2>
 				</div>
 				<div class="bg-white px-6 py-6">
-					<form 
-						method="POST" 
-						action="?/changePassword"
-						use:enhance={() => {
-							isSubmitting = true;
-							return async ({ update }) => {
-								await update();
-								isSubmitting = false;
-							};
-						}}
-						class="max-w-2xl space-y-4"
-					>
-						<!-- Current Password -->
-						<div>
-							<label for="currentPassword" class="block text-sm font-medium mb-2" style="color: #000100;">
-								Current Password
-							</label>
-							<input
-								id="currentPassword"
-								name="currentPassword"
-								type="password"
-								bind:value={currentPassword}
-								class="w-full border-2 px-4 py-2 focus:outline-none focus:ring-2"
-								style="border-color: #000100; color: #000100;"
-								placeholder="Enter current password"
-								required
-							/>
-						</div>
-
-						<!-- New Password -->
-						<div>
-							<label for="newPassword" class="block text-sm font-medium mb-2" style="color: #000100;">
-								New Password
-							</label>
-							<input
-								id="newPassword"
-								name="newPassword"
-								type="password"
-								bind:value={newPassword}
-								class="w-full border-2 px-4 py-2 focus:outline-none focus:ring-2"
-								style="border-color: #000100; color: #000100;"
-								placeholder="Enter new password"
-								required
-								minlength="8"
-							/>
-						</div>
-
-						<!-- Confirm Password -->
-						<div>
-							<label for="confirmPassword" class="block text-sm font-medium mb-2" style="color: #000100;">
-								Confirm New Password
-							</label>
-							<input
-								id="confirmPassword"
-								name="confirmPassword"
-								type="password"
-								bind:value={confirmPassword}
-								class="w-full border-2 px-4 py-2 focus:outline-none focus:ring-2"
-								style="border-color: #000100; color: #000100;"
-								placeholder="Confirm new password"
-								required
-								minlength="8"
-							/>
-						</div>
-
-						<!-- Change Password Button -->
-						<div class="pt-2">
+					<div class="max-w-2xl">
+						<p class="mb-4" style="color: #A1A6B4;">
+							To change your password, we'll send a password reset link to your email address.
+						</p>
+						<form 
+							method="POST" 
+							action="?/changePassword"
+							use:enhance={() => {
+								isSubmitting = true;
+								return async ({ update }) => {
+									await update();
+									isSubmitting = false;
+								};
+							}}
+						>
+							<input type="hidden" name="email" value={email} />
 							<button
 								type="submit"
 								disabled={isSubmitting}
 								class="border-2 bg-white px-8 py-2 font-medium hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
 								style="border-color: #000100; color: #000100;"
 							>
-								{isSubmitting ? 'Changing...' : 'Change Password'}
+								{isSubmitting ? 'Sending...' : 'Send Password Reset Email'}
 							</button>
-						</div>
-					</form>
+						</form>
+					</div>
 				</div>
 			</div>
 
