@@ -22,6 +22,8 @@ jobs:
         with:
           nix_path: nixpkgs=channel:nixos-unstable
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: |
+            download-buffer-size = 512000000
 
       - name: Use Cachix Cache 📦
         uses: cachix/cachix-action@v16
