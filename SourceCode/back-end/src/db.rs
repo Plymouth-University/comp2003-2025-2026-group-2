@@ -1,7 +1,7 @@
-use sqlx::SqlitePool;
 use anyhow::Result;
-use uuid::Uuid;
 use serde::{Deserialize, Serialize};
+use sqlx::SqlitePool;
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum UserRole {
@@ -55,12 +55,12 @@ pub struct UserRecord {
 }
 
 impl UserRecord {
-    #[must_use] 
+    #[must_use]
     pub fn get_role(&self) -> UserRole {
         self.role.parse().unwrap_or(UserRole::Member)
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn is_admin(&self) -> bool {
         self.get_role() == UserRole::Admin
     }
@@ -345,11 +345,7 @@ pub async fn get_user_by_id(pool: &SqlitePool, id: &str) -> Result<Option<UserRe
     Ok(user)
 }
 
-pub async fn create_company(
-    pool: &SqlitePool,
-    name: String,
-    address: String,
-) -> Result<Company> {
+pub async fn create_company(pool: &SqlitePool, name: String, address: String) -> Result<Company> {
     let id = Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
 
@@ -443,10 +439,7 @@ pub async fn get_invitation_by_token(pool: &SqlitePool, token: &str) -> Result<O
     Ok(invitation)
 }
 
-pub async fn accept_invitation(
-    pool: &SqlitePool,
-    invitation_id: &str,
-) -> Result<()> {
+pub async fn accept_invitation(pool: &SqlitePool, invitation_id: &str) -> Result<()> {
     let now = chrono::Utc::now().to_rfc3339();
 
     sqlx::query!(
@@ -657,10 +650,7 @@ pub async fn get_password_reset_by_token(
     Ok(result)
 }
 
-pub async fn mark_password_reset_used(
-    pool: &SqlitePool,
-    reset_id: &str,
-) -> Result<()> {
+pub async fn mark_password_reset_used(pool: &SqlitePool, reset_id: &str) -> Result<()> {
     let now = chrono::Utc::now().to_rfc3339();
 
     sqlx::query!(

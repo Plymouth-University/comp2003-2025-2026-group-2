@@ -1,13 +1,19 @@
-use lettre::{
-    message::header::ContentType,
-    transport::smtp::authentication::Credentials,
-    Message, SmtpTransport, Transport,
-};
 use anyhow::{Result, anyhow};
+use lettre::{
+    Message, SmtpTransport, Transport, message::header::ContentType,
+    transport::smtp::authentication::Credentials,
+};
 
-pub async fn send_invitation_email(to_email: &str, invite_link: &str, company_name: &str) -> Result<()> {
+pub async fn send_invitation_email(
+    to_email: &str,
+    invite_link: &str,
+    company_name: &str,
+) -> Result<()> {
     let Ok(smtp_username) = std::env::var("SMTP_USERNAME") else {
-        tracing::warn!("SMTP not configured (SMTP_USERNAME missing), skipping email send to {}", to_email);
+        tracing::warn!(
+            "SMTP not configured (SMTP_USERNAME missing), skipping email send to {}",
+            to_email
+        );
         return Ok(());
     };
     let smtp_server = std::env::var("SMTP_SERVER")
@@ -16,18 +22,28 @@ pub async fn send_invitation_email(to_email: &str, invite_link: &str, company_na
         .map_err(|_| anyhow!("SMTP_PASSWORD environment variable not set"))?;
     let from_email = std::env::var("SMTP_FROM_EMAIL")
         .map_err(|_| anyhow!("SMTP_FROM_EMAIL environment variable not set"))?;
-    let from_name = std::env::var("SMTP_FROM_NAME")
-        .unwrap_or_else(|_| "LogSmart".to_string());
+    let from_name = std::env::var("SMTP_FROM_NAME").unwrap_or_else(|_| "LogSmart".to_string());
 
     let sender = format!("{from_name} <{from_email}>");
 
     let email = Message::builder()
-        .sender(sender.parse()
-            .map_err(|e| anyhow!("Cannot parse sender address: {e}"))?)
-        .reply_to(sender.parse().map_err(|e| anyhow!("Cannot parse reply-to address: {e}"))?)
-        .from(sender.parse()
-            .map_err(|e| anyhow!("Cannot parse from address: {e}"))?)
-        .to(to_email.parse()
+        .sender(
+            sender
+                .parse()
+                .map_err(|e| anyhow!("Cannot parse sender address: {e}"))?,
+        )
+        .reply_to(
+            sender
+                .parse()
+                .map_err(|e| anyhow!("Cannot parse reply-to address: {e}"))?,
+        )
+        .from(
+            sender
+                .parse()
+                .map_err(|e| anyhow!("Cannot parse from address: {e}"))?,
+        )
+        .to(to_email
+            .parse()
             .map_err(|e| anyhow!("Invalid email address: {e}"))?)
         .subject(format!("{company_name} has invited you to join LogSmart"))
         .header(ContentType::TEXT_PLAIN)
@@ -51,20 +67,24 @@ pub async fn send_invitation_email(to_email: &str, invite_link: &str, company_na
         .build();
 
     tokio::task::spawn_blocking(move || {
-        mailer.send(&email)
+        mailer
+            .send(&email)
             .map_err(|e| anyhow!("Failed to send email: {e}"))
     })
     .await
     .map_err(|e| anyhow!("Task join error: {e}"))??;
 
     tracing::info!("Invitation email sent to {}", to_email);
-    
+
     Ok(())
 }
 
 pub async fn send_password_reset_email(to_email: &str, reset_link: &str) -> Result<()> {
     let Ok(smtp_username) = std::env::var("SMTP_USERNAME") else {
-        tracing::warn!("SMTP not configured (SMTP_USERNAME missing), skipping email send to {}", to_email);
+        tracing::warn!(
+            "SMTP not configured (SMTP_USERNAME missing), skipping email send to {}",
+            to_email
+        );
         return Ok(());
     };
     let smtp_server = std::env::var("SMTP_SERVER")
@@ -73,18 +93,28 @@ pub async fn send_password_reset_email(to_email: &str, reset_link: &str) -> Resu
         .map_err(|_| anyhow!("SMTP_PASSWORD environment variable not set"))?;
     let from_email = std::env::var("SMTP_FROM_EMAIL")
         .map_err(|_| anyhow!("SMTP_FROM_EMAIL environment variable not set"))?;
-    let from_name = std::env::var("SMTP_FROM_NAME")
-        .unwrap_or_else(|_| "LogSmart".to_string());
+    let from_name = std::env::var("SMTP_FROM_NAME").unwrap_or_else(|_| "LogSmart".to_string());
 
     let sender = format!("{from_name} <{from_email}>");
 
     let email = Message::builder()
-        .sender(sender.parse()
-            .map_err(|e| anyhow!("Cannot parse sender address: {e}"))?)
-        .reply_to(sender.parse().map_err(|e| anyhow!("Cannot parse reply-to address: {e}"))?)
-        .from(sender.parse()
-            .map_err(|e| anyhow!("Cannot parse from address: {e}"))?)
-        .to(to_email.parse()
+        .sender(
+            sender
+                .parse()
+                .map_err(|e| anyhow!("Cannot parse sender address: {e}"))?,
+        )
+        .reply_to(
+            sender
+                .parse()
+                .map_err(|e| anyhow!("Cannot parse reply-to address: {e}"))?,
+        )
+        .from(
+            sender
+                .parse()
+                .map_err(|e| anyhow!("Cannot parse from address: {e}"))?,
+        )
+        .to(to_email
+            .parse()
             .map_err(|e| anyhow!("Invalid email address: {e}"))?)
         .subject("LogSmart Password Reset Request")
         .header(ContentType::TEXT_PLAIN)
@@ -108,13 +138,14 @@ pub async fn send_password_reset_email(to_email: &str, reset_link: &str) -> Resu
         .build();
 
     tokio::task::spawn_blocking(move || {
-        mailer.send(&email)
+        mailer
+            .send(&email)
             .map_err(|e| anyhow!("Failed to send email: {e}"))
     })
     .await
     .map_err(|e| anyhow!("Task join error: {e}"))??;
 
     tracing::info!("Password reset email sent to {}", to_email);
-    
+
     Ok(())
 }

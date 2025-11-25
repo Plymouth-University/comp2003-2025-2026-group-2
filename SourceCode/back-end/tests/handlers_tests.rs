@@ -1,6 +1,6 @@
 use back_end::handlers::{
-    RegisterRequest, LoginRequest, InviteUserRequest, AcceptInvitationRequest,
-    AuthResponse, UserResponse, InvitationResponse, get_jwt_secret,
+    AcceptInvitationRequest, AuthResponse, InvitationResponse, InviteUserRequest, LoginRequest,
+    RegisterRequest, UserResponse, get_jwt_secret,
 };
 
 #[test]

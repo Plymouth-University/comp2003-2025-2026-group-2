@@ -1,5 +1,5 @@
-use utoipa::OpenApi;
 use crate::handlers;
+use utoipa::OpenApi;
 
 #[derive(OpenApi)]
 #[openapi(
@@ -50,7 +50,7 @@ impl utoipa::Modify for SecurityAddon {
                 utoipa::openapi::security::SecurityScheme::Http(
                     utoipa::openapi::security::Http::new(
                         utoipa::openapi::security::HttpAuthScheme::Bearer,
-                    )
+                    ),
                 ),
             );
         }

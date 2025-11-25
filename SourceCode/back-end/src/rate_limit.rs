@@ -1,15 +1,15 @@
 use axum::{
+    Json,
     extract::{ConnectInfo, Request, State},
     http::StatusCode,
     middleware::Next,
     response::{IntoResponse, Response},
-    Json,
 };
 use dashmap::DashMap;
 use governor::{
-    clock::DefaultClock,
-    state::{direct::NotKeyed, InMemoryState},
     Quota, RateLimiter,
+    clock::DefaultClock,
+    state::{InMemoryState, direct::NotKeyed},
 };
 use serde_json::json;
 use std::net::IpAddr;
@@ -17,8 +17,24 @@ use std::num::NonZeroU32;
 use std::sync::Arc;
 use std::time::Instant;
 
-type IpLimiter = Arc<DashMap<IpAddr, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>>;
-type StringLimiter = Arc<DashMap<String, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>>;
+type IpLimiter = Arc<
+    DashMap<
+        IpAddr,
+        (
+            Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
+            Instant,
+        ),
+    >,
+>;
+type StringLimiter = Arc<
+    DashMap<
+        String,
+        (
+            Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
+            Instant,
+        ),
+    >,
+>;
 
 #[derive(Clone)]
 pub struct RateLimitState {
@@ -35,11 +51,11 @@ impl RateLimitState {
         let disabled = std::env::var("DISABLE_RATE_LIMIT")
             .map(|v| v.eq_ignore_ascii_case("true") || v == "1")
             .unwrap_or(false);
-        
+
         if disabled {
             tracing::warn!("Rate limiting is DISABLED via DISABLE_RATE_LIMIT environment variable");
         }
-        
+
         Self {
             ip_login_limiter: Arc::new(DashMap::new()),
             ip_register_limiter: Arc::new(DashMap::new()),
@@ -51,7 +67,13 @@ impl RateLimitState {
     }
 
     fn get_or_create_ip_limiter(
-        map: &DashMap<IpAddr, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>,
+        map: &DashMap<
+            IpAddr,
+            (
+                Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
+                Instant,
+            ),
+        >,
         ip: IpAddr,
         quota: Quota,
     ) -> Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>> {
@@ -63,7 +85,13 @@ impl RateLimitState {
     }
 
     fn get_or_create_string_limiter(
-        map: &DashMap<String, (Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>, Instant)>,
+        map: &DashMap<
+            String,
+            (
+                Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
+                Instant,
+            ),
+        >,
         key: String,
         quota: Quota,
     ) -> Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>> {
@@ -76,26 +104,21 @@ impl RateLimitState {
 
     pub fn cleanup_expired_entries(&self, max_age: std::time::Duration) {
         let now = Instant::now();
-        
-        self.ip_login_limiter.retain(|_, (_, last_access)| {
-            now.duration_since(*last_access) < max_age
-        });
-        
-        self.ip_register_limiter.retain(|_, (_, last_access)| {
-            now.duration_since(*last_access) < max_age
-        });
-        
-        self.ip_general_limiter.retain(|_, (_, last_access)| {
-            now.duration_since(*last_access) < max_age
-        });
-        
-        self.email_login_limiter.retain(|_, (_, last_access)| {
-            now.duration_since(*last_access) < max_age
-        });
-        
-        self.email_register_limiter.retain(|_, (_, last_access)| {
-            now.duration_since(*last_access) < max_age
-        });
+
+        self.ip_login_limiter
+            .retain(|_, (_, last_access)| now.duration_since(*last_access) < max_age);
+
+        self.ip_register_limiter
+            .retain(|_, (_, last_access)| now.duration_since(*last_access) < max_age);
+
+        self.ip_general_limiter
+            .retain(|_, (_, last_access)| now.duration_since(*last_access) < max_age);
+
+        self.email_login_limiter
+            .retain(|_, (_, last_access)| now.duration_since(*last_access) < max_age);
+
+        self.email_register_limiter
+            .retain(|_, (_, last_access)| now.duration_since(*last_access) < max_age);
     }
 
     pub fn spawn_cleanup_task(self) {
@@ -109,35 +132,43 @@ impl RateLimitState {
         });
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn check_login(&self, ip: IpAddr) -> bool {
         let quota = Quota::per_minute(NonZeroU32::new(5).unwrap());
         let limiter = Self::get_or_create_ip_limiter(&self.ip_login_limiter, ip, quota);
         limiter.check().is_ok()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn check_login_email(&self, email: &str) -> bool {
         let quota = Quota::per_minute(NonZeroU32::new(10).unwrap());
-        let limiter = Self::get_or_create_string_limiter(&self.email_login_limiter, email.to_lowercase(), quota);
+        let limiter = Self::get_or_create_string_limiter(
+            &self.email_login_limiter,
+            email.to_lowercase(),
+            quota,
+        );
         limiter.check().is_ok()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn check_register(&self, ip: IpAddr) -> bool {
         let quota = Quota::per_minute(NonZeroU32::new(10).unwrap());
         let limiter = Self::get_or_create_ip_limiter(&self.ip_register_limiter, ip, quota);
         limiter.check().is_ok()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn check_register_email(&self, email: &str) -> bool {
         let quota = Quota::per_minute(NonZeroU32::new(20).unwrap());
-        let limiter = Self::get_or_create_string_limiter(&self.email_register_limiter, email.to_lowercase(), quota);
+        let limiter = Self::get_or_create_string_limiter(
+            &self.email_register_limiter,
+            email.to_lowercase(),
+            quota,
+        );
         limiter.check().is_ok()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn check_general(&self, ip: IpAddr) -> bool {
         let quota = Quota::per_minute(NonZeroU32::new(60).unwrap());
         let limiter = Self::get_or_create_ip_limiter(&self.ip_general_limiter, ip, quota);
@@ -154,7 +185,10 @@ impl Default for RateLimitState {
 fn extract_email_from_body(body: &[u8]) -> Option<String> {
     serde_json::from_slice::<serde_json::Value>(body)
         .ok()
-        .and_then(|json| json.get("email").and_then(|e| e.as_str().map(std::string::ToString::to_string)))
+        .and_then(|json| {
+            json.get("email")
+                .and_then(|e| e.as_str().map(std::string::ToString::to_string))
+        })
 }
 
 pub async fn rate_limit_middleware(
@@ -163,7 +197,8 @@ pub async fn rate_limit_middleware(
     req: Request,
     next: Next,
 ) -> Response {
-    let ip = req.headers()
+    let ip = req
+        .headers()
         .get("x-forwarded-for")
         .and_then(|h| h.to_str().ok())
         .and_then(|s| s.split(',').next())
@@ -175,14 +210,14 @@ pub async fn rate_limit_middleware(
     }
 
     let path = req.uri().path().to_string();
-    
+
     let (parts, body) = req.into_parts();
     let body_bytes = axum::body::to_bytes(body, usize::MAX)
         .await
         .unwrap_or_default();
-    
+
     let email = extract_email_from_body(&body_bytes);
-    
+
     let ip_allowed = if path.contains("/auth/login") {
         app_state.rate_limit.check_login(ip)
     } else if path.contains("/auth/register") {
@@ -196,7 +231,7 @@ pub async fn rate_limit_middleware(
         tracing::warn!("Rate limit exceeded for IP: {}", ip);
         return (
             StatusCode::TOO_MANY_REQUESTS,
-            Json(json!({ 
+            Json(json!({
                 "error": "Rate limit exceeded for your IP address. Please try again later.",
                 "retry_after": "60"
             })),
@@ -218,7 +253,7 @@ pub async fn rate_limit_middleware(
             tracing::warn!("Rate limit exceeded for email: {}", email_str);
             return (
                 StatusCode::TOO_MANY_REQUESTS,
-                Json(json!({ 
+                Json(json!({
                     "error": "Rate limit exceeded for this email address. Please try again later.",
                     "retry_after": if path.contains("/auth/login") { "60" } else { "3600" }
                 })),

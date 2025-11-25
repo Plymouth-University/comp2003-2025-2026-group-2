@@ -1,12 +1,12 @@
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
-use serde::{Deserialize, Serialize};
-use chrono::{Duration, Utc};
 use anyhow::{Result, anyhow};
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
+    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
+use chrono::{Duration, Utc};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use regex::Regex;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
@@ -21,7 +21,7 @@ pub struct JwtConfig {
 }
 
 impl JwtConfig {
-    #[must_use] 
+    #[must_use]
     pub fn new(secret: String) -> Self {
         Self { secret }
     }
@@ -67,25 +67,26 @@ pub fn hash_password(password: &str) -> Result<String> {
 }
 
 pub fn verify_password(password: &str, hash: &str) -> Result<bool> {
-    let parsed_hash = PasswordHash::new(hash)
-        .map_err(|e| anyhow!("Invalid password hash format: {e}"))?;
+    let parsed_hash =
+        PasswordHash::new(hash).map_err(|e| anyhow!("Invalid password hash format: {e}"))?;
     let argon2 = Argon2::default();
-    Ok(argon2.verify_password(password.as_bytes(), &parsed_hash).is_ok())
+    Ok(argon2
+        .verify_password(password.as_bytes(), &parsed_hash)
+        .is_ok())
 }
 
 pub fn validate_email(email: &str) -> Result<()> {
-    let email_regex = Regex::new(
-        r#"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"#
-    ).expect("Invalid regex pattern");
-    
+    let email_regex = Regex::new(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)")
+        .expect("Invalid regex pattern");
+
     if !email_regex.is_match(email) {
         return Err(anyhow!("Invalid email format"));
     }
-    
+
     if email.len() > 254 {
         return Err(anyhow!("Email address too long"));
     }
-    
+
     Ok(())
 }
 
@@ -93,36 +94,42 @@ pub fn validate_password_policy(password: &str) -> Result<()> {
     if password.len() < 8 {
         return Err(anyhow!("Password must be at least 8 characters long"));
     }
-    
+
     if password.len() > 128 {
         return Err(anyhow!("Password must not exceed 128 characters"));
     }
-    
+
     let has_uppercase = password.chars().any(char::is_uppercase);
     let has_lowercase = password.chars().any(char::is_lowercase);
     let has_digit = password.chars().any(char::is_numeric);
     let has_special = password.chars().any(|c| !c.is_alphanumeric());
-    
+
     if !has_uppercase {
-        return Err(anyhow!("Password must contain at least one uppercase letter"));
+        return Err(anyhow!(
+            "Password must contain at least one uppercase letter"
+        ));
     }
-    
+
     if !has_lowercase {
-        return Err(anyhow!("Password must contain at least one lowercase letter"));
+        return Err(anyhow!(
+            "Password must contain at least one lowercase letter"
+        ));
     }
-    
+
     if !has_digit {
         return Err(anyhow!("Password must contain at least one digit"));
     }
-    
+
     if !has_special {
-        return Err(anyhow!("Password must contain at least one special character"));
+        return Err(anyhow!(
+            "Password must contain at least one special character"
+        ));
     }
-    
+
     Ok(())
 }
 
-#[must_use] 
+#[must_use]
 pub fn generate_uuid6_token() -> String {
     uuid::Uuid::now_v6(&[0u8; 6]).to_string()
 }

@@ -1,4 +1,4 @@
-use back_end::auth::{JwtConfig, Claims};
+use back_end::auth::{Claims, JwtConfig};
 
 #[test]
 fn test_auth_error_missing_token_format() {

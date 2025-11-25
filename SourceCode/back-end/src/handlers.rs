@@ -1,23 +1,30 @@
+use crate::{
+    AppState,
+    auth::{
+        JwtConfig, generate_uuid6_token, hash_password, validate_email, validate_password_policy,
+        verify_password,
+    },
+    db, email,
+    middleware::AuthToken,
+};
 use axum::{
+    Json,
     extract::{ConnectInfo, State},
     http::{HeaderMap, StatusCode, header::SET_COOKIE},
     response::IntoResponse,
-    Json,
 };
+use chrono::Duration;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use chrono::Duration;
-use uuid::Uuid;
 use utoipa::ToSchema;
-use crate::{
-    AppState, auth::{JwtConfig, generate_uuid6_token, hash_password, validate_email, validate_password_policy, verify_password}, db, email, middleware::AuthToken
-};
+use uuid::Uuid;
 
 fn extract_ip_from_headers_and_addr(headers: &HeaderMap, addr: &std::net::SocketAddr) -> String {
     headers
         .get("x-forwarded-for")
         .and_then(|h| h.to_str().ok())
-        .and_then(|s| s.split(',').next()).map_or_else(|| addr.ip().to_string(), |s| s.trim().to_string())
+        .and_then(|s| s.split(',').next())
+        .map_or_else(|| addr.ip().to_string(), |s| s.trim().to_string())
 }
 
 fn extract_user_agent(headers: &HeaderMap) -> Option<String> {
@@ -162,28 +169,32 @@ pub async fn verify_token(
     Json(payload): Json<VerifyTokenRequest>,
 ) -> Result<Json<JwtVerifyResponse>, (StatusCode, Json<serde_json::Value>)> {
     let jwt_config = JwtConfig::new(get_jwt_secret());
-    let claims = jwt_config
-        .validate_token(&payload.token)
-        .map_err(|e| {
-            tracing::error!("Token verification failed: {:?}", e);
-            (StatusCode::UNAUTHORIZED, Json(json!({ "error": "Invalid or expired token" })))
-        })?;
+    let claims = jwt_config.validate_token(&payload.token).map_err(|e| {
+        tracing::error!("Token verification failed: {:?}", e);
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "Invalid or expired token" })),
+        )
+    })?;
     let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
         .await
         .map_err(|e| {
-            tracing::error!("Database error fetching user during token verification: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+            tracing::error!(
+                "Database error fetching user during token verification: {:?}",
+                e
+            );
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
         })?
         .ok_or((
             StatusCode::NOT_FOUND,
             Json(json!({ "error": "User not found" })),
         ))?;
 
-    Ok(Json(JwtVerifyResponse {
-        email: user.email,
-    }))
+    Ok(Json(JwtVerifyResponse { email: user.email }))
 }
-
 
 #[utoipa::path(
     post,
@@ -205,13 +216,17 @@ pub async fn register_company_admin(
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let _timer = crate::metrics::RequestTimer::new();
     state.metrics.increment_total_requests();
-    
+
     let ip_address = extract_ip_from_headers_and_addr(&headers, &addr);
     let user_agent = extract_user_agent(&headers);
 
-    if payload.email.is_empty() || payload.first_name.is_empty() 
-        || payload.last_name.is_empty() || payload.password.is_empty() 
-        || payload.company_name.is_empty() || payload.company_address.is_empty() {
+    if payload.email.is_empty()
+        || payload.first_name.is_empty()
+        || payload.last_name.is_empty()
+        || payload.password.is_empty()
+        || payload.company_name.is_empty()
+        || payload.company_address.is_empty()
+    {
         return Err((
             StatusCode::BAD_REQUEST,
             Json(json!({ "error": "Missing required fields" })),
@@ -236,7 +251,10 @@ pub async fn register_company_admin(
         .await
         .map_err(|e| {
             tracing::error!("Database error checking existing user: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
         })?
         .is_some()
     {
@@ -246,18 +264,21 @@ pub async fn register_company_admin(
         ));
     }
 
-    let password_hash = hash_password(&payload.password)
-        .map_err(|e| {
-            tracing::error!("Failed to hash password: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to process password" })))
-        })?;
+    let password_hash = hash_password(&payload.password).map_err(|e| {
+        tracing::error!("Failed to hash password: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to process password" })),
+        )
+    })?;
 
-    let mut tx = state.sqlite.begin()
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to begin transaction: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database transaction error" })))
-        })?;
+    let mut tx = state.sqlite.begin().await.map_err(|e| {
+        tracing::error!("Failed to begin transaction: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Database transaction error" })),
+        )
+    })?;
 
     let user_id = Uuid::new_v4().to_string();
     let now = chrono::Utc::now().to_rfc3339();
@@ -299,7 +320,10 @@ pub async fn register_company_admin(
     .await
     .map_err(|e| {
         tracing::error!("Failed to create company in transaction: {:?}", e);
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to create company" })))
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to create company" })),
+        )
     })?;
 
     sqlx::query("UPDATE users SET company_id = ? WHERE id = ?")
@@ -309,22 +333,29 @@ pub async fn register_company_admin(
         .await
         .map_err(|e| {
             tracing::error!("Failed to link user to company: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to link user to company" })))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to link user to company" })),
+            )
         })?;
 
-    tx.commit()
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to commit registration transaction: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to commit transaction" })))
-        })?;
+    tx.commit().await.map_err(|e| {
+        tracing::error!("Failed to commit registration transaction: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to commit transaction" })),
+        )
+    })?;
 
     let jwt_config = JwtConfig::new(get_jwt_secret());
     let token = jwt_config
         .generate_token(user_id.clone(), 24)
         .map_err(|e| {
             tracing::error!("Failed to generate JWT token: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to generate token" })))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to generate token" })),
+            )
         })?;
 
     let _ = db::log_security_event(
@@ -334,7 +365,10 @@ pub async fn register_company_admin(
         Some(payload.email.clone()),
         Some(ip_address),
         user_agent,
-        Some(format!("Company admin registered: {}", payload.company_name)),
+        Some(format!(
+            "Company admin registered: {}",
+            payload.company_name
+        )),
         true,
     )
     .await;
@@ -361,9 +395,12 @@ pub async fn register_company_admin(
                 role: role_str,
             },
         }),
-    ).into_response();
+    )
+        .into_response();
 
-    response.headers_mut().insert(SET_COOKIE, cookie.parse().unwrap());
+    response
+        .headers_mut()
+        .insert(SET_COOKIE, cookie.parse().unwrap());
 
     Ok(response)
 }
@@ -389,7 +426,7 @@ pub async fn login(
     let _timer = crate::metrics::RequestTimer::new();
     state.metrics.increment_total_requests();
     state.metrics.increment_login_attempts();
-    
+
     let ip_address = extract_ip_from_headers_and_addr(&headers, &addr);
     let user_agent = extract_user_agent(&headers);
 
@@ -404,9 +441,12 @@ pub async fn login(
         .await
         .map_err(|e| {
             tracing::error!("Database error during login lookup: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
         })?;
-    
+
     if user.is_none() {
         let _ = db::log_security_event(
             &state.sqlite,
@@ -430,19 +470,22 @@ pub async fn login(
     }
 
     let user = match user {
-        None => return Err((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "Invalid email or password" })),
-        )),
+        None => {
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                Json(json!({ "error": "Invalid email or password" })),
+            ));
+        }
         Some(user) => user,
     };
 
-
-    let password_valid = verify_password(&payload.password, &user.password_hash)
-        .map_err(|e| {
-            tracing::error!("Password verification error: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Authentication failed" })))
-        })?;
+    let password_valid = verify_password(&payload.password, &user.password_hash).map_err(|e| {
+        tracing::error!("Password verification error: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Authentication failed" })),
+        )
+    })?;
 
     if !password_valid {
         let _ = db::log_security_event(
@@ -471,7 +514,10 @@ pub async fn login(
         .generate_token(user.id.clone(), 24)
         .map_err(|e| {
             tracing::error!("Failed to generate login JWT token: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to generate token" })))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to generate token" })),
+            )
         })?;
 
     let _ = db::log_security_event(
@@ -505,9 +551,12 @@ pub async fn login(
             company_name: user.company_name,
             role: user.role,
         },
-    }).into_response();
+    })
+    .into_response();
 
-    response.headers_mut().insert(SET_COOKIE, cookie.parse().unwrap());
+    response
+        .headers_mut()
+        .insert(SET_COOKIE, cookie.parse().unwrap());
 
     Ok(response)
 }
@@ -533,7 +582,10 @@ pub async fn get_current_user(
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching current user: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
         })?
         .ok_or((
             StatusCode::NOT_FOUND,
@@ -568,7 +620,7 @@ pub async fn invite_user(
 ) -> Result<(StatusCode, Json<InvitationResponse>), (StatusCode, Json<serde_json::Value>)> {
     let _timer = crate::metrics::RequestTimer::new();
     state.metrics.increment_total_requests();
-    
+
     let ip_address = extract_ip_from_headers_and_addr(&headers, &addr);
     let user_agent = extract_user_agent(&headers);
 
@@ -586,7 +638,18 @@ pub async fn invite_user(
         ));
     }
 
-    let result = sqlx::query_as::<_, (String, String, String, String, String, Option<String>, String)>(
+    let result = sqlx::query_as::<
+        _,
+        (
+            String,
+            String,
+            String,
+            String,
+            String,
+            Option<String>,
+            String,
+        ),
+    >(
         r"
         SELECT u.id, u.email, u.first_name, u.last_name, u.password_hash, u.company_id, u.role
         FROM users u
@@ -598,11 +661,25 @@ pub async fn invite_user(
     .fetch_optional(&state.sqlite)
     .await
     .map_err(|e| {
-        tracing::error!("Database error verifying admin user for invitation: {:?}", e);
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+        tracing::error!(
+            "Database error verifying admin user for invitation: {:?}",
+            e
+        );
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Database error" })),
+        )
     })?;
 
-    let (admin_id, admin_email, _admin_first_name, _admin_last_name, _admin_password_hash, company_id_opt, _admin_role) = result.ok_or((
+    let (
+        admin_id,
+        admin_email,
+        _admin_first_name,
+        _admin_last_name,
+        _admin_password_hash,
+        company_id_opt,
+        _admin_role,
+    ) = result.ok_or((
         StatusCode::FORBIDDEN,
         Json(json!({ "error": "Only company admin can invite users" })),
     ))?;
@@ -626,23 +703,31 @@ pub async fn invite_user(
     .map_err(|e| {
         if e.to_string().contains("UNIQUE constraint failed") {
             tracing::warn!("Duplicate invitation attempt for email: {}", payload.email);
-            (StatusCode::CONFLICT, Json(json!({ "error": "User already invited" })))
+            (
+                StatusCode::CONFLICT,
+                Json(json!({ "error": "User already invited" })),
+            )
         } else {
             tracing::error!("Failed to create invitation: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to create invitation" })))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to create invitation" })),
+            )
         }
     })?;
 
     let invite_link = format!(
         "{}/accept-invitation?token={}",
-        "https://logsmart.app",
-        invitation.token
+        "https://logsmart.app", invitation.token
     );
     email::send_invitation_email(&payload.email, &invite_link, "Your Company Name")
         .await
         .map_err(|e| {
             tracing::error!("Failed to send invitation email: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to send invitation email" })))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to send invitation email" })),
+            )
         })?;
 
     let _ = db::log_security_event(
@@ -691,12 +776,15 @@ pub async fn accept_invitation(
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let _timer = crate::metrics::RequestTimer::new();
     state.metrics.increment_total_requests();
-    
+
     let ip_address = extract_ip_from_headers_and_addr(&headers, &addr);
     let user_agent = extract_user_agent(&headers);
 
-    if payload.token.is_empty() || payload.first_name.is_empty() 
-        || payload.last_name.is_empty() || payload.password.is_empty() {
+    if payload.token.is_empty()
+        || payload.first_name.is_empty()
+        || payload.last_name.is_empty()
+        || payload.password.is_empty()
+    {
         return Err((
             StatusCode::BAD_REQUEST,
             Json(json!({ "error": "Missing required fields" })),
@@ -714,7 +802,10 @@ pub async fn accept_invitation(
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching invitation by token: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
         })?
         .ok_or((
             StatusCode::UNAUTHORIZED,
@@ -739,8 +830,14 @@ pub async fn accept_invitation(
     if db::get_user_by_email(&state.sqlite, &invitation.email)
         .await
         .map_err(|e| {
-            tracing::error!("Database error checking existing user during invitation acceptance: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+            tracing::error!(
+                "Database error checking existing user during invitation acceptance: {:?}",
+                e
+            );
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
         })?
         .is_some()
     {
@@ -750,18 +847,27 @@ pub async fn accept_invitation(
         ));
     }
 
-    let password_hash = hash_password(&payload.password)
-        .map_err(|e| {
-            tracing::error!("Failed to hash password during invitation acceptance: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to process password" })))
-        })?;
+    let password_hash = hash_password(&payload.password).map_err(|e| {
+        tracing::error!(
+            "Failed to hash password during invitation acceptance: {:?}",
+            e
+        );
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to process password" })),
+        )
+    })?;
 
-    let mut tx = state.sqlite.begin()
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to begin transaction for invitation acceptance: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database transaction error" })))
-        })?;
+    let mut tx = state.sqlite.begin().await.map_err(|e| {
+        tracing::error!(
+            "Failed to begin transaction for invitation acceptance: {:?}",
+            e
+        );
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Database transaction error" })),
+        )
+    })?;
 
     let user_id = Uuid::new_v4().to_string();
     let created_at = chrono::Utc::now().to_rfc3339();
@@ -802,22 +908,35 @@ pub async fn accept_invitation(
     .await
     .map_err(|e| {
         tracing::error!("Failed to mark invitation as accepted: {:?}", e);
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to accept invitation" })))
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to accept invitation" })),
+        )
     })?;
 
-    tx.commit()
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to commit invitation acceptance transaction: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to commit transaction" })))
-        })?;
+    tx.commit().await.map_err(|e| {
+        tracing::error!(
+            "Failed to commit invitation acceptance transaction: {:?}",
+            e
+        );
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to commit transaction" })),
+        )
+    })?;
 
     let jwt_config = JwtConfig::new(get_jwt_secret());
     let token = jwt_config
         .generate_token(user_id.clone(), 24)
         .map_err(|e| {
-            tracing::error!("Failed to generate JWT token for invitation acceptance: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to generate token" })))
+            tracing::error!(
+                "Failed to generate JWT token for invitation acceptance: {:?}",
+                e
+            );
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to generate token" })),
+            )
         })?;
 
     let _ = db::log_security_event(
@@ -854,14 +973,17 @@ pub async fn accept_invitation(
                 role: role_str,
             },
         }),
-    ).into_response();
+    )
+        .into_response();
 
-    response.headers_mut().insert(SET_COOKIE, cookie.parse().unwrap());
+    response
+        .headers_mut()
+        .insert(SET_COOKIE, cookie.parse().unwrap());
 
     Ok(response)
 }
 
-#[must_use] 
+#[must_use]
 pub fn get_jwt_secret() -> String {
     std::env::var("JWT_SECRET").unwrap_or_else(|_| "logsmart_secret_key_for_testing".to_string())
 }
@@ -892,7 +1014,10 @@ pub async fn update_profile(
     .await
     .map_err(|e| {
         tracing::error!("Failed to update profile: {:?}", e);
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to update profile" })))
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to update profile" })),
+        )
     })?;
 
     let _ = db::log_security_event(
@@ -929,7 +1054,10 @@ pub async fn request_password_reset(
         .await
         .map_err(|e| {
             tracing::error!("Database error: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
         })?;
 
     if let Some(user_record) = user {
@@ -944,15 +1072,9 @@ pub async fn request_password_reset(
         )
         .await;
 
-        let reset_url = format!(
-            "https://logsmart.app/reset-password?token={reset_token}"
-        );
+        let reset_url = format!("https://logsmart.app/reset-password?token={reset_token}");
 
-        let _ = email::send_password_reset_email(
-            &payload.email,
-            &reset_url,
-        )
-        .await;
+        let _ = email::send_password_reset_email(&payload.email, &reset_url).await;
 
         let _ = db::log_security_event(
             &state.sqlite,
@@ -980,7 +1102,8 @@ pub async fn request_password_reset(
     }
 
     Ok(Json(PasswordResetResponse {
-        message: "If an account exists with this email, a password reset link has been sent.".to_string(),
+        message: "If an account exists with this email, a password reset link has been sent."
+            .to_string(),
     }))
 }
 
@@ -1004,35 +1127,51 @@ pub async fn reset_password(
         .await
         .map_err(|e| {
             tracing::error!("Database error: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Database error" })))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
         })?
         .ok_or_else(|| {
-            (StatusCode::UNAUTHORIZED, Json(json!({ "error": "Invalid or expired reset token" })))
+            (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({ "error": "Invalid or expired reset token" })),
+            )
         })?;
 
-    validate_password_policy(&payload.new_password)
-        .map_err(|e| {
-            (StatusCode::BAD_REQUEST, Json(json!({ "error": e.to_string() })))
-        })?;
+    validate_password_policy(&payload.new_password).map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": e.to_string() })),
+        )
+    })?;
 
-    let password_hash = hash_password(&payload.new_password)
-        .map_err(|e| {
-            tracing::error!("Failed to hash password: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to process password" })))
-        })?;
+    let password_hash = hash_password(&payload.new_password).map_err(|e| {
+        tracing::error!("Failed to hash password: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to process password" })),
+        )
+    })?;
 
     db::update_user_password(&state.sqlite, &user_id, password_hash)
         .await
         .map_err(|e| {
             tracing::error!("Failed to update password: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to update password" })))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to update password" })),
+            )
         })?;
 
     db::mark_password_reset_used(&state.sqlite, &reset_id)
         .await
         .map_err(|e| {
             tracing::error!("Failed to mark reset token as used: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to process request" })))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to process request" })),
+            )
         })?;
 
     let _ = db::log_security_event(

@@ -1,11 +1,13 @@
 use axum::{
-    Json, Router, body::{Body, to_bytes}, extract::{ConnectInfo, State}, http::{HeaderMap, Request, StatusCode}, response::IntoResponse, routing::{get, post}
+    Json, Router,
+    body::{Body, to_bytes},
+    extract::{ConnectInfo, State},
+    http::{HeaderMap, Request, StatusCode},
+    response::IntoResponse,
+    routing::{get, post},
 };
-use back_end::{
-    handlers, db, AppState,
-    middleware::AuthToken,
-};
-use serde_json::{json, Value};
+use back_end::{AppState, db, handlers, middleware::AuthToken};
+use serde_json::{Value, json};
 use sqlx::SqlitePool;
 use std::net::SocketAddr;
 use tempfile::NamedTempFile;
@@ -17,7 +19,13 @@ async fn test_register_handler(
 ) -> axum::response::Response {
     let mock_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
     let headers = HeaderMap::new();
-    let result = handlers::register_company_admin(State(state), ConnectInfo(mock_addr), headers, Json(payload)).await;
+    let result = handlers::register_company_admin(
+        State(state),
+        ConnectInfo(mock_addr),
+        headers,
+        Json(payload),
+    )
+    .await;
     match result {
         Ok(ok) => ok.into_response(),
         Err(err) => err.into_response(),
@@ -30,7 +38,8 @@ async fn test_login_handler(
 ) -> axum::response::Response {
     let mock_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
     let headers = HeaderMap::new();
-    let result = handlers::login(State(state), ConnectInfo(mock_addr), headers, Json(payload)).await;
+    let result =
+        handlers::login(State(state), ConnectInfo(mock_addr), headers, Json(payload)).await;
     match result {
         Ok(ok) => ok.into_response(),
         Err(err) => err.into_response(),
@@ -44,7 +53,14 @@ async fn test_invite_handler(
 ) -> Result<(StatusCode, Json<handlers::InvitationResponse>), (StatusCode, Json<Value>)> {
     let mock_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
     let headers = HeaderMap::new();
-    handlers::invite_user(AuthToken(claims), State(state), ConnectInfo(mock_addr), headers, Json(payload)).await
+    handlers::invite_user(
+        AuthToken(claims),
+        State(state),
+        ConnectInfo(mock_addr),
+        headers,
+        Json(payload),
+    )
+    .await
 }
 
 async fn test_accept_invitation_handler(
@@ -53,7 +69,9 @@ async fn test_accept_invitation_handler(
 ) -> axum::response::Response {
     let mock_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
     let headers = HeaderMap::new();
-    let result = handlers::accept_invitation(State(state), ConnectInfo(mock_addr), headers, Json(payload)).await;
+    let result =
+        handlers::accept_invitation(State(state), ConnectInfo(mock_addr), headers, Json(payload))
+            .await;
     match result {
         Ok(ok) => ok.into_response(),
         Err(err) => err.into_response(),
@@ -62,7 +80,7 @@ async fn test_accept_invitation_handler(
 async fn setup_test_app() -> (Router, NamedTempFile) {
     let temp_file = NamedTempFile::new().expect("Failed to create temp file");
     let db_path = temp_file.path().to_str().expect("Failed to get temp path");
-    
+
     let connection_string = format!("sqlite://{}?mode=rwc", db_path);
     let pool = SqlitePool::connect(&connection_string)
         .await
@@ -72,8 +90,8 @@ async fn setup_test_app() -> (Router, NamedTempFile) {
         .await
         .expect("Failed to initialize test db");
 
-    let state = AppState { 
-        sqlite: pool, 
+    let state = AppState {
+        sqlite: pool,
         rate_limit: back_end::rate_limit::RateLimitState::new(),
         metrics: back_end::metrics::Metrics::new(),
     };
@@ -83,7 +101,10 @@ async fn setup_test_app() -> (Router, NamedTempFile) {
         .route("/auth/login", post(test_login_handler))
         .route("/auth/me", get(handlers::get_current_user))
         .route("/auth/invitations/send", post(test_invite_handler))
-        .route("/auth/invitations/accept", post(test_accept_invitation_handler))
+        .route(
+            "/auth/invitations/accept",
+            post(test_accept_invitation_handler),
+        )
         .with_state(state);
 
     (app, temp_file)
@@ -108,9 +129,7 @@ async fn make_request(
         _ => panic!("Unsupported method"),
     };
 
-    request = request
-        .uri(path)
-        .header("content-type", "application/json");
+    request = request.uri(path).header("content-type", "application/json");
 
     if let Some(t) = token {
         request = request.header("authorization", format!("Bearer {}", t));
@@ -122,7 +141,7 @@ async fn make_request(
 
     let response = app.oneshot(request).await.expect("Failed to send request");
     let status = response.status();
-    
+
     let body_bytes = to_bytes(response.into_body(), usize::MAX)
         .await
         .expect("Failed to read response body");
@@ -343,7 +362,8 @@ async fn test_get_current_user_with_valid_token() {
 async fn test_get_current_user_with_invalid_token() {
     let (mut app, _temp) = setup_test_app().await;
 
-    let (status, _body) = make_request(&mut app, "GET", "/auth/me", None, Some("invalid_token")).await;
+    let (status, _body) =
+        make_request(&mut app, "GET", "/auth/me", None, Some("invalid_token")).await;
 
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
@@ -459,10 +479,13 @@ async fn test_invite_user_by_non_admin() {
     assert_eq!(invite_response.0, StatusCode::CREATED);
     let invitation_id = invite_response.1["id"].as_str().unwrap().to_string();
 
-    let pool = SqlitePool::connect(&format!("sqlite://{}?mode=rwc", temp.path().to_str().unwrap()))
-        .await
-        .expect("Failed to connect to db");
-    
+    let pool = SqlitePool::connect(&format!(
+        "sqlite://{}?mode=rwc",
+        temp.path().to_str().unwrap()
+    ))
+    .await
+    .expect("Failed to connect to db");
+
     let invitation = db::get_invitation_by_token(&pool, &invitation_id)
         .await
         .ok()
@@ -471,12 +494,13 @@ async fn test_invite_user_by_non_admin() {
     let actual_token = if let Some(inv) = invitation {
         inv.token
     } else {
-        let all_invites = sqlx::query_as::<_, (String,)>("SELECT token FROM invitations WHERE email = ?")
-            .bind("member@example.com")
-            .fetch_one(&pool)
-            .await
-            .map(|row| row.0)
-            .unwrap_or_else(|_| invitation_id.clone());
+        let all_invites =
+            sqlx::query_as::<_, (String,)>("SELECT token FROM invitations WHERE email = ?")
+                .bind("member@example.com")
+                .fetch_one(&pool)
+                .await
+                .map(|row| row.0)
+                .unwrap_or_else(|_| invitation_id.clone());
         all_invites
     };
 
@@ -612,7 +636,8 @@ async fn test_complete_registration_and_login_flow() {
     assert_eq!(login_status, StatusCode::OK);
     assert_eq!(login_body["user"]["role"], "admin");
 
-    let (me_status, me_body) = make_request(&mut app, "GET", "/auth/me", None, Some(&admin_token)).await;
+    let (me_status, me_body) =
+        make_request(&mut app, "GET", "/auth/me", None, Some(&admin_token)).await;
 
     assert_eq!(me_status, StatusCode::OK);
     assert_eq!(me_body["email"], "admin@example.com");
@@ -683,11 +708,16 @@ async fn test_security_logging_on_successful_registration() {
     .await;
 
     assert_eq!(status, StatusCode::CREATED);
-    
-    let user = db::get_user_by_email(&pool, "newuser@example.com").await.unwrap().unwrap();
+
+    let user = db::get_user_by_email(&pool, "newuser@example.com")
+        .await
+        .unwrap()
+        .unwrap();
     let user_id = &user.id;
-    let logs = db::get_security_logs_by_user(&pool, user_id, 10).await.unwrap();
-    
+    let logs = db::get_security_logs_by_user(&pool, user_id, 10)
+        .await
+        .unwrap();
+
     assert_eq!(logs.len(), 1);
     assert_eq!(logs[0].event_type, "registration");
     assert_eq!(logs[0].user_id, Some(user_id.to_string()));
@@ -732,10 +762,15 @@ async fn test_security_logging_on_successful_login() {
 
     assert_eq!(status, StatusCode::OK);
 
-    let user = db::get_user_by_email(&pool, "logintest@example.com").await.unwrap().unwrap();
+    let user = db::get_user_by_email(&pool, "logintest@example.com")
+        .await
+        .unwrap()
+        .unwrap();
     let user_id = &user.id;
-    let logs = db::get_security_logs_by_user(&pool, user_id, 10).await.unwrap();
-    
+    let logs = db::get_security_logs_by_user(&pool, user_id, 10)
+        .await
+        .unwrap();
+
     assert!(logs.len() >= 2);
     assert_eq!(logs[0].event_type, "login_success");
     assert_eq!(logs[0].user_id, Some(user_id.to_string()));
@@ -778,15 +813,25 @@ async fn test_security_logging_on_failed_login_wrong_password() {
     .await;
 
     assert_eq!(status, StatusCode::UNAUTHORIZED);
-    assert!(body["error"].as_str().unwrap().contains("Invalid email or password"));
+    assert!(
+        body["error"]
+            .as_str()
+            .unwrap()
+            .contains("Invalid email or password")
+    );
 
-    let user = db::get_user_by_email(&pool, "failtest@example.com").await.unwrap().unwrap();
+    let user = db::get_user_by_email(&pool, "failtest@example.com")
+        .await
+        .unwrap()
+        .unwrap();
     let user_id = &user.id;
-    let logs = db::get_security_logs_by_user(&pool, user_id, 10).await.unwrap();
-    
+    let logs = db::get_security_logs_by_user(&pool, user_id, 10)
+        .await
+        .unwrap();
+
     let failed_login = logs.iter().find(|l| l.event_type == "login_failed");
     assert!(failed_login.is_some());
-    
+
     let failed_log = failed_login.unwrap();
     assert_eq!(failed_log.user_id, Some(user_id.to_string()));
     assert_eq!(failed_log.email, Some("failtest@example.com".to_string()));
@@ -814,15 +859,22 @@ async fn test_security_logging_on_failed_login_user_not_found() {
     .await;
 
     assert_eq!(status, StatusCode::UNAUTHORIZED);
-    assert!(body["error"].as_str().unwrap().contains("Invalid email or password"));
+    assert!(
+        body["error"]
+            .as_str()
+            .unwrap()
+            .contains("Invalid email or password")
+    );
 
     let logs = db::get_recent_security_logs(&pool, Some("login_failed".to_string()), 10)
         .await
         .unwrap();
-    
-    let failed_login = logs.iter().find(|l| l.email == Some("nonexistent@example.com".to_string()));
+
+    let failed_login = logs
+        .iter()
+        .find(|l| l.email == Some("nonexistent@example.com".to_string()));
     assert!(failed_login.is_some());
-    
+
     let failed_log = failed_login.unwrap();
     assert_eq!(failed_log.user_id, None);
     assert!(!failed_log.success);
@@ -867,13 +919,18 @@ async fn test_security_logging_on_invitation_sent() {
 
     assert_eq!(status, StatusCode::CREATED);
 
-    let admin = db::get_user_by_email(&pool, "admin@company.com").await.unwrap().unwrap();
+    let admin = db::get_user_by_email(&pool, "admin@company.com")
+        .await
+        .unwrap()
+        .unwrap();
     let admin_id = &admin.id;
-    let logs = db::get_security_logs_by_user(&pool, admin_id, 10).await.unwrap();
-    
+    let logs = db::get_security_logs_by_user(&pool, admin_id, 10)
+        .await
+        .unwrap();
+
     let invite_log = logs.iter().find(|l| l.event_type == "invitation_sent");
     assert!(invite_log.is_some());
-    
+
     let log = invite_log.unwrap();
     assert_eq!(log.user_id, Some(admin_id.to_string()));
     assert_eq!(log.email, Some("newmember@company.com".to_string()));
@@ -916,11 +973,12 @@ async fn test_security_logging_on_invitation_accepted() {
     )
     .await;
 
-    let invitation_token: String = sqlx::query_scalar("SELECT token FROM invitations WHERE email = ?")
-        .bind("employee@company.com")
-        .fetch_one(&pool)
-        .await
-        .unwrap();
+    let invitation_token: String =
+        sqlx::query_scalar("SELECT token FROM invitations WHERE email = ?")
+            .bind("employee@company.com")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
 
     let (status, _) = make_request(
         &mut app,
@@ -937,11 +995,16 @@ async fn test_security_logging_on_invitation_accepted() {
     .await;
 
     assert_eq!(status, StatusCode::CREATED);
-    
-    let employee = db::get_user_by_email(&pool, "employee@company.com").await.unwrap().unwrap();
+
+    let employee = db::get_user_by_email(&pool, "employee@company.com")
+        .await
+        .unwrap()
+        .unwrap();
     let employee_id = &employee.id;
-    let logs = db::get_security_logs_by_user(&pool, employee_id, 10).await.unwrap();
-    
+    let logs = db::get_security_logs_by_user(&pool, employee_id, 10)
+        .await
+        .unwrap();
+
     assert_eq!(logs.len(), 1);
     assert_eq!(logs[0].event_type, "invitation_accepted");
     assert_eq!(logs[0].user_id, Some(employee_id.to_string()));
@@ -996,12 +1059,17 @@ async fn test_security_logs_order_by_time() {
     )
     .await;
 
-    let user = db::get_user_by_email(&pool, "timetest@example.com").await.unwrap().unwrap();
+    let user = db::get_user_by_email(&pool, "timetest@example.com")
+        .await
+        .unwrap()
+        .unwrap();
     let user_id = &user.id;
-    let logs = db::get_security_logs_by_user(&pool, user_id, 10).await.unwrap();
-    
+    let logs = db::get_security_logs_by_user(&pool, user_id, 10)
+        .await
+        .unwrap();
+
     assert!(logs.len() >= 3);
-    
+
     for i in 0..logs.len() - 1 {
         assert!(logs[i].created_at >= logs[i + 1].created_at);
     }

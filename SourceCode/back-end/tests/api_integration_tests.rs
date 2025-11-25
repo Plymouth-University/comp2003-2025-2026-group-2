@@ -1,7 +1,7 @@
 use back_end::{
-    handlers::{RegisterRequest, LoginRequest, InviteUserRequest, AcceptInvitationRequest},
-    auth::{hash_password, JwtConfig},
+    auth::{JwtConfig, hash_password},
     db::{self, UserRole},
+    handlers::{AcceptInvitationRequest, InviteUserRequest, LoginRequest, RegisterRequest},
 };
 use sqlx::SqlitePool;
 use tempfile::NamedTempFile;
@@ -9,7 +9,7 @@ use tempfile::NamedTempFile;
 async fn setup_test_db() -> (SqlitePool, NamedTempFile) {
     let _temp_file = NamedTempFile::new().expect("Failed to create temp file");
     let db_path = _temp_file.path().to_str().expect("Failed to get temp path");
-    
+
     let connection_string = format!("sqlite://{}?mode=rwc", db_path);
     let pool = SqlitePool::connect(&connection_string)
         .await
@@ -25,7 +25,7 @@ async fn setup_test_db() -> (SqlitePool, NamedTempFile) {
 #[tokio::test]
 async fn test_register_creates_user_and_company() {
     let (pool, _temp) = setup_test_db().await;
-    
+
     let password_hash = hash_password("SecurePassword123").unwrap();
     let user = db::create_user(
         &pool,
@@ -52,7 +52,7 @@ async fn test_register_creates_user_and_company() {
 #[tokio::test]
 async fn test_user_creation_and_retrieval() {
     let (pool, _temp_file) = setup_test_db().await;
-    
+
     let password_hash = hash_password("TestPassword123").unwrap();
     let user = db::create_user(
         &pool,
@@ -79,10 +79,10 @@ async fn test_user_creation_and_retrieval() {
 #[tokio::test]
 async fn test_password_verification() {
     let (pool, _temp_file) = setup_test_db().await;
-    
+
     let password = "MySecurePassword123";
     let password_hash = hash_password(password).unwrap();
-    
+
     db::create_user(
         &pool,
         "user@example.com".to_string(),
@@ -102,17 +102,17 @@ async fn test_password_verification() {
 
     let is_valid = back_end::auth::verify_password(password, &user.password_hash)
         .expect("Failed to verify password");
-    
+
     assert!(is_valid);
 }
 
 #[tokio::test]
 async fn test_invalid_password_verification() {
     let (pool, _temp_file) = setup_test_db().await;
-    
+
     let password = "CorrectPassword123";
     let password_hash = hash_password(password).unwrap();
-    
+
     db::create_user(
         &pool,
         "user@example.com".to_string(),
@@ -132,7 +132,7 @@ async fn test_invalid_password_verification() {
 
     let is_valid = back_end::auth::verify_password("WrongPassword", &user.password_hash)
         .expect("Failed to verify password");
-    
+
     assert!(!is_valid);
 }
 
@@ -140,11 +140,13 @@ async fn test_invalid_password_verification() {
 async fn test_jwt_token_generation_and_validation() {
     let config = JwtConfig::new("test_secret".to_string());
     let user_id = "user123";
-    
-    let token = config.generate_token(user_id.to_string(), 24)
+
+    let token = config
+        .generate_token(user_id.to_string(), 24)
         .expect("Failed to generate token");
 
-    let claims = config.validate_token(&token)
+    let claims = config
+        .validate_token(&token)
         .expect("Failed to validate token");
 
     assert_eq!(claims.user_id, user_id);
@@ -154,7 +156,7 @@ async fn test_jwt_token_generation_and_validation() {
 #[tokio::test]
 async fn test_company_creation_and_retrieval() {
     let (pool, _temp_file) = setup_test_db().await;
-    
+
     let company = db::create_company(&pool, "Test Company".to_string(), "123 Main St".to_string())
         .await
         .expect("Failed to create company");
@@ -172,7 +174,7 @@ async fn test_company_creation_and_retrieval() {
 #[tokio::test]
 async fn test_invitation_creation_and_retrieval() {
     let (pool, _temp_file) = setup_test_db().await;
-    
+
     let company = db::create_company(&pool, "Test Co".to_string(), "123 Main St".to_string())
         .await
         .expect("Failed to create company");
@@ -202,9 +204,9 @@ async fn test_invitation_creation_and_retrieval() {
 #[tokio::test]
 async fn test_admin_user_creation() {
     let (pool, _temp_file) = setup_test_db().await;
-    
+
     let password_hash = hash_password("AdminPass123").unwrap();
-    
+
     let user = db::create_user(
         &pool,
         "admin@example.com".to_string(),
@@ -224,9 +226,9 @@ async fn test_admin_user_creation() {
 #[tokio::test]
 async fn test_member_user_creation() {
     let (pool, _temp_file) = setup_test_db().await;
-    
+
     let password_hash = hash_password("MemberPass123").unwrap();
-    
+
     let user = db::create_user(
         &pool,
         "member@example.com".to_string(),
@@ -246,13 +248,13 @@ async fn test_member_user_creation() {
 #[tokio::test]
 async fn test_user_with_company_association() {
     let (pool, _temp_file) = setup_test_db().await;
-    
+
     let company = db::create_company(&pool, "My Company".to_string(), "789 Elm St".to_string())
         .await
         .expect("Failed to create company");
 
     let password_hash = hash_password("Password123").unwrap();
-    
+
     let user = db::create_user(
         &pool,
         "employee@example.com".to_string(),
@@ -271,9 +273,9 @@ async fn test_user_with_company_association() {
 #[tokio::test]
 async fn test_multiple_users_creation() {
     let (pool, _temp_file) = setup_test_db().await;
-    
+
     let password_hash = hash_password("Password123").unwrap();
-    
+
     for i in 0..5 {
         let _user = db::create_user(
             &pool,
@@ -282,7 +284,11 @@ async fn test_multiple_users_creation() {
             "Lastname".to_string(),
             password_hash.clone(),
             None,
-            if i % 2 == 0 { UserRole::Admin } else { UserRole::Member },
+            if i % 2 == 0 {
+                UserRole::Admin
+            } else {
+                UserRole::Member
+            },
         )
         .await
         .expect("Failed to create user");
@@ -299,7 +305,7 @@ async fn test_multiple_users_creation() {
 #[tokio::test]
 async fn test_invitation_acceptance() {
     let (pool, _temp_file) = setup_test_db().await;
-    
+
     let company = db::create_company(&pool, "Test Co".to_string(), "123 Main St".to_string())
         .await
         .expect("Failed to create company");
@@ -333,9 +339,9 @@ async fn test_invitation_acceptance() {
 #[tokio::test]
 async fn test_get_user_by_id() {
     let (pool, _temp_file) = setup_test_db().await;
-    
+
     let password_hash = hash_password("Password123").unwrap();
-    
+
     let user = db::create_user(
         &pool,
         "testuser@example.com".to_string(),
@@ -360,12 +366,13 @@ async fn test_get_user_by_id() {
 #[tokio::test]
 async fn test_token_expiration_validation() {
     let config = JwtConfig::new("test_secret".to_string());
-    
-    let token = config.generate_token("user123".to_string(), -1)
+
+    let token = config
+        .generate_token("user123".to_string(), -1)
         .expect("Failed to generate token");
 
     let result = config.validate_token(&token);
-    
+
     assert!(result.is_err());
 }
 

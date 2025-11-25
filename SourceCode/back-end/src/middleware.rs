@@ -1,26 +1,29 @@
+use crate::handlers::get_jwt_secret;
+use crate::{
+    AppState,
+    auth::{Claims, JwtConfig},
+};
 use axum::{
+    Json,
     extract::FromRequestParts,
     http::request::Parts,
     response::{IntoResponse, Response},
-    Json,
 };
-use axum_extra::headers::{authorization::Bearer, Authorization};
 use axum_extra::TypedHeader;
+use axum_extra::headers::{Authorization, authorization::Bearer};
 use serde_json::json;
-use crate::handlers::get_jwt_secret;
-use crate::{AppState, auth::{Claims, JwtConfig}};
 
 pub struct AuthToken(pub Claims);
 
-impl FromRequestParts<crate::AppState> for AuthToken
-{
+impl FromRequestParts<crate::AppState> for AuthToken {
     type Rejection = AuthError;
 
     fn from_request_parts(
         parts: &mut Parts,
         _state: &crate::AppState,
-    ) -> impl std::future::Future<Output = Result<Self, <Self as FromRequestParts<AppState>>::Rejection>> + Send
-    {
+    ) -> impl std::future::Future<
+        Output = Result<Self, <Self as FromRequestParts<AppState>>::Rejection>,
+    > + Send {
         Box::pin(async move {
             let jwt_config = JwtConfig::new(get_jwt_secret());
 

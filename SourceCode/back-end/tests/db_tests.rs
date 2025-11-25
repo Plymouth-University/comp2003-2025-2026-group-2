@@ -1,4 +1,4 @@
-use back_end::db::{UserRecord, Company, Invitation, UserRole};
+use back_end::db::{Company, Invitation, UserRecord, UserRole};
 
 #[test]
 fn test_user_role_admin() {
@@ -159,7 +159,10 @@ fn test_invitation_accepted() {
         expires_at: "2025-01-08T00:00:00Z".to_string(),
         accepted_at: Some("2025-01-02T10:00:00Z".to_string()),
     };
-    assert_eq!(invitation.accepted_at, Some("2025-01-02T10:00:00Z".to_string()));
+    assert_eq!(
+        invitation.accepted_at,
+        Some("2025-01-02T10:00:00Z".to_string())
+    );
 }
 
 #[test]

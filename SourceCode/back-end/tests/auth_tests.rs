@@ -1,4 +1,7 @@
-use back_end::auth::{hash_password, verify_password, validate_email, validate_password_policy, generate_uuid6_token, JwtConfig, Claims};
+use back_end::auth::{
+    Claims, JwtConfig, generate_uuid6_token, hash_password, validate_email,
+    validate_password_policy, verify_password,
+};
 
 #[test]
 fn test_jwt_config_new() {

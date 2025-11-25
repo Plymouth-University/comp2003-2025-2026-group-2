@@ -1,7 +1,7 @@
-use back_end::{db, handlers, rate_limit, AppState, api_docs::ApiDoc};
 use anyhow::Context;
-use axum::{middleware, Router};
 use axum::routing::{get, post};
+use axum::{Router, middleware};
+use back_end::{AppState, api_docs::ApiDoc, db, handlers, rate_limit};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -9,9 +9,9 @@ use utoipa_swagger_ui::SwaggerUi;
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
-    
+
     let log_format = std::env::var("LOG_FORMAT").unwrap_or_else(|_| "text".to_string());
-    
+
     if log_format == "json" {
         tracing_subscriber::fmt()
             .json()
@@ -74,9 +74,18 @@ async fn main() {
         .route("/auth/me", get(handlers::get_current_user))
         .route("/auth/verify", post(handlers::verify_token))
         .route("/auth/invitations/send", post(handlers::invite_user))
-        .route("/auth/invitations/accept", post(handlers::accept_invitation))
-        .route("/auth/profile", axum::routing::put(handlers::update_profile))
-        .route("/auth/password/request-reset", post(handlers::request_password_reset))
+        .route(
+            "/auth/invitations/accept",
+            post(handlers::accept_invitation),
+        )
+        .route(
+            "/auth/profile",
+            axum::routing::put(handlers::update_profile),
+        )
+        .route(
+            "/auth/password/request-reset",
+            post(handlers::request_password_reset),
+        )
         .route("/auth/password/reset", post(handlers::reset_password))
         .layer(middleware::from_fn_with_state(
             state.clone(),
@@ -94,24 +103,22 @@ async fn main() {
         "https://logsmart.app".parse().unwrap(),
     ];
 
-    let app = swagger_router
-        .merge(api_routes)
-        .layer(
-            tower_http::cors::CorsLayer::new()
-                .allow_origin(allowed_origins)
-                .allow_methods([
-                    axum::http::Method::GET,
-                    axum::http::Method::POST,
-                    axum::http::Method::PUT,
-                    axum::http::Method::DELETE,
-                    axum::http::Method::OPTIONS,
-                ])
-                .allow_headers([
-                    axum::http::header::CONTENT_TYPE,
-                    axum::http::header::AUTHORIZATION,
-                ])
-                .allow_credentials(true),
-        );
+    let app = swagger_router.merge(api_routes).layer(
+        tower_http::cors::CorsLayer::new()
+            .allow_origin(allowed_origins)
+            .allow_methods([
+                axum::http::Method::GET,
+                axum::http::Method::POST,
+                axum::http::Method::PUT,
+                axum::http::Method::DELETE,
+                axum::http::Method::OPTIONS,
+            ])
+            .allow_headers([
+                axum::http::header::CONTENT_TYPE,
+                axum::http::header::AUTHORIZATION,
+            ])
+            .allow_credentials(true),
+    );
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:6767")
         .await
