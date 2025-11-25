@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { api } from '$lib/api';
+
 	function validatePassword(pwd: string): { valid: boolean; errors: string[] } {
 		const errors: string[] = [];
 		if (pwd.length < 8) errors.push('at least 8 characters');
@@ -51,20 +53,17 @@
 		status = 'submitting';
 		message = '';
 
-		const response = await fetch('/api/auth/password/request-reset', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ email })
+		const { data, error } = await api.POST('/auth/password/request-reset', {
+			body: { email }
 		});
 
-		if (response.ok) {
-			status = 'success';
-			message = 'Reset link sent to your email. Please check your inbox.';
-			email = '';
-		} else {
-			const body = await response.json();
+		if (error) {
 			status = 'error';
-			message = body.error ?? 'Unable to send reset link.';
+			message = error.error ?? 'Unable to send reset link.';
+		} else {
+			status = 'success';
+			message = data.message;
+			email = '';
 		}
 	}
 
@@ -90,20 +89,16 @@
 		status = 'submitting';
 		message = '';
 
-		const response = await fetch('/api/auth/password/reset', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ token, new_password: newPassword })
+		const { data, error } = await api.POST('/auth/password/reset', {
+			body: { token, new_password: newPassword }
 		});
 
-		if (response.ok) {
-			const body = await response.json();
-			status = 'success';
-			message = body.message;
-		} else {
-			const body = await response.json();
+		if (error) {
 			status = 'error';
-			message = body.error ?? 'Unable to reset your password.';
+			message = error.error ?? 'Unable to reset your password.';
+		} else {
+			status = 'success';
+			message = data.message;
 		}
 	}
 </script>

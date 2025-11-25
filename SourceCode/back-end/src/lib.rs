@@ -6,6 +6,7 @@ pub mod metrics;
 pub mod middleware;
 pub mod rate_limit;
 pub mod email;
+pub mod api_docs;
 
 use sqlx::SqlitePool;
 use rate_limit::RateLimitState;

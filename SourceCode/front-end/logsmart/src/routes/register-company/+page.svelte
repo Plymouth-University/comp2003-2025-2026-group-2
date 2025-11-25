@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
+	import { api } from '$lib/api';
 
 	function validatePassword(pwd: string): { valid: boolean; errors: string[] } {
 		const errors: string[] = [];
@@ -87,22 +88,19 @@
 
 		loading = true;
 		try {
-			const res = await fetch('/api/auth/register', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
+			const { data, error: apiError } = await api.POST('/auth/register', {
+				body: {
 					company_name: companyName,
 					company_address: companyAddress,
 					first_name: firstName,
 					last_name: lastName,
 					email,
 					password
-				})
+				}
 			});
 
-			if (!res.ok) {
-				const data = await res.json().catch(() => ({}));
-				error = data?.message || 'Registration failed';
+			if (apiError) {
+				error = apiError.error || 'Registration failed';
 			} else {
 				await invalidateAll();
 				await goto('/dashboard');

@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
+	import { api } from '$lib/api';
+
 	let email = $state('');
 	let password = $state('');
 	let loading = $state(false);
@@ -15,14 +17,12 @@
 		if (!formValid) return;
 		loading = true;
 		try {
-			const res = await fetch('/api/auth/login', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ email, password })
+			const { data, error: apiError } = await api.POST('/auth/login', {
+				body: { email, password }
 			});
-			if (!res.ok) {
-				const data = await res.json().catch(() => ({}));
-				error = data?.error || data?.message || 'Login failed';
+
+			if (apiError) {
+				error = apiError.error || 'Login failed';
 			} else {
 				await invalidateAll();
 				await goto('/dashboard');

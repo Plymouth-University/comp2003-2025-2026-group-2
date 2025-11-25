@@ -24,6 +24,11 @@ async function proxyRequest(event: RequestEvent) {
 	const authHeader = request.headers.get('Authorization');
 	if (authHeader) {
 		headers.set('Authorization', authHeader);
+	} else {
+		const token = cookies.get('ls-token');
+		if (token) {
+			headers.set('Authorization', `Bearer ${token}`);
+		}
 	}
 
 	const url = `${API_URL}/${path}`;
