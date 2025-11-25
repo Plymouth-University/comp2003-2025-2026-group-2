@@ -258,7 +258,7 @@
 	}
 </style>
 
-<div class="min-h-screen" style="background-color: #F8F8F8;">
+<div class="min-h-full" style="background-color: #F8F8F8;">
 	<!-- Main Content -->
 	<div class="mx-auto max-w-7xl px-6 py-8">
 		<h1 class="text-4xl font-bold text-center mb-8" style="color: #000100;">Generate Report</h1>

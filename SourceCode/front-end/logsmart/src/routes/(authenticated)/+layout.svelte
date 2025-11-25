@@ -12,7 +12,7 @@
 	}
 </script>
 
-<div class="min-h-screen bg-gray-50">
+<div class="min-h-screen bg-gray-50 w-full">
 	<header class="border-b border-gray-200 bg-white shadow-sm">
 		<div class="mx-auto max-w-7xl px-6 py-4">
 			<div class="flex items-center justify-between">
@@ -28,13 +28,13 @@
 							Dashboard
 						</a>
                         <a 
-							href="/#logs" 
+							href="#logs" 
 							class="text-gray-700 hover:text-gray-900"
 						>
 							Logs
 						</a>
                         <a 
-							href="/#users" 
+							href="#users" 
 							class="text-gray-700 hover:text-gray-900"
 						>
 							Users

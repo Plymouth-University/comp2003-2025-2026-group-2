@@ -33,7 +33,7 @@
 	}
 </style>
 
-<div class="min-h-screen" style="background-color: #F8F8F8;">
+<div class="min-h-full" style="background-color: #F8F8F8;">
 	<!-- Main Content - Three Column Layout -->
 	<div class="flex h-[calc(100vh-73px)]">
 		<!-- Left Sidebar - Templates -->

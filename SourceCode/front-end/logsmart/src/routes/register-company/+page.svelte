@@ -95,7 +95,7 @@
 	<title>Register Company - LogSmart</title>
 </svelte:head>
 
-<main class="register-wrapper">
+<div class="register-wrapper">
 	<div class="form-container">
 		<div class="progress-indicator">
 			<div class="step" class:active={step === 1} class:completed={step > 1}>
@@ -257,7 +257,7 @@
 			Already have an account? <a href="/login">Sign in</a>
 		</p>
 	</div>
-</main>
+</div>
 
 <style>
 	:global(body) {
@@ -269,6 +269,7 @@
 
 	.register-wrapper {
 		width: 100%;
+		height: 100%;
 		display: flex;
 		align-items: center;
 		justify-content: center;

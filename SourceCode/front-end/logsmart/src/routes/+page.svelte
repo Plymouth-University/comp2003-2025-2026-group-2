@@ -2,7 +2,7 @@
 	import Icon from '$lib/assets/icon.svelte';
 	import banner from '$lib/assets/banner.webp';
 </script>
-<main class="bg-white">
+<div class="bg-white w-full h-full flex flex-col">
 	<section class="relative px-6 py-6" style="background-image: url('{banner}'); background-size: cover; background-position: center;">
 		<!-- Dark overlay for contrast -->
 		<div class="absolute inset-0 bg-black opacity-50"></div>
@@ -22,7 +22,7 @@
 		</div>
 	</section>
 
-	<section id="features" class="border-t border-gray-300 bg-gray-50 px-6 py-10">
+	<section id="features" class="border-t border-gray-300 bg-gray-50 px-6 py-10 flex-1">
 		<div class="mx-auto max-w-7xl">
 			<h3 class="mb-8 text-3xl font-bold text-gray-900">Features</h3>
 			<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-2">
@@ -54,4 +54,4 @@
 			<p class="text-gray-600">© 2025 LogSmart. All rights reserved.</p>
 		</div>
 	</section>
-</main>
+</div>

@@ -1,22 +1,52 @@
 <script lang="ts">
   let newPassword = $state('');
   let confirmPassword = $state('');
+  let email = $state('');
   let status = $state<'idle' | 'submitting' | 'success' | 'error'>('idle');
   let message = $state('');
   let token = $state('');
+  let hasToken = $state(false);
 
   $effect.pre(() => {
     const params = new URLSearchParams(window.location.search);
     const t = params.get('token');
     if (t) {
       token = t;
+      hasToken = true;
     } else {
-      status = 'error';
-      message = 'Reset token missing from the link.';
+      hasToken = false;
     }
   });
 
-  async function handleSubmit(event: SubmitEvent) {
+  async function handleResetSubmit(event: SubmitEvent) {
+    event.preventDefault();
+    if (!email) {
+      status = 'error';
+      message = 'Please enter your email address.';
+      return;
+    }
+
+    status = 'submitting';
+    message = '';
+
+    const response = await fetch('/api/auth/password/request-reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+
+    if (response.ok) {
+      status = 'success';
+      message = 'Reset link sent to your email. Please check your inbox.';
+      email = '';
+    } else {
+      const body = await response.json();
+      status = 'error';
+      message = body.error ?? 'Unable to send reset link.';
+    }
+  }
+
+  async function handlePasswordSubmit(event: SubmitEvent) {
     event.preventDefault();
     if (newPassword.length < 8) {
       status = 'error';
@@ -59,11 +89,17 @@
   <title>Reset Password | LogSmart</title>
 </svelte:head>
 
-<main class="min-h-screen bg-gray-50 flex items-center justify-center">
-  <section class="w-full max-w-lg bg-white shadow-lg rounded-lg p-8 space-y-6">
+<div class="bg-gray-50 flex flex-1 items-center justify-center w-full min-h-full">
+  <section class="flex-1 w-full max-w-lg bg-white shadow-lg rounded-lg p-8 space-y-6">
     <div>
       <h1 class="text-2xl font-semibold text-gray-800">Reset your password</h1>
-      <p class="text-sm text-gray-500 mt-1">Enter a new secure password for your account.</p>
+      <p class="text-sm text-gray-500 mt-1">
+        {#if hasToken}
+          Enter a new secure password for your account.
+        {:else}
+          Enter your email to receive a password reset link.
+        {/if}
+      </p>
     </div>
 
     {#if status === 'error'}
@@ -78,39 +114,65 @@
       </div>
     {/if}
 
-    <form class="space-y-4" onsubmit={handleSubmit}>
-      <div>
-        <label for="newPassword" class="text-sm font-medium text-gray-700">New password</label>
-        <input
-          id="newPassword"
-          type="password"
-          bind:value={newPassword}
-          class="mt-1 w-full rounded border px-3 py-2" 
-          minlength="8"
-          required
-        />
-      </div>
-      <div>
-        <label for="confirmPassword" class="text-sm font-medium text-gray-700">Confirm password</label>
-        <input
-          id="confirmPassword"
-          type="password"
-          bind:value={confirmPassword}
-          class="mt-1 w-full rounded border px-3 py-2"
-          required
-        />
-      </div>
-      <button
-        class="w-full rounded bg-indigo-600 text-white font-semibold px-4 py-2 hover:bg-indigo-500 transition"
-        type="submit"
-        disabled={status === 'submitting' || status === 'success'}
-      >
-        {#if status === 'submitting'}
-          Updating...
-        {:else}
-          Set new password
-        {/if}
-      </button>
-    </form>
+    {#if hasToken}
+      <form class="space-y-4" onsubmit={handlePasswordSubmit}>
+        <div>
+          <label for="newPassword" class="text-sm font-medium text-gray-700">New password</label>
+          <input
+            id="newPassword"
+            type="password"
+            bind:value={newPassword}
+            class="mt-1 w-full rounded border px-3 py-2" 
+            minlength="8"
+            required
+          />
+        </div>
+        <div>
+          <label for="confirmPassword" class="text-sm font-medium text-gray-700">Confirm password</label>
+          <input
+            id="confirmPassword"
+            type="password"
+            bind:value={confirmPassword}
+            class="mt-1 w-full rounded border px-3 py-2"
+            required
+          />
+        </div>
+        <button
+          class="w-full rounded bg-indigo-600 text-white font-semibold px-4 py-2 hover:bg-indigo-500 transition"
+          type="submit"
+          disabled={status === 'submitting' || status === 'success'}
+        >
+          {#if status === 'submitting'}
+            Updating...
+          {:else}
+            Set new password
+          {/if}
+        </button>
+      </form>
+    {:else}
+      <form class="space-y-4" onsubmit={handleResetSubmit}>
+        <div>
+          <label for="email" class="text-sm font-medium text-gray-700">Email address</label>
+          <input
+            id="email"
+            type="email"
+            bind:value={email}
+            class="mt-1 w-full rounded border px-3 py-2"
+            required
+          />
+        </div>
+        <button
+          class="w-full rounded bg-indigo-600 text-white font-semibold px-4 py-2 hover:bg-indigo-500 transition"
+          type="submit"
+          disabled={status === 'submitting' || status === 'success'}
+        >
+          {#if status === 'submitting'}
+            Sending...
+          {:else}
+            Send reset link
+          {/if}
+        </button>
+      </form>
+    {/if}
   </section>
-</main>
+</div>

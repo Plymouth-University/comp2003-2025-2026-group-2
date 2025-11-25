@@ -36,7 +36,7 @@ async function submit(e: Event) {
 }
 </script>
 
-<main class="bg-gray-50 grid place-items-center p-6">
+<div class="w-full h-full bg-gray-50 flex items-center justify-center p-6">
     <form onsubmit={submit} class="form">
         <h1>Log in</h1>
         {#if error}
@@ -79,8 +79,9 @@ async function submit(e: Event) {
                 Sign in
             {/if}
         </button>
+        <a href="/reset-password" class="text-sm text-indigo-600 hover:underline mt-4 inline-block">Forgot password?</a>
     </form>
-</main>
+</div>
 
 <style>
 :global(body) {

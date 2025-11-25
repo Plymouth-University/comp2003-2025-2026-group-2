@@ -21,8 +21,8 @@
 	<title>Contact Us - LogSmart</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gray-50">
-	<main class="mx-auto max-w-4xl px-6 py-16">
+<div class="bg-gray-50 flex flex-col w-full h-full">
+	<div class="mx-auto max-w-4xl px-6 py-16 flex-1">
 		<div class="mb-8 text-center">
 			<h1 class="mb-4 text-4xl font-bold text-gray-900">Get in Touch</h1>
 			<p class="text-lg text-gray-600">
@@ -116,9 +116,9 @@
 				</div>
 			</div>
 		</div>
-	</main>
+	</div>
 
-	<footer class="mt-16 border-t border-gray-300 bg-white px-6 py-12">
+	<footer class="border-t border-gray-300 bg-white px-6 py-12">
 		<div class="mx-auto max-w-7xl text-center">
 			<p class="text-gray-600">© 2025 LogSmart. All rights reserved.</p>
 		</div>

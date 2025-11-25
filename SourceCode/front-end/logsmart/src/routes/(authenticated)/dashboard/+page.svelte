@@ -37,7 +37,7 @@
 	});
 </script>
 
-<div class="min-h-screen" style="background-color: #F8F8F8;">
+<div class="w-full h-full" style="background-color: #F8F8F8;">
 	<!-- Main Content -->
 	<div class="mx-auto max-w-7xl px-6 py-8">
 		<!-- Header with User Profile -->
