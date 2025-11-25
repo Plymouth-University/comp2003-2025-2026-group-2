@@ -1,4 +1,4 @@
-use back_end::auth::{hash_password, verify_password, validate_email, validate_password_policy, generate_invitation_token, JwtConfig, Claims};
+use back_end::auth::{hash_password, verify_password, validate_email, validate_password_policy, generate_uuid6_token, JwtConfig, Claims};
 
 #[test]
 fn test_jwt_config_new() {
@@ -197,7 +197,7 @@ fn test_validate_password_policy_no_special() {
 
 #[test]
 fn test_generate_invitation_token_format() {
-    let token = generate_invitation_token();
+    let token = generate_uuid6_token();
     assert!(!token.is_empty());
     assert_eq!(token.len(), 36);
     assert_eq!(token.chars().filter(|&c| c == '-').count(), 4);
@@ -205,7 +205,7 @@ fn test_generate_invitation_token_format() {
 
 #[test]
 fn test_generate_invitation_token_unique() {
-    let token1 = generate_invitation_token();
-    let token2 = generate_invitation_token();
+    let token1 = generate_uuid6_token();
+    let token2 = generate_uuid6_token();
     assert_ne!(token1, token2);
 }

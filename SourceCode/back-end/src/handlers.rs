@@ -10,7 +10,7 @@ use chrono::Duration;
 use uuid::Uuid;
 use utoipa::ToSchema;
 use crate::{
-    AppState, auth::{JwtConfig, generate_invitation_token, hash_password, validate_email, validate_password_policy, verify_password}, db, email, middleware::AuthToken
+    AppState, auth::{JwtConfig, generate_uuid6_token, hash_password, validate_email, validate_password_policy, verify_password}, db, email, middleware::AuthToken
 };
 
 fn extract_ip_from_headers_and_addr(headers: &HeaderMap, addr: &std::net::SocketAddr) -> String {
@@ -612,7 +612,7 @@ pub async fn invite_user(
         Json(json!({ "error": "User is not associated with a company" })),
     ))?;
 
-    let token = generate_invitation_token();
+    let token = generate_uuid6_token();
     let expires_at = (chrono::Utc::now() + Duration::days(7)).to_rfc3339();
 
     let invitation = db::create_invitation(
@@ -933,7 +933,7 @@ pub async fn request_password_reset(
         })?;
 
     if let Some(user_record) = user {
-        let reset_token = generate_invitation_token();
+        let reset_token = generate_uuid6_token();
         let expires_at = (chrono::Utc::now() + Duration::hours(24)).to_rfc3339();
 
         let _ = db::create_password_reset_token(

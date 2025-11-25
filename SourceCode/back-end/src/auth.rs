@@ -123,6 +123,6 @@ pub fn validate_password_policy(password: &str) -> Result<()> {
 }
 
 #[must_use] 
-pub fn generate_invitation_token() -> String {
+pub fn generate_uuid6_token() -> String {
     uuid::Uuid::now_v6(&[0u8; 6]).to_string()
 }
