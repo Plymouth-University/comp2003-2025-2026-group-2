@@ -59,6 +59,16 @@ jobs:
           local_path: "SourceCode/back-end/logsmart-srv"
           remote_path: "${{ vars.DEPLOY_PATH }}/"
 
+      - name: Patch interpreter path
+        uses: appleboy/ssh-action@v1.2.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          script: |
+            patchelf --set-interpreter /lib/ld-linux-aarch64.so.1 ${{ vars.DEPLOY_PATH }}/logsmart-srv
+
       - name: Start Service
         uses: appleboy/ssh-action@v1.2.3
         with:
