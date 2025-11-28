@@ -18,7 +18,7 @@
 
 
 
-<main>
+<main class="flex flex-col gap-6">
     <div class="min-h-screen" style="background-color: #F8F8F8;">
         <div class="flex-1 p-6 overflow-auto gap-8">
             <div class="max-w-2xl mx-auto">
