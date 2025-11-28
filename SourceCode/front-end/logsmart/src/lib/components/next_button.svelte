@@ -45,6 +45,13 @@
     .log_button:hover {
         background-color: #ededf2;
     }
+
+    .log_button:dark{
+        border-color: #000100;
+        background-color:#000100;
+        color:#ffffff
+        
+    }
 </style>
 
 <button

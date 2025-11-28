@@ -12,7 +12,9 @@
 		page.url.pathname.startsWith('/dashboard') || 
 		page.url.pathname.startsWith('/reports') || 
 		page.url.pathname.startsWith('/templates-dashboard') ||
-		page.url.pathname.startsWith('/log-template')
+		page.url.pathname.startsWith('/log-template') ||
+		page.url.pathname.startsWith('/users-admin')
+
 	);
 
 	async function handleLogout() {
