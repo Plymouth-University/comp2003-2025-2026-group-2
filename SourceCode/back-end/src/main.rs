@@ -1,6 +1,7 @@
 use anyhow::Context;
 use axum::routing::{get, post};
 use axum::{Router, middleware};
+use back_end::logs_db;
 use back_end::{AppState, api_docs::ApiDoc, db, handlers, rate_limit};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use utoipa::OpenApi;
@@ -66,6 +67,7 @@ async fn main() {
         sqlite: auth_db_sqlite_pool,
         rate_limit: rate_limit_state.clone(),
         metrics,
+        mongodb: logs_db::init_mongodb().await.expect("Failed to initialize MongoDB"),
     };
 
     let api_routes = Router::new()
@@ -87,6 +89,8 @@ async fn main() {
             post(handlers::request_password_reset),
         )
         .route("/auth/password/reset", post(handlers::reset_password))
+        .route("/logs/templates", post(handlers::add_template))
+        .route("/logs/templates", get(handlers::get_template))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             rate_limit::rate_limit_middleware,

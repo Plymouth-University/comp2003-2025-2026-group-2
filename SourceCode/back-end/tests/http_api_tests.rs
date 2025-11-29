@@ -94,6 +94,7 @@ async fn setup_test_app() -> (Router, NamedTempFile) {
         sqlite: pool,
         rate_limit: back_end::rate_limit::RateLimitState::new(),
         metrics: back_end::metrics::Metrics::new(),
+        mongodb: back_end::logs_db::init_mongodb().await.expect("Failed to initialize MongoDB"),
     };
 
     let app = Router::new()

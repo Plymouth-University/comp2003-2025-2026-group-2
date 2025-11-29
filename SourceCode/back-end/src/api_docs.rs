@@ -1,4 +1,5 @@
 use crate::handlers;
+use crate::logs_db;
 use utoipa::OpenApi;
 
 #[derive(OpenApi)]
@@ -13,6 +14,8 @@ use utoipa::OpenApi;
         handlers::update_profile,
         handlers::request_password_reset,
         handlers::reset_password,
+        handlers::add_template,
+        handlers::get_template,
     ),
     components(
         schemas(
@@ -30,11 +33,20 @@ use utoipa::OpenApi;
             handlers::RequestPasswordResetRequest,
             handlers::ResetPasswordRequest,
             handlers::PasswordResetResponse,
+            logs_db::TemplateDocument,
+            logs_db::TemplateField,
+            logs_db::Position,
+            handlers::AddTemplateRequest,
+            handlers::GetTemplateRequest,
+            handlers::GetTemplateResponse,
+            handlers::AddTemplateResponse,
+            handlers::AddTokenResponse,
         )
     ),
     tags(
         (name = "Authentication", description = "User authentication and registration endpoints"),
-        (name = "Invitations", description = "Company member invitation management")
+        (name = "Invitations", description = "Company member invitation management"),
+        (name = "Templates", description = "Template1 management"),
     ),
     modifiers(&SecurityAddon)
 )]

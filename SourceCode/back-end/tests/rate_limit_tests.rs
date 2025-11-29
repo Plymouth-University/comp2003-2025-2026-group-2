@@ -42,6 +42,7 @@ async fn setup_test_app_with_rate_limit() -> (
         sqlite: pool,
         rate_limit: rate_limit_state.clone(),
         metrics: back_end::metrics::Metrics::new(),
+        mongodb: back_end::logs_db::init_mongodb().await.expect("Failed to initialize MongoDB"),
     };
 
     let app = Router::new()

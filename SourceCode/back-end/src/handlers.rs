@@ -1,15 +1,12 @@
 use crate::{
-    AppState,
-    auth::{
+    AppState, auth::{
         JwtConfig, generate_uuid6_token, hash_password, validate_email, validate_password_policy,
         verify_password,
-    },
-    db, email,
-    middleware::AuthToken,
+    }, db, email, logs_db, middleware::AuthToken
 };
 use axum::{
     Json,
-    extract::{ConnectInfo, State},
+    extract::{ConnectInfo, Query, State},
     http::{HeaderMap, StatusCode, header::SET_COOKIE},
     response::IntoResponse,
 };
@@ -54,6 +51,20 @@ pub struct RegisterRequest {
 pub struct VerifyTokenRequest {
     #[schema(example = "jwt-token-here")]
     pub token: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct AddTemplateRequest {
+    #[schema(example = "Kitchen Daily Log")]
+    pub template_name: String,
+    #[schema(example = "[\"field1\", \"field2\"]")]
+    pub template_layout: logs_db::TemplateLayout,
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct GetTemplateRequest {
+    #[schema(example = "Kitchen Daily Log")]
+    pub template_name: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -138,6 +149,22 @@ pub struct UpdateProfileRequest {
 pub struct RequestPasswordResetRequest {
     #[schema(example = "user@example.com")]
     pub email: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AddTokenResponse {
+    pub message: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct AddTemplateResponse {
+    pub message: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct GetTemplateResponse {
+    pub template_name: String,
+    pub template_layout: logs_db::TemplateLayout,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -1192,3 +1219,112 @@ pub async fn reset_password(
         message: "Password has been reset successfully.".to_string(),
     }))
 }
+
+#[utoipa::path(
+    post,
+    path = "/logs/templates",
+    request_body = AddTemplateRequest,
+    responses(
+        (status = 200, description = "Template added successfully", body = AddTemplateResponse),
+        (status = 401, description = "Invalid or expired token", body = ErrorResponse),
+        (status = 400, description = "Password validation failed", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Templates"
+)]
+pub async fn add_template(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    Json(payload): Json<AddTemplateRequest>,
+) -> Result<Json<AddTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
+    
+    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user company ID: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "User is not associated with a company" })),
+        ))?;
+
+    let template_document = logs_db::TemplateDocument {
+        template_name: payload.template_name.clone(),
+        template_layout: payload.template_layout,
+        company_id: company_id,
+    };
+
+    logs_db::add_template(&state.mongodb, &template_document).await.map_err(|e: anyhow::Error| {
+        tracing::error!("Failed to add template: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to add template" })),
+        )
+    })?;
+
+    Ok(Json(AddTemplateResponse {
+        message: "Template added successfully.".to_string(),
+    }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/logs/templates",
+    params(
+        ("template_name", description = "Name of the template to retrieve", example = "ErrorLog" )
+    ),
+    responses(
+        (status = 200, description = "Password reset successfully", body = GetTemplateResponse),
+        (status = 401, description = "Invalid or expired token", body = ErrorResponse),
+        (status = 400, description = "Password validation failed", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Templates"
+)]
+pub async fn get_template(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    Query(payload): Query<GetTemplateRequest>,
+) -> Result<Json<GetTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user company ID: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "User is not associated with a company" })),
+        ))?;
+        
+    let template = logs_db::get_template_by_name(&state.mongodb, &payload.template_name, &company_id)
+        .await
+        .map_err(|e: anyhow::Error| {
+            tracing::error!("Failed to get template: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to get template" })),
+            )
+        })?;
+    
+    match template {
+        Some(t) => Ok(Json(GetTemplateResponse {
+            template_name: t.template_name,
+            template_layout: t.template_layout,
+        })),
+        None => Err((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Template not found" })),
+        )),
+    }
+}
+

@@ -309,6 +309,21 @@ pub async fn create_user(
     })
 }
 
+pub async fn get_user_company_id(pool: &SqlitePool, user_id: &str) -> Result<Option<String>> {
+    let record = sqlx::query!(
+        r#"
+        SELECT company_id
+        FROM users
+        WHERE id = ?
+        "#,
+        user_id
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(record.and_then(|r| r.company_id))
+}
+
 pub async fn get_user_by_email(pool: &SqlitePool, email: &str) -> Result<Option<UserRecord>> {
     let user = sqlx::query_as!(
         UserRecord,
