@@ -15,10 +15,10 @@
 	let selectedUser = $state(null as Member | null);
 
 	const setSelectedUser = (email: string | null) => {
-        if (email === selectedUser?.email) {
-            selectedUser = null;
-            return;
-        }
+		if (email === selectedUser?.email) {
+			selectedUser = null;
+			return;
+		}
 		selectedUser = members.find((member: Member) => member.email === email) || null;
 	};
 	const setShowingCreateModel = (show: boolean) => {

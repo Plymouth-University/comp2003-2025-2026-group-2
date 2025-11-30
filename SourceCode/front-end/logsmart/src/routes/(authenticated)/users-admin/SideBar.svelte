@@ -15,13 +15,34 @@
 		: 'hidden'} flex-col items-center p-6"
 	style="border-color: #000100;"
 >
-    <span class="text-xl font-bold mb-1">Profile</span>
+	<span class="mb-1 text-xl font-bold">Profile</span>
 	<div class="flex flex-col justify-items-center">
-		<form class="mb-4 px-8 pt-2 pb-8 flex flex-col items-center">
-			<img class="w-50 h-50" src="src/lib/assets/placeholder.png" alt="User Profile" />
-            <input class="mb-2" id="fname" type="text" value={selectedUser?.first_name} required placeholder="First Name"/>
-            <input class="mb-2" id="lname" type="text" value={selectedUser?.last_name} required placeholder="Last Name"/>
-			<input class="mb-2" id="email" type="text" value={selectedUser?.email} required placeholder="Email"/>
+		<form class="mb-4 flex flex-col items-center px-8 pt-2 pb-8">
+			<img class="h-50 w-50" src="src/lib/assets/placeholder.png" alt="User Profile" />
+			<input
+				class="mb-2"
+				id="fname"
+				type="text"
+				value={selectedUser?.first_name}
+				required
+				placeholder="First Name"
+			/>
+			<input
+				class="mb-2"
+				id="lname"
+				type="text"
+				value={selectedUser?.last_name}
+				required
+				placeholder="Last Name"
+			/>
+			<input
+				class="mb-2"
+				id="email"
+				type="text"
+				value={selectedUser?.email}
+				required
+				placeholder="Email"
+			/>
 			<div class="flex flex-col gap-4 md:flex-row">
 				<input
 					class="mb-2 cursor-not-allowed bg-gray-200 select-none"

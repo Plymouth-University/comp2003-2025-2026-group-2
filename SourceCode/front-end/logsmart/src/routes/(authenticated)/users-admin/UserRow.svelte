@@ -17,7 +17,7 @@
 >
 	<div class="userBox-rows">{item.email}</div>
 	<div class="userBox-rows" style="flex:1">{item.first_name} {item.last_name}</div>
-	<div class="userBox-rows">{item.role === "admin" ? "Admin" : "Member"}</div>
+	<div class="userBox-rows">{item.role === 'admin' ? 'Admin' : 'Member'}</div>
 	<div class="userBox-rows">
 		<a class="hover:underline focus:underline" href="#remove-user">Remove</a>
 	</div>

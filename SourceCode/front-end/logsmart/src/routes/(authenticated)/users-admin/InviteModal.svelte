@@ -61,7 +61,7 @@
 					/>
 				</div>
 				<button
-					class="hover:bg-gray-200 flex self-center rounded border px-5 py-2.5 text-center text-sm font-medium"
+					class="flex self-center rounded border px-5 py-2.5 text-center text-sm font-medium hover:bg-gray-200"
 					aria-label="Send email"
 					onclick={async () => {
 						let { error } = await api.POST('/auth/invitations/send', { body: { email: email } });
