@@ -15,14 +15,13 @@
 		: 'hidden'} flex-col items-center p-6"
 	style="border-color: #000100;"
 >
-	<button
-		class="mb-4 cursor-pointer self-end rounded border bg-gray-300 p-2 font-bold text-black hover:bg-slate-700 hover:text-white"
-		onclick={() => setSelectedUser(null)}>X</button
-	>
+    <span class="text-xl font-bold mb-1">Profile</span>
 	<div class="flex flex-col justify-items-center">
-		<form class="mb-4 px-8 pt-2 pb-8">
-			<img src="src\lib\assets\placeholder.png" alt="User Profile" />
-			<input class="mb-2" id="email" type="text" value={selectedUser?.email} required />
+		<form class="mb-4 px-8 pt-2 pb-8 flex flex-col items-center">
+			<img class="w-50 h-50" src="src/lib/assets/placeholder.png" alt="User Profile" />
+            <input class="mb-2" id="fname" type="text" value={selectedUser?.first_name} required placeholder="First Name"/>
+            <input class="mb-2" id="lname" type="text" value={selectedUser?.last_name} required placeholder="Last Name"/>
+			<input class="mb-2" id="email" type="text" value={selectedUser?.email} required placeholder="Email"/>
 			<div class="flex flex-col gap-4 md:flex-row">
 				<input
 					class="mb-2 cursor-not-allowed bg-gray-200 select-none"
@@ -40,8 +39,6 @@
 					}}>Reset</button
 				>
 			</div>
-			<input class="mb-2" id="fname" type="text" value={selectedUser?.first_name} required />
-			<input class="mb-2" id="lname" type="text" value={selectedUser?.last_name} required />
 			<select class="mb-3" name="role" id="role" value={selectedUser?.role}>
 				<option id="userRole" value="member">Member</option>
 				<option id="adminRole" value="admin">Admin</option>
