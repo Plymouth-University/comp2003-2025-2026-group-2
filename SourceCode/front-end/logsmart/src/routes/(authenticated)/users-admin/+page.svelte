@@ -1,10 +1,11 @@
 <script lang="ts">
+
     let userTemplate = $state([
-        {id:1, value: 1, first:"John", last:"Doe", role:'Admin', username:'jdoe2@organisation.org', password:'#####', dob:'10/10/2004'},
-        {id:2, value: 2, first:"Jane", last:"Doe", role:'Admin', username:'jdoe3@organisation.org', password:'#####', dob:'11/02/2003'},
-        {id:3, value: 3, first:"Admin", last:"Adminson", role:'User', username:'aabee124@organisation.org', password:'#####', dob:'07/04/2000'},
-        {id:4, value: 4, first: 'Mai', last:'Dansfkhwerfgtrty', role:'User', username:'maidans@organisation.org', password:'#####', dob:'03/12/1972'},
-        {id:5, value: 5, first: 'User', last:'Userson', role:'Admin', username:'userson@organisation.org', password:'#####', dob:'02/05/1950'}
+        {id:1, value: '11102', first:"John", last:"Doe", role:'Admin', username:'jdoe2@organisation.org', password:'#####', dob:'10/10/2004'},
+        {id:2, value: '22331', first:"Jane", last:"Doe", role:'Admin', username:'jdoe3@organisation.org', password:'#####', dob:'11/02/2003'},
+        {id:3, value: '33161', first:"Admin", last:"Adminson", role:'User', username:'aabee124@organisation.org', password:'#####', dob:'07/04/2000'},
+        {id:4, value: '47145', first: 'Mai', last:'Dansfkhwerfgtrty', role:'User', username:'maidans@organisation.org', password:'#####', dob:'03/12/1972'},
+        {id:5, value: '51503', first: 'User', last:'Userson', role:'Admin', username:'userson@organisation.org', password:'#####', dob:'02/05/1950'}
     ]);
 
     function hide(){
