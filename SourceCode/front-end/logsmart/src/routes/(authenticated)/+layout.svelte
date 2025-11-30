@@ -27,8 +27,8 @@
 						>
 							Dashboard
 						</a>
-						<a href="#logs" class="text-gray-700 hover:text-gray-900"> Logs </a>
-						<a href="#users" class="text-gray-700 hover:text-gray-900"> Users </a>
+						<a href="/logs-list" class="text-gray-700 hover:text-gray-900"> Logs List </a>
+						<a href="/users-admin" class="text-gray-700 hover:text-gray-900"> Users </a>
 						<a
 							href="/reports"
 							class="text-gray-700 hover:text-gray-900"
@@ -43,7 +43,7 @@
 							class:font-bold={currentPath === '/templates-dashboard'}
 							class:underline={currentPath === '/templates-dashboard'}
 						>
-							Templates
+							Templates Dashboard
 						</a>
 					</nav>
 				</div>
