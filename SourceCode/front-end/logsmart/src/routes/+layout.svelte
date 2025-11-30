@@ -8,14 +8,13 @@
 	let { children, data } = $props<{ children: any; data: LayoutData }>();
 
 	const isAuthenticatedRoute = $derived(
-		page.url.pathname.startsWith('/settings') || 
-		page.url.pathname.startsWith('/dashboard') || 
-		page.url.pathname.startsWith('/reports') || 
-		page.url.pathname.startsWith('/templates-dashboard') ||
-		page.url.pathname.startsWith('/log-template') ||
-		page.url.pathname.startsWith('/users-admin') || 
-		page.url.pathname.startsWith('/logs-list')
-
+		page.url.pathname.startsWith('/dashboard') ||
+			page.url.pathname.startsWith('/log-template') ||
+			page.url.pathname.startsWith('/logs-list') ||
+			page.url.pathname.startsWith('/reports') ||
+			page.url.pathname.startsWith('/settings') ||
+			page.url.pathname.startsWith('/templates-dashboard') ||
+			page.url.pathname.startsWith('/users-admin')
 	);
 
 	async function handleLogout() {

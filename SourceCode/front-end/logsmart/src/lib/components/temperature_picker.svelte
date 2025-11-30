@@ -5,29 +5,29 @@
 		unit: string;
 	};
 
-    const increaseValue = () => {
-        if (item.value < freezerMax) {
-            item.value += 1;
-        }
-    };
-    const decreaseValue = () => {
-        if (item.value > freezerMin) {
-            item.value -= 1;
-        }
-    };
-    const handleInputChange = (event: Event) => {
-        const input = event.target as HTMLInputElement;
-        let newValue = parseInt(input.value);
-        if (isNaN(newValue)) {
-            newValue = freezerMin;
-        }
-        if (newValue < freezerMin) {
-            newValue = freezerMin;
-        } else if (newValue > freezerMax) {
-            newValue = freezerMax;
-        }
-        item.value = newValue;
-    };
+	const increaseValue = () => {
+		if (item.value < freezerMax) {
+			item.value += 1;
+		}
+	};
+	const decreaseValue = () => {
+		if (item.value > freezerMin) {
+			item.value -= 1;
+		}
+	};
+	const handleInputChange = (event: Event) => {
+		const input = event.target as HTMLInputElement;
+		let newValue = parseInt(input.value);
+		if (isNaN(newValue)) {
+			newValue = freezerMin;
+		}
+		if (newValue < freezerMin) {
+			newValue = freezerMin;
+		} else if (newValue > freezerMax) {
+			newValue = freezerMax;
+		}
+		item.value = newValue;
+	};
 
 	const freezerMin = -50;
 	const freezerMax = 20;
@@ -38,7 +38,7 @@
 		<input
 			type="number"
 			bind:value={item.value}
-            onchange={handleInputChange}
+			onchange={handleInputChange}
 			max="10"
 			min="-10"
 			class="w-16 border-2 px-3 py-2 text-center text-xl font-medium"
