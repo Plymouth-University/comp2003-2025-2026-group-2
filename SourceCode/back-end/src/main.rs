@@ -67,7 +67,9 @@ async fn main() {
         sqlite: auth_db_sqlite_pool,
         rate_limit: rate_limit_state.clone(),
         metrics,
-        mongodb: logs_db::init_mongodb().await.expect("Failed to initialize MongoDB"),
+        mongodb: logs_db::init_mongodb()
+            .await
+            .expect("Failed to initialize MongoDB"),
     };
 
     let api_routes = Router::new()

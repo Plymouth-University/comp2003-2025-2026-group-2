@@ -19,7 +19,6 @@ pub struct TemplateField {
 
 pub type TemplateLayout = Vec<TemplateField>;
 
-
 #[derive(Debug, serde::Deserialize, serde::Serialize, ToSchema)]
 pub struct TemplateDocument {
     pub template_name: String,
@@ -29,13 +28,12 @@ pub struct TemplateDocument {
 
 pub async fn init_mongodb() -> Result<mongodb::Client> {
     let mongo_uri = std::env::var("MONGODB_URI").expect("MONGODB_URI not set in environment");
-    mongodb::Client::with_uri_str(&mongo_uri).await.map_err(Into::into)
+    mongodb::Client::with_uri_str(&mongo_uri)
+        .await
+        .map_err(Into::into)
 }
 
-pub async fn add_template(
-    client: &mongodb::Client,
-    template: &TemplateDocument
-) -> Result<()> {
+pub async fn add_template(client: &mongodb::Client, template: &TemplateDocument) -> Result<()> {
     let db = client.database("logs_db");
     let collection: mongodb::Collection<TemplateDocument> = db.collection("templates");
 
@@ -46,7 +44,7 @@ pub async fn add_template(
 pub async fn get_template_by_name(
     client: &mongodb::Client,
     template_name: &str,
-    company_id: &str
+    company_id: &str,
 ) -> Result<Option<TemplateDocument>> {
     let db = client.database("logs_db");
     let collection: mongodb::Collection<TemplateDocument> = db.collection("templates");

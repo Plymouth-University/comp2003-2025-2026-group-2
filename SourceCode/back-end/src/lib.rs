@@ -4,10 +4,10 @@ pub mod db;
 pub mod dto;
 pub mod email;
 pub mod handlers;
+pub mod logs_db;
 pub mod metrics;
 pub mod middleware;
 pub mod rate_limit;
-pub mod logs_db;
 
 use rate_limit::RateLimitState;
 use sqlx::SqlitePool;

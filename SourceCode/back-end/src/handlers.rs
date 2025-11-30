@@ -1,8 +1,11 @@
 use crate::{
-    AppState, auth::{
+    AppState,
+    auth::{
         JwtConfig, generate_uuid6_token, hash_password, validate_email, validate_password_policy,
         verify_password,
-    }, db, email, logs_db, middleware::AuthToken
+    },
+    db, email, logs_db,
+    middleware::AuthToken,
 };
 use axum::{
     Json,
@@ -1251,7 +1254,6 @@ pub async fn add_template(
     State(state): State<AppState>,
     Json(payload): Json<AddTemplateRequest>,
 ) -> Result<Json<AddTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
-    
     let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
         .await
         .map_err(|e| {
@@ -1269,16 +1271,18 @@ pub async fn add_template(
     let template_document = logs_db::TemplateDocument {
         template_name: payload.template_name.clone(),
         template_layout: payload.template_layout,
-        company_id: company_id,
+        company_id,
     };
 
-    logs_db::add_template(&state.mongodb, &template_document).await.map_err(|e: anyhow::Error| {
-        tracing::error!("Failed to add template: {:?}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": "Failed to add template" })),
-        )
-    })?;
+    logs_db::add_template(&state.mongodb, &template_document)
+        .await
+        .map_err(|e: anyhow::Error| {
+            tracing::error!("Failed to add template: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to add template" })),
+            )
+        })?;
 
     Ok(Json(AddTemplateResponse {
         message: "Template added successfully.".to_string(),
@@ -1318,17 +1322,18 @@ pub async fn get_template(
             StatusCode::FORBIDDEN,
             Json(json!({ "error": "User is not associated with a company" })),
         ))?;
-        
-    let template = logs_db::get_template_by_name(&state.mongodb, &payload.template_name, &company_id)
-        .await
-        .map_err(|e: anyhow::Error| {
-            tracing::error!("Failed to get template: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Failed to get template" })),
-            )
-        })?;
-    
+
+    let template =
+        logs_db::get_template_by_name(&state.mongodb, &payload.template_name, &company_id)
+            .await
+            .map_err(|e: anyhow::Error| {
+                tracing::error!("Failed to get template: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Failed to get template" })),
+                )
+            })?;
+
     match template {
         Some(t) => Ok(Json(GetTemplateResponse {
             template_name: t.template_name,
