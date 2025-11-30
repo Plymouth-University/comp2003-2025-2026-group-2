@@ -682,3 +682,24 @@ pub async fn mark_password_reset_used(pool: &SqlitePool, reset_id: &str) -> Resu
 
     Ok(())
 }
+
+pub async fn get_users_by_company_id(
+    pool: &SqlitePool,
+    company_id: &str,
+) -> Result<Vec<UserRecord>> {
+    let users = sqlx::query_as!(
+        UserRecord,
+        r#"
+        SELECT users.id as "id!", email as "email!", first_name as "first_name!", last_name as "last_name!", 
+               password_hash as "password_hash!", company_id, role as "role!", users.created_at as "created_at!: String", name as "company_name?"
+        FROM users
+        LEFT JOIN companies ON users.company_id = companies.id
+        WHERE company_id = ?
+        "#,
+        company_id
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(users)
+}

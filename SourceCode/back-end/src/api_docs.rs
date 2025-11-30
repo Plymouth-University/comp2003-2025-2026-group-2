@@ -16,6 +16,7 @@ use utoipa::OpenApi;
         handlers::reset_password,
         handlers::add_template,
         handlers::get_template,
+        handlers::get_company_members,
     ),
     components(
         schemas(
@@ -41,12 +42,14 @@ use utoipa::OpenApi;
             handlers::GetTemplateResponse,
             handlers::AddTemplateResponse,
             handlers::AddTokenResponse,
+            handlers::GetCompanyMembersResponse,
         )
     ),
     tags(
         (name = "Authentication", description = "User authentication and registration endpoints"),
         (name = "Invitations", description = "Company member invitation management"),
         (name = "Templates", description = "Template1 management"),
+        (name = "Company Management", description = "Company member management"),
     ),
     modifiers(&SecurityAddon)
 )]

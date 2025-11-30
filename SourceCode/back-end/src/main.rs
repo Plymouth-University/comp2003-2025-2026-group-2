@@ -88,6 +88,7 @@ async fn main() {
             "/auth/password/request-reset",
             post(handlers::request_password_reset),
         )
+        .route("/auth/company/members", get(handlers::get_company_members))
         .route("/auth/password/reset", post(handlers::reset_password))
         .route("/logs/templates", post(handlers::add_template))
         .route("/logs/templates", get(handlers::get_template))
