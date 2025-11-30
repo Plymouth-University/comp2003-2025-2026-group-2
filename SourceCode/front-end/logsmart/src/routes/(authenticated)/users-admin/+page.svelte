@@ -17,7 +17,7 @@
     function requestUser(itemid: number){
         const id = itemid;
         const userinfo = userTemplate.filter(obj => obj.id === itemid);
-        // const username = userinfo.map(userinfo => userinfo.first) + " " + userinfo.map(userinfo => userinfo.last);
+        // const fullname = userinfo.map(userinfo => userinfo.first) + " " + userinfo.map(userinfo => userinfo.last);
         let username = String(userinfo.map(userinfo => userinfo.username));
         let first = String(userinfo.map(userinfo => userinfo.first));
         let last = String(userinfo.map(userinfo => userinfo.last));
@@ -37,13 +37,6 @@
         }
         document.getElementById("userSidebar")!.style.display = "flex";
         document.getElementById("eventHide")!.addEventListener("dblclick", hide);
-        /*let state = document.getElementById("userSidebar")!.style.display;
-        if (state == "none"){
-            document.getElementById("userSidebar")!.style.display = "flex";
-        }
-        else{
-            document.getElementById("userSidebar")!.style.display = "none";
-        }*/
     }
 </script>
 
