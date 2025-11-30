@@ -18,11 +18,11 @@
         const id = itemid;
         const userinfo = userTemplate.filter(obj => obj.id === itemid);
         // const username = userinfo.map(userinfo => userinfo.first) + " " + userinfo.map(userinfo => userinfo.last);
-        let username = "" + userinfo.map(userinfo => userinfo.username);
-        let first = "" + userinfo.map(userinfo => userinfo.first);
-        let last = "" + userinfo.map(userinfo => userinfo.last);
-        let dob = "" + userinfo.map(userinfo => userinfo.dob);
-        let role = "" + userinfo.map(userinfo => userinfo.role);
+        let username = String(userinfo.map(userinfo => userinfo.username));
+        let first = String(userinfo.map(userinfo => userinfo.first));
+        let last = String(userinfo.map(userinfo => userinfo.last));
+        let dob = String(userinfo.map(userinfo => userinfo.dob));
+        let role = String(userinfo.map(userinfo => userinfo.role));
         (<HTMLInputElement>document.getElementById("username")!).value = username;
         (<HTMLInputElement>document.getElementById("fname")!).value = first;
         (<HTMLInputElement>document.getElementById("lname")!).value = last;
@@ -82,23 +82,51 @@
                                     <span style="color:black; font-size:13px;">Add New</span>
                                 </button>
                                 <!-- Register New User Modal -->
+                                <div id="registration-modal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
+                                    <div class="relative p-4 w-full max-w-md max-h-full">
+                                        <div class="relative bg-neutral-primary-soft border border-default rounded-base shadow-sm p-4 md:p-6">
+                                            <div class="flex items-center justify-between border-b border-default pb-4 md:pb-5">
+                                                <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 17.94 6M18 18 6.06 6"/></svg>
+                                                <h3 class="text-lg font-medium text-heading">REGISTER NEW USER</h3>
+                                                <button type="button" class="text-body bg-transparent hover:bg-neutral-tertiary hover:text-heading rounded-base text-sm w-9 h-9 ms-auto inline-flex justify-center items-center" data-modal-hide="authentication-modal">
+                                                    <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 17.94 6M18 18 6.06 6"/></svg>
+                                                    <span class="sr-only">Close modal</span>
+                                                </button>
+                                            </div>
+                                            <form action="#" class="pt-4 md:pt-6">
+                                                <div class="mb-4">
+                                                    <label for="email" class="block mb-2.5 text-sm font-medium text-heading">New user's email</label>	
+                                                    <input type="email" id="email" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" placeholder="example@company.com" required />
+                                                </div>
+                                                <button aria-label="Send email">
+                                                    <svg class="fill-current w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"></svg>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                    
+                        <!--end modal-->
                         </div>
                     </div>
                 </div>
-                    <div id="userSidebar" class="w-64 border-l-2 bg-white text-center" style="border-color: #000100; display:none;"> <!--display:none; -->
-                        <div class="p-6">
-                            <form>
-                                <img src='SourceCode\front-end\logsmart\src\lib\assets\placeholder.png' alt="User Profile"> <!-- onerror={() => {this.src= 'SourceCode\front-end\logsmart\src\lib\assets\placeholder.png'}} -->
-                                <input id="username" type="text" value="Username">
-                                <input id="password" type="text" value="*******" disabled><button class="bg-gray-300 hover:bg-blue-700 text-black font-bold py-2 px-4 border rounded">Reset</button>
-                                <input id="fname" type="text" value="First Name">
-                                <input id="lname" type="text" value="Last Name">
-                                <input id="dob" type="text" value="XX/XX/XXXX">
-                                <select name="role" id="role">
+                    <div id="userSidebar" class="w-70 border-l-2 bg-white text-center" style="border-color: #000100; display:none;"> <!--display:none; -->
+                        <div class="flex flex-col justify-items-center">
+                            <form class="px-8 pt-2 pb-8 mb-4">
+                                <img src='src\lib\assets\placeholder.png' alt="User Profile"> <!-- onerror={() => {this.src= 'SourceCode\front-end\logsmart\src\lib\assets\placeholder.png'}} -->
+                                <input class="mb-2" id="username" type="text" value="Username" required>
+                                <div class="flex flex-col md:flex-row gap-4">
+                                    <input class="mb-2 cursor-not-allowed bg-gray-200 select-none" id="password" type="text" value="*******" style="width:60%; -webkit-user-select: none; user-select: none; -ms-user-select: none;" disabled>
+                                    <button class="bg-gray-300 hover:bg-slate-700 mb-2 hover:text-white text-black font-bold py-2 px-4 border rounded cursor-pointer">Reset</button>
+                                </div>
+                                <input class="mb-2" id="fname" type="text" value="First Name" required>
+                                <input class="mb-2" id="lname" type="text" value="Last Name" required>
+                                <input class="mb-2" id="dob" type="text" value="XX/XX/XXXX" required>
+                                <select class="mb-3" name="role" id="role">
                                     <option id="userRole" value="user"></option>
                                     <option id="adminRole" value="admin"></option>
                                 </select>
-                                <button class="bg-gray-300 hover:bg-blue-700 text-black font-bold py-2 px-4 border rounded">Save</button>
+                                <button class="m-5 mb-0 bg-gray-300 hover:bg-slate-700 hover:text-white text-black font-bold py-2 px-4 border rounded cursor-pointer">Save</button>
                             </form>
                         </div>
                     </div>  
