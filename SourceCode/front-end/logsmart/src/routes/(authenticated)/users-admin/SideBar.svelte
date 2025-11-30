@@ -2,7 +2,10 @@
 	import { api } from '$lib/api';
 	import type { Member } from './+page.svelte';
 
-	const { setSelectedUser, selectedUser } = $props<{ setSelectedUser: (email: string | null) => void; selectedUser: Member | null }>();
+	const { setSelectedUser, selectedUser } = $props<{
+		setSelectedUser: (email: string | null) => void;
+		selectedUser: Member | null;
+	}>();
 </script>
 
 <div

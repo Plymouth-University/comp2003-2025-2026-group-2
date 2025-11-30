@@ -1,8 +1,11 @@
 <script lang="ts">
-	import { api } from "$lib/api";
+	import { api } from '$lib/api';
 
-	const { showingCreateModel, setShowingCreateModel } = $props<{ showingCreateModel: boolean; setShowingCreateModel: (show: boolean) => void }>();
-    let email = $state("");
+	const { showingCreateModel, setShowingCreateModel } = $props<{
+		showingCreateModel: boolean;
+		setShowingCreateModel: (show: boolean) => void;
+	}>();
+	let email = $state('');
 </script>
 
 <div
@@ -22,7 +25,7 @@
 				<button
 					type="button"
 					class="text-body hover:bg-neutral-tertiary hover:text-heading rounded-base ms-auto inline-flex h-9 w-9 items-center justify-center bg-transparent text-sm"
-					onclick={() => (setShowingCreateModel(false))}
+					onclick={() => setShowingCreateModel(false)}
 				>
 					<svg
 						class="h-5 w-5"
@@ -43,7 +46,7 @@
 					<span class="sr-only">Close modal</span>
 				</button>
 			</div>
-			<form action="#" class="pt-4 md:pt-6 flex flex-col">
+			<form action="#" class="flex flex-col pt-4 md:pt-6">
 				<div class="mb-4">
 					<label for="email" class="text-heading mb-2.5 block text-sm font-medium"
 						>New user's email</label
@@ -51,24 +54,25 @@
 					<input
 						type="email"
 						id="email"
-                        bind:value={email}
+						bind:value={email}
 						class="bg-neutral-secondary-medium border-default-medium text-heading rounded-base focus:ring-brand focus:border-brand placeholder:text-body block w-full border px-3 py-2.5 text-sm shadow-xs"
 						placeholder="example@company.com"
 						required
 					/>
 				</div>
-				<button class="flex self-center rounded border px-5 py-2.5 text-center text-sm font-medium hover:bg-brand-dark" aria-label="Send email" onclick={async () => {
-                    let {error} = await api.POST('/auth/invitations/send', {body: {email: email}});
-                    if (!error) {
-                        setShowingCreateModel(false);
-                    } else {
-                        console.error("Error sending invite:", error);
-                    }
-                }}>
-					<span
-                        class="text-black text-sm font-semibold"
-                        >Send Invite</span
-                    >
+				<button
+					class="hover:bg-brand-dark flex self-center rounded border px-5 py-2.5 text-center text-sm font-medium"
+					aria-label="Send email"
+					onclick={async () => {
+						let { error } = await api.POST('/auth/invitations/send', { body: { email: email } });
+						if (!error) {
+							setShowingCreateModel(false);
+						} else {
+							console.error('Error sending invite:', error);
+						}
+					}}
+				>
+					<span class="text-sm font-semibold text-black">Send Invite</span>
 				</button>
 			</form>
 		</div>

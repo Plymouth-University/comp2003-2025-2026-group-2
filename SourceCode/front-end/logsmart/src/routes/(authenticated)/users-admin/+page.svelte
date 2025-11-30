@@ -17,9 +17,9 @@
 	const setSelectedUser = (email: string | null) => {
 		selectedUser = members.find((member: Member) => member.email === email) || null;
 	};
-    const setShowingCreateModel = (show: boolean) => {
-        showingCreateModel = show;
-    };
+	const setShowingCreateModel = (show: boolean) => {
+		showingCreateModel = show;
+	};
 </script>
 
 <main class="min-h-full" style="background-color: #F8F8F8;">
@@ -38,7 +38,7 @@
 						<span>&#10133;</span>
 						<span class="pt-2 text-sm text-black">Add New</span>
 					</button>
-					<InviteModal showingCreateModel={showingCreateModel} setShowingCreateModel={setShowingCreateModel} />
+					<InviteModal {showingCreateModel} {setShowingCreateModel} />
 				</div>
 			</div>
 		</div>

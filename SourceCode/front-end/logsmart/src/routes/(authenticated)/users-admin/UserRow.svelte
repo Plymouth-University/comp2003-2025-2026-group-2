@@ -12,7 +12,7 @@
 
 <button
 	onclick={() => setSelectedUser(item.email)}
-	class="flex h-20 flex-auto flex-row content-between overflow-x-auto border-2 bg-white hover:bg-gray-100 active:bg-gray-200 mb-2"
+	class="mb-2 flex h-20 flex-auto flex-row content-between overflow-x-auto border-2 bg-white hover:bg-gray-100 active:bg-gray-200"
 	style="margin-top: -5px; display:flex;"
 >
 	<div class="userBox-rows">{item.email}</div>
