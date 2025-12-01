@@ -3,7 +3,7 @@ import { browser } from '$app/environment';
 
 function createThemeStore() {
 	const { subscribe, set, update } = writable<boolean>(false);
-	
+
 	return {
 		subscribe,
 		initialize: () => {
@@ -21,7 +21,7 @@ function createThemeStore() {
 		},
 		toggle: () => {
 			if (browser) {
-				update(isDark => {
+				update((isDark) => {
 					const newValue = !isDark;
 					if (newValue) {
 						document.documentElement.classList.add('dark');

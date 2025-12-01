@@ -1,49 +1,10 @@
-<!-- <script lang="ts">
-	import type { PageData, ActionData } from './$types';
-	import { enhance } from '$app/forms';
-
-	let { data, form } = $props<{ data: PageData; form: ActionData }>();
-
-	// Initialize from server data
-	let firstName = $state(data.user?.first_name || '');
-	let lastName = $state(data.user?.last_name || '');
-	let email = $state(data.user?.email || '');
-	let isDarkMode = $state(false);
-	let isSubmitting = $state(false);
-	let showSuccessMessage = $state(false);
-	let errorMessage = $state('');
-
-	// Watch for form submission results
-	$effect(() => {
-		if (form?.success) {
-			showSuccessMessage = true;
-			errorMessage = '';
-
-			setTimeout(() => {
-				showSuccessMessage = false;
-			}, 3000);
-		} else if (form?.message) {
-			errorMessage = form.message;
-			console.error('Form error:', form);
-			setTimeout(() => {
-				errorMessage = '';
-			}, 5000);
-		}
-	});
-
-	function handleToggleDarkMode() {
-		isDarkMode = !isDarkMode;
-		console.log('Dark mode:', isDarkMode);
-	}
-</script> -->
-
 <script lang="ts">
 	import type { PageData, ActionData } from './$types';
 	import { enhance } from '$app/forms';
 	import { isDarkMode } from '$lib/stores/theme';
-	
+
 	let { data, form } = $props<{ data: PageData; form: ActionData }>();
-	
+
 	// Initialize from server data
 	let firstName = $state(data.user?.first_name || '');
 	let lastName = $state(data.user?.last_name || '');
@@ -57,7 +18,7 @@
 		if (form?.success) {
 			showSuccessMessage = true;
 			errorMessage = '';
-			
+
 			setTimeout(() => {
 				showSuccessMessage = false;
 			}, 3000);
@@ -80,31 +41,36 @@
 <div class="min-h-screen" style="background-color: var(--bg-secondary);">
 	<div class="mx-auto max-w-7xl px-6 py-8">
 		<!-- Header -->
-		<h1 class="text-3xl font-bold mb-8" style="color: var(--text-primary);">Settings</h1>
+		<h1 class="mb-8 text-3xl font-bold" style="color: var(--text-primary);">Settings</h1>
 
 		<!-- Success Message -->
 		{#if showSuccessMessage}
-			<div class="mb-6 border-2 border-green-500 bg-green-50 dark:bg-green-900 px-6 py-4">
-				<p class="font-medium text-green-700 dark:text-green-200">✓ {form?.message || 'Changes saved successfully!'}</p>
+			<div class="mb-6 border-2 border-green-500 bg-green-50 px-6 py-4 dark:bg-green-900">
+				<p class="font-medium text-green-700 dark:text-green-200">
+					✓ {form?.message || 'Changes saved successfully!'}
+				</p>
 			</div>
 		{/if}
 
 		<!-- Error Message -->
 		{#if errorMessage}
-			<div class="mb-6 border-2 border-red-500 bg-red-50 dark:bg-red-900 px-6 py-4">
+			<div class="mb-6 border-2 border-red-500 bg-red-50 px-6 py-4 dark:bg-red-900">
 				<p class="font-medium text-red-700 dark:text-red-200">✗ {errorMessage}</p>
 			</div>
 		{/if}
 
 		<div class="space-y-6">
 			<!-- Profile Settings Section -->
-			<div class="border-2" style="border-color: var(--border-primary); background-color: var(--bg-primary);">
+			<div
+				class="border-2"
+				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+			>
 				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
 					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Profile Information</h2>
 				</div>
 				<div class="px-6 py-6" style="background-color: var(--bg-primary);">
-					<form 
-						method="POST" 
+					<form
+						method="POST"
 						action="?/updateProfile"
 						use:enhance={() => {
 							isSubmitting = true;
@@ -117,7 +83,11 @@
 					>
 						<!-- First Name -->
 						<div>
-							<label for="firstName" class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+							<label
+								for="firstName"
+								class="mb-2 block text-sm font-medium"
+								style="color: var(--text-primary);"
+							>
 								First Name
 							</label>
 							<input
@@ -125,7 +95,7 @@
 								name="firstName"
 								type="text"
 								bind:value={firstName}
-								class="w-full border-2 px-4 py-2 focus:outline-none focus:ring-2"
+								class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 								placeholder="Enter your first name"
 								required
@@ -134,7 +104,11 @@
 
 						<!-- Last Name -->
 						<div>
-							<label for="lastName" class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+							<label
+								for="lastName"
+								class="mb-2 block text-sm font-medium"
+								style="color: var(--text-primary);"
+							>
 								Last Name
 							</label>
 							<input
@@ -142,7 +116,7 @@
 								name="lastName"
 								type="text"
 								bind:value={lastName}
-								class="w-full border-2 px-4 py-2 focus:outline-none focus:ring-2"
+								class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 								placeholder="Enter your last name"
 								required
@@ -151,7 +125,11 @@
 
 						<!-- Email -->
 						<div>
-							<label for="email" class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+							<label
+								for="email"
+								class="mb-2 block text-sm font-medium"
+								style="color: var(--text-primary);"
+							>
 								Email Address
 							</label>
 							<input
@@ -159,14 +137,14 @@
 								name="email"
 								type="email"
 								bind:value={email}
-								class="w-full border-2 px-4 py-2 focus:outline-none focus:ring-2"
+								class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
 								style="border-color: var(--border-secondary); background-color: var(--bg-secondary); color: var(--text-secondary);"
 								placeholder="Enter your email"
 								readonly
 								disabled
 								title="Email cannot be changed"
 							/>
-							<p class="text-sm mt-1" style="color: var(--text-secondary);">
+							<p class="mt-1 text-sm" style="color: var(--text-secondary);">
 								Email address cannot be changed
 							</p>
 						</div>
@@ -176,7 +154,7 @@
 							<button
 								type="submit"
 								disabled={isSubmitting}
-								class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+								class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 							>
 								{isSubmitting ? 'Saving...' : 'Save Profile'}
@@ -187,7 +165,10 @@
 			</div>
 
 			<!-- Password Change Section -->
-			<div class="border-2" style="border-color: var(--border-primary); background-color: var(--bg-primary);">
+			<div
+				class="border-2"
+				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+			>
 				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
 					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Reset Password</h2>
 				</div>
@@ -211,7 +192,7 @@
 							<button
 								type="submit"
 								disabled={isSubmitting}
-								class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+								class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 							>
 								{isSubmitting ? 'Sending...' : 'Send Password Reset Email'}
@@ -222,7 +203,10 @@
 			</div>
 
 			<!-- Appearance Settings Section -->
-			<div class="border-2" style="border-color: var(--border-primary); background-color: var(--bg-primary);">
+			<div
+				class="border-2"
+				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+			>
 				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
 					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Appearance</h2>
 				</div>
@@ -231,14 +215,14 @@
 						<div class="flex items-center justify-between">
 							<div>
 								<h3 class="font-medium" style="color: var(--text-primary);">Dark Mode</h3>
-								<p class="text-sm mt-1" style="color: var(--text-secondary);">
+								<p class="mt-1 text-sm" style="color: var(--text-secondary);">
 									Switch between light and dark theme
 								</p>
 							</div>
 							<!-- Toggle Switch -->
 							<button
 								onclick={handleToggleDarkMode}
-								class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
+								class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:ring-2 focus:ring-offset-2 focus:outline-none"
 								style="background-color: {$isDarkMode ? '#94C5CC' : '#E5E5E5'};"
 								role="switch"
 								aria-checked={$isDarkMode}
@@ -250,9 +234,11 @@
 								></span>
 							</button>
 						</div>
-						<div class="mt-4 pt-4 border-t" style="border-color: var(--border-secondary);">
+						<div class="mt-4 border-t pt-4" style="border-color: var(--border-secondary);">
 							<p class="text-sm" style="color: var(--text-secondary);">
-								Current theme: <span class="font-medium" style="color: var(--text-primary);">{$isDarkMode ? 'Dark' : 'Light'}</span>
+								Current theme: <span class="font-medium" style="color: var(--text-primary);"
+									>{$isDarkMode ? 'Dark' : 'Light'}</span
+								>
 							</p>
 						</div>
 					</div>

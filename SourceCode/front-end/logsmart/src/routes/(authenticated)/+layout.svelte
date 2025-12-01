@@ -19,8 +19,8 @@
 				<div class="flex items-center gap-8">
 					<a href="/dashboard" class="text-2xl font-bold text-blue-600">LogSmart</a>
 					<nav class="flex items-center gap-6">
-						<a 
-							href="/dashboard" 
+						<a
+							href="/dashboard"
 							class="hover:opacity-80"
 							style="color: var(--text-primary);"
 							class:font-bold={currentPath === '/dashboard'}
@@ -38,8 +38,8 @@
 						>
 							Reports
 						</a>
-						<a 
-							href="/templates-dashboard" 
+						<a
+							href="/templates-dashboard"
 							class="hover:opacity-80"
 							style="color: var(--text-primary);"
 							class:font-bold={currentPath === '/templates-dashboard'}

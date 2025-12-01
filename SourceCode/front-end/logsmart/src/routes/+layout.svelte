@@ -23,7 +23,7 @@
 		await fetch('/api/logout', { method: 'POST' });
 		window.location.href = '/login';
 	}
-	
+
 	onMount(() => {
 		isDarkMode.initialize();
 	});
