@@ -1,7 +1,7 @@
 <script lang="ts">
 	import TemperaturePicker from '$lib/components/temperature_picker.svelte';
-	import LogButton1 from '$lib/components/next_button.svelte';
-	import LogButton2 from '$lib/components/previous_button.svelte';
+	import NextButton from './next_button.svelte';
+	import PreviousButton from './previous_button.svelte';
 
 	let canvasItems = $state([
 		{
@@ -49,16 +49,22 @@
 		<!-- Temperature Input Rows -->
 		<div class="space-y-6">
 			{#each canvasItems as item}
-				<TemperaturePicker {item} />
+				<TemperaturePicker  
+					value={item.value}
+					min={-10}
+					max={10}
+					label={item.label}
+					unit={item.unit}
+				/>
 			{/each}
 		</div>
 	</div>
 	<div class="container">
 		<div class="left_element">
-			<LogButton2 />
+			<PreviousButton />
 		</div>
 		<div class="right_element">
-			<LogButton1 />
+			<NextButton />
 		</div>
 	</div>
 </main>

@@ -1,14 +1,16 @@
 <script lang="ts">
-	const item = $props<{ children: any; }>();
+	let { value, min, max, label, unit }: { value: number; min: number; max: number; label: string; unit: string } = $props();
+	const freezerMin = min;
+	const freezerMax = max;
 
 	const increaseValue = () => {
-		if (item.value < freezerMax) {
-			item.value += 1;
+		if (value < freezerMax) {
+			value += 1;
 		}
 	};
 	const decreaseValue = () => {
-		if (item.value > freezerMin) {
-			item.value -= 1;
+		if (value > freezerMin) {
+			value -= 1;
 		}
 	};
 	const handleInputChange = (event: Event) => {
@@ -22,18 +24,15 @@
 		} else if (newValue > freezerMax) {
 			newValue = freezerMax;
 		}
-		item.value = newValue;
+		value = newValue;
 	};
-
-	const freezerMin = -50;
-	const freezerMax = 20;
 </script>
 
 <div class="grid grid-cols-[120px_1fr_120px] items-center gap-8">
 	<div class="flex items-center gap-3">
 		<input
 			type="number"
-			bind:value={item.value}
+			bind:value={value}
 			onchange={handleInputChange}
 			max="10"
 			min="-10"
@@ -83,11 +82,11 @@
 
 	<!-- Name/Label -->
 	<div class="text-lg" style="color: #000100;">
-		{item.label}
+		{label}
 	</div>
 	<!-- Units -->
 	<div class="text-right text-lg" style="color: #000100;">
-		{item.unit}
+		{unit}
 	</div>
 </div>
 
