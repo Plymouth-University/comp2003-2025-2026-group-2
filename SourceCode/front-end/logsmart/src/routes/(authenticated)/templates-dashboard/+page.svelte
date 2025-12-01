@@ -23,7 +23,10 @@
 	<!-- Main Content - Three Column Layout -->
 	<div class="flex h-[calc(100vh-73px)]">
 		<!-- Left Sidebar - Templates -->
-		<div class="w-64 border-r-2" style="border-color: var(--border-primary); background-color: var(--bg-primary);">
+		<div
+			class="w-64 border-r-2"
+			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+		>
 			<div class="p-6">
 				<h2 class="mb-4 text-2xl font-bold" style="color: var(--text-primary);">Templates</h2>
 
@@ -68,10 +71,17 @@
 		<!-- Middle Section - Canvas -->
 		<div class="flex-1 overflow-auto p-6">
 			<div class="mx-auto max-w-2xl">
-				<h2 class="mb-6 text-center text-3xl font-bold" style="color: var(--text-secondary);">Canvas</h2>
+				<h2 class="mb-6 text-center text-3xl font-bold" style="color: var(--text-secondary);">
+					Canvas
+				</h2>
 
-				<div class="rounded-lg border-2 p-8" style="border-color: var(--border-primary); background-color: var(--bg-primary);">
-					<h3 class="mb-6 text-xl font-bold" style="color: var(--text-primary);">New Log Template</h3>
+				<div
+					class="rounded-lg border-2 p-8"
+					style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+				>
+					<h3 class="mb-6 text-xl font-bold" style="color: var(--text-primary);">
+						New Log Template
+					</h3>
 
 					<div class="mb-8">
 						<label
@@ -172,7 +182,10 @@
 		</div>
 
 		<!-- Right Sidebar - Components -->
-		<div class="w-64 border-l-2" style="border-color: var(--border-primary); background-color: var(--bg-primary);">
+		<div
+			class="w-64 border-l-2"
+			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+		>
 			<div class="p-6">
 				<h2 class="mb-6 text-2xl font-bold" style="color: var(--text-primary);">Components</h2>
 

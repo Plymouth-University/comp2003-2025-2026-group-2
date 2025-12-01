@@ -35,7 +35,11 @@
 
 <div class="flex h-screen flex-col">
 	{#if !isAuthenticatedRoute}
-		<header id="header" style="border-color: var(--border-secondary); background-color: var(--bg-primary);" class="border-b">
+		<header
+			id="header"
+			style="border-color: var(--border-secondary); background-color: var(--bg-primary);"
+			class="border-b"
+		>
 			<div class="mx-auto max-w-7xl px-6 py-2">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center">
@@ -45,8 +49,12 @@
 						<a href="/" style="color: var(--text-primary);" class="text-2xl font-bold">LogSmart</a>
 					</div>
 					<nav class="hidden items-center gap-6 md:flex">
-						<a href="/#features" style="color: var(--text-secondary);" class="hover:opacity-80">Features</a>
-						<a href="/contact" style="color: var(--text-secondary);" class="hover:opacity-80">Contact</a>
+						<a href="/#features" style="color: var(--text-secondary);" class="hover:opacity-80"
+							>Features</a
+						>
+						<a href="/contact" style="color: var(--text-secondary);" class="hover:opacity-80"
+							>Contact</a
+						>
 					</nav>
 					<div class="flex items-center gap-3">
 						{#if data.isAuthenticated}

@@ -13,7 +13,10 @@
 </script>
 
 <div class="min-h-screen w-full" style="background-color: var(--bg-secondary);">
-	<header style="border-color: var(--border-secondary); background-color: var(--bg-primary);" class="border-b shadow-sm">
+	<header
+		style="border-color: var(--border-secondary); background-color: var(--bg-primary);"
+		class="border-b shadow-sm"
+	>
 		<div class="mx-auto max-w-7xl px-6 py-4">
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-8">
@@ -28,8 +31,12 @@
 						>
 							Dashboard
 						</a>
-						<a href="/logs-list" style="color: var(--text-secondary);" class="hover:opacity-80"> Logs </a>
-						<a href="/user-admin" style="color: var(--text-secondary);" class="hover:opacity-80"> Users </a>
+						<a href="/logs-list" style="color: var(--text-secondary);" class="hover:opacity-80">
+							Logs
+						</a>
+						<a href="/user-admin" style="color: var(--text-secondary);" class="hover:opacity-80">
+							Users
+						</a>
 						<a
 							href="/reports"
 							style="color: var(--text-secondary);"

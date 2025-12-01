@@ -42,7 +42,9 @@
 	<div class="mx-auto max-w-7xl px-6 py-8">
 		<!-- Header with User Profile -->
 		<div class="mb-8 flex items-start justify-between">
-			<h1 class="mb-8 text-3xl font-bold" style="color: var(--text-primary);">Dashboard Overview</h1>
+			<h1 class="mb-8 text-3xl font-bold" style="color: var(--text-primary);">
+				Dashboard Overview
+			</h1>
 
 			<!-- User Profile Section -->
 			<div class="inline-block border-2" style="border-color: var(--border-primary);">
@@ -60,7 +62,9 @@
 							<div class="font-bold" style="color: var(--text-primary);">{user().name}</div>
 							<div class="text-sm" style="color: var(--text-secondary);">{user().email}</div>
 							<div class="text-sm" style="color: var(--text-secondary);">{user().company}</div>
-							<div class="text-sm font-medium" style="color: var(--text-primary);">{user().role}</div>
+							<div class="text-sm font-medium" style="color: var(--text-primary);">
+								{user().role}
+							</div>
 						</div>
 					</div>
 				</div>
@@ -70,10 +74,16 @@
 		<!-- Today's Logs Section -->
 		<div class="mb-8">
 			<div class="inline-block border-2" style="border-color: var(--border-primary);">
-				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary); background-color: var(--bg-primary);">
+				<div
+					class="border-b-2 px-6 py-4"
+					style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+				>
 					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Today's Logs</h2>
 				</div>
-				<div class="min-h-[280px] min-w-[380px] px-6 py-6" style="background-color: var(--bg-primary);">
+				<div
+					class="min-h-[280px] min-w-[380px] px-6 py-6"
+					style="background-color: var(--bg-primary);"
+				>
 					<ul class="space-y-2">
 						{#each todaysLogs as log}
 							<li style="color: var(--text-primary);">- {log}</li>
@@ -86,7 +96,10 @@
 		<!-- Quick Actions Section -->
 		<div>
 			<div class="inline-block border-2" style="border-color: var(--border-primary);">
-				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary); background-color: var(--bg-primary);">
+				<div
+					class="border-b-2 px-6 py-4"
+					style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+				>
 					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Quick Actions</h2>
 				</div>
 				<div class="min-w-[380px] px-6 py-6" style="background-color: var(--bg-primary);">
