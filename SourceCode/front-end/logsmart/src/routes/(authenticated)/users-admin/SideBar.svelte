@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api } from '$lib/api';
 	import type { Member } from './+page.svelte';
+	import PlaceHolderImage from '$lib/assets/placeholder.png';
 
 	const { setSelectedUser, selectedUser } = $props<{
 		setSelectedUser: (email: string | null) => void;
@@ -18,7 +19,7 @@
 	<span class="mb-1 text-xl font-bold">Profile</span>
 	<div class="flex flex-col justify-items-center">
 		<form class="mb-4 flex flex-col items-center px-8 pt-2 pb-8">
-			<img class="h-50 w-50" src="src/lib/assets/placeholder.png" alt="User Profile" />
+			<img class="h-50 w-50" src={PlaceHolderImage} alt="User Profile" />
 			<input
 				class="mb-2"
 				id="fname"

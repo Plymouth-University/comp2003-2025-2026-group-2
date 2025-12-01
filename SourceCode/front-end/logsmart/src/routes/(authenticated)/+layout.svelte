@@ -34,7 +34,7 @@
 						<a href="/logs-list" style="color: var(--text-secondary);" class="hover:opacity-80">
 							Logs
 						</a>
-						<a href="/user-admin" style="color: var(--text-secondary);" class="hover:opacity-80">
+						<a href="/users-admin" style="color: var(--text-secondary);" class="hover:opacity-80">
 							Users
 						</a>
 						<a
