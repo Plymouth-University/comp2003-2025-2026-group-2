@@ -21,7 +21,7 @@
 		${weight === 'light' ? 'font-light' : ''}
 		${weight === 'normal' ? 'font-normal' : ''}
 		${weight === 'bold' ? 'font-bold' : ''}
-		${editable ? 'outline-none cursor-text' : ''}
+		${editable ? 'cursor-text outline-none' : ''}
 	`}
 	style="color: var(--text-primary); font-size: {size}px;"
 >

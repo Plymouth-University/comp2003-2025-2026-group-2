@@ -7,11 +7,7 @@
 	import PropertiesPanel from './PropertiesPanel.svelte';
 	import type { CanvasItem, ComponentType, Template } from './types';
 
-	const templates: Template[] = [
-		{ id: 1, name: 'Kitchen Daily Log', selected: false },
-		{ id: 2, name: 'Kitchen Cleaning Log', selected: false },
-		{ id: 3, name: 'Bar Log', selected: false }
-	];
+	const templates: Template[] = [];
 
 	const componentTypes: ComponentType[] = [
 		{ type: 'text_input', name: 'Text Input', icon: 'T' },
@@ -170,7 +166,11 @@
 			class="flex w-72 flex-col border-l-2"
 			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 		>
-			<div style="height: {paletteHeight !== null ? `${paletteHeight}px` : '50%'}; flex-shrink: 0; overflow: auto;">
+			<div
+				style="height: {paletteHeight !== null
+					? `${paletteHeight}px`
+					: '50%'}; flex-shrink: 0; overflow: auto;"
+			>
 				<ComponentsPalette {componentTypes} onAddComponent={addComponent} />
 			</div>
 			<div

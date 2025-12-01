@@ -90,7 +90,7 @@
 		style="left: {ghostPosition.x}px; top: {ghostPosition.y}px; border-color: var(--border-primary);"
 	>
 		{#if draggingType === 'text_input'}
-			<UserTextInput  text="" size={16} weight="normal" placeholder="Text Input"/>
+			<UserTextInput text="" size={16} weight="normal" placeholder="Text Input" />
 		{:else if draggingType === 'checkbox'}
 			<UserCheckbox text="Checkbox Label" size="16px" weight="normal" />
 		{:else if draggingType === 'temperature'}

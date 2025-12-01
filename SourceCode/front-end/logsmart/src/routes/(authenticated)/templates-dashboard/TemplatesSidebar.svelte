@@ -12,8 +12,7 @@
 		<h2 class="mb-4 text-2xl font-bold" style="color: var(--text-primary);">Templates</h2>
 
 		<button
-			class="mb-6 w-full rounded px-4 py-2 font-medium text-white"
-			style="background-color: #5CB85C;"
+			class="btn-create mb-6 w-full rounded px-4 py-2 font-medium text-white"
 			onclick={onCreateNew}
 		>
 			+ Create New
@@ -49,3 +48,16 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	.btn-create {
+		background-color: #5cb85c;
+		transition: background-color 0.15s ease;
+	}
+	.btn-create:hover {
+		background-color: #449d44;
+	}
+	.btn-create:active {
+		background-color: #398439;
+	}
+</style>

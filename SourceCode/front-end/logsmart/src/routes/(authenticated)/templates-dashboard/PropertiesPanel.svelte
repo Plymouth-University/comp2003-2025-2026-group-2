@@ -59,8 +59,8 @@
 					</select>
 				</div>
 			</div>
-        {:else if selectedItem.type === 'label'}
-            <div class="space-y-2">
+		{:else if selectedItem.type === 'label'}
+			<div class="space-y-2">
 				<div>
 					<span class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);"
 						>Text</span

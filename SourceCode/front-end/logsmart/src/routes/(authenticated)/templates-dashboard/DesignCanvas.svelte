@@ -70,18 +70,13 @@
 			<div class="flex gap-2">
 				{#if selectedItemId}
 					<button
-						class="rounded px-4 py-2 font-medium text-white"
-						style="background-color: #D9534F;"
+						class="btn-delete rounded px-4 py-2 font-medium text-white"
 						onclick={onDeleteSelected}
 					>
 						Delete Selected
 					</button>
 				{/if}
-				<button
-					class="rounded px-4 py-2 font-medium text-white"
-					style="background-color: #337AB7;"
-					onclick={onExport}
-				>
+				<button class="btn-export rounded px-4 py-2 font-medium text-white" onclick={onExport}>
 					Export JSON
 				</button>
 			</div>
@@ -118,9 +113,7 @@
 				onkeydown={(e) => {
 					const target = e.target as HTMLElement;
 					const isEditing =
-						target.isContentEditable ||
-						target.tagName === 'INPUT' ||
-						target.tagName === 'TEXTAREA';
+						target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
 					if (e.key === 'Escape') selectedItemId = null;
 					if ((e.key === 'Delete' || e.key === 'Backspace') && !isEditing) onDeleteSelected();
 				}}
@@ -204,5 +197,27 @@
 <style>
 	.canvas-item {
 		touch-action: none;
+	}
+
+	.btn-delete {
+		background-color: #d9534f;
+		transition: background-color 0.15s ease;
+	}
+	.btn-delete:hover {
+		background-color: #c9302c;
+	}
+	.btn-delete:active {
+		background-color: #ac2925;
+	}
+
+	.btn-export {
+		background-color: #337ab7;
+		transition: background-color 0.15s ease;
+	}
+	.btn-export:hover {
+		background-color: #286090;
+	}
+	.btn-export:active {
+		background-color: #204d74;
 	}
 </style>
