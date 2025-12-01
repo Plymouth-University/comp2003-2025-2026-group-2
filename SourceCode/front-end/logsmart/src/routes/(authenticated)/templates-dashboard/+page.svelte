@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { browser } from '$app/environment';
+
 	const templates = [
 		{ id: 1, name: 'Kitchen Daily Log', selected: false },
 		{ id: 2, name: 'Kitchen Cleaning Log', selected: false },
@@ -12,11 +14,38 @@
 		{ id: 4, name: 'Dropdown', icon: '≡' }
 	];
 
-	let canvasItems = $state([
-		{ id: 1, value: 3, label: 'Log 1', unit: '°C' },
-		{ id: 2, value: 5, label: 'Log 2', unit: '°C' },
-		{ id: 3, value: 4, label: 'Log 3', unit: '°C' }
-	]);
+	// Load from localStorage or use defaults
+	let canvasItems = $state(
+		browser && localStorage.getItem('canvasItems')
+			? JSON.parse(localStorage.getItem('canvasItems')!)
+			: [
+					{ id: 1, value: 3, label: 'Log 1', unit: '°C' },
+					{ id: 2, value: 5, label: 'Log 2', unit: '°C' },
+					{ id: 3, value: 4, label: 'Log 3', unit: '°C' }
+				]
+	);
+
+	let logTitle = $state(
+		browser && localStorage.getItem('logTitle') ? localStorage.getItem('logTitle')! : ''
+	);
+
+	// Save to localStorage whenever canvasItems or logTitle changes
+	$effect(() => {
+		if (browser) {
+			localStorage.setItem('canvasItems', JSON.stringify(canvasItems));
+		}
+	});
+
+	$effect(() => {
+		if (browser) {
+			localStorage.setItem('logTitle', logTitle);
+		}
+	});
+
+	function createNewTemplate() {
+		canvasItems = [];
+		logTitle = '';
+	}
 </script>
 
 <div class="min-h-full" style="background-color: var(--bg-secondary);">
@@ -33,6 +62,7 @@
 				<button
 					class="mb-6 w-full rounded px-4 py-2 font-medium text-white"
 					style="background-color: #5CB85C;"
+					onclick={createNewTemplate}
 				>
 					+ Create New
 				</button>
@@ -92,6 +122,7 @@
 						<input
 							id="log-title-input"
 							type="text"
+							bind:value={logTitle}
 							placeholder="Description"
 							class="w-full border-2 px-4 py-2"
 							style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
@@ -107,7 +138,7 @@
 							names
 							<div class="mt-1 h-0.5 bg-current"></div>
 						</div>
-						<div class="text-right text-lg font-bold" style="color: var(--text-primary);">
+						<div class="text-lg font-bold" style="color: var(--text-primary);">
 							units
 							<div class="mt-1 h-0.5 bg-current"></div>
 						</div>
@@ -171,7 +202,7 @@
 								</div>
 
 								<!-- Units -->
-								<div class="text-right text-lg" style="color: var(--text-primary);">
+								<div class="text-lg" style="color: var(--text-primary);">
 									{item.unit}
 								</div>
 							</div>
