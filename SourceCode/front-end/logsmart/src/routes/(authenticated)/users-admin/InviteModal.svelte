@@ -21,7 +21,10 @@
 			class="rounded-base relative border-2 p-4 shadow-sm md:p-6"
 			style="background-color: var(--bg-primary); border-color: var(--border-primary);"
 		>
-			<div class="flex items-center justify-between border-b-2 pb-4 md:pb-5" style="border-color: var(--border-primary);">
+			<div
+				class="flex items-center justify-between border-b-2 pb-4 md:pb-5"
+				style="border-color: var(--border-primary);"
+			>
 				<h3 class="text-lg font-medium" style="color: var(--text-primary);">REGISTER NEW USER</h3>
 				<button
 					type="button"
@@ -50,14 +53,16 @@
 			</div>
 			<form action="#" class="flex flex-col pt-4 md:pt-6">
 				<div class="mb-4">
-					<label for="email" class="mb-2.5 block text-sm font-medium" style="color: var(--text-primary);"
-						>New user's email</label
+					<label
+						for="email"
+						class="mb-2.5 block text-sm font-medium"
+						style="color: var(--text-primary);">New user's email</label
 					>
 					<input
 						type="email"
 						id="email"
 						bind:value={email}
-						class="rounded-base block w-full border-2 px-3 py-2.5 text-sm shadow-xs focus:outline-none focus:ring-2"
+						class="rounded-base block w-full border-2 px-3 py-2.5 text-sm shadow-xs focus:ring-2 focus:outline-none"
 						style="background-color: var(--bg-primary); border-color: var(--border-primary); color: var(--text-primary);"
 						placeholder="example@company.com"
 						required

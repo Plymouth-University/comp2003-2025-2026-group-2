@@ -11,9 +11,7 @@
 
 <div
 	id="userSidebar"
-	class="w-70 border-l-2 text-center {selectedUser
-		? 'flex'
-		: 'hidden'} flex-col items-center p-6"
+	class="w-70 border-l-2 text-center {selectedUser ? 'flex' : 'hidden'} flex-col items-center p-6"
 	style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 >
 	<span class="mb-1 text-xl font-bold" style="color: var(--text-primary);">Profile</span>
@@ -49,7 +47,7 @@
 			/>
 			<div class="flex flex-col gap-4 md:flex-row">
 				<input
-					class="mb-2 cursor-not-allowed select-none border-2 px-3 py-1"
+					class="mb-2 cursor-not-allowed border-2 px-3 py-1 select-none"
 					style="width:60%; border-color: var(--border-secondary); background-color: var(--bg-secondary); color: var(--text-secondary); -webkit-user-select: none; user-select: none; -ms-user-select: none;"
 					id="password"
 					type="text"
@@ -65,7 +63,13 @@
 					}}>Reset</button
 				>
 			</div>
-			<select class="mb-3 border-2 px-3 py-1" style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);" name="role" id="role" value={selectedUser?.role}>
+			<select
+				class="mb-3 border-2 px-3 py-1"
+				style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+				name="role"
+				id="role"
+				value={selectedUser?.role}
+			>
 				<option id="userRole" value="member">Member</option>
 				<option id="adminRole" value="admin">Admin</option>
 			</select>

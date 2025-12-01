@@ -1,9 +1,5 @@
 <script lang="ts">
-	export let item: {
-		label: string;
-		value: number;
-		unit: string;
-	};
+	const item = $props<{ children: any; }>();
 
 	const increaseValue = () => {
 		if (item.value < freezerMax) {
