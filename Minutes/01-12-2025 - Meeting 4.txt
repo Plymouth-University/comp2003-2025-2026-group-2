@@ -1,0 +1,94 @@
+========================================
+MEETING MINUTES
+========================================
+
+PROJECT: LogSmart
+COURSE:  COMP2003
+DATE:    01-Dec-2025
+TIME:    11:00 AM - 11:30 AM
+LOCATION: SMB 108
+
+---
+ATTENDEES
+---
+* Lilla Radek
+* Ben Daffada
+* Daniel Kern
+
+---
+ABSENTEES
+---
+* NONE
+
+-----------------------------
+DISCUSSION & DECISIONS
+-----------------------------
+
+1. Sprint 2 Review
+   - Validated that all High Fidelity pages are complete.
+   - Confirmed backend authentication and database connections are working.
+   - Verified CI/CD pipelines are active.
+   - DECISION: Sprint 2 is marked as complete.
+
+2. Sprint 3 Planning
+   - The team is moving into the final development phase before the interim submission.
+   - Key focus areas:
+     * Advanced UI (Dark Mode, Drag & Drop).
+     * Deep testing (Selenium, Accessibility, Usability).
+     * Finalising documentation and reflection.
+
+3. Administrative
+   - Discussed requirements for the Interim Submission.
+   - Confirmed the need for Personal Reflection Documents.
+   - Addressed questions regarding the "Design Document".
+
+-----------------------------
+PAST ITEMS (COMPLETED - SPRINT 2)
+-----------------------------
+
+* [TASK: High Fidelity Frontend Implementation]
+  - LILLA: Users Admin page, List Logs page, New Template page.
+  - BEN: Dashboard, Reports page, Templates page, Settings page.
+  - DANIEL: Added visibility button to password inputs, password requirement tips, Request Password Reset page.
+
+* [TASK: Backend, Database & Authentication]
+  - DANIEL: Built backend foundation, created Users DB, implemented authentication (front & back), added MongoDB, implemented CI/CD pipelines.
+  - BEN: Linked backend to Users page and Settings page.
+  - LILLA: Linked Users Admin to backend.
+
+* [TASK: Testing]
+  - LILLA: Unit tests for Users Admin and Template page.
+  - DANIEL: Unit test backend.
+  - JOINT: Integration test (as of 24/11/25).
+
+-----------------------------
+NEW ACTION ITEMS (FOR SPRINT 3)
+-----------------------------
+
+* [TASK 1: Advanced UI/UX Features]
+  - Finish Dark Mode (OWNER: Ben)
+  - Add drag and drop functionality to template designer (OWNER: Ben)
+  - Differentiate between user and company admin on dashboard (OWNER: Lilla)
+
+* [TASK 2: Backend & Logic Integration]
+  - Link template designer to backend MongoDB storage (OWNER: Daniel)
+  - Add logs entry to backend (OWNER: Daniel)
+  - Implement log entry behaviour (OWNER: Whole Group)
+
+* [TASK 3: Testing & Studies]
+  - Carry out accessibility study (OWNER: Ben)
+  - Setup full app tests with Selenium (OWNER: Lilla)
+  - Carry out usability study (OWNER: Lilla)
+
+* [TASK 4: Documentation & Submission]
+  - Personal Reflection Documents (OWNER: Whole Group)
+  - Finalise Project Brief/Pitch for Interim Submission (OWNER: Whole Group)
+
+-----------------------------
+NEXT MEETING
+-----------------------------
+
+DATE:  After the break
+TIME:  11:00 AM
+LOCATION: SMB 108
+GOAL:  Sprint 3 Review & Interim Submission Prep
