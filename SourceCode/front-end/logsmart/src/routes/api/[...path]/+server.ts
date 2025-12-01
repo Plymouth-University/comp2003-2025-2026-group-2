@@ -31,7 +31,9 @@ async function proxyRequest(event: RequestEvent) {
 		}
 	}
 
-	const url = `${API_URL}/${path}`;
+	const originalUrl = new URL(request.url);
+	const queryString = originalUrl.search;
+	const url = `${API_URL}/${path}${queryString}`;
 
 	let body = undefined;
 	if (request.method !== 'GET' && request.method !== 'HEAD') {

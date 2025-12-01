@@ -83,6 +83,10 @@ async fn main() {
             post(handlers::accept_invitation),
         )
         .route(
+            "/auth/invitations/details",
+            get(handlers::get_invitation_details),
+        )
+        .route(
             "/auth/profile",
             axum::routing::put(handlers::update_profile),
         )

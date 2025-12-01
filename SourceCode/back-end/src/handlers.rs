@@ -141,6 +141,18 @@ impl From<db::UserRecord> for UserResponse {
     }
 }
 
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct GetInvitationDetailsRequest {
+    #[schema(example = "invitation-token-here")]
+    pub token: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct GetInvitationDetailsResponse {
+    pub company_name: String,
+    pub expires_at: String,
+}
+
 #[derive(Debug, Serialize, ToSchema)]
 pub struct InvitationResponse {
     pub id: String,
@@ -1386,4 +1398,56 @@ pub async fn get_company_members(
         })?;
 
     Ok(Json(members.into()))
+}
+
+#[utoipa::path(
+    get,
+    path = "/auth/invitations/details",
+    params(
+        ("token", description = "Invitation token to retrieve details for", example = "invitation_token_123")
+    ),
+    responses(
+        (status = 200, description = "Invitation details retrieved successfully", body = GetInvitationDetailsResponse),
+        (status = 404, description = "Invitation not found", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    tag = "Invitations"
+)]
+pub async fn get_invitation_details(
+    State(state): State<AppState>,
+    Query(payload): Query<GetInvitationDetailsRequest>,
+) -> Result<Json<GetInvitationDetailsResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let invitation = db::get_invitation_by_token(&state.sqlite, &payload.token)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching invitation by token: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Invitation not found" })),
+        ))?;
+
+    let company_name = db::get_company_by_id(&state.sqlite, &invitation.company_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching company name: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Company not found" })),
+        ))?
+        .name;
+
+    Ok(Json(GetInvitationDetailsResponse {
+        company_name,
+        expires_at: invitation.expires_at,
+    }))
 }

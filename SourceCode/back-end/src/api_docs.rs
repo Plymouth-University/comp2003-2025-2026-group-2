@@ -17,6 +17,7 @@ use utoipa::OpenApi;
         handlers::add_template,
         handlers::get_template,
         handlers::get_company_members,
+        handlers::get_invitation_details,
     ),
     components(
         schemas(
@@ -43,6 +44,8 @@ use utoipa::OpenApi;
             handlers::AddTemplateResponse,
             handlers::AddTokenResponse,
             handlers::GetCompanyMembersResponse,
+            handlers::GetInvitationDetailsRequest,
+            handlers::GetInvitationDetailsResponse,
         )
     ),
     tags(

@@ -74,6 +74,43 @@
 				}
 			}
 		},
+		"/auth/invitations/details": {
+			"get": {
+				"tags": ["Invitations"],
+				"operationId": "get_invitation_details",
+				"parameters": [
+					{
+						"name": "token",
+						"in": "path",
+						"description": "Invitation token to retrieve details for",
+						"required": true,
+						"example": "invitation_token_123"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Invitation details retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/GetInvitationDetailsResponse" }
+							}
+						}
+					},
+					"404": {
+						"description": "Invitation not found",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				}
+			}
+		},
 		"/auth/invitations/send": {
 			"post": {
 				"tags": ["Invitations"],
@@ -502,6 +539,16 @@
 				"properties": {
 					"members": { "type": "array", "items": { "$ref": "#/components/schemas/UserResponse" } }
 				}
+			},
+			"GetInvitationDetailsRequest": {
+				"type": "object",
+				"required": ["token"],
+				"properties": { "token": { "type": "string", "example": "invitation-token-here" } }
+			},
+			"GetInvitationDetailsResponse": {
+				"type": "object",
+				"required": ["company_name", "expires_at"],
+				"properties": { "company_name": { "type": "string" }, "expires_at": { "type": "string" } }
 			},
 			"GetTemplateRequest": {
 				"type": "object",

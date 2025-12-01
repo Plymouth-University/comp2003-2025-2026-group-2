@@ -36,6 +36,22 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/auth/invitations/details': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: operations['get_invitation_details'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	'/auth/invitations/send': {
 		parameters: {
 			query?: never;
@@ -214,6 +230,14 @@ export interface components {
 		};
 		GetCompanyMembersResponse: {
 			members: components['schemas']['UserResponse'][];
+		};
+		GetInvitationDetailsRequest: {
+			/** @example invitation-token-here */
+			token: string;
+		};
+		GetInvitationDetailsResponse: {
+			company_name: string;
+			expires_at: string;
 		};
 		GetTemplateRequest: {
 			/** @example Kitchen Daily Log */
@@ -401,6 +425,50 @@ export interface operations {
 			};
 			/** @description Rate limit exceeded */
 			429: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	get_invitation_details: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				/**
+				 * @description Invitation token to retrieve details for
+				 * @example invitation_token_123
+				 */
+				token: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Invitation details retrieved successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['GetInvitationDetailsResponse'];
+				};
+			};
+			/** @description Invitation not found */
+			404: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
 				headers: {
 					[name: string]: unknown;
 				};
