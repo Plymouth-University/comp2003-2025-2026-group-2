@@ -21,9 +21,9 @@
 		}
 		selectedUser = members.find((member: Member) => member.email === email) || null;
 	};
-    const setShowingCreateModel = (show: boolean) => {
-        showingCreateModel = show;
-    };
+	const setShowingCreateModel = (show: boolean) => {
+		showingCreateModel = show;
+	};
 </script>
 
 <main class="min-h-full" style="background-color: #F8F8F8;">
@@ -34,13 +34,17 @@
 					{#each members as item (item.email)}
 						<UserRow {item} {setSelectedUser} />
 					{/each}
-					<div class="mr-5 flex flex-col place-items-end text-4xl hover:animate-bounce self-right">
-						<button class="z-80 h-20 w-20 cursor-pointer self-end rounded-full border-4 border-stone-800 bg-neutral-100 drop-shadow-lg duration-300 hover:bg-gray-200 hover:drop-shadow-2xl" type="button" onclick={() => (showingCreateModel = !showingCreateModel)}>
+					<div class="self-right mr-5 flex flex-col place-items-end text-4xl hover:animate-bounce">
+						<button
+							class="z-80 h-20 w-20 cursor-pointer self-end rounded-full border-4 border-stone-800 bg-neutral-100 drop-shadow-lg duration-300 hover:bg-gray-200 hover:drop-shadow-2xl"
+							type="button"
+							onclick={() => (showingCreateModel = !showingCreateModel)}
+						>
 							<span>&#10133;</span>
 						</button>
 						<span class="m-3 mt-2 text-sm text-black">Add New</span>
 					</div>
-					<InviteModal showingCreateModel={showingCreateModel} setShowingCreateModel={setShowingCreateModel} />
+					<InviteModal {showingCreateModel} {setShowingCreateModel} />
 				</div>
 			</div>
 		</div>
