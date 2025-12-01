@@ -16,7 +16,7 @@ use axum::{
 use chrono::Duration;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 use uuid::Uuid;
 
 fn extract_ip_from_headers_and_addr(headers: &HeaderMap, addr: &std::net::SocketAddr) -> String {
@@ -141,7 +141,7 @@ impl From<db::UserRecord> for UserResponse {
     }
 }
 
-#[derive(Debug, Deserialize, ToSchema)]
+#[derive(Debug, Deserialize, ToSchema, IntoParams)]
 pub struct GetInvitationDetailsRequest {
     #[schema(example = "invitation-token-here")]
     pub token: String,
@@ -1404,7 +1404,7 @@ pub async fn get_company_members(
     get,
     path = "/auth/invitations/details",
     params(
-        ("token", description = "Invitation token to retrieve details for", example = "invitation_token_123")
+        GetInvitationDetailsRequest
     ),
     responses(
         (status = 200, description = "Invitation details retrieved successfully", body = GetInvitationDetailsResponse),

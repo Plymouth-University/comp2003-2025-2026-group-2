@@ -436,15 +436,11 @@ export interface operations {
 	};
 	get_invitation_details: {
 		parameters: {
-			query?: never;
-			header?: never;
-			path: {
-				/**
-				 * @description Invitation token to retrieve details for
-				 * @example invitation_token_123
-				 */
+			query: {
 				token: string;
 			};
+			header?: never;
+			path?: never;
 			cookie?: never;
 		};
 		requestBody?: never;

@@ -79,13 +79,7 @@
 				"tags": ["Invitations"],
 				"operationId": "get_invitation_details",
 				"parameters": [
-					{
-						"name": "token",
-						"in": "path",
-						"description": "Invitation token to retrieve details for",
-						"required": true,
-						"example": "invitation_token_123"
-					}
+					{ "name": "token", "in": "query", "required": true, "schema": { "type": "string" } }
 				],
 				"responses": {
 					"200": {
