@@ -250,17 +250,17 @@
 	}
 </script>
 
-<div class="min-h-full" style="background-color: #F8F8F8;">
+<div class="min-h-full" style="background-color: var(--bg-secondary);">
 	<!-- Main Content -->
 	<div class="mx-auto max-w-7xl px-6 py-8">
-		<h1 class="mb-8 text-center text-4xl font-bold" style="color: #000100;">Generate Report</h1>
+		<h1 class="mb-8 text-center text-4xl font-bold" style="color: var(--text-primary);">Generate Report</h1>
 
 		<div class="flex gap-8">
 			<!-- Left Side - Form -->
 			<div class="w-96">
 				<!-- Date From -->
 				<div class="mb-8">
-					<label for="date-from" class="mb-3 block text-lg font-bold" style="color: #000100;"
+					<label for="date-from" class="mb-3 block text-lg font-bold" style="color: var(--text-primary);"
 						>Date From:</label
 					>
 					<div class="relative">
@@ -272,21 +272,21 @@
 								oninput={(e) => updateDateFromText(e.currentTarget.value, true)}
 								placeholder="DD/MM/YYYY"
 								class="flex-1 border-2 px-4 py-2"
-								style="border-color: #000100;"
+								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 							/>
 							<button
 								type="button"
 								onclick={() => toggleDatePicker(true)}
 								aria-label="Open calendar for start date"
 								class="border-2 p-2"
-								style="border-color: #000100;"
+								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 							>
 								<svg
 									width="24"
 									height="24"
 									viewBox="0 0 24 24"
 									fill="none"
-									stroke="#000100"
+									stroke="currentColor"
 									stroke-width="2"
 								>
 									<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -300,8 +300,8 @@
 						<!-- Modern Date Picker -->
 						{#if showDateFromPicker}
 							<div
-								class="absolute top-full left-0 z-50 mt-2 rounded-lg border-2 bg-white p-4 shadow-lg"
-								style="border-color: #000100; min-width: 320px; overflow: hidden;"
+								class="absolute top-full left-0 z-50 mt-2 rounded-lg border-2 p-4 shadow-lg"
+								style="border-color: var(--border-primary); background-color: var(--bg-primary); min-width: 320px; overflow: hidden;"
 							>
 								<!-- Day View -->
 								{#if pickerView === 'day'}
@@ -370,35 +370,35 @@
 												{#if day === null}
 													<div class="aspect-square"></div>
 												{:else}
-													<button
-														type="button"
-														onclick={() => selectDay(day)}
-														class="flex aspect-square items-center justify-center rounded transition-colors hover:bg-gray-100"
-														class:font-bold={isSelectedDay(day)}
-														style={isSelectedDay(day)
-															? 'background-color: #94C5CC; color: white;'
-															: 'color: #000100;'}
-													>
+												<button
+													type="button"
+													onclick={() => selectDay(day)}
+													class="flex aspect-square items-center justify-center rounded transition-colors hover:opacity-80"
+													class:font-bold={isSelectedDay(day)}
+													style={isSelectedDay(day)
+														? 'background-color: #94C5CC; color: white;'
+														: 'color: var(--text-primary);'}
+												>
 														{day}
 													</button>
 												{/if}
 											{/each}
 										</div>
 									</div>
-								{/if}
+							{/if}
 
-								<!-- Month View -->
-								{#if pickerView === 'month'}
-									<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
-										<!-- Year Header -->
-										<div class="mb-4 flex items-center justify-between">
-											<button
-												type="button"
-												onclick={previousYear}
-												aria-label="Previous year"
-												class="rounded p-2 hover:bg-gray-100"
-												style="color: #000100;"
-											>
+							<!-- Month View -->
+							{#if pickerView === 'month'}
+								<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
+									<!-- Year Header -->
+									<div class="mb-4 flex items-center justify-between">
+										<button
+											type="button"
+											onclick={previousYear}
+											aria-label="Previous year"
+											class="rounded p-2"
+											style="color: var(--text-primary); background-color: transparent;"
+										>
 												<svg
 													width="20"
 													height="20"
@@ -409,22 +409,22 @@
 												>
 													<polyline points="12 4 6 10 12 16"></polyline>
 												</svg>
-											</button>
-											<button
-												type="button"
-												onclick={switchToYearView}
-												class="rounded px-3 py-1 font-bold transition-colors hover:bg-gray-100"
-												style="color: #000100;"
-											>
-												{calendarDate.getFullYear()}
-											</button>
-											<button
-												type="button"
-												onclick={nextYear}
-												aria-label="Next year"
-												class="rounded p-2 hover:bg-gray-100"
-												style="color: #000100;"
-											>
+										</button>
+										<button
+											type="button"
+											onclick={switchToYearView}
+											class="rounded px-3 py-1 font-bold transition-colors"
+											style="color: var(--text-primary); background-color: transparent;"
+										>
+											{calendarDate.getFullYear()}
+										</button>
+										<button
+											type="button"
+											onclick={nextYear}
+											aria-label="Next year"
+											class="rounded p-2"
+											style="color: var(--text-primary); background-color: transparent;"
+										>
 												<svg
 													width="20"
 													height="20"
@@ -438,37 +438,37 @@
 											</button>
 										</div>
 
-										<!-- Month Grid -->
-										<div class="grid grid-cols-3 gap-2">
-											{#each monthNamesShort as month, index}
-												<button
-													type="button"
-													onclick={() => selectMonth(index)}
-													class="rounded px-4 py-3 font-medium transition-colors hover:bg-gray-100"
-													class:font-bold={calendarDate.getMonth() === index}
-													style={calendarDate.getMonth() === index
-														? 'background-color: #94C5CC; color: white;'
-														: 'color: #000100;'}
-												>
+									<!-- Month Grid -->
+									<div class="grid grid-cols-3 gap-2">
+										{#each monthNamesShort as month, index}
+											<button
+												type="button"
+												onclick={() => selectMonth(index)}
+												class="rounded px-4 py-3 font-medium transition-colors"
+												class:font-bold={calendarDate.getMonth() === index}
+												style={calendarDate.getMonth() === index
+													? 'background-color: #94C5CC; color: white;'
+													: 'color: var(--text-primary); background-color: transparent;'}
+											>
 													{month}
 												</button>
 											{/each}
 										</div>
 									</div>
-								{/if}
+							{/if}
 
-								<!-- Year View -->
-								{#if pickerView === 'year'}
-									<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
-										<!-- Year Range Header -->
-										<div class="mb-4 flex items-center justify-between">
-											<button
-												type="button"
-												onclick={previousYearRange}
-												aria-label="Previous years"
-												class="rounded p-2 hover:bg-gray-100"
-												style="color: #000100;"
-											>
+							<!-- Year View -->
+							{#if pickerView === 'year'}
+								<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
+									<!-- Year Range Header -->
+									<div class="mb-4 flex items-center justify-between">
+										<button
+											type="button"
+											onclick={previousYearRange}
+											aria-label="Previous years"
+											class="rounded p-2"
+											style="color: var(--text-primary); background-color: transparent;"
+										>
 												<svg
 													width="20"
 													height="20"
@@ -479,17 +479,17 @@
 												>
 													<polyline points="12 4 6 10 12 16"></polyline>
 												</svg>
-											</button>
-											<div class="font-bold" style="color: #000100;">
-												{getYearRange()[0]} - {getYearRange()[11]}
-											</div>
-											<button
-												type="button"
-												onclick={nextYearRange}
-												aria-label="Next years"
-												class="rounded p-2 hover:bg-gray-100"
-												style="color: #000100;"
-											>
+										</button>
+										<div class="font-bold" style="color: var(--text-primary);">
+											{getYearRange()[0]} - {getYearRange()[11]}
+										</div>
+										<button
+											type="button"
+											onclick={nextYearRange}
+											aria-label="Next years"
+											class="rounded p-2"
+											style="color: var(--text-primary); background-color: transparent;"
+										>
 												<svg
 													width="20"
 													height="20"
@@ -503,18 +503,18 @@
 											</button>
 										</div>
 
-										<!-- Year Grid -->
-										<div class="grid grid-cols-3 gap-2">
-											{#each getYearRange() as year}
-												<button
-													type="button"
-													onclick={() => selectYear(year)}
-													class="rounded px-4 py-3 font-medium transition-colors hover:bg-gray-100"
-													class:font-bold={calendarDate.getFullYear() === year}
-													style={calendarDate.getFullYear() === year
-														? 'background-color: #94C5CC; color: white;'
-														: 'color: #000100;'}
-												>
+									<!-- Year Grid -->
+									<div class="grid grid-cols-3 gap-2">
+										{#each getYearRange() as year}
+											<button
+												type="button"
+												onclick={() => selectYear(year)}
+												class="rounded px-4 py-3 font-medium transition-colors"
+												class:font-bold={calendarDate.getFullYear() === year}
+												style={calendarDate.getFullYear() === year
+													? 'background-color: #94C5CC; color: white;'
+													: 'color: var(--text-primary); background-color: transparent;'}
+											>
 													{year}
 												</button>
 											{/each}
@@ -528,7 +528,7 @@
 
 				<!-- Date To -->
 				<div class="mb-8">
-					<label for="date-to" class="mb-3 block text-lg font-bold" style="color: #000100;"
+					<label for="date-to" class="mb-3 block text-lg font-bold" style="color: var(--text-primary);"
 						>Date To:</label
 					>
 					<div class="relative">
@@ -540,21 +540,21 @@
 								oninput={(e) => updateDateFromText(e.currentTarget.value, false)}
 								placeholder="DD/MM/YYYY"
 								class="flex-1 border-2 px-4 py-2"
-								style="border-color: #000100;"
+								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 							/>
 							<button
 								type="button"
 								onclick={() => toggleDatePicker(false)}
 								aria-label="Open calendar for end date"
 								class="border-2 p-2"
-								style="border-color: #000100;"
+								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 							>
 								<svg
 									width="24"
 									height="24"
 									viewBox="0 0 24 24"
 									fill="none"
-									stroke="#000100"
+									stroke="currentColor"
 									stroke-width="2"
 								>
 									<rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -565,68 +565,66 @@
 							</button>
 						</div>
 
-						<!-- Modern Date Picker -->
-						{#if showDateToPicker}
-							<div
-								class="absolute top-full left-0 z-50 mt-2 rounded-lg border-2 bg-white p-4 shadow-lg"
-								style="border-color: #000100; min-width: 320px; overflow: hidden;"
-							>
-								<!-- Day View -->
-								{#if pickerView === 'day'}
-									<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
-										<!-- Month/Year Header -->
-										<div class="mb-4 flex items-center justify-between">
-											<button
-												type="button"
-												onclick={previousMonth}
-												aria-label="Previous month"
-												class="rounded p-2 hover:bg-gray-100"
-												style="color: #000100;"
+					<!-- Modern Date Picker -->
+					{#if showDateToPicker}
+						<div
+							class="absolute top-full left-0 z-50 mt-2 rounded-lg border-2 p-4 shadow-lg"
+							style="border-color: var(--border-primary); background-color: var(--bg-primary); min-width: 320px; overflow: hidden;"
+						>
+							<!-- Day View -->
+							{#if pickerView === 'day'}
+								<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
+									<!-- Month/Year Header -->
+									<div class="mb-4 flex items-center justify-between">
+										<button
+											type="button"
+											onclick={previousMonth}
+											aria-label="Previous month"
+											class="rounded p-2"
+											style="color: var(--text-primary); background-color: transparent;"
+										>
+											<svg
+												width="20"
+												height="20"
+												viewBox="0 0 20 20"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
 											>
-												<svg
-													width="20"
-													height="20"
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-												>
-													<polyline points="12 4 6 10 12 16"></polyline>
-												</svg>
-											</button>
-											<button
-												type="button"
-												onclick={switchToMonthView}
-												class="rounded px-3 py-1 font-bold transition-colors hover:bg-gray-100"
-												style="color: #000100;"
+												<polyline points="12 4 6 10 12 16"></polyline>
+											</svg>
+										</button>
+										<button
+											type="button"
+											onclick={switchToMonthView}
+											class="rounded px-3 py-1 font-bold transition-colors"
+											style="color: var(--text-primary); background-color: transparent;"
+										>
+											{monthNames[calendarDate.getMonth()]}
+											{calendarDate.getFullYear()}
+										</button>
+										<button
+											type="button"
+											onclick={nextMonth}
+											aria-label="Next month"
+											class="rounded p-2"
+											style="color: var(--text-primary); background-color: transparent;"
+										>
+											<svg
+												width="20"
+												height="20"
+												viewBox="0 0 20 20"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
 											>
-												{monthNames[calendarDate.getMonth()]}
-												{calendarDate.getFullYear()}
-											</button>
-											<button
-												type="button"
-												onclick={nextMonth}
-												aria-label="Next month"
-												class="rounded p-2 hover:bg-gray-100"
-												style="color: #000100;"
-											>
-												<svg
-													width="20"
-													height="20"
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-												>
-													<polyline points="8 4 14 10 8 16"></polyline>
-												</svg>
-											</button>
-										</div>
-
-										<!-- Day Labels -->
+												<polyline points="8 4 14 10 8 16"></polyline>
+											</svg>
+										</button>
+									</div>										<!-- Day Labels -->
 										<div class="mb-2 grid grid-cols-7 gap-1">
 											{#each ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as day}
-												<div class="py-2 text-center text-sm font-medium" style="color: #A1A6B4;">
+												<div class="py-2 text-center text-sm font-medium" style="color: var(--text-secondary);">
 													{day}
 												</div>
 											{/each}
@@ -641,11 +639,11 @@
 													<button
 														type="button"
 														onclick={() => selectDay(day)}
-														class="flex aspect-square items-center justify-center rounded transition-colors hover:bg-gray-100"
+														class="flex aspect-square items-center justify-center rounded transition-colors"
 														class:font-bold={isSelectedDay(day)}
 														style={isSelectedDay(day)
 															? 'background-color: #94C5CC; color: white;'
-															: 'color: #000100;'}
+															: 'color: var(--text-primary); background-color: transparent;'}
 													>
 														{day}
 													</button>
@@ -797,7 +795,7 @@
 				<!-- Log Types -->
 				<div class="mb-8">
 					<fieldset>
-						<legend class="mb-3 block text-lg font-bold" style="color: #000100;">Log Types:</legend>
+						<legend class="mb-3 block text-lg font-bold" style="color: var(--text-primary);">Log Types:</legend>
 						<div class="space-y-2">
 							{#each logTypes as logType}
 								<label class="flex cursor-pointer items-center gap-3">
@@ -805,9 +803,9 @@
 										type="checkbox"
 										bind:checked={logType.checked}
 										class="h-5 w-5 cursor-pointer border-2"
-										style="border-color: #000100;"
+										style="border-color: var(--border-primary);"
 									/>
-									<span style="color: #000100;">{logType.label}</span>
+									<span style="color: var(--text-primary);">{logType.label}</span>
 								</label>
 							{/each}
 						</div>
@@ -819,7 +817,7 @@
 					<button
 						onclick={generateReport}
 						class="flex items-center gap-2 border-2 px-8 py-2 font-medium hover:opacity-80"
-						style="border-color: #000100; background-color: #A1A6B4; color: #000100;"
+						style="border-color: var(--border-primary); background-color: var(--text-secondary); color: var(--text-primary);"
 					>
 						Generate
 						<svg
@@ -827,7 +825,7 @@
 							height="16"
 							viewBox="0 0 16 16"
 							fill="none"
-							stroke="#000100"
+							stroke="currentColor"
 							stroke-width="2"
 						>
 							<polyline points="6 3 11 8 6 13"></polyline>
@@ -842,26 +840,26 @@
 				<div class="mb-4 flex justify-end gap-4">
 					<button
 						class="border-2 px-4 py-2 font-medium hover:opacity-80"
-						style="border-color: #000100; color: #000100; background-color: white;"
+						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						Download PDF
 					</button>
 					<button
 						class="border-2 px-4 py-2 font-medium hover:opacity-80"
-						style="border-color: #000100; color: #000100; background-color: white;"
+						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						Download DOCX
 					</button>
 					<button
 						class="border-2 px-4 py-2 font-medium hover:opacity-80"
-						style="border-color: #000100; color: #000100; background-color: white;"
+						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						Download RTF
 					</button>
 				</div>
 
 				<!-- Report Preview Area -->
-				<div class="min-h-[600px] border-2 bg-white p-8" style="border-color: #000100;">
+				<div class="min-h-[600px] border-2 p-8" style="border-color: var(--border-primary); background-color: var(--bg-primary);">
 					{#if reportGenerated}
 						<div class="flex items-start gap-3">
 							<svg
@@ -869,14 +867,15 @@
 								height="32"
 								viewBox="0 0 32 32"
 								fill="none"
-								stroke="#000100"
+								stroke="currentColor"
 								stroke-width="2"
+								style="color: var(--text-primary);"
 							>
 								<polyline points="9 17 14 22 23 10"></polyline>
 								<rect x="4" y="4" width="24" height="24" rx="2" ry="2"></rect>
 							</svg>
 							<div>
-								<p style="color: #000100;">Report generated successfully</p>
+								<p style="color: var(--text-primary);">Report generated successfully</p>
 							</div>
 						</div>
 					{:else}
@@ -886,13 +885,14 @@
 								height="32"
 								viewBox="0 0 32 32"
 								fill="none"
-								stroke="#A1A6B4"
+								stroke="currentColor"
 								stroke-width="2"
+								style="color: var(--text-secondary);"
 							>
 								<polyline points="9 17 14 22 23 10"></polyline>
 								<rect x="4" y="4" width="24" height="24" rx="2" ry="2"></rect>
 							</svg>
-							<p style="color: #A1A6B4;">Generate a report to preview</p>
+							<p style="color: var(--text-secondary);">Generate a report to preview</p>
 						</div>
 					{/if}
 				</div>

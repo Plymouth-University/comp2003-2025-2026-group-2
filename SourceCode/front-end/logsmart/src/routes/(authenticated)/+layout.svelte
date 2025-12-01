@@ -12,12 +12,12 @@
 	}
 </script>
 
-<div class="min-h-screen w-full bg-gray-50">
-	<header class="border-b border-gray-200 bg-white shadow-sm">
+<div class="min-h-screen w-full" style="background-color: var(--bg-secondary);">
+	<header style="border-color: var(--border-secondary); background-color: var(--bg-primary);" class="border-b shadow-sm">
 		<div class="mx-auto max-w-7xl px-6 py-4">
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-8">
-					<a href="/dashboard" class="text-2xl font-bold text-blue-600">LogSmart</a>
+					<a href="/dashboard" class="text-2xl font-bold" style="color: #94C5CC;">LogSmart</a>
 					<nav class="flex items-center gap-6">
 						<a
 							href="/dashboard"
@@ -28,11 +28,12 @@
 						>
 							Dashboard
 						</a>
-						<a href="/logs-list" class="text-gray-700 hover:text-gray-900"> Logs List </a>
-						<a href="/users-admin" class="text-gray-700 hover:text-gray-900"> Users </a>
+						<a href="/logs-list" style="color: var(--text-secondary);" class="hover:opacity-80"> Logs </a>
+						<a href="/user-admin" style="color: var(--text-secondary);" class="hover:opacity-80"> Users </a>
 						<a
 							href="/reports"
-							class="text-gray-700 hover:text-gray-900"
+							style="color: var(--text-secondary);"
+							class="hover:opacity-80"
 							class:font-bold={currentPath === '/reports'}
 							class:underline={currentPath === '/reports'}
 						>

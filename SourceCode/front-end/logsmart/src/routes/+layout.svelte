@@ -35,43 +35,47 @@
 
 <div class="flex h-screen flex-col">
 	{#if !isAuthenticatedRoute}
-		<header id="header" class="border-b border-gray-300 bg-white">
+		<header id="header" style="border-color: var(--border-secondary); background-color: var(--bg-primary);" class="border-b">
 			<div class="mx-auto max-w-7xl px-6 py-2">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center">
 						<div class="h-12 w-12">
 							<Icon />
 						</div>
-						<a href="/" class="text-2xl font-bold text-gray-900">LogSmart</a>
+						<a href="/" style="color: var(--text-primary);" class="text-2xl font-bold">LogSmart</a>
 					</div>
 					<nav class="hidden items-center gap-6 md:flex">
-						<a href="/#features" class="text-gray-700 hover:text-gray-900">Features</a>
-						<a href="/contact" class="text-gray-700 hover:text-gray-900">Contact</a>
+						<a href="/#features" style="color: var(--text-secondary);" class="hover:opacity-80">Features</a>
+						<a href="/contact" style="color: var(--text-secondary);" class="hover:opacity-80">Contact</a>
 					</nav>
 					<div class="flex items-center gap-3">
 						{#if data.isAuthenticated}
 							<a
 								href="/dashboard"
-								class="rounded border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+								style="border-color: var(--border-secondary); color: var(--text-secondary); background-color: var(--bg-secondary);"
+								class="rounded border px-4 py-2 hover:opacity-80"
 							>
 								Dashboard
 							</a>
 							<button
 								onclick={handleLogout}
-								class="rounded border border-gray-400 bg-gray-100 px-4 py-2 text-gray-900 hover:bg-gray-200"
+								style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+								class="rounded border px-4 py-2 hover:opacity-80"
 							>
 								Logout
 							</button>
 						{:else}
 							<a
 								href="/register-company"
-								class="rounded border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+								style="border-color: var(--border-secondary); color: var(--text-secondary); background-color: var(--bg-secondary);"
+								class="rounded border px-4 py-2 hover:opacity-80"
 							>
 								Register Company
 							</a>
 							<a
 								href="/login"
-								class="rounded border border-gray-400 bg-gray-100 px-4 py-2 text-gray-900 hover:bg-gray-200"
+								style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+								class="rounded border px-4 py-2 hover:opacity-80"
 							>
 								Login
 							</a>
