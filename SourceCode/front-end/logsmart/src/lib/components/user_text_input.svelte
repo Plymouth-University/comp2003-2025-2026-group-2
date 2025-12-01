@@ -2,8 +2,9 @@
 	let {
 		text = '',
 		size = 'medium',
-		weight = 'normal'
-	}: { text: string; size: string; weight: string } = $props();
+		weight = 'normal',
+		placeholder = 'Text Input'
+	}: { text: string; size: string; weight: string; placeholder: string } = $props();
 </script>
 
 <input
@@ -18,7 +19,7 @@
         ${weight === 'bold' ? 'font-bold' : ''}
         border-2 px-2 py-1
     `}
-	placeholder="Text Input"
+	{placeholder}
 	disabled
 	style="border-color: #000100; color: #000100;"
 />
