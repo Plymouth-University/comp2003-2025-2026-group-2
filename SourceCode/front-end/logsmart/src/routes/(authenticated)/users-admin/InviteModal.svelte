@@ -24,7 +24,7 @@
 				<h3 class="text-heading text-lg font-medium">REGISTER NEW USER</h3>
 				<button
 					type="button"
-					class="text-body hover:bg-neutral-tertiary cursor-pointer hover:text-heading rounded-base ms-auto inline-flex h-9 w-9 items-center justify-center bg-transparent text-sm"
+					class="text-body hover:bg-neutral-tertiary hover:text-heading rounded-base ms-auto inline-flex h-9 w-9 cursor-pointer items-center justify-center bg-transparent text-sm"
 					onclick={() => setShowingCreateModel(false)}
 				>
 					<svg
@@ -61,7 +61,7 @@
 					/>
 				</div>
 				<button
-					class="flex self-center rounded cursor-pointer border px-5 py-2.5 text-center text-sm font-medium hover:bg-gray-200"
+					class="flex cursor-pointer self-center rounded border px-5 py-2.5 text-center text-sm font-medium hover:bg-gray-200"
 					aria-label="Send email"
 					onclick={async () => {
 						let { error } = await api.POST('/auth/invitations/send', { body: { email: email } });
