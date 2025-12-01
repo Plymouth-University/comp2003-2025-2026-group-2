@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { untrack } from 'svelte';
 	import TemplatesSidebar from './TemplatesSidebar.svelte';
 	import DesignCanvas from './DesignCanvas.svelte';
 	import ComponentsPalette from './ComponentsPalette.svelte';
@@ -32,10 +33,21 @@
 
 	let selectedItemId = $state<string | null>(null);
 
+	// Debounced localStorage saves to prevent lag during dragging
+	let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+	function debouncedSaveItems() {
+		if (saveTimeout) clearTimeout(saveTimeout);
+		saveTimeout = setTimeout(() => {
+			if (browser) {
+				localStorage.setItem('canvasItems', JSON.stringify(untrack(() => canvasItems)));
+			}
+		}, 300);
+	}
+
 	$effect(() => {
-		if (browser) {
-			localStorage.setItem('canvasItems', JSON.stringify(canvasItems));
-		}
+		// Track canvasItems changes but debounce the save
+		canvasItems;
+		debouncedSaveItems();
 	});
 
 	$effect(() => {

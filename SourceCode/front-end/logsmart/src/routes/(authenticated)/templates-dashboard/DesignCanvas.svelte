@@ -46,9 +46,12 @@
 		return Math.random().toString(36).substring(2, 9);
 	}
 
+	let draggedItemId = $state<string | null>(null);
+
 	function handleExistingDragStart(e: DragEvent, item: CanvasItem) {
 		isDraggingExisting = true;
 		selectedItemId = item.id;
+		draggedItemId = item.id;
 		draggedComponentType = item.type;
 
 		const target = e.currentTarget as HTMLElement;
@@ -80,10 +83,13 @@
 		const x = e.clientX - rect.left - (isDraggingExisting ? dragOffset.x : 0);
 		const y = e.clientY - rect.top - (isDraggingExisting ? dragOffset.y : 0);
 
-		if (isDraggingExisting && selectedItemId) {
-			canvasItems = canvasItems.map((item) =>
-				item.id === selectedItemId ? { ...item, x: Math.max(0, x), y: Math.max(0, y) } : item
-			);
+		if (isDraggingExisting && draggedItemId) {
+			// Direct mutation for better performance - find and update in place
+			const itemIndex = canvasItems.findIndex((item) => item.id === draggedItemId);
+			if (itemIndex !== -1) {
+				canvasItems[itemIndex].x = Math.max(0, x);
+				canvasItems[itemIndex].y = Math.max(0, y);
+			}
 		} else {
 			const type = e.dataTransfer?.getData('component-type');
 			if (type) {
@@ -94,12 +100,13 @@
 					y: Math.max(0, y),
 					props: getDefaultProps(type)
 				};
-				canvasItems = [...canvasItems, newItem];
+				canvasItems.push(newItem);
 				selectedItemId = newItem.id;
 			}
 		}
 
 		draggedComponentType = null;
+		draggedItemId = null;
 		isDraggingExisting = false;
 	}
 
