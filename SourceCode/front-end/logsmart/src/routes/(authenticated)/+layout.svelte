@@ -22,7 +22,7 @@
 						<a
 							href="/dashboard"
 							class="hover:opacity-80"
-							style="color: var(--text-primary);"
+							style="color: var(--text-secondary);"
 							class:font-bold={currentPath === '/dashboard'}
 							class:underline={currentPath === '/dashboard'}
 						>
@@ -42,7 +42,7 @@
 						<a
 							href="/templates-dashboard"
 							class="hover:opacity-80"
-							style="color: var(--text-primary);"
+							style="color: var(--text-secondary);"
 							class:font-bold={currentPath === '/templates-dashboard'}
 							class:underline={currentPath === '/templates-dashboard'}
 						>
