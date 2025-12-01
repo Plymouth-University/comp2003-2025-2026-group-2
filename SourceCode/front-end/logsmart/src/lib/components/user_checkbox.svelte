@@ -1,6 +1,6 @@
 <script lang="ts">
 	let {
-		text = '',
+		text = 'Checkbox Label',
 		size = '16px',
 		weight = 'normal'
 	}: { text: string; size: string; weight: string } = $props();

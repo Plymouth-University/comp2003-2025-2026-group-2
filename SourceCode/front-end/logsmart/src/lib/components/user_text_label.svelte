@@ -1,38 +1,29 @@
 <script lang="ts">
 	let {
 		editable = false,
-		text = '',
-		size = 'medium',
+		text = $bindable('Label Text'),
+		size = 16,
 		weight = 'normal'
-	}: { editable: boolean; text: string; size: string; weight: string } = $props();
+	}: { editable: boolean; text: string; size: number; weight: string } = $props();
+
+	let element: HTMLParagraphElement;
+
+	function handleBlur() {
+		text = element?.textContent ?? '';
+	}
 </script>
 
-{#if editable}
-	<input
-		type="text"
-		bind:value={text}
-		class={`
-            ${size === 'small' ? 'text-sm' : ''}
-            ${size === 'medium' ? 'text-base' : ''}
-            ${size === 'large' ? 'text-lg' : ''}
-            ${weight === 'light' ? 'font-light' : ''}
-            ${weight === 'normal' ? 'font-normal' : ''}
-            ${weight === 'bold' ? 'font-bold' : ''}
-            border-2 px-2 py-1
-        `}
-		style="border-color: #000100; color: #000100;"
-	/>
-{:else}
-	<p
-		class={`
-    ${size === 'small' ? 'text-sm' : ''}
-    ${size === 'medium' ? 'text-base' : ''}
-    ${size === 'large' ? 'text-lg' : ''}
-    ${weight === 'light' ? 'font-light' : ''}
-    ${weight === 'normal' ? 'font-normal' : ''}
-    ${weight === 'bold' ? 'font-bold' : ''}
-`}
-	>
-		{text}
-	</p>
-{/if}
+<p
+	bind:this={element}
+	contenteditable={editable}
+	onblur={handleBlur}
+	class={`
+		${weight === 'light' ? 'font-light' : ''}
+		${weight === 'normal' ? 'font-normal' : ''}
+		${weight === 'bold' ? 'font-bold' : ''}
+		${editable ? 'outline-none cursor-text' : ''}
+	`}
+	style="color: var(--text-primary); font-size: {size}px;"
+>
+	{text}
+</p>

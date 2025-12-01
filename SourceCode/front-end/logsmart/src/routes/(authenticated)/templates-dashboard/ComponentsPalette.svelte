@@ -1,56 +1,73 @@
 <script lang="ts">
-	import type { ComponentType } from './types';
 	import TemperaturePicker from '$lib/components/temperature_picker.svelte';
 	import UserCheckbox from '$lib/components/user_checkbox.svelte';
 	import UserDropdown from '$lib/components/user_dropdown.svelte';
 	import UserTextInput from '$lib/components/user_text_input.svelte';
 	import UserTextLabel from '$lib/components/user_text_label.svelte';
+	import type { ComponentType } from './types';
 
 	let {
 		componentTypes,
-		onDragStart
-	}: { componentTypes: ComponentType[]; onDragStart: (e: DragEvent, type: string) => void } =
-		$props();
+		onAddComponent
+	}: {
+		componentTypes: ComponentType[];
+		onAddComponent: (type: string, x: number, y: number) => void;
+	} = $props();
 
-	let dragPreviewRefs: Record<string, HTMLDivElement> = {};
+	let draggingType = $state<string | null>(null);
+	let ghostPosition = $state({ x: 0, y: 0 });
+	let ghostRef = $state<HTMLDivElement | null>(null);
 
-	function handleDragStart(e: DragEvent, type: string) {
-		onDragStart(e, type);
-		const preview = dragPreviewRefs[type];
-		if (preview && e.dataTransfer) {
-			e.dataTransfer.setDragImage(preview, 0, 0);
+	function handleMouseDown(e: MouseEvent, type: string) {
+		e.preventDefault();
+		draggingType = type;
+		ghostPosition = { x: e.clientX, y: e.clientY };
+
+		window.addEventListener('mousemove', handleMouseMove);
+		window.addEventListener('mouseup', handleMouseUp);
+	}
+
+	function handleMouseMove(e: MouseEvent) {
+		if (!draggingType) return;
+		ghostPosition = { x: e.clientX, y: e.clientY };
+	}
+
+	function handleMouseUp(e: MouseEvent) {
+		window.removeEventListener('mousemove', handleMouseMove);
+		window.removeEventListener('mouseup', handleMouseUp);
+
+		if (!draggingType) return;
+
+		const canvas = document.querySelector('[data-canvas]');
+		if (canvas && ghostRef) {
+			const canvasRect = canvas.getBoundingClientRect();
+			const ghostRect = ghostRef.getBoundingClientRect();
+
+			if (
+				e.clientX >= canvasRect.left &&
+				e.clientX <= canvasRect.right &&
+				e.clientY >= canvasRect.top &&
+				e.clientY <= canvasRect.bottom
+			) {
+				const dropX = e.clientX - canvasRect.left - ghostRect.width / 2;
+				const dropY = e.clientY - canvasRect.top - ghostRect.height / 2;
+				onAddComponent(draggingType, Math.max(0, dropX), Math.max(0, dropY));
+			}
 		}
+
+		draggingType = null;
 	}
 </script>
 
-<div class="drag-previews">
-	<div bind:this={dragPreviewRefs['text_input']} class="drag-preview">
-		<UserTextInput text="" size="medium" weight="normal" placeholder="Text Input" />
-	</div>
-	<div bind:this={dragPreviewRefs['checkbox']} class="drag-preview">
-		<UserCheckbox text="Checkbox Label" size="16px" weight="normal" />
-	</div>
-	<div bind:this={dragPreviewRefs['temperature']} class="drag-preview">
-		<TemperaturePicker value={0} min={-20} max={50} label="Temperature" unit="°C" />
-	</div>
-	<div bind:this={dragPreviewRefs['dropdown']} class="drag-preview">
-		<UserDropdown selected="" options={['Option 1', 'Option 2', 'Option 3']} />
-	</div>
-	<div bind:this={dragPreviewRefs['label']} class="drag-preview">
-		<UserTextLabel editable={false} text="Label Text" size="medium" weight="normal" />
-	</div>
-</div>
-
-<div class="border-b-2 p-6" style="border-color: var(--border-primary);">
+<div class="h-full p-6">
 	<h2 class="mb-4 text-2xl font-bold" style="color: var(--text-primary);">Components</h2>
 
-	<div class="space-y-3">
+	<div class="space-y-2">
 		{#each componentTypes as component (component.type)}
 			<div
 				class="flex cursor-grab items-center gap-3 border-2 px-4 py-3 hover:opacity-80 active:cursor-grabbing"
 				style="border-color: var(--border-primary);"
-				draggable="true"
-				ondragstart={(e) => handleDragStart(e, component.type)}
+				onmousedown={(e) => handleMouseDown(e, component.type)}
 				role="button"
 				tabindex="0"
 			>
@@ -66,20 +83,22 @@
 	</div>
 </div>
 
-<style>
-	.drag-previews {
-		position: fixed;
-		top: -9999px;
-		left: -9999px;
-		pointer-events: none;
-	}
-
-	.drag-preview {
-		display: inline-block;
-		width: fit-content;
-		background: white;
-		padding: 8px;
-		border: 2px solid var(--border-primary);
-		border-radius: 4px;
-	}
-</style>
+{#if draggingType}
+	<div
+		bind:this={ghostRef}
+		class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 rounded border-2 bg-white p-2 shadow-lg"
+		style="left: {ghostPosition.x}px; top: {ghostPosition.y}px; border-color: var(--border-primary);"
+	>
+		{#if draggingType === 'text_input'}
+			<UserTextInput  text="" size={16} weight="normal" placeholder="Text Input"/>
+		{:else if draggingType === 'checkbox'}
+			<UserCheckbox text="Checkbox Label" size="16px" weight="normal" />
+		{:else if draggingType === 'temperature'}
+			<TemperaturePicker value={0} min={-20} max={50} label="Temperature" unit="°C" />
+		{:else if draggingType === 'dropdown'}
+			<UserDropdown selected="" options={['Option 1', 'Option 2', 'Option 3']} />
+		{:else if draggingType === 'label'}
+			<UserTextLabel editable={false} text="Label Text" size={16} weight="normal" />
+		{/if}
+	</div>
+{/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { draggable } from '@neodrag/svelte';
 	import TemperaturePicker from '$lib/components/temperature_picker.svelte';
 	import UserCheckbox from '$lib/components/user_checkbox.svelte';
 	import UserDropdown from '$lib/components/user_dropdown.svelte';
@@ -20,95 +21,28 @@
 		onDeleteSelected: () => void;
 	} = $props();
 
-	let canvasRef: HTMLDivElement;
-	let isDraggingExisting = $state(false);
-	let dragOffset = $state({ x: 0, y: 0 });
-	let draggedComponentType = $state<string | null>(null);
+	let canvasRef = $state<HTMLDivElement | null>(null);
 
-	function getDefaultProps(type: string): Record<string, any> {
-		switch (type) {
-			case 'text_input':
-				return { text: '', size: 'medium', weight: 'normal' };
-			case 'checkbox':
-				return { text: 'Checkbox Label', size: '16px', weight: 'normal' };
-			case 'temperature':
-				return { value: 0, min: -20, max: 50, label: 'Temperature', unit: '°C' };
-			case 'dropdown':
-				return { selected: '', options: ['Option 1', 'Option 2', 'Option 3'] };
-			case 'label':
-				return { editable: true, text: 'Label Text', size: 'medium', weight: 'normal' };
-			default:
-				return {};
-		}
-	}
+	// function getDefaultProps(type: string): Record<string, any> {
+	// 	switch (type) {
+	// 		case 'text_input':
+	// 			return { text: '', size: 'medium', weight: 'normal' };
+	// 		case 'checkbox':
+	// 			return { text: 'Checkbox Label', size: '16px', weight: 'normal' };
+	// 		case 'temperature':
+	// 			return { value: 0, min: -20, max: 50, label: 'Temperature', unit: '°C' };
+	// 		case 'dropdown':
+	// 			return { selected: '', options: ['Option 1', 'Option 2', 'Option 3'] };
+	// 		case 'label':
+	// 			return { editable: true, text: 'Label Text', size: 'medium', weight: 'normal' };
+	// 		default:
+	// 			return {};
+	// 	}
+	// }
 
-	function generateId() {
-		return Math.random().toString(36).substring(2, 9);
-	}
-
-	let draggedItemId = $state<string | null>(null);
-
-	function handleExistingDragStart(e: DragEvent, item: CanvasItem) {
-		isDraggingExisting = true;
-		selectedItemId = item.id;
-		draggedItemId = item.id;
-		draggedComponentType = item.type;
-
-		const target = e.currentTarget as HTMLElement;
-		const rect = target.getBoundingClientRect();
-		dragOffset = {
-			x: e.clientX - rect.left,
-			y: e.clientY - rect.top
-		};
-
-		if (e.dataTransfer) {
-			e.dataTransfer.effectAllowed = 'move';
-			e.dataTransfer.setDragImage(target, dragOffset.x, dragOffset.y);
-		}
-	}
-
-	function handleDragOver(e: DragEvent) {
-		e.preventDefault();
-		if (e.dataTransfer) {
-			e.dataTransfer.dropEffect = isDraggingExisting ? 'move' : 'copy';
-		}
-	}
-
-	function handleDrop(e: DragEvent) {
-		e.preventDefault();
-
-		if (!canvasRef) return;
-
-		const rect = canvasRef.getBoundingClientRect();
-		const x = e.clientX - rect.left - (isDraggingExisting ? dragOffset.x : 0);
-		const y = e.clientY - rect.top - (isDraggingExisting ? dragOffset.y : 0);
-
-		if (isDraggingExisting && draggedItemId) {
-			// Direct mutation for better performance - find and update in place
-			const itemIndex = canvasItems.findIndex((item) => item.id === draggedItemId);
-			if (itemIndex !== -1) {
-				canvasItems[itemIndex].x = Math.max(0, x);
-				canvasItems[itemIndex].y = Math.max(0, y);
-			}
-		} else {
-			const type = e.dataTransfer?.getData('component-type');
-			if (type) {
-				const newItem: CanvasItem = {
-					id: generateId(),
-					type,
-					x: Math.max(0, x),
-					y: Math.max(0, y),
-					props: getDefaultProps(type)
-				};
-				canvasItems.push(newItem);
-				selectedItemId = newItem.id;
-			}
-		}
-
-		draggedComponentType = null;
-		draggedItemId = null;
-		isDraggingExisting = false;
-	}
+	// function generateId() {
+	// 	return Math.random().toString(36).substring(2, 9);
+	// }
 
 	function selectItem(id: string) {
 		selectedItemId = id;
@@ -119,6 +53,14 @@
 			selectedItemId = null;
 		}
 	}
+
+	// function handleNeodrag(itemId: string, e: CustomEvent<{ offsetX: number; offsetY: number }>) {
+	// 	const itemIndex = canvasItems.findIndex((item) => item.id === itemId);
+	// 	if (itemIndex !== -1) {
+	// 		canvasItems[itemIndex].x = e.detail.offsetX;
+	// 		canvasItems[itemIndex].y = e.detail.offsetY;
+	// 	}
+	// }
 </script>
 
 <div class="flex-1 overflow-auto p-6">
@@ -169,14 +111,18 @@
 			<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 			<div
 				bind:this={canvasRef}
+				data-canvas
 				class="relative min-h-[500px] rounded border-2 border-dashed"
 				style="border-color: var(--border-secondary); background-color: var(--bg-secondary);"
-				ondragover={handleDragOver}
-				ondrop={handleDrop}
 				onclick={handleCanvasClick}
 				onkeydown={(e) => {
+					const target = e.target as HTMLElement;
+					const isEditing =
+						target.isContentEditable ||
+						target.tagName === 'INPUT' ||
+						target.tagName === 'TEXTAREA';
 					if (e.key === 'Escape') selectedItemId = null;
-					if (e.key === 'Delete' || e.key === 'Backspace') onDeleteSelected();
+					if ((e.key === 'Delete' || e.key === 'Backspace') && !isEditing) onDeleteSelected();
 				}}
 				role="application"
 				tabindex="0"
@@ -192,12 +138,21 @@
 
 				{#each canvasItems as item (item.id)}
 					<div
-						class="absolute cursor-move rounded border-2 bg-white p-2"
+						class="canvas-item absolute cursor-move rounded border-2 bg-white p-2"
 						class:ring-2={selectedItemId === item.id}
 						class:ring-blue-500={selectedItemId === item.id}
-						style="left: {item.x}px; top: {item.y}px; border-color: var(--border-primary);"
-						draggable="true"
-						ondragstart={(e) => handleExistingDragStart(e, item)}
+						style="border-color: var(--border-primary);"
+						use:draggable={{
+							position: { x: item.x, y: item.y },
+							bounds: canvasRef,
+							onDrag: ({ offsetX, offsetY }) => {
+								const idx = canvasItems.findIndex((i) => i.id === item.id);
+								if (idx !== -1) {
+									canvasItems[idx].x = offsetX;
+									canvasItems[idx].y = offsetY;
+								}
+							}
+						}}
 						onclick={(e) => {
 							e.stopPropagation();
 							selectItem(item.id);
@@ -234,7 +189,7 @@
 						{:else if item.type === 'label'}
 							<UserTextLabel
 								editable={item.props.editable}
-								text={item.props.text}
+								bind:text={item.props.text}
 								size={item.props.size}
 								weight={item.props.weight}
 							/>
@@ -245,3 +200,9 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	.canvas-item {
+		touch-action: none;
+	}
+</style>

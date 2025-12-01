@@ -1,10 +1,10 @@
 <script lang="ts">
 	let {
 		value = $bindable(0),
-		min,
-		max,
-		label,
-		unit
+		min = -20,
+		max = 50,
+		label = 'Temperature',
+		unit = '°C'
 	}: { value: number; min: number; max: number; label: string; unit: string } = $props();
 	const freezerMin = min;
 	const freezerMax = max;

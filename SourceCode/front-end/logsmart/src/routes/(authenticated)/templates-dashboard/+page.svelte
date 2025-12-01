@@ -62,11 +62,37 @@
 		selectedItemId = null;
 	}
 
-	function handleDragStart(e: DragEvent, type: string) {
-		if (e.dataTransfer) {
-			e.dataTransfer.setData('component-type', type);
-			e.dataTransfer.effectAllowed = 'copy';
+	function generateId() {
+		return Math.random().toString(36).substring(2, 9);
+	}
+
+	function getDefaultProps(type: string): Record<string, any> {
+		switch (type) {
+			case 'text_input':
+				return { text: '', size: 16, weight: 'normal' };
+			case 'checkbox':
+				return { text: 'Checkbox Label', size: '16px', weight: 'normal' };
+			case 'temperature':
+				return { value: 0, min: -20, max: 50, label: 'Temperature', unit: '°C' };
+			case 'dropdown':
+				return { selected: '', options: ['Option 1', 'Option 2', 'Option 3'] };
+			case 'label':
+				return { editable: true, text: 'Label Text', size: 16, weight: 'normal' };
+			default:
+				return {};
 		}
+	}
+
+	function addComponent(type: string, x: number, y: number) {
+		const newItem: CanvasItem = {
+			id: generateId(),
+			type,
+			x,
+			y,
+			props: getDefaultProps(type)
+		};
+		canvasItems.push(newItem);
+		selectedItemId = newItem.id;
 	}
 
 	function deleteSelected() {
@@ -96,6 +122,35 @@
 	}
 
 	let selectedItem = $derived(canvasItems.find((item) => item.id === selectedItemId));
+
+	let paletteHeight = $state<number | null>(null);
+	let isResizing = $state(false);
+
+	function handleResizeStart(e: MouseEvent) {
+		e.preventDefault();
+		isResizing = true;
+		window.addEventListener('mousemove', handleResizeMove);
+		window.addEventListener('mouseup', handleResizeEnd);
+	}
+
+	function handleResizeMove(e: MouseEvent) {
+		if (!isResizing) return;
+		const sidebar = document.querySelector('[data-right-sidebar]');
+		if (sidebar) {
+			const sidebarRect = sidebar.getBoundingClientRect();
+			if (paletteHeight === null) {
+				paletteHeight = sidebarRect.height / 2;
+			}
+			const newHeight = e.clientY - sidebarRect.top;
+			paletteHeight = Math.max(100, Math.min(newHeight, sidebarRect.height - 100));
+		}
+	}
+
+	function handleResizeEnd() {
+		isResizing = false;
+		window.removeEventListener('mousemove', handleResizeMove);
+		window.removeEventListener('mouseup', handleResizeEnd);
+	}
 </script>
 
 <div class="min-h-full" style="background-color: var(--bg-secondary);">
@@ -111,11 +166,24 @@
 		/>
 
 		<div
+			data-right-sidebar
 			class="flex w-72 flex-col border-l-2"
 			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 		>
-			<ComponentsPalette {componentTypes} onDragStart={handleDragStart} />
-			<PropertiesPanel {selectedItem} onUpdateProp={updateItemProp} />
+			<div style="height: {paletteHeight !== null ? `${paletteHeight}px` : '50%'}; flex-shrink: 0; overflow: auto;">
+				<ComponentsPalette {componentTypes} onAddComponent={addComponent} />
+			</div>
+			<div
+				class="h-2 cursor-row-resize border-y-2 hover:bg-gray-200"
+				style="border-color: var(--border-primary); flex-shrink: 0;"
+				onmousedown={handleResizeStart}
+				ondblclick={() => (paletteHeight = null)}
+				role="separator"
+				aria-orientation="horizontal"
+			></div>
+			<div class="flex-1 overflow-auto">
+				<PropertiesPanel {selectedItem} onUpdateProp={updateItemProp} />
+			</div>
 		</div>
 	</div>
 </div>
