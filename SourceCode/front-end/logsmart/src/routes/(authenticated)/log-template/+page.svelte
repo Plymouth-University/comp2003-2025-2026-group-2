@@ -49,7 +49,7 @@
 		<!-- Temperature Input Rows -->
 		<div class="space-y-6">
 			{#each canvasItems as item}
-				<TemperaturePicker  
+				<TemperaturePicker
 					value={item.value}
 					min={-10}
 					max={10}

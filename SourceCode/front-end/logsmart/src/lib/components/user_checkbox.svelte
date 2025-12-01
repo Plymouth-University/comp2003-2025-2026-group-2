@@ -1,6 +1,10 @@
 <script lang="ts">
-	let { text, size, weight }: { text: string; size: string; weight: string } = $props<{ children: any }>();
-    const uid = $props.id();
+	let {
+		text = '',
+		size = '16px',
+		weight = 'normal'
+	}: { text: string; size: string; weight: string } = $props();
+	const uid = $props.id();
 
 	let checked = $state(false);
 </script>

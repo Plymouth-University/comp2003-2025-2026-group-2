@@ -1,5 +1,11 @@
 <script lang="ts">
-	let { value, min, max, label, unit }: { value: number; min: number; max: number; label: string; unit: string } = $props();
+	let {
+		value = $bindable(0),
+		min,
+		max,
+		label,
+		unit
+	}: { value: number; min: number; max: number; label: string; unit: string } = $props();
 	const freezerMin = min;
 	const freezerMax = max;
 
@@ -32,7 +38,7 @@
 	<div class="flex items-center gap-3">
 		<input
 			type="number"
-			bind:value={value}
+			bind:value
 			onchange={handleInputChange}
 			max="10"
 			min="-10"

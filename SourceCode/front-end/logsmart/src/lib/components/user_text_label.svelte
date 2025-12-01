@@ -1,5 +1,10 @@
 <script lang="ts">
-	let { editable, text, size, weight }: { editable: boolean; text: string; size: string; weight: string } = $props<{ children: any }>();
+	let {
+		editable = false,
+		text = '',
+		size = 'medium',
+		weight = 'normal'
+	}: { editable: boolean; text: string; size: string; weight: string } = $props();
 </script>
 
 {#if editable}

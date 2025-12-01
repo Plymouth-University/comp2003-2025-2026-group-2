@@ -1,5 +1,9 @@
 <script lang="ts">
-	let { text, size, weight }: { text: string; size: string; weight: string } = $props<{ children: any }>();
+	let {
+		text = '',
+		size = 'medium',
+		weight = 'normal'
+	}: { text: string; size: string; weight: string } = $props();
 </script>
 
 <input
