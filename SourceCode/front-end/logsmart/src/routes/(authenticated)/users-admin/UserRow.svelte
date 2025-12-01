@@ -12,8 +12,8 @@
 
 <button
 	onclick={() => setSelectedUser(item.email)}
-	class="mb-2 flex h-20 flex-auto cursor-pointer flex-row content-between overflow-x-auto border-2 bg-white hover:bg-gray-100 active:bg-gray-200"
-	style="margin-top: -5px; display:flex;"
+	class="mb-2 flex h-20 flex-auto cursor-pointer flex-row content-between overflow-x-auto border-2 hover:opacity-80"
+	style="margin-top: -5px; display:flex; background-color: var(--bg-primary); border-color: var(--border-primary); color: var(--text-primary);"
 >
 	<div class="userBox-rows">{item.email}</div>
 	<div class="userBox-rows" style="flex:1">{item.first_name} {item.last_name}</div>

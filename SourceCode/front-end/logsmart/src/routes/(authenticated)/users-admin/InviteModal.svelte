@@ -18,13 +18,15 @@
 >
 	<div class="relative max-h-full w-full max-w-md p-4">
 		<div
-			class="bg-neutral-primary-soft border-default rounded-base relative border p-4 shadow-sm md:p-6"
+			class="rounded-base relative border-2 p-4 shadow-sm md:p-6"
+			style="background-color: var(--bg-primary); border-color: var(--border-primary);"
 		>
-			<div class="border-default flex items-center justify-between border-b pb-4 md:pb-5">
-				<h3 class="text-heading text-lg font-medium">REGISTER NEW USER</h3>
+			<div class="flex items-center justify-between border-b-2 pb-4 md:pb-5" style="border-color: var(--border-primary);">
+				<h3 class="text-lg font-medium" style="color: var(--text-primary);">REGISTER NEW USER</h3>
 				<button
 					type="button"
-					class="text-body hover:bg-neutral-tertiary hover:text-heading rounded-base ms-auto inline-flex h-9 w-9 cursor-pointer items-center justify-center bg-transparent text-sm"
+					class="rounded-base ms-auto inline-flex h-9 w-9 cursor-pointer items-center justify-center bg-transparent text-sm hover:opacity-80"
+					style="color: var(--text-secondary);"
 					onclick={() => setShowingCreateModel(false)}
 				>
 					<svg
@@ -48,20 +50,22 @@
 			</div>
 			<form action="#" class="flex flex-col pt-4 md:pt-6">
 				<div class="mb-4">
-					<label for="email" class="text-heading mb-2.5 block text-sm font-medium"
+					<label for="email" class="mb-2.5 block text-sm font-medium" style="color: var(--text-primary);"
 						>New user's email</label
 					>
 					<input
 						type="email"
 						id="email"
 						bind:value={email}
-						class="bg-neutral-secondary-medium border-default-medium text-heading rounded-base focus:ring-brand focus:border-brand placeholder:text-body block w-full border px-3 py-2.5 text-sm shadow-xs"
+						class="rounded-base block w-full border-2 px-3 py-2.5 text-sm shadow-xs focus:outline-none focus:ring-2"
+						style="background-color: var(--bg-primary); border-color: var(--border-primary); color: var(--text-primary);"
 						placeholder="example@company.com"
 						required
 					/>
 				</div>
 				<button
-					class="flex cursor-pointer self-center rounded border px-5 py-2.5 text-center text-sm font-medium hover:bg-gray-200"
+					class="flex cursor-pointer self-center rounded border-2 px-5 py-2.5 text-center text-sm font-medium hover:opacity-80"
+					style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 					aria-label="Send email"
 					onclick={async () => {
 						let { error } = await api.POST('/auth/invitations/send', { body: { email: email } });
@@ -72,7 +76,7 @@
 						}
 					}}
 				>
-					<span class="text-sm font-semibold text-black">Send Invite</span>
+					<span class="text-sm font-semibold" style="color: var(--text-primary);">Send Invite</span>
 				</button>
 			</form>
 		</div>

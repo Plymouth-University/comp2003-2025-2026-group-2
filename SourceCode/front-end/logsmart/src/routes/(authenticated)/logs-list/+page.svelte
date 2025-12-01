@@ -9,14 +9,14 @@
 </script>
 
 <main>
-	<div class="min-h-screen" style="background-color: #F8F8F8;">
+	<div class="min-h-screen" style="background-color: var(--bg-secondary);">
 		<div class="flex-1 gap-8 overflow-auto">
 			<div class="mx-auto max-w-screen">
 				{#key logsTemplates}
 					{#each logsTemplates as item}
 						<div
-							class="overflow-x-none flex h-30 flex-auto flex-row content-between border-t-2 border-b-2 bg-white text-2xl"
-							style="margin-top: -2px; display:flex;"
+							class="overflow-x-none flex h-30 flex-auto flex-row content-between border-t-2 border-b-2 text-2xl"
+							style="margin-top: -2px; display:flex; background-color: var(--bg-primary); border-color: var(--border-primary); color: var(--text-primary);"
 						>
 							<div class="userBox-rows"><b>{item.date}</b></div>
 							<div class="userBox-rows">{item.label}</div>
