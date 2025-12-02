@@ -74,7 +74,9 @@
 		{#each componentTypes as component (component.type)}
 			<div
 				class="flex cursor-grab items-center gap-2 rounded border px-3 py-2 text-sm hover:opacity-80 active:cursor-grabbing"
-				style="border-color: var(--border-primary); background-color: {pastelColors[component.type] || 'transparent'};"
+				style="border-color: var(--border-primary); background-color: {pastelColors[
+					component.type
+				] || 'transparent'};"
 				onmousedown={(e) => handleMouseDown(e, component.type)}
 				role="button"
 				tabindex="0"

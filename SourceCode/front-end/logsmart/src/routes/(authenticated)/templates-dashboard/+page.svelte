@@ -111,8 +111,7 @@
 	}
 
 	function updateItemProp(itemId: string, propKey: string, value: any) {
-		// Handle top-level properties like lockX and lockY
-		if (propKey === 'lockX' || propKey === 'lockY') {
+		if (propKey === 'lockX' || propKey === 'lockY' || propKey === 'x' || propKey === 'y') {
 			canvasItems = canvasItems.map((item) =>
 				item.id === itemId ? { ...item, [propKey]: value } : item
 			);
@@ -219,7 +218,7 @@
 			<div
 				style="height: {paletteHeight !== null
 					? `${paletteHeight}px`
-					: '50%'}; flex-shrink: 0; overflow: auto;"
+					: '35%'}; flex-shrink: 0; overflow: auto;"
 			>
 				<ComponentsPalette {componentTypes} onAddComponent={addComponent} />
 			</div>

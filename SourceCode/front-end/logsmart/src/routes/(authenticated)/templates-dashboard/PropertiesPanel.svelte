@@ -8,7 +8,11 @@
 	}: {
 		selectedItem: CanvasItem | undefined;
 		onUpdateProp: (itemId: string, propKey: string, value: any) => void;
-		onAlign: (itemId: string, horizontal: 'left' | 'center' | 'right' | null, vertical: 'top' | 'center' | 'bottom' | null) => void;
+		onAlign: (
+			itemId: string,
+			horizontal: 'left' | 'center' | 'right' | null,
+			vertical: 'top' | 'center' | 'bottom' | null
+		) => void;
 	} = $props();
 </script>
 
@@ -21,113 +25,127 @@
 			<span class="mb-2 block text-sm font-medium" style="color: var(--text-secondary);"
 				>Alignment</span
 			>
-			<div>
-				<span class="mb-1 block text-xs" style="color: var(--text-secondary);">Horizontal</span>
-				<div class="flex gap-1">
-					<button
-						class="flex-1 rounded border-2 px-2 py-1 text-sm transition-colors"
-						class:opacity-50={selectedItem.lockX}
-						class:cursor-not-allowed={selectedItem.lockX}
-						class:hover:bg-gray-100={!selectedItem.lockX}
-						style="border-color: var(--border-primary); color: var(--text-primary);"
-						onclick={() => onAlign(selectedItem.id, 'left', null)}
-						disabled={selectedItem.lockX}
-						title={selectedItem.lockX ? 'Disabled - Horizontal lock is enabled' : 'Align Left'}
-					>
-						⬅ Left
-					</button>
-					<button
-						class="flex-1 rounded border-2 px-2 py-1 text-sm transition-colors"
-						class:opacity-50={selectedItem.lockX}
-						class:cursor-not-allowed={selectedItem.lockX}
-						class:hover:bg-gray-100={!selectedItem.lockX}
-						style="border-color: var(--border-primary); color: var(--text-primary);"
-						onclick={() => onAlign(selectedItem.id, 'center', null)}
-						disabled={selectedItem.lockX}
-						title={selectedItem.lockX ? 'Disabled - Horizontal lock is enabled' : 'Center Horizontally'}
-					>
-						↔ Center
-					</button>
-					<button
-						class="flex-1 rounded border-2 px-2 py-1 text-sm transition-colors"
-						class:opacity-50={selectedItem.lockX}
-						class:cursor-not-allowed={selectedItem.lockX}
-						class:hover:bg-gray-100={!selectedItem.lockX}
-						style="border-color: var(--border-primary); color: var(--text-primary);"
-						onclick={() => onAlign(selectedItem.id, 'right', null)}
-						disabled={selectedItem.lockX}
-						title={selectedItem.lockX ? 'Disabled - Horizontal lock is enabled' : 'Align Right'}
-					>
-						Right ➡
-					</button>
-				</div>
-			</div>
-			<div>
-				<span class="mb-1 block text-xs" style="color: var(--text-secondary);">Vertical</span>
-				<div class="flex gap-1">
-					<button
-						class="flex-1 rounded border-2 px-2 py-1 text-sm transition-colors"
-						class:opacity-50={selectedItem.lockY}
-						class:cursor-not-allowed={selectedItem.lockY}
-						class:hover:bg-gray-100={!selectedItem.lockY}
-						style="border-color: var(--border-primary); color: var(--text-primary);"
-						onclick={() => onAlign(selectedItem.id, null, 'top')}
-						disabled={selectedItem.lockY}
-						title={selectedItem.lockY ? 'Disabled - Vertical lock is enabled' : 'Align Top'}
-					>
-						⬆ Top
-					</button>
-					<button
-						class="flex-1 rounded border-2 px-2 py-1 text-sm transition-colors"
-						class:opacity-50={selectedItem.lockY}
-						class:cursor-not-allowed={selectedItem.lockY}
-						class:hover:bg-gray-100={!selectedItem.lockY}
-						style="border-color: var(--border-primary); color: var(--text-primary);"
-						onclick={() => onAlign(selectedItem.id, null, 'center')}
-						disabled={selectedItem.lockY}
-						title={selectedItem.lockY ? 'Disabled - Vertical lock is enabled' : 'Center Vertically'}
-					>
-						↕ Center
-					</button>
-					<button
-						class="flex-1 rounded border-2 px-2 py-1 text-sm transition-colors"
-						class:opacity-50={selectedItem.lockY}
-						class:cursor-not-allowed={selectedItem.lockY}
-						class:hover:bg-gray-100={!selectedItem.lockY}
-						style="border-color: var(--border-primary); color: var(--text-primary);"
-						onclick={() => onAlign(selectedItem.id, null, 'bottom')}
-						disabled={selectedItem.lockY}
-						title={selectedItem.lockY ? 'Disabled - Vertical lock is enabled' : 'Align Bottom'}
-					>
-						Bottom ⬇
-					</button>
-				</div>
+			<div class="grid grid-cols-3 gap-1">
+				<div></div>
+				<button
+					class="flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
+					class:opacity-50={selectedItem.lockY}
+					class:cursor-not-allowed={selectedItem.lockY}
+					class:hover:bg-gray-100={!selectedItem.lockY}
+					style="border-color: var(--border-primary); color: var(--text-primary);"
+					onclick={() => onAlign(selectedItem.id, null, 'top')}
+					disabled={selectedItem.lockY}
+					title={selectedItem.lockY ? 'Disabled - Vertical lock is enabled' : 'Align Top'}
+				>
+					<span>⬆</span><span>Top</span>
+				</button>
+				<div></div>
+
+				<button
+					class="flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
+					class:opacity-50={selectedItem.lockX}
+					class:cursor-not-allowed={selectedItem.lockX}
+					class:hover:bg-gray-100={!selectedItem.lockX}
+					style="border-color: var(--border-primary); color: var(--text-primary);"
+					onclick={() => onAlign(selectedItem.id, 'left', null)}
+					disabled={selectedItem.lockX}
+					title={selectedItem.lockX ? 'Disabled - Horizontal lock is enabled' : 'Align Left'}
+				>
+					<span>⬅</span><span>Left</span>
+				</button>
+				<button
+					class="flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
+					class:opacity-50={selectedItem.lockX && selectedItem.lockY}
+					class:cursor-not-allowed={selectedItem.lockX && selectedItem.lockY}
+					class:hover:bg-gray-100={!(selectedItem.lockX && selectedItem.lockY)}
+					style="border-color: var(--border-primary); color: var(--text-primary);"
+					onclick={() => onAlign(selectedItem.id, 'center', 'center')}
+					disabled={selectedItem.lockX && selectedItem.lockY}
+					title={selectedItem.lockX && selectedItem.lockY
+						? 'Disabled - Both locks enabled'
+						: 'Center Both'}
+				>
+					<span>⊕</span><span>Center</span>
+				</button>
+				<button
+					class="flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
+					class:opacity-50={selectedItem.lockX}
+					class:cursor-not-allowed={selectedItem.lockX}
+					class:hover:bg-gray-100={!selectedItem.lockX}
+					style="border-color: var(--border-primary); color: var(--text-primary);"
+					onclick={() => onAlign(selectedItem.id, 'right', null)}
+					disabled={selectedItem.lockX}
+					title={selectedItem.lockX ? 'Disabled - Horizontal lock is enabled' : 'Align Right'}
+				>
+					<span>Right</span><span>➡</span>
+				</button>
+
+				<div></div>
+				<button
+					class="flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
+					class:opacity-50={selectedItem.lockY}
+					class:cursor-not-allowed={selectedItem.lockY}
+					class:hover:bg-gray-100={!selectedItem.lockY}
+					style="border-color: var(--border-primary); color: var(--text-primary);"
+					onclick={() => onAlign(selectedItem.id, null, 'bottom')}
+					disabled={selectedItem.lockY}
+					title={selectedItem.lockY ? 'Disabled - Vertical lock is enabled' : 'Align Bottom'}
+				>
+					<span>Bottom</span><span>⬇</span>
+				</button>
+				<div></div>
 			</div>
 		</div>
 
-		<!-- Position Lock Options -->
+		<!-- Position -->
 		<div class="mb-4 space-y-2 border-b-2 pb-4" style="border-color: var(--border-primary);">
 			<span class="mb-2 block text-sm font-medium" style="color: var(--text-secondary);"
-				>Position Locks</span
+				>Position</span
 			>
-			<label class="flex cursor-pointer items-center gap-2">
+			<div class="flex items-center gap-2">
+				<span class="w-3 text-sm" style="color: var(--text-primary);">X</span>
 				<input
-					type="checkbox"
-					checked={selectedItem.lockX ?? false}
-					onchange={(e) => onUpdateProp(selectedItem.id, 'lockX', e.currentTarget.checked)}
-					class="h-4 w-4"
+					type="number"
+					value={Math.round(selectedItem.x)}
+					oninput={(e) => onUpdateProp(selectedItem.id, 'x', parseInt(e.currentTarget.value) || 0)}
+					class="w-20 border-2 px-2 py-1 text-sm"
+					class:opacity-50={selectedItem.lockX}
+					style="border-color: var(--border-primary); color: var(--text-primary);"
+					disabled={selectedItem.lockX}
 				/>
-				<span style="color: var(--text-primary);">Lock Horizontal (X)</span>
-			</label>
-			<label class="flex cursor-pointer items-center gap-2">
+				<button
+					class="flex h-8 w-8 items-center justify-center rounded border-2 text-sm transition-colors"
+					class:bg-blue-100={selectedItem.lockX}
+					class:hover:bg-gray-100={!selectedItem.lockX}
+					style="border-color: var(--border-primary); color: var(--text-primary);"
+					onclick={() => onUpdateProp(selectedItem.id, 'lockX', !selectedItem.lockX)}
+					title={selectedItem.lockX ? 'Unlock X position' : 'Lock X position'}
+				>
+					{selectedItem.lockX ? '🔒' : '🔓'}
+				</button>
+			</div>
+			<div class="flex items-center gap-2">
+				<span class="w-3 text-sm" style="color: var(--text-primary);">Y</span>
 				<input
-					type="checkbox"
-					checked={selectedItem.lockY ?? false}
-					onchange={(e) => onUpdateProp(selectedItem.id, 'lockY', e.currentTarget.checked)}
-					class="h-4 w-4"
+					type="number"
+					value={Math.round(selectedItem.y)}
+					oninput={(e) => onUpdateProp(selectedItem.id, 'y', parseInt(e.currentTarget.value) || 0)}
+					class="w-20 border-2 px-2 py-1 text-sm"
+					class:opacity-50={selectedItem.lockY}
+					style="border-color: var(--border-primary); color: var(--text-primary);"
+					disabled={selectedItem.lockY}
 				/>
-				<span style="color: var(--text-primary);">Lock Vertical (Y)</span>
-			</label>
+				<button
+					class="flex h-8 w-8 items-center justify-center rounded border-2 text-sm transition-colors"
+					class:bg-blue-100={selectedItem.lockY}
+					class:hover:bg-gray-100={!selectedItem.lockY}
+					style="border-color: var(--border-primary); color: var(--text-primary);"
+					onclick={() => onUpdateProp(selectedItem.id, 'lockY', !selectedItem.lockY)}
+					title={selectedItem.lockY ? 'Unlock Y position' : 'Lock Y position'}
+				>
+					{selectedItem.lockY ? '🔒' : '🔓'}
+				</button>
+			</div>
 		</div>
 
 		{#if selectedItem.type === 'text_input'}

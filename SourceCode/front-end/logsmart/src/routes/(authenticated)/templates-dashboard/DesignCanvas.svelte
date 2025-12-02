@@ -23,26 +23,126 @@
 		onDeleteSelected: () => void;
 	} = $props();
 
-	// function getDefaultProps(type: string): Record<string, any> {
-	// 	switch (type) {
-	// 		case 'text_input':
-	// 			return { text: '', size: 'medium', weight: 'normal' };
-	// 		case 'checkbox':
-	// 			return { text: 'Checkbox Label', size: '16px', weight: 'normal' };
-	// 		case 'temperature':
-	// 			return { value: 0, min: -20, max: 50, label: 'Temperature', unit: '°C' };
-	// 		case 'dropdown':
-	// 			return { selected: '', options: ['Option 1', 'Option 2', 'Option 3'] };
-	// 		case 'label':
-	// 			return { editable: true, text: 'Label Text', size: 'medium', weight: 'normal' };
-	// 		default:
-	// 			return {};
-	// 	}
-	// }
+	const SNAP_THRESHOLD = 10;
+	let snapLines = $state<{ x: number[]; y: number[] }>({ x: [], y: [] });
+	let isDragging = $state(false);
+	let snapEnabled = $state(true);
 
-	// function generateId() {
-	// 	return Math.random().toString(36).substring(2, 9);
-	// }
+	function getItemBounds(
+		itemId: string
+	): {
+		left: number;
+		right: number;
+		top: number;
+		bottom: number;
+		centerX: number;
+		centerY: number;
+		width: number;
+		height: number;
+	} | null {
+		const el = document.querySelector(`[data-item-id="${itemId}"]`) as HTMLElement;
+		if (!el || !canvasRef) return null;
+		const canvasRect = canvasRef.getBoundingClientRect();
+		const itemRect = el.getBoundingClientRect();
+		const left = itemRect.left - canvasRect.left;
+		const top = itemRect.top - canvasRect.top;
+		const right = left + itemRect.width;
+		const bottom = top + itemRect.height;
+		return {
+			left,
+			right,
+			top,
+			bottom,
+			width: itemRect.width,
+			height: itemRect.height,
+			centerX: left + itemRect.width / 2,
+			centerY: top + itemRect.height / 2
+		};
+	}
+
+	function calculateSnap(
+		draggedId: string,
+		proposedX: number,
+		proposedY: number
+	): { x: number; y: number; snapLinesX: number[]; snapLinesY: number[] } {
+		const draggedEl = document.querySelector(`[data-item-id="${draggedId}"]`) as HTMLElement;
+		if (!draggedEl || !canvasRef)
+			return { x: proposedX, y: proposedY, snapLinesX: [], snapLinesY: [] };
+
+		const draggedRect = draggedEl.getBoundingClientRect();
+		const width = draggedRect.width;
+		const height = draggedRect.height;
+
+		const draggedLeft = proposedX;
+		const draggedRight = proposedX + width;
+		const draggedCenterX = proposedX + width / 2;
+		const draggedTop = proposedY;
+		const draggedBottom = proposedY + height;
+		const draggedCenterY = proposedY + height / 2;
+
+		let bestSnapX: { snappedX: number; distance: number; line: number } | null = null;
+		let bestSnapY: { snappedY: number; distance: number; line: number } | null = null;
+		const snapLinesX: number[] = [];
+		const snapLinesY: number[] = [];
+
+		for (const item of canvasItems) {
+			if (item.id === draggedId) continue;
+			const bounds = getItemBounds(item.id);
+			if (!bounds) continue;
+
+			const xPoints = [
+				{ dragPoint: draggedLeft, snapTo: bounds.left, line: bounds.left },
+				{ dragPoint: draggedLeft, snapTo: bounds.right, line: bounds.right },
+				{ dragPoint: draggedRight, snapTo: bounds.left, line: bounds.left },
+				{ dragPoint: draggedRight, snapTo: bounds.right, line: bounds.right },
+				{ dragPoint: draggedCenterX, snapTo: bounds.centerX, line: bounds.centerX },
+				{ dragPoint: draggedLeft, snapTo: bounds.centerX, line: bounds.centerX },
+				{ dragPoint: draggedRight, snapTo: bounds.centerX, line: bounds.centerX },
+				{ dragPoint: draggedCenterX, snapTo: bounds.left, line: bounds.left },
+				{ dragPoint: draggedCenterX, snapTo: bounds.right, line: bounds.right }
+			];
+
+			for (const { dragPoint, snapTo, line } of xPoints) {
+				const distance = Math.abs(dragPoint - snapTo);
+				if (distance < SNAP_THRESHOLD) {
+					if (!bestSnapX || distance < bestSnapX.distance) {
+						const offset = dragPoint - draggedLeft;
+						bestSnapX = { snappedX: snapTo - offset, distance, line };
+					}
+				}
+			}
+
+			const yPoints = [
+				{ dragPoint: draggedTop, snapTo: bounds.top, line: bounds.top },
+				{ dragPoint: draggedTop, snapTo: bounds.bottom, line: bounds.bottom },
+				{ dragPoint: draggedBottom, snapTo: bounds.top, line: bounds.top },
+				{ dragPoint: draggedBottom, snapTo: bounds.bottom, line: bounds.bottom },
+				{ dragPoint: draggedCenterY, snapTo: bounds.centerY, line: bounds.centerY },
+				{ dragPoint: draggedTop, snapTo: bounds.centerY, line: bounds.centerY },
+				{ dragPoint: draggedBottom, snapTo: bounds.centerY, line: bounds.centerY },
+				{ dragPoint: draggedCenterY, snapTo: bounds.top, line: bounds.top },
+				{ dragPoint: draggedCenterY, snapTo: bounds.bottom, line: bounds.bottom }
+			];
+
+			for (const { dragPoint, snapTo, line } of yPoints) {
+				const distance = Math.abs(dragPoint - snapTo);
+				if (distance < SNAP_THRESHOLD) {
+					if (!bestSnapY || distance < bestSnapY.distance) {
+						const offset = dragPoint - draggedTop;
+						bestSnapY = { snappedY: snapTo - offset, distance, line };
+					}
+				}
+			}
+		}
+
+		const finalX = bestSnapX ? bestSnapX.snappedX : proposedX;
+		const finalY = bestSnapY ? bestSnapY.snappedY : proposedY;
+
+		if (bestSnapX) snapLinesX.push(bestSnapX.line);
+		if (bestSnapY) snapLinesY.push(bestSnapY.line);
+
+		return { x: finalX, y: finalY, snapLinesX, snapLinesY };
+	}
 
 	function selectItem(id: string) {
 		selectedItemId = id;
@@ -53,14 +153,6 @@
 			selectedItemId = null;
 		}
 	}
-
-	// function handleNeodrag(itemId: string, e: CustomEvent<{ offsetX: number; offsetY: number }>) {
-	// 	const itemIndex = canvasItems.findIndex((item) => item.id === itemId);
-	// 	if (itemIndex !== -1) {
-	// 		canvasItems[itemIndex].x = e.detail.offsetX;
-	// 		canvasItems[itemIndex].y = e.detail.offsetY;
-	// 	}
-	// }
 </script>
 
 <div class="flex-1 overflow-auto p-6">
@@ -68,6 +160,14 @@
 		<div class="mb-4 flex items-center justify-between">
 			<h2 class="text-3xl font-bold" style="color: var(--text-secondary);">Canvas</h2>
 			<div class="flex gap-2">
+				<button
+					class="rounded px-4 py-2 font-medium"
+					class:btn-snap-on={snapEnabled}
+					class:btn-snap-off={!snapEnabled}
+					onclick={() => (snapEnabled = !snapEnabled)}
+				>
+					{snapEnabled ? '🧲 Snap On' : '🧲 Snap Off'}
+				</button>
 				{#if selectedItemId}
 					<button
 						class="btn-delete rounded px-4 py-2 font-medium text-white"
@@ -87,11 +187,6 @@
 			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 		>
 			<div class="mb-4">
-				<label
-					for="log-title-input"
-					class="mb-2 block text-lg font-bold"
-					style="color: var(--text-secondary);">Log Title</label
-				>
 				<input
 					id="log-title-input"
 					type="text"
@@ -137,17 +232,35 @@
 						class:ring-2={selectedItemId === item.id}
 						class:ring-blue-500={selectedItemId === item.id}
 						class:selected-item={selectedItemId === item.id}
+						style="left: {item.x}px; top: {item.y}px; transform: none !important;"
 						use:draggable={{
 							position: { x: item.x, y: item.y },
 							bounds: canvasRef,
-							axis: item.lockX && item.lockY ? undefined : item.lockX ? 'y' : item.lockY ? 'x' : 'both',
+							axis:
+								item.lockX && item.lockY ? undefined : item.lockX ? 'y' : item.lockY ? 'x' : 'both',
 							disabled: item.lockX && item.lockY,
+							transform: () => '',
+							onDragStart: () => {
+								isDragging = true;
+							},
 							onDrag: ({ offsetX, offsetY }) => {
 								const idx = canvasItems.findIndex((i) => i.id === item.id);
 								if (idx !== -1) {
-									if (!item.lockX) canvasItems[idx].x = offsetX;
-									if (!item.lockY) canvasItems[idx].y = offsetY;
+									if (snapEnabled) {
+										const snap = calculateSnap(item.id, offsetX, offsetY);
+										snapLines = { x: snap.snapLinesX, y: snap.snapLinesY };
+										if (!item.lockX) canvasItems[idx].x = snap.x;
+										if (!item.lockY) canvasItems[idx].y = snap.y;
+									} else {
+										snapLines = { x: [], y: [] };
+										if (!item.lockX) canvasItems[idx].x = offsetX;
+										if (!item.lockY) canvasItems[idx].y = offsetY;
+									}
 								}
+							},
+							onDragEnd: () => {
+								isDragging = false;
+								snapLines = { x: [], y: [] };
 							}
 						}}
 						onclick={(e) => {
@@ -193,6 +306,21 @@
 						{/if}
 					</div>
 				{/each}
+
+				{#if isDragging}
+					{#each snapLines.x as lineX}
+						<div
+							class="snap-line-vertical pointer-events-none absolute top-0 bottom-0 w-px"
+							style="left: {lineX}px; background-color: #3b82f6;"
+						></div>
+					{/each}
+					{#each snapLines.y as lineY}
+						<div
+							class="snap-line-horizontal pointer-events-none absolute right-0 left-0 h-px"
+							style="top: {lineY}px; background-color: #3b82f6;"
+						></div>
+					{/each}
+				{/if}
 			</div>
 		</div>
 	</div>
@@ -205,6 +333,12 @@
 
 	.selected-item {
 		border-color: var(--border-primary);
+	}
+
+	.snap-line-vertical,
+	.snap-line-horizontal {
+		z-index: 1000;
+		opacity: 0.8;
 	}
 
 	.btn-delete {
@@ -227,5 +361,29 @@
 	}
 	.btn-export:active {
 		background-color: #204d74;
+	}
+
+	.btn-snap-on {
+		background-color: #5cb85c;
+		color: white;
+		transition: background-color 0.15s ease;
+	}
+	.btn-snap-on:hover {
+		background-color: #449d44;
+	}
+	.btn-snap-on:active {
+		background-color: #398439;
+	}
+
+	.btn-snap-off {
+		background-color: #6c757d;
+		color: white;
+		transition: background-color 0.15s ease;
+	}
+	.btn-snap-off:hover {
+		background-color: #5a6268;
+	}
+	.btn-snap-off:active {
+		background-color: #4e555b;
 	}
 </style>
