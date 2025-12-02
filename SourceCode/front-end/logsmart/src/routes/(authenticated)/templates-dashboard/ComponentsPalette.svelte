@@ -32,6 +32,14 @@
 		ghostPosition = { x: e.clientX, y: e.clientY };
 	}
 
+	const pastelColors: Record<string, string> = {
+		text_input: '#e0f2fe', // light blue
+		checkbox: '#dcfce7', // light green
+		temperature: '#fef3c7', // light amber
+		dropdown: '#f3e8ff', // light purple
+		label: '#ffe4e6' // light rose
+	};
+
 	function handleMouseUp(e: MouseEvent) {
 		window.removeEventListener('mousemove', handleMouseMove);
 		window.removeEventListener('mouseup', handleMouseUp);
@@ -66,7 +74,7 @@
 		{#each componentTypes as component (component.type)}
 			<div
 				class="flex cursor-grab items-center gap-2 rounded border px-3 py-2 text-sm hover:opacity-80 active:cursor-grabbing"
-				style="border-color: var(--border-primary);"
+				style="border-color: var(--border-primary); background-color: {pastelColors[component.type] || 'transparent'};"
 				onmousedown={(e) => handleMouseDown(e, component.type)}
 				role="button"
 				tabindex="0"
