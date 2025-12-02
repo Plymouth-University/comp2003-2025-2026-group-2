@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { untrack } from 'svelte';
 	import TemplatesSidebar from './TemplatesSidebar.svelte';
 	import DesignCanvas from './DesignCanvas.svelte';
 	import ComponentsPalette from './ComponentsPalette.svelte';
@@ -35,14 +34,14 @@
 		if (saveTimeout) clearTimeout(saveTimeout);
 		saveTimeout = setTimeout(() => {
 			if (browser) {
-				localStorage.setItem('canvasItems', JSON.stringify(untrack(() => canvasItems)));
+				localStorage.setItem('canvasItems', JSON.stringify(canvasItems));
 			}
 		}, 300);
 	}
 
 	$effect(() => {
-		// Track canvasItems changes but debounce the save
-		canvasItems;
+		// Deep track canvasItems by serializing it
+		const serialized = JSON.stringify(canvasItems);
 		debouncedSaveItems();
 	});
 
@@ -112,12 +111,61 @@
 	}
 
 	function updateItemProp(itemId: string, propKey: string, value: any) {
-		canvasItems = canvasItems.map((item) =>
-			item.id === itemId ? { ...item, props: { ...item.props, [propKey]: value } } : item
-		);
+		if (propKey === 'lockX' || propKey === 'lockY' || propKey === 'x' || propKey === 'y') {
+			canvasItems = canvasItems.map((item) =>
+				item.id === itemId ? { ...item, [propKey]: value } : item
+			);
+		} else {
+			canvasItems = canvasItems.map((item) =>
+				item.id === itemId ? { ...item, props: { ...item.props, [propKey]: value } } : item
+			);
+		}
 	}
 
 	let selectedItem = $derived(canvasItems.find((item) => item.id === selectedItemId));
+
+	let canvasRef = $state<HTMLDivElement | null>(null);
+
+	function alignItem(
+		itemId: string,
+		horizontal: 'left' | 'center' | 'right' | null,
+		vertical: 'top' | 'center' | 'bottom' | null
+	) {
+		if (!canvasRef) return;
+
+		const canvasRect = canvasRef.getBoundingClientRect();
+		const itemElement = canvasRef.querySelector(`[data-item-id="${itemId}"]`) as HTMLElement;
+		if (!itemElement) return;
+
+		const itemRect = itemElement.getBoundingClientRect();
+		const itemWidth = itemRect.width;
+		const itemHeight = itemRect.height;
+
+		canvasItems = canvasItems.map((item) => {
+			if (item.id !== itemId) return item;
+
+			let newX = item.x;
+			let newY = item.y;
+
+			if (horizontal === 'left') {
+				newX = 0;
+			} else if (horizontal === 'center') {
+				newX = (canvasRect.width - itemWidth) / 2;
+			} else if (horizontal === 'right') {
+				newX = canvasRect.width - itemWidth;
+			}
+
+			if (vertical === 'top') {
+				newY = 0;
+			} else if (vertical === 'center') {
+				newY = (canvasRect.height - itemHeight) / 2;
+			} else if (vertical === 'bottom') {
+				newY = canvasRect.height - itemHeight;
+			}
+
+			return { ...item, x: newX, y: newY };
+		});
+	}
 
 	let paletteHeight = $state<number | null>(null);
 	let isResizing = $state(false);
@@ -160,6 +208,7 @@
 			bind:canvasItems
 			bind:logTitle
 			bind:selectedItemId
+			bind:canvasRef
 			onExport={exportToJson}
 			onDeleteSelected={deleteSelected}
 		/>
@@ -172,10 +221,11 @@
 			<div
 				style="height: {paletteHeight !== null
 					? `${paletteHeight}px`
-					: '50%'}; flex-shrink: 0; overflow: auto;"
+					: '35%'}; flex-shrink: 0; overflow: auto;"
 			>
 				<ComponentsPalette {componentTypes} onAddComponent={addComponent} />
 			</div>
+			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 			<div
 				class="h-2 cursor-row-resize border-y-2 hover:bg-gray-200"
 				style="border-color: var(--border-primary); flex-shrink: 0;"
@@ -185,7 +235,7 @@
 				aria-orientation="horizontal"
 			></div>
 			<div class="flex-1 overflow-auto">
-				<PropertiesPanel {selectedItem} onUpdateProp={updateItemProp} />
+				<PropertiesPanel {selectedItem} onUpdateProp={updateItemProp} onAlign={alignItem} />
 			</div>
 		</div>
 	</div>

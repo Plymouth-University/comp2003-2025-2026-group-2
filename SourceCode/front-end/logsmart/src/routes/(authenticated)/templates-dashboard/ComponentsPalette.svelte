@@ -32,6 +32,14 @@
 		ghostPosition = { x: e.clientX, y: e.clientY };
 	}
 
+	const pastelColors: Record<string, string> = {
+		text_input: '#e0f2fe', // light blue
+		checkbox: '#dcfce7', // light green
+		temperature: '#fef3c7', // light amber
+		dropdown: '#f3e8ff', // light purple
+		label: '#ffe4e6' // light rose
+	};
+
 	function handleMouseUp(e: MouseEvent) {
 		window.removeEventListener('mousemove', handleMouseMove);
 		window.removeEventListener('mouseup', handleMouseUp);
@@ -59,20 +67,22 @@
 	}
 </script>
 
-<div class="h-full p-6">
-	<h2 class="mb-4 text-2xl font-bold" style="color: var(--text-primary);">Components</h2>
+<div class="h-full p-4">
+	<h2 class="mb-3 text-xl font-bold" style="color: var(--text-primary);">Components</h2>
 
-	<div class="space-y-2">
+	<div class="space-y-1">
 		{#each componentTypes as component (component.type)}
 			<div
-				class="flex cursor-grab items-center gap-3 border-2 px-4 py-3 hover:opacity-80 active:cursor-grabbing"
-				style="border-color: var(--border-primary);"
+				class="flex cursor-grab items-center gap-2 rounded border px-3 py-2 text-sm hover:opacity-80 active:cursor-grabbing"
+				style="border-color: var(--border-primary); background-color: {pastelColors[
+					component.type
+				] || 'transparent'};"
 				onmousedown={(e) => handleMouseDown(e, component.type)}
 				role="button"
 				tabindex="0"
 			>
 				<div
-					class="flex h-8 w-8 items-center justify-center border-2 font-bold"
+					class="flex h-6 w-6 items-center justify-center border text-xs font-bold"
 					style="border-color: var(--border-primary); color: var(--text-primary);"
 				>
 					{component.icon}

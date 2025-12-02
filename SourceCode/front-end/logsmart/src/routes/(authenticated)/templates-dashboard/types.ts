@@ -3,6 +3,8 @@ export type CanvasItem = {
 	type: string;
 	x: number;
 	y: number;
+	lockX?: boolean;
+	lockY?: boolean;
 	props: Record<string, any>;
 };
 
