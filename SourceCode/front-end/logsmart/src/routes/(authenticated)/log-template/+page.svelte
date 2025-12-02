@@ -25,6 +25,9 @@
 	]);
 </script>
 
+<svelte:head>
+	<title>Log Template</title>
+</svelte:head>
 <main>
 	<h1 class="mb-6 text-center text-3xl font-bold" style="padding-top:1%">Freezer Temperature</h1>
 	<div

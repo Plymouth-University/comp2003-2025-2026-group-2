@@ -8,6 +8,9 @@
 	]);
 </script>
 
+<svelte:head>
+	<title>Logs List</title>
+</svelte:head>
 <main>
 	<div class="min-h-screen" style="background-color: var(--bg-secondary);">
 		<div class="flex-1 gap-8 overflow-auto">

@@ -149,6 +149,9 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Templates Dashboard</title>
+</svelte:head>
 <div class="min-h-full" style="background-color: var(--bg-secondary);">
 	<div class="flex h-[calc(100vh-73px)]">
 		<TemplatesSidebar {templates} onCreateNew={createNewTemplate} />

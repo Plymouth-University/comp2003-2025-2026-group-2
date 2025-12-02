@@ -26,6 +26,9 @@
 	};
 </script>
 
+<svelte:head>
+	<title>Users Administration</title>
+</svelte:head>
 <main class="min-h-full" style="background-color: var(--bg-secondary);">
 	<div class="overflow-none flex h-[calc(100vh-73px)]">
 		<div class="mx-auto w-1/3 md:w-full">

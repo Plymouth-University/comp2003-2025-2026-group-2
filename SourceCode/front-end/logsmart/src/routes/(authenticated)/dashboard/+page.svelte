@@ -37,6 +37,9 @@
 	});
 </script>
 
+<svelte:head>
+	<title>Dashboard</title>
+</svelte:head>
 <div class="h-full w-full" style="background-color: var(--bg-secondary);">
 	<!-- Main Content -->
 	<div class="mx-auto max-w-7xl px-6 py-8">

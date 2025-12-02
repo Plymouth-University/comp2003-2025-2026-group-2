@@ -36,6 +36,9 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Log In</title>
+</svelte:head>
 <div class="flex h-full w-full items-center justify-center bg-gray-50 p-6">
 	<form onsubmit={submit} class="form">
 		<h1>Log in</h1>

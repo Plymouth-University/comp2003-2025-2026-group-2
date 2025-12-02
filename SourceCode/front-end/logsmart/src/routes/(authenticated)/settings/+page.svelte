@@ -38,6 +38,9 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Settings</title>
+</svelte:head>
 <div class="min-h-screen" style="background-color: var(--bg-secondary);">
 	<div class="mx-auto max-w-7xl px-6 py-8">
 		<!-- Header -->
