@@ -5,7 +5,6 @@
 
 	let { data, form } = $props<{ data: PageData; form: ActionData }>();
 
-	// Initialize from server data
 	let firstName = $state(data.user?.first_name || '');
 	let lastName = $state(data.user?.last_name || '');
 	let email = $state(data.user?.email || '');
@@ -13,7 +12,12 @@
 	let showSuccessMessage = $state(false);
 	let errorMessage = $state('');
 
-	// Watch for form submission results
+	$effect(() => {
+		firstName = data.user?.first_name || '';
+		lastName = data.user?.last_name || '';
+		email = data.user?.email || '';
+	});
+
 	$effect(() => {
 		if (form?.success) {
 			showSuccessMessage = true;
