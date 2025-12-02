@@ -11,17 +11,17 @@
 		canvasItems = $bindable(),
 		logTitle = $bindable(),
 		selectedItemId = $bindable(),
+		canvasRef = $bindable(),
 		onExport,
 		onDeleteSelected
 	}: {
 		canvasItems: CanvasItem[];
 		logTitle: string;
 		selectedItemId: string | null;
+		canvasRef: HTMLDivElement | null;
 		onExport: () => void;
 		onDeleteSelected: () => void;
 	} = $props();
-
-	let canvasRef = $state<HTMLDivElement | null>(null);
 
 	// function getDefaultProps(type: string): Record<string, any> {
 	// 	switch (type) {
@@ -131,6 +131,7 @@
 
 				{#each canvasItems as item (item.id)}
 					<div
+						data-item-id={item.id}
 						class="canvas-item absolute cursor-move rounded border-2 bg-white p-2"
 						class:ring-2={selectedItemId === item.id}
 						class:ring-blue-500={selectedItemId === item.id}
@@ -138,11 +139,13 @@
 						use:draggable={{
 							position: { x: item.x, y: item.y },
 							bounds: canvasRef,
+							axis: item.lockX && item.lockY ? undefined : item.lockX ? 'y' : item.lockY ? 'x' : 'both',
+							disabled: item.lockX && item.lockY,
 							onDrag: ({ offsetX, offsetY }) => {
 								const idx = canvasItems.findIndex((i) => i.id === item.id);
 								if (idx !== -1) {
-									canvasItems[idx].x = offsetX;
-									canvasItems[idx].y = offsetY;
+									if (!item.lockX) canvasItems[idx].x = offsetX;
+									if (!item.lockY) canvasItems[idx].y = offsetY;
 								}
 							}
 						}}

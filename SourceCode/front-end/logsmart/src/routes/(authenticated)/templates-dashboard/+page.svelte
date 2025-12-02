@@ -112,12 +112,62 @@
 	}
 
 	function updateItemProp(itemId: string, propKey: string, value: any) {
-		canvasItems = canvasItems.map((item) =>
-			item.id === itemId ? { ...item, props: { ...item.props, [propKey]: value } } : item
-		);
+		// Handle top-level properties like lockX and lockY
+		if (propKey === 'lockX' || propKey === 'lockY') {
+			canvasItems = canvasItems.map((item) =>
+				item.id === itemId ? { ...item, [propKey]: value } : item
+			);
+		} else {
+			canvasItems = canvasItems.map((item) =>
+				item.id === itemId ? { ...item, props: { ...item.props, [propKey]: value } } : item
+			);
+		}
 	}
 
 	let selectedItem = $derived(canvasItems.find((item) => item.id === selectedItemId));
+
+	let canvasRef = $state<HTMLDivElement | null>(null);
+
+	function alignItem(
+		itemId: string,
+		horizontal: 'left' | 'center' | 'right' | null,
+		vertical: 'top' | 'center' | 'bottom' | null
+	) {
+		if (!canvasRef) return;
+
+		const canvasRect = canvasRef.getBoundingClientRect();
+		const itemElement = canvasRef.querySelector(`[data-item-id="${itemId}"]`) as HTMLElement;
+		if (!itemElement) return;
+
+		const itemRect = itemElement.getBoundingClientRect();
+		const itemWidth = itemRect.width;
+		const itemHeight = itemRect.height;
+
+		canvasItems = canvasItems.map((item) => {
+			if (item.id !== itemId) return item;
+
+			let newX = item.x;
+			let newY = item.y;
+
+			if (horizontal === 'left') {
+				newX = 0;
+			} else if (horizontal === 'center') {
+				newX = (canvasRect.width - itemWidth) / 2;
+			} else if (horizontal === 'right') {
+				newX = canvasRect.width - itemWidth;
+			}
+
+			if (vertical === 'top') {
+				newY = 0;
+			} else if (vertical === 'center') {
+				newY = (canvasRect.height - itemHeight) / 2;
+			} else if (vertical === 'bottom') {
+				newY = canvasRect.height - itemHeight;
+			}
+
+			return { ...item, x: newX, y: newY };
+		});
+	}
 
 	let paletteHeight = $state<number | null>(null);
 	let isResizing = $state(false);
@@ -157,6 +207,7 @@
 			bind:canvasItems
 			bind:logTitle
 			bind:selectedItemId
+			bind:canvasRef
 			onExport={exportToJson}
 			onDeleteSelected={deleteSelected}
 		/>
@@ -182,7 +233,7 @@
 				aria-orientation="horizontal"
 			></div>
 			<div class="flex-1 overflow-auto">
-				<PropertiesPanel {selectedItem} onUpdateProp={updateItemProp} />
+				<PropertiesPanel {selectedItem} onUpdateProp={updateItemProp} onAlign={alignItem} />
 			</div>
 		</div>
 	</div>
