@@ -132,10 +132,11 @@
 				{#each canvasItems as item (item.id)}
 					<div
 						data-item-id={item.id}
-						class="canvas-item absolute cursor-move rounded border-2 bg-white p-2"
+						class="canvas-item absolute cursor-move rounded bg-white p-2"
+						class:border-2={selectedItemId === item.id}
 						class:ring-2={selectedItemId === item.id}
 						class:ring-blue-500={selectedItemId === item.id}
-						style="border-color: var(--border-primary);"
+						class:selected-item={selectedItemId === item.id}
 						use:draggable={{
 							position: { x: item.x, y: item.y },
 							bounds: canvasRef,
@@ -200,6 +201,10 @@
 <style>
 	.canvas-item {
 		touch-action: none;
+	}
+
+	.selected-item {
+		border-color: var(--border-primary);
 	}
 
 	.btn-delete {

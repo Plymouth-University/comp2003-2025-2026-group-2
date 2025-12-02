@@ -59,20 +59,20 @@
 	}
 </script>
 
-<div class="h-full p-6">
-	<h2 class="mb-4 text-2xl font-bold" style="color: var(--text-primary);">Components</h2>
+<div class="h-full p-4">
+	<h2 class="mb-3 text-xl font-bold" style="color: var(--text-primary);">Components</h2>
 
-	<div class="space-y-2">
+	<div class="space-y-1">
 		{#each componentTypes as component (component.type)}
 			<div
-				class="flex cursor-grab items-center gap-3 border-2 px-4 py-3 hover:opacity-80 active:cursor-grabbing"
+				class="flex cursor-grab items-center gap-2 rounded border px-3 py-2 text-sm hover:opacity-80 active:cursor-grabbing"
 				style="border-color: var(--border-primary);"
 				onmousedown={(e) => handleMouseDown(e, component.type)}
 				role="button"
 				tabindex="0"
 			>
 				<div
-					class="flex h-8 w-8 items-center justify-center border-2 font-bold"
+					class="flex h-6 w-6 items-center justify-center border text-xs font-bold"
 					style="border-color: var(--border-primary); color: var(--text-primary);"
 				>
 					{component.icon}

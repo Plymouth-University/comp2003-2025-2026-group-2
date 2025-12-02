@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
-	import { untrack } from 'svelte';
 	import TemplatesSidebar from './TemplatesSidebar.svelte';
 	import DesignCanvas from './DesignCanvas.svelte';
 	import ComponentsPalette from './ComponentsPalette.svelte';
@@ -35,14 +34,14 @@
 		if (saveTimeout) clearTimeout(saveTimeout);
 		saveTimeout = setTimeout(() => {
 			if (browser) {
-				localStorage.setItem('canvasItems', JSON.stringify(untrack(() => canvasItems)));
+				localStorage.setItem('canvasItems', JSON.stringify(canvasItems));
 			}
 		}, 300);
 	}
 
 	$effect(() => {
-		// Track canvasItems changes but debounce the save
-		canvasItems;
+		// Deep track canvasItems by serializing it
+		const serialized = JSON.stringify(canvasItems);
 		debouncedSaveItems();
 	});
 
@@ -224,6 +223,7 @@
 			>
 				<ComponentsPalette {componentTypes} onAddComponent={addComponent} />
 			</div>
+			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 			<div
 				class="h-2 cursor-row-resize border-y-2 hover:bg-gray-200"
 				style="border-color: var(--border-primary); flex-shrink: 0;"
