@@ -14,10 +14,15 @@
 		canvasRef = $bindable(),
 		onSave,
 		onDeleteSelected,
+		onDeleteTemplate,
+		onItemMoved,
 		saving = false,
 		saveError = null,
 		saveSuccess = false,
-		loading = false
+		loading = false,
+		isEditing = false,
+		deleting = false,
+		deleteError = null
 	}: {
 		canvasItems: CanvasItem[];
 		logTitle: string;
@@ -25,10 +30,15 @@
 		canvasRef: HTMLDivElement | null;
 		onSave: () => void;
 		onDeleteSelected: () => void;
+		onDeleteTemplate: () => void;
+		onItemMoved?: () => void;
 		saving?: boolean;
 		saveError?: string | null;
 		saveSuccess?: boolean;
 		loading?: boolean;
+		isEditing?: boolean;
+		deleting?: boolean;
+		deleteError?: string | null;
 	} = $props();
 
 	const SNAP_THRESHOLD = 10;
@@ -182,6 +192,19 @@
 						Delete Selected
 					</button>
 				{/if}
+				{#if isEditing}
+					<button
+						class="btn-delete rounded px-4 py-2 font-medium text-white disabled:opacity-50"
+						onclick={onDeleteTemplate}
+						disabled={deleting || loading}
+					>
+						{#if deleting}
+							Deleting...
+						{:else}
+							Delete Template
+						{/if}
+					</button>
+				{/if}
 				<button
 					class="btn-save rounded px-4 py-2 font-medium text-white disabled:opacity-50"
 					onclick={onSave}
@@ -194,160 +217,172 @@
 					{/if}
 				</button>
 			</div>
-			{#if saveError}
-				<div class="mt-2 text-sm text-red-600">{saveError}</div>
-			{/if}
-			{#if saveSuccess}
-				<div class="mt-2 text-sm text-green-600">Template saved successfully!</div>
-			{/if}
 		</div>
+		{#if saveError}
+			<div class="mt-2 text-sm text-red-600">{saveError}</div>
+		{/if}
+		{#if deleteError}
+			<div class="mt-2 text-sm text-red-600">{deleteError}</div>
+		{/if}
+		{#if saveSuccess}
+			<div class="mt-2 text-sm text-green-600">Template saved successfully!</div>
+		{/if}
 
 		{#if loading}
 			<div class="flex items-center justify-center py-8">
 				<div class="text-lg" style="color: var(--text-secondary);">Loading template...</div>
 			</div>
 		{:else}
-		<div
-			class="rounded-lg border-2 p-4"
-			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-		>
-			<div class="mb-4">
-				<input
-					id="log-title-input"
-					type="text"
-					bind:value={logTitle}
-					placeholder="Enter template title..."
-					class="w-full border-2 px-4 py-2"
-					style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
-				/>
-			</div>
-
-			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-			<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 			<div
-				bind:this={canvasRef}
-				data-canvas
-				class="relative min-h-[500px] rounded border-2 border-dashed"
-				style="border-color: var(--border-secondary); background-color: var(--bg-secondary);"
-				onclick={handleCanvasClick}
-				onkeydown={(e) => {
-					const target = e.target as HTMLElement;
-					const isEditing =
-						target.isContentEditable || target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
-					if (e.key === 'Escape') selectedItemId = null;
-					if ((e.key === 'Delete' || e.key === 'Backspace') && !isEditing) onDeleteSelected();
-				}}
-				role="application"
-				tabindex="0"
-				aria-label="Design canvas - drag components here to design your template"
+				class="rounded-lg border-2 p-4"
+				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 			>
-				{#if canvasItems.length === 0}
-					<div class="pointer-events-none absolute inset-0 flex items-center justify-center">
-						<p class="text-lg opacity-50" style="color: var(--text-secondary);">
-							Drag components here to start designing
-						</p>
-					</div>
-				{/if}
+				<div class="mb-4">
+					<input
+						id="log-title-input"
+						type="text"
+						bind:value={logTitle}
+						placeholder="Enter template title..."
+						class="w-full border-2 px-4 py-2"
+						style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+					/>
+				</div>
 
-				{#each canvasItems as item (item.id)}
-					<div
-						data-item-id={item.id}
-						class="canvas-item absolute cursor-move rounded bg-white p-2"
-						class:border-2={selectedItemId === item.id}
-						class:ring-2={selectedItemId === item.id}
-						class:ring-blue-500={selectedItemId === item.id}
-						class:selected-item={selectedItemId === item.id}
-						style="left: {item.x}px; top: {item.y}px; transform: none !important;"
-						use:draggable={{
-							position: { x: item.x, y: item.y },
-							bounds: canvasRef,
-							axis:
-								item.lockX && item.lockY ? undefined : item.lockX ? 'y' : item.lockY ? 'x' : 'both',
-							disabled: item.lockX && item.lockY,
-							transform: () => '',
-							onDragStart: () => {
-								isDragging = true;
-							},
-							onDrag: ({ offsetX, offsetY }) => {
-								const idx = canvasItems.findIndex((i) => i.id === item.id);
-								if (idx !== -1) {
-									if (snapEnabled) {
-										const snap = calculateSnap(item.id, offsetX, offsetY);
-										snapLines = { x: snap.snapLinesX, y: snap.snapLinesY };
-										if (!item.lockX) canvasItems[idx].x = snap.x;
-										if (!item.lockY) canvasItems[idx].y = snap.y;
-									} else {
-										snapLines = { x: [], y: [] };
-										if (!item.lockX) canvasItems[idx].x = offsetX;
-										if (!item.lockY) canvasItems[idx].y = offsetY;
+				<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+				<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+				<div
+					bind:this={canvasRef}
+					data-canvas
+					class="relative min-h-[500px] rounded border-2 border-dashed"
+					style="border-color: var(--border-secondary); background-color: var(--bg-secondary);"
+					onclick={handleCanvasClick}
+					onkeydown={(e) => {
+						const target = e.target as HTMLElement;
+						const isEditing =
+							target.isContentEditable ||
+							target.tagName === 'INPUT' ||
+							target.tagName === 'TEXTAREA';
+						if (e.key === 'Escape') selectedItemId = null;
+						if ((e.key === 'Delete' || e.key === 'Backspace') && !isEditing) onDeleteSelected();
+					}}
+					role="application"
+					tabindex="0"
+					aria-label="Design canvas - drag components here to design your template"
+				>
+					{#if canvasItems.length === 0}
+						<div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+							<p class="text-lg opacity-50" style="color: var(--text-secondary);">
+								Drag components here to start designing
+							</p>
+						</div>
+					{/if}
+
+					{#each canvasItems as item (item.id)}
+						<div
+							data-item-id={item.id}
+							class="canvas-item absolute cursor-move rounded bg-white p-2"
+							class:border-2={selectedItemId === item.id}
+							class:ring-2={selectedItemId === item.id}
+							class:ring-blue-500={selectedItemId === item.id}
+							class:selected-item={selectedItemId === item.id}
+							style="left: {item.x}px; top: {item.y}px; transform: none !important;"
+							use:draggable={{
+								position: { x: item.x, y: item.y },
+								bounds: canvasRef,
+								axis:
+									item.lockX && item.lockY
+										? undefined
+										: item.lockX
+											? 'y'
+											: item.lockY
+												? 'x'
+												: 'both',
+								disabled: item.lockX && item.lockY,
+								transform: () => '',
+								onDragStart: () => {
+									isDragging = true;
+								},
+								onDrag: ({ offsetX, offsetY }) => {
+									const idx = canvasItems.findIndex((i) => i.id === item.id);
+									if (idx !== -1) {
+										if (snapEnabled) {
+											const snap = calculateSnap(item.id, offsetX, offsetY);
+											snapLines = { x: snap.snapLinesX, y: snap.snapLinesY };
+											if (!item.lockX) canvasItems[idx].x = snap.x;
+											if (!item.lockY) canvasItems[idx].y = snap.y;
+										} else {
+											snapLines = { x: [], y: [] };
+											if (!item.lockX) canvasItems[idx].x = offsetX;
+											if (!item.lockY) canvasItems[idx].y = offsetY;
+										}
 									}
+								},
+								onDragEnd: () => {
+									isDragging = false;
+									snapLines = { x: [], y: [] };
+									if (onItemMoved) onItemMoved();
 								}
-							},
-							onDragEnd: () => {
-								isDragging = false;
-								snapLines = { x: [], y: [] };
-							}
-						}}
-						onclick={(e) => {
-							e.stopPropagation();
-							selectItem(item.id);
-						}}
-						onkeydown={(e) => {
-							if (e.key === 'Enter') selectItem(item.id);
-						}}
-						role="button"
-						tabindex="0"
-					>
-						{#if item.type === 'text_input'}
-							<UserTextInput
-								text={item.props.text}
-								size={item.props.size}
-								weight={item.props.weight}
-								placeholder={item.props.placeholder}
-							/>
-						{:else if item.type === 'checkbox'}
-							<UserCheckbox
-								text={item.props.text}
-								size={item.props.size}
-								weight={item.props.weight}
-							/>
-						{:else if item.type === 'temperature'}
-							<TemperaturePicker
-								bind:value={item.props.value}
-								min={item.props.min}
-								max={item.props.max}
-								label={item.props.label}
-								unit={item.props.unit}
-							/>
-						{:else if item.type === 'dropdown'}
-							<UserDropdown bind:selected={item.props.selected} options={item.props.options} />
-						{:else if item.type === 'label'}
-							<UserTextLabel
-								editable={item.props.editable}
-								bind:text={item.props.text}
-								size={item.props.size}
-								weight={item.props.weight}
-							/>
-						{/if}
-					</div>
-				{/each}
+							}}
+							onclick={(e) => {
+								e.stopPropagation();
+								selectItem(item.id);
+							}}
+							onkeydown={(e) => {
+								if (e.key === 'Enter') selectItem(item.id);
+							}}
+							role="button"
+							tabindex="0"
+						>
+							{#if item.type === 'text_input'}
+								<UserTextInput
+									text={item.props.text}
+									size={item.props.size}
+									weight={item.props.weight}
+									placeholder={item.props.placeholder}
+								/>
+							{:else if item.type === 'checkbox'}
+								<UserCheckbox
+									text={item.props.text}
+									size={item.props.size}
+									weight={item.props.weight}
+								/>
+							{:else if item.type === 'temperature'}
+								<TemperaturePicker
+									bind:value={item.props.value}
+									min={item.props.min}
+									max={item.props.max}
+									label={item.props.label}
+									unit={item.props.unit}
+								/>
+							{:else if item.type === 'dropdown'}
+								<UserDropdown bind:selected={item.props.selected} options={item.props.options} />
+							{:else if item.type === 'label'}
+								<UserTextLabel
+									editable={item.props.editable}
+									bind:text={item.props.text}
+									size={item.props.size}
+									weight={item.props.weight}
+								/>
+							{/if}
+						</div>
+					{/each}
 
-				{#if isDragging}
-					{#each snapLines.x as lineX}
-						<div
-							class="snap-line-vertical pointer-events-none absolute top-0 bottom-0 w-px"
-							style="left: {lineX}px; background-color: #3b82f6;"
-						></div>
-					{/each}
-					{#each snapLines.y as lineY}
-						<div
-							class="snap-line-horizontal pointer-events-none absolute right-0 left-0 h-px"
-							style="top: {lineY}px; background-color: #3b82f6;"
-						></div>
-					{/each}
-				{/if}
+					{#if isDragging}
+						{#each snapLines.x as lineX}
+							<div
+								class="snap-line-vertical pointer-events-none absolute top-0 bottom-0 w-px"
+								style="left: {lineX}px; background-color: #3b82f6;"
+							></div>
+						{/each}
+						{#each snapLines.y as lineY}
+							<div
+								class="snap-line-horizontal pointer-events-none absolute right-0 left-0 h-px"
+								style="top: {lineY}px; background-color: #3b82f6;"
+							></div>
+						{/each}
+					{/if}
+				</div>
 			</div>
-		</div>
 		{/if}
 	</div>
 </div>

@@ -1,7 +1,19 @@
 <script lang="ts">
 	import type { Template } from './types';
 
-	let { templates, onCreateNew }: { templates: Template[]; onCreateNew: () => void } = $props();
+	let {
+		templates,
+		onCreateNew,
+		onSelectTemplate,
+		currentTemplateName = '',
+		isNewTemplate = false
+	}: {
+		templates: Template[];
+		onCreateNew: () => void;
+		onSelectTemplate: (templateName: string) => void;
+		currentTemplateName?: string;
+		isNewTemplate?: boolean;
+	} = $props();
 </script>
 
 <div
@@ -20,13 +32,50 @@
 
 		<div class="border-2" style="border-color: var(--border-primary);">
 			<ul class="divide-y" style="border-color: var(--border-secondary);">
-				{#each templates as template (template.id)}
-					<li class="flex items-center gap-3 px-4 py-3 hover:opacity-80">
+				{#if isNewTemplate}
+					<li
+						class="flex items-center gap-3 px-4 py-3"
+						style="background-color: var(--bg-secondary);"
+					>
 						<div
 							class="flex h-5 w-5 items-center justify-center border-2"
 							style="border-color: var(--border-primary);"
 						>
-							{#if template.selected}
+							<svg
+								width="12"
+								height="12"
+								viewBox="0 0 12 12"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								style="color: var(--border-primary);"
+							>
+								<line x1="2" y1="6" x2="10" y2="6"></line>
+								<line x1="6" y1="2" x2="6" y2="10"></line>
+							</svg>
+						</div>
+						<span style="color: var(--text-primary); font-style: italic;">
+							{currentTemplateName || 'Untitled Template'}
+						</span>
+					</li>
+				{/if}
+				{#each templates as template (template.id)}
+					<!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
+					<li
+						class="flex cursor-pointer items-center gap-3 px-4 py-3 hover:opacity-80"
+						style={!isNewTemplate && currentTemplateName === template.name
+							? 'background-color: var(--bg-secondary);'
+							: ''}
+						onclick={() => onSelectTemplate(template.name)}
+						onkeydown={(e) => e.key === 'Enter' && onSelectTemplate(template.name)}
+						role="button"
+						tabindex="0"
+					>
+						<div
+							class="flex h-5 w-5 items-center justify-center border-2"
+							style="border-color: var(--border-primary);"
+						>
+							{#if !isNewTemplate && currentTemplateName === template.name}
 								<svg
 									width="12"
 									height="12"

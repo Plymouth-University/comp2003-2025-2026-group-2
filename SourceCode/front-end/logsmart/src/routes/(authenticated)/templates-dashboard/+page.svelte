@@ -39,6 +39,38 @@
 		return schedule;
 	}
 
+	const dayNameToNumber: Record<DayOfWeek, number> = {
+		sunday: 0,
+		monday: 1,
+		tuesday: 2,
+		wednesday: 3,
+		thursday: 4,
+		friday: 5,
+		saturday: 6
+	};
+
+	function mapLocalScheduleToApi(schedule: TemplateSchedule): ApiSchedule {
+		const apiSchedule: ApiSchedule = {
+			frequency: (schedule.frequency.charAt(0).toUpperCase() +
+				schedule.frequency.slice(1)) as ApiSchedule['frequency']
+		};
+
+		if (schedule.daysOfWeek && schedule.daysOfWeek.length > 0) {
+			apiSchedule.days_of_week = schedule.daysOfWeek.map((d) => dayNameToNumber[d]);
+		}
+		if (schedule.dayOfWeek) {
+			apiSchedule.day_of_week = dayNameToNumber[schedule.dayOfWeek];
+		}
+		if (schedule.dayOfMonth !== undefined) {
+			apiSchedule.day_of_month = schedule.dayOfMonth;
+		}
+		if (schedule.monthOfYear !== undefined) {
+			apiSchedule.month_of_year = schedule.monthOfYear;
+		}
+
+		return apiSchedule;
+	}
+
 	function mapApiTemplateToLocal(apiTemplate: ApiTemplateInfo): Template {
 		return {
 			id: apiTemplate.template_name,
@@ -92,16 +124,29 @@
 		settingsWizardOpen = true;
 	}
 
-	function handleSaveSchedule(schedule: TemplateSchedule) {
-		if (selectedTemplate) {
-			const idx = templates.findIndex((t) => t.id === selectedTemplate!.id);
-			if (idx !== -1) {
-				templates[idx] = {
-					...templates[idx],
-					schedule,
-					updatedAt: new Date().toISOString()
-				};
+	async function handleSaveSchedule(schedule: TemplateSchedule) {
+		if (!selectedTemplate) return;
+
+		const apiSchedule = mapLocalScheduleToApi(schedule);
+		const { error: apiError } = await api.PUT('/logs/templates/update', {
+			body: {
+				template_name: selectedTemplate.name,
+				schedule: apiSchedule
 			}
+		});
+
+		if (apiError) {
+			console.error('Failed to update schedule:', apiError);
+			return;
+		}
+
+		const idx = templates.findIndex((t) => t.id === selectedTemplate!.id);
+		if (idx !== -1) {
+			templates[idx] = {
+				...templates[idx],
+				schedule,
+				updatedAt: new Date().toISOString()
+			};
 		}
 		selectedTemplate = null;
 	}
@@ -111,10 +156,26 @@
 		deleteConfirmOpen = true;
 	}
 
-	function confirmDelete() {
-		if (templateToDelete) {
-			templates = templates.filter((t) => t.id !== templateToDelete!.id);
+	async function confirmDelete() {
+		if (!templateToDelete) return;
+
+		const { error: apiError } = await api.DELETE('/logs/templates', {
+			params: {
+				query: {
+					template_name: templateToDelete.name
+				}
+			}
+		});
+
+		if (apiError) {
+			console.error('Failed to delete template:', apiError);
+			error = 'Failed to delete template';
+			templateToDelete = null;
+			deleteConfirmOpen = false;
+			return;
 		}
+
+		templates = templates.filter((t) => t.id !== templateToDelete!.id);
 		templateToDelete = null;
 		deleteConfirmOpen = false;
 	}

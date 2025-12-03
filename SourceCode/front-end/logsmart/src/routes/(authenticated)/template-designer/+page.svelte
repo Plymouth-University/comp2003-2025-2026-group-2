@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { api } from '$lib/api';
 	import type { components } from '$lib/api-types';
@@ -12,8 +13,9 @@
 	type ApiTemplateField = components['schemas']['TemplateField'];
 	type ApiTemplateFieldProps = components['schemas']['TemplateFieldProps'];
 	type ApiSchedule = components['schemas']['Schedule'];
+	type ApiTemplateInfo = components['schemas']['TemplateInfo'];
 
-	const templates: Template[] = [];
+	let templates = $state<Template[]>([]);
 
 	const componentTypes: ComponentType[] = [
 		{ type: 'text_input', name: 'Text Input', icon: 'T' },
@@ -32,6 +34,9 @@
 	let saving = $state(false);
 	let saveError = $state<string | null>(null);
 	let saveSuccess = $state(false);
+	let deleting = $state(false);
+	let deleteError = $state<string | null>(null);
+	let hasUnsavedChanges = $state(false);
 
 	const templateId = $derived(page.url.searchParams.get('id'));
 
@@ -60,7 +65,7 @@
 		const props: ApiTemplateFieldProps = {};
 
 		if (item.props.text !== undefined) props.text = item.props.text;
-		if (item.props.size !== undefined) props.size = item.props.size;
+		if (item.props.size !== undefined) props.size = String(item.props.size);
 		if (item.props.weight !== undefined) props.weight = item.props.weight;
 		if (item.props.editable !== undefined) props.editable = item.props.editable;
 		if (item.props.min !== undefined) props.min = item.props.min;
@@ -68,7 +73,7 @@
 		if (item.props.value !== undefined) props.value = String(item.props.value);
 		if (item.props.unit !== undefined) props.unit = item.props.unit;
 		if (item.props.options !== undefined) props.options = item.props.options;
-		if (item.props.selected !== undefined) props.selected = item.props.selected;
+		if (item.props.selected !== undefined) props.selected = String(item.props.selected);
 
 		return {
 			field_type: item.type,
@@ -90,6 +95,7 @@
 			logTitle = data.template_name;
 			originalTemplateName = data.template_name;
 			canvasItems = data.template_layout.map(mapApiFieldToCanvasItem);
+			hasUnsavedChanges = false;
 			isEditing = true;
 		} catch (e) {
 			console.error('Failed to load template:', e);
@@ -107,80 +113,162 @@
 		saveError = null;
 		saveSuccess = false;
 
-		const schedule: ApiSchedule = {
-			frequency: 'Daily',
-			days_of_week: [1, 2, 3, 4, 5]
-		};
-
 		const templateLayout = canvasItems.map(mapCanvasItemToApiField);
 
-		const { error } = await api.POST('/logs/templates', {
-			body: {
-				template_name: logTitle,
-				template_layout: templateLayout,
-				schedule
-			}
-		});
+		if (isEditing && originalTemplateName) {
+			if (logTitle !== originalTemplateName) {
+				const { error: renameError } = await api.PUT('/logs/templates/rename', {
+					body: {
+						old_template_name: originalTemplateName,
+						new_template_name: logTitle
+					}
+				});
 
-		if (error) {
-			saveError = 'Failed to save template';
-			saving = false;
-			return;
+				if (renameError) {
+					saveError = 'Failed to rename template';
+					saving = false;
+					return;
+				}
+
+				originalTemplateName = logTitle;
+			}
+
+			const { error } = await api.PUT('/logs/templates/update', {
+				body: {
+					template_name: logTitle,
+					template_layout: templateLayout
+				}
+			});
+
+			if (error) {
+				saveError = 'Failed to update template';
+				saving = false;
+				return;
+			}
+		} else {
+			const schedule: ApiSchedule = {
+				frequency: 'Daily',
+				days_of_week: [1, 2, 3, 4, 5]
+			};
+
+			const { error } = await api.POST('/logs/templates', {
+				body: {
+					template_name: logTitle,
+					template_layout: templateLayout,
+					schedule
+				}
+			});
+
+			if (error) {
+				saveError = 'Failed to save template';
+				saving = false;
+				return;
+			}
+
+			isEditing = true;
+			originalTemplateName = logTitle;
 		}
 
 		saveSuccess = true;
 		saving = false;
-		isEditing = true;
-		originalTemplateName = logTitle;
+		hasUnsavedChanges = false;
 
-		if (browser) {
-			localStorage.removeItem('canvasItems');
-			localStorage.removeItem('logTitle');
-		}
+		await fetchTemplates();
 
 		setTimeout(() => {
 			saveSuccess = false;
 		}, 3000);
 	}
 
-	$effect(() => {
-		if (browser && templateId) {
-			loadTemplate(templateId);
-		} else if (browser) {
-			const savedItems = localStorage.getItem('canvasItems');
-			const savedTitle = localStorage.getItem('logTitle');
-			if (savedItems) canvasItems = JSON.parse(savedItems);
-			if (savedTitle) logTitle = savedTitle;
+	async function deleteTemplate() {
+		if (!isEditing || !originalTemplateName) {
+			deleteError = 'No template to delete';
+			return;
 		}
-	});
 
-	// Debounced localStorage saves to prevent lag during dragging
-	let saveTimeout: ReturnType<typeof setTimeout> | null = null;
-	function debouncedSaveItems() {
-		if (saveTimeout) clearTimeout(saveTimeout);
-		saveTimeout = setTimeout(() => {
-			if (browser) {
-				localStorage.setItem('canvasItems', JSON.stringify(canvasItems));
+		if (
+			!confirm(
+				`Are you sure you want to delete "${originalTemplateName}"? This action cannot be undone.`
+			)
+		) {
+			return;
+		}
+
+		deleting = true;
+		deleteError = null;
+
+		const { error } = await api.DELETE('/logs/templates', {
+			params: {
+				query: {
+					template_name: originalTemplateName
+				}
 			}
-		}, 300);
+		});
+
+		if (error) {
+			deleteError = 'Failed to delete template';
+			deleting = false;
+			return;
+		}
+
+		deleting = false;
+		createNewTemplate();
+		await fetchTemplates();
 	}
 
 	$effect(() => {
-		// Deep track canvasItems by serializing it
-		const serialized = JSON.stringify(canvasItems);
-		debouncedSaveItems();
-	});
-
-	$effect(() => {
-		if (browser) {
-			localStorage.setItem('logTitle', logTitle);
+		if (browser && templateId) {
+			loadTemplate(templateId);
 		}
 	});
 
+	let previousTitle = $state('');
+	$effect(() => {
+		if (logTitle !== previousTitle && previousTitle !== '') {
+			hasUnsavedChanges = true;
+		}
+		previousTitle = logTitle;
+	});
+
+	async function fetchTemplates() {
+		const { data } = await api.GET('/logs/templates/all');
+		if (data?.templates) {
+			templates = data.templates.map((t: ApiTemplateInfo, index: number) => ({
+				id: index,
+				name: t.template_name,
+				selected: t.template_name === originalTemplateName
+			}));
+		}
+	}
+
+	$effect(() => {
+		fetchTemplates();
+	});
+
 	function createNewTemplate() {
+		if (hasUnsavedChanges) {
+			if (!confirm('You have unsaved changes. Are you sure you want to create a new template?')) {
+				return;
+			}
+		}
 		canvasItems = [];
 		logTitle = '';
 		selectedItemId = null;
+		isEditing = false;
+		originalTemplateName = null;
+		hasUnsavedChanges = false;
+		goto('/template-designer', { replaceState: true });
+	}
+
+	function selectTemplate(templateName: string) {
+		if (templateName === originalTemplateName) return;
+		if (hasUnsavedChanges) {
+			if (!confirm('You have unsaved changes. Are you sure you want to switch templates?')) {
+				return;
+			}
+		}
+		goto(`/template-designer?id=${encodeURIComponent(templateName)}`, { replaceState: true });
+		loadTemplate(templateName);
 	}
 
 	function generateId() {
@@ -214,12 +302,14 @@
 		};
 		canvasItems.push(newItem);
 		selectedItemId = newItem.id;
+		hasUnsavedChanges = true;
 	}
 
 	function deleteSelected() {
 		if (selectedItemId) {
 			canvasItems = canvasItems.filter((item) => item.id !== selectedItemId);
 			selectedItemId = null;
+			hasUnsavedChanges = true;
 		}
 	}
 
@@ -233,6 +323,7 @@
 				item.id === itemId ? { ...item, props: { ...item.props, [propKey]: value } } : item
 			);
 		}
+		hasUnsavedChanges = true;
 	}
 
 	let selectedItem = $derived(canvasItems.find((item) => item.id === selectedItemId));
@@ -278,6 +369,11 @@
 
 			return { ...item, x: newX, y: newY };
 		});
+		hasUnsavedChanges = true;
+	}
+
+	function markUnsavedChanges() {
+		hasUnsavedChanges = true;
 	}
 
 	let paletteHeight = $state<number | null>(null);
@@ -315,7 +411,13 @@
 </svelte:head>
 <div class="min-h-full" style="background-color: var(--bg-secondary);">
 	<div class="flex h-[calc(100vh-73px)]">
-		<TemplatesSidebar {templates} onCreateNew={createNewTemplate} />
+		<TemplatesSidebar
+			{templates}
+			onCreateNew={createNewTemplate}
+			onSelectTemplate={selectTemplate}
+			currentTemplateName={isEditing ? (originalTemplateName ?? '') : logTitle}
+			isNewTemplate={!isEditing}
+		/>
 
 		<DesignCanvas
 			bind:canvasItems
@@ -324,10 +426,15 @@
 			bind:canvasRef
 			onSave={saveTemplate}
 			onDeleteSelected={deleteSelected}
+			onDeleteTemplate={deleteTemplate}
+			onItemMoved={markUnsavedChanges}
 			{saving}
 			{saveError}
 			{saveSuccess}
 			{loading}
+			{isEditing}
+			{deleting}
+			{deleteError}
 		/>
 
 		<div
