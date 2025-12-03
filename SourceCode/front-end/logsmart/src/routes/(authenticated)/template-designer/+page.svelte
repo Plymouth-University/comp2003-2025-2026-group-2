@@ -1,10 +1,18 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { page } from '$app/state';
+	import { api } from '$lib/api';
+	import type { components } from '$lib/api-types';
 	import TemplatesSidebar from './TemplatesSidebar.svelte';
 	import DesignCanvas from './DesignCanvas.svelte';
 	import ComponentsPalette from './ComponentsPalette.svelte';
 	import PropertiesPanel from './PropertiesPanel.svelte';
 	import type { CanvasItem, ComponentType, Template } from './types';
+
+	type ApiTemplateField = components['schemas']['TemplateField'];
+	type ApiTemplateFieldProps = components['schemas']['TemplateFieldProps'];
+	type ApiSchedule = components['schemas']['Schedule'];
+
 	const templates: Template[] = [];
 
 	const componentTypes: ComponentType[] = [
@@ -15,17 +23,136 @@
 		{ type: 'label', name: 'Text Label', icon: 'L' }
 	];
 
-	let canvasItems = $state<CanvasItem[]>(
-		browser && localStorage.getItem('canvasItems')
-			? JSON.parse(localStorage.getItem('canvasItems')!)
-			: []
-	);
-
-	let logTitle = $state(
-		browser && localStorage.getItem('logTitle') ? localStorage.getItem('logTitle')! : ''
-	);
-
+	let canvasItems = $state<CanvasItem[]>([]);
+	let logTitle = $state('');
 	let selectedItemId = $state<string | null>(null);
+	let isEditing = $state(false);
+	let originalTemplateName = $state<string | null>(null);
+	let loading = $state(false);
+	let saving = $state(false);
+	let saveError = $state<string | null>(null);
+	let saveSuccess = $state(false);
+
+	const templateId = $derived(page.url.searchParams.get('id'));
+
+	function mapApiFieldToCanvasItem(field: ApiTemplateField, index: number): CanvasItem {
+		return {
+			id: `item_${index}_${Math.random().toString(36).substring(2, 9)}`,
+			type: field.field_type,
+			x: field.position.x,
+			y: field.position.y,
+			props: {
+				text: field.props.text ?? '',
+				size: field.props.size ?? 16,
+				weight: field.props.weight ?? 'normal',
+				editable: field.props.editable ?? true,
+				min: field.props.min ?? 0,
+				max: field.props.max ?? 100,
+				value: field.props.value ?? '',
+				unit: field.props.unit ?? '°C',
+				options: field.props.options ?? [],
+				selected: field.props.selected ?? false
+			}
+		};
+	}
+
+	function mapCanvasItemToApiField(item: CanvasItem): ApiTemplateField {
+		const props: ApiTemplateFieldProps = {};
+
+		if (item.props.text !== undefined) props.text = item.props.text;
+		if (item.props.size !== undefined) props.size = item.props.size;
+		if (item.props.weight !== undefined) props.weight = item.props.weight;
+		if (item.props.editable !== undefined) props.editable = item.props.editable;
+		if (item.props.min !== undefined) props.min = item.props.min;
+		if (item.props.max !== undefined) props.max = item.props.max;
+		if (item.props.value !== undefined) props.value = String(item.props.value);
+		if (item.props.unit !== undefined) props.unit = item.props.unit;
+		if (item.props.options !== undefined) props.options = item.props.options;
+		if (item.props.selected !== undefined) props.selected = item.props.selected;
+
+		return {
+			field_type: item.type,
+			position: { x: item.x, y: item.y },
+			props
+		};
+	}
+
+	async function loadTemplate(name: string) {
+		loading = true;
+		try {
+			const response = await fetch(`/api/logs/templates?template_name=${encodeURIComponent(name)}`);
+			if (!response.ok) {
+				console.error('Failed to load template:', response.statusText);
+				loading = false;
+				return;
+			}
+			const data = (await response.json()) as components['schemas']['GetTemplateResponse'];
+			logTitle = data.template_name;
+			originalTemplateName = data.template_name;
+			canvasItems = data.template_layout.map(mapApiFieldToCanvasItem);
+			isEditing = true;
+		} catch (e) {
+			console.error('Failed to load template:', e);
+		}
+		loading = false;
+	}
+
+	async function saveTemplate() {
+		if (!logTitle.trim()) {
+			saveError = 'Please enter a template name';
+			return;
+		}
+
+		saving = true;
+		saveError = null;
+		saveSuccess = false;
+
+		const schedule: ApiSchedule = {
+			frequency: 'Daily',
+			days_of_week: [1, 2, 3, 4, 5]
+		};
+
+		const templateLayout = canvasItems.map(mapCanvasItemToApiField);
+
+		const { error } = await api.POST('/logs/templates', {
+			body: {
+				template_name: logTitle,
+				template_layout: templateLayout,
+				schedule
+			}
+		});
+
+		if (error) {
+			saveError = 'Failed to save template';
+			saving = false;
+			return;
+		}
+
+		saveSuccess = true;
+		saving = false;
+		isEditing = true;
+		originalTemplateName = logTitle;
+
+		if (browser) {
+			localStorage.removeItem('canvasItems');
+			localStorage.removeItem('logTitle');
+		}
+
+		setTimeout(() => {
+			saveSuccess = false;
+		}, 3000);
+	}
+
+	$effect(() => {
+		if (browser && templateId) {
+			loadTemplate(templateId);
+		} else if (browser) {
+			const savedItems = localStorage.getItem('canvasItems');
+			const savedTitle = localStorage.getItem('logTitle');
+			if (savedItems) canvasItems = JSON.parse(savedItems);
+			if (savedTitle) logTitle = savedTitle;
+		}
+	});
 
 	// Debounced localStorage saves to prevent lag during dragging
 	let saveTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -94,19 +221,6 @@
 			canvasItems = canvasItems.filter((item) => item.id !== selectedItemId);
 			selectedItemId = null;
 		}
-	}
-
-	function exportToJson() {
-		const exportData = {
-			title: logTitle,
-			items: canvasItems.map((item) => ({
-				type: item.type,
-				x: item.x,
-				y: item.y,
-				props: item.props
-			}))
-		};
-		console.log('Exported Template JSON:', JSON.stringify(exportData, null, 2));
 	}
 
 	function updateItemProp(itemId: string, propKey: string, value: any) {
@@ -208,8 +322,12 @@
 			bind:logTitle
 			bind:selectedItemId
 			bind:canvasRef
-			onExport={exportToJson}
+			onSave={saveTemplate}
 			onDeleteSelected={deleteSelected}
+			{saving}
+			{saveError}
+			{saveSuccess}
+			{loading}
 		/>
 
 		<div

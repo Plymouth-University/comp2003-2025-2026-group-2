@@ -12,15 +12,23 @@
 		logTitle = $bindable(),
 		selectedItemId = $bindable(),
 		canvasRef = $bindable(),
-		onExport,
-		onDeleteSelected
+		onSave,
+		onDeleteSelected,
+		saving = false,
+		saveError = null,
+		saveSuccess = false,
+		loading = false
 	}: {
 		canvasItems: CanvasItem[];
 		logTitle: string;
 		selectedItemId: string | null;
 		canvasRef: HTMLDivElement | null;
-		onExport: () => void;
+		onSave: () => void;
 		onDeleteSelected: () => void;
+		saving?: boolean;
+		saveError?: string | null;
+		saveSuccess?: boolean;
+		loading?: boolean;
 	} = $props();
 
 	const SNAP_THRESHOLD = 10;
@@ -174,12 +182,31 @@
 						Delete Selected
 					</button>
 				{/if}
-				<button class="btn-export rounded px-4 py-2 font-medium text-white" onclick={onExport}>
-					Export JSON
+				<button
+					class="btn-save rounded px-4 py-2 font-medium text-white disabled:opacity-50"
+					onclick={onSave}
+					disabled={saving || loading}
+				>
+					{#if saving}
+						Saving...
+					{:else}
+						Save Template
+					{/if}
 				</button>
 			</div>
+			{#if saveError}
+				<div class="mt-2 text-sm text-red-600">{saveError}</div>
+			{/if}
+			{#if saveSuccess}
+				<div class="mt-2 text-sm text-green-600">Template saved successfully!</div>
+			{/if}
 		</div>
 
+		{#if loading}
+			<div class="flex items-center justify-center py-8">
+				<div class="text-lg" style="color: var(--text-secondary);">Loading template...</div>
+			</div>
+		{:else}
 		<div
 			class="rounded-lg border-2 p-4"
 			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
@@ -321,6 +348,7 @@
 				{/if}
 			</div>
 		</div>
+		{/if}
 	</div>
 </div>
 
@@ -350,14 +378,14 @@
 		background-color: #ac2925;
 	}
 
-	.btn-export {
+	.btn-save {
 		background-color: #337ab7;
 		transition: background-color 0.15s ease;
 	}
-	.btn-export:hover {
+	.btn-save:hover:not(:disabled) {
 		background-color: #286090;
 	}
-	.btn-export:active {
+	.btn-save:active:not(:disabled) {
 		background-color: #204d74;
 	}
 

@@ -25,7 +25,6 @@ pub struct TemplateFieldProps {
 
 #[derive(Debug, serde::Deserialize, serde::Serialize, ToSchema)]
 pub struct TemplateField {
-    #[serde(rename = "type")]
     pub field_type: String,
     pub position: Position,
     pub props: TemplateFieldProps,
