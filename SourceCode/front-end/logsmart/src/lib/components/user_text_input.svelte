@@ -18,5 +18,5 @@
     `}
 	{placeholder}
 	disabled
-	style="border-color: #000100; color: #000100; font-size: {size}px;"
+	style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary); font-size: {size}px;"
 />

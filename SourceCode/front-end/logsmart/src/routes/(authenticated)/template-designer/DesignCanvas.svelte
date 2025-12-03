@@ -280,12 +280,12 @@
 					{#each canvasItems as item (item.id)}
 						<div
 							data-item-id={item.id}
-							class="canvas-item absolute cursor-move rounded bg-white p-2"
+							class="canvas-item absolute cursor-move rounded p-2"
 							class:border-2={selectedItemId === item.id}
 							class:ring-2={selectedItemId === item.id}
 							class:ring-blue-500={selectedItemId === item.id}
 							class:selected-item={selectedItemId === item.id}
-							style="left: {item.x}px; top: {item.y}px; transform: none !important;"
+							style="left: {item.x}px; top: {item.y}px; transform: none !important; background-color: var(--bg-primary);"
 							use:draggable={{
 								position: { x: item.x, y: item.y },
 								bounds: canvasRef,

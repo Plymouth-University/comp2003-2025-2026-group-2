@@ -43,7 +43,7 @@
 			max="10"
 			min="-10"
 			class="w-16 border-2 px-3 py-2 text-center text-xl font-medium"
-			style="border-color: #000100; color: #000100;"
+			style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 		/>
 		<div class="flex flex-col gap-1">
 			<button
@@ -51,7 +51,7 @@
 				onclick={increaseValue}
 				class="flex h-7 w-7 items-center justify-center rounded-sm border-2 transition-all
                 hover:scale-110 hover:bg-gray-100 active:scale-95"
-				style="border-color: #000100; color: #000100;"
+				style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 				aria-label="Increase temperature"
 			>
 				<svg
@@ -69,7 +69,7 @@
 				type="button"
 				onclick={decreaseValue}
 				class="flex h-7 w-7 items-center justify-center rounded-sm border-2 transition-all hover:scale-110 hover:bg-gray-100 active:scale-95"
-				style="border-color: #000100; color: #000100;"
+				style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 				aria-label="Decrease temperature"
 			>
 				<svg
@@ -87,11 +87,11 @@
 	</div>
 
 	<!-- Name/Label -->
-	<div class="text-lg" style="color: #000100;">
+	<div class="text-lg" style="color: var(--text-primary);">
 		{label}
 	</div>
 	<!-- Units -->
-	<div class="text-right text-lg" style="color: #000100;">
+	<div class="text-right text-lg" style="color: var(--text-primary);">
 		{unit}
 	</div>
 </div>

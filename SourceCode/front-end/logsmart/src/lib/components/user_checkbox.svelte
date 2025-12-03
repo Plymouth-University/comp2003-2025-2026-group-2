@@ -10,6 +10,6 @@
 </script>
 
 <div>
-	<label for="{uid}-checkbox" style="font-size: {size}; font-weight: {weight};">{text}</label>
+	<label for="{uid}-checkbox" style="font-size: {size}; font-weight: {weight}; color: var(--text-primary);">{text}</label>
 	<input id="{uid}-checkbox" type="checkbox" bind:checked />
 </div>

@@ -8,6 +8,11 @@
 	--text-secondary: #6b7280;
 	--border-primary: #000100;
 	--border-secondary: #e5e7eb;
+	--component-text-input: #e0f2fe;
+	--component-checkbox: #dcfce7;
+	--component-temperature: #fef3c7;
+	--component-dropdown: #f3e8ff;
+	--component-label: #ffe4e6;
 }
 
 .dark {
@@ -17,4 +22,9 @@
 	--text-secondary: #9ca3af;
 	--border-primary: #4b5563;
 	--border-secondary: #374151;
+	--component-text-input: #0c4a6e;
+	--component-checkbox: #14532d;
+	--component-temperature: #78350f;
+	--component-dropdown: #581c87;
+	--component-label: #881337;
 }
