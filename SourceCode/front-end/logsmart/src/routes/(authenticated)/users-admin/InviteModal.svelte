@@ -18,18 +18,13 @@
 >
 	<div class="relative max-h-full w-full max-w-md p-4">
 		<div
-			class="rounded-base relative border-2 p-4 shadow-sm md:p-6"
-			style="background-color: var(--bg-primary); border-color: var(--border-primary);"
+			class="rounded-base relative border-2 border-border-primary bg-bg-primary p-4 shadow-sm md:p-6"
 		>
-			<div
-				class="flex items-center justify-between border-b-2 pb-4 md:pb-5"
-				style="border-color: var(--border-primary);"
-			>
-				<h3 class="text-lg font-medium" style="color: var(--text-primary);">REGISTER NEW USER</h3>
+			<div class="flex items-center justify-between border-b-2 border-border-primary pb-4 md:pb-5">
+				<h3 class="text-lg font-medium text-text-primary">REGISTER NEW USER</h3>
 				<button
 					type="button"
-					class="rounded-base ms-auto inline-flex h-9 w-9 cursor-pointer items-center justify-center bg-transparent text-sm hover:opacity-80"
-					style="color: var(--text-secondary);"
+					class="rounded-base ms-auto inline-flex h-9 w-9 cursor-pointer items-center justify-center bg-transparent text-sm text-text-secondary hover:opacity-80"
 					onclick={() => setShowingCreateModel(false)}
 				>
 					<svg
@@ -53,24 +48,20 @@
 			</div>
 			<form action="#" class="flex flex-col pt-4 md:pt-6">
 				<div class="mb-4">
-					<label
-						for="email"
-						class="mb-2.5 block text-sm font-medium"
-						style="color: var(--text-primary);">New user's email</label
+					<label for="email" class="mb-2.5 block text-sm font-medium text-text-primary"
+						>New user's email</label
 					>
 					<input
 						type="email"
 						id="email"
 						bind:value={email}
-						class="rounded-base block w-full border-2 px-3 py-2.5 text-sm shadow-xs focus:ring-2 focus:outline-none"
-						style="background-color: var(--bg-primary); border-color: var(--border-primary); color: var(--text-primary);"
+						class="rounded-base block w-full border-2 border-border-primary bg-bg-primary px-3 py-2.5 text-sm text-text-primary shadow-xs focus:ring-2 focus:outline-none"
 						placeholder="example@company.com"
 						required
 					/>
 				</div>
 				<button
-					class="flex cursor-pointer self-center rounded border-2 px-5 py-2.5 text-center text-sm font-medium hover:opacity-80"
-					style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+					class="flex cursor-pointer self-center rounded border-2 border-border-primary bg-bg-primary px-5 py-2.5 text-center text-sm font-medium text-text-primary hover:opacity-80"
 					aria-label="Send email"
 					onclick={async () => {
 						let { error } = await api.POST('/auth/invitations/send', { body: { email: email } });
@@ -81,7 +72,7 @@
 						}
 					}}
 				>
-					<span class="text-sm font-semibold" style="color: var(--text-primary);">Send Invite</span>
+					<span class="text-sm font-semibold text-text-primary">Send Invite</span>
 				</button>
 			</form>
 		</div>

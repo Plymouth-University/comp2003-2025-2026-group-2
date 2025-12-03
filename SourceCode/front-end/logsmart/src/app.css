@@ -1,5 +1,18 @@
 @import 'tailwindcss';
-@plugin '@tailwindcss/forms';
+
+@theme {
+	--color-bg-primary: var(--bg-primary);
+	--color-bg-secondary: var(--bg-secondary);
+	--color-text-primary: var(--text-primary);
+	--color-text-secondary: var(--text-secondary);
+	--color-border-primary: var(--border-primary);
+	--color-border-secondary: var(--border-secondary);
+	--color-component-text-input: var(--component-text-input);
+	--color-component-checkbox: var(--component-checkbox);
+	--color-component-temperature: var(--component-temperature);
+	--color-component-dropdown: var(--component-dropdown);
+	--color-component-label: var(--component-label);
+}
 
 :root {
 	--bg-primary: #ffffff;

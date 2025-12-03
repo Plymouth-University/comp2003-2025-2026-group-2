@@ -29,7 +29,7 @@
 <svelte:head>
 	<title>Users Administration</title>
 </svelte:head>
-<main class="min-h-full" style="background-color: var(--bg-secondary);">
+<main class="min-h-full bg-bg-secondary">
 	<div class="overflow-none flex h-[calc(100vh-73px)]">
 		<div class="mx-auto w-1/3 md:w-full">
 			<div class="flex-1 gap-1 overflow-auto p-6">
@@ -37,16 +37,15 @@
 					{#each members as item (item.email)}
 						<UserRow {item} {setSelectedUser} />
 					{/each}
-					<div class="self-right mr-5 flex flex-col place-items-end text-4xl hover:animate-bounce">
+					<div class="mr-5 flex flex-col place-items-end self-end text-4xl hover:animate-bounce">
 						<button
-							class="z-80 h-20 w-20 cursor-pointer self-end rounded-full border-4 drop-shadow-lg duration-300 hover:drop-shadow-2xl"
-							style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+							class="z-80 h-20 w-20 cursor-pointer self-end rounded-full border-4 border-border-primary bg-bg-primary text-text-primary drop-shadow-lg duration-300 hover:drop-shadow-2xl"
 							type="button"
 							onclick={() => (showingCreateModel = !showingCreateModel)}
 						>
 							<span>&#10133;</span>
 						</button>
-						<span class="m-3 mt-2 text-sm" style="color: var(--text-primary);">Add New</span>
+						<span class="m-3 mt-2 text-sm text-text-primary">Add New</span>
 					</div>
 					<InviteModal {showingCreateModel} {setShowingCreateModel} />
 				</div>
