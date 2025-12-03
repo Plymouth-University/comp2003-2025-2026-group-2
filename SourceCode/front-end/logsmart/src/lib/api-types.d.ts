@@ -190,7 +190,7 @@ export interface paths {
 		get: operations['get_template'];
 		put?: never;
 		post: operations['add_template'];
-		delete?: never;
+		delete: operations['delete_template'];
 		options?: never;
 		head?: never;
 		patch?: never;
@@ -273,6 +273,12 @@ export interface components {
 		AuthResponse: {
 			token: string;
 			user: components['schemas']['UserResponse'];
+		};
+		DeleteTemplateRequest: {
+			template_name: string;
+		};
+		DeleteTemplateResponse: {
+			message: string;
 		};
 		ErrorResponse: {
 			error: string;
@@ -1026,6 +1032,55 @@ export interface operations {
 				};
 				content: {
 					'application/json': components['schemas']['AddTemplateResponse'];
+				};
+			};
+			/** @description Password validation failed */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Invalid or expired token */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	delete_template: {
+		parameters: {
+			query: {
+				template_name: string;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Template deleted successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['DeleteTemplateResponse'];
 				};
 			};
 			/** @description Password validation failed */

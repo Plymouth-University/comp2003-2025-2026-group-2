@@ -1,5 +1,5 @@
 use anyhow::Context;
-use axum::routing::{get, post};
+use axum::routing::{get, post, put, delete};
 use axum::{Router, middleware};
 use back_end::logs_db;
 use back_end::{AppState, api_docs::ApiDoc, db, handlers, rate_limit};
@@ -88,7 +88,7 @@ async fn main() {
         )
         .route(
             "/auth/profile",
-            axum::routing::put(handlers::update_profile),
+            put(handlers::update_profile),
         )
         .route(
             "/auth/password/request-reset",
@@ -104,7 +104,15 @@ async fn main() {
         )
         .route(
             "/logs/templates/update",
-            axum::routing::put(handlers::update_template),
+            put(handlers::update_template),
+        )
+        .route(
+            "/logs/templates/rename",
+            put(handlers::rename_template),
+        )
+        .route(
+            "/logs/templates",
+            delete(handlers::delete_template),
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),

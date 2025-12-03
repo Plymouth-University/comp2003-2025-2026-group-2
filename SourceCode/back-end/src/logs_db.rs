@@ -184,3 +184,20 @@ pub async fn rename_template(
     collection.update_one(filter, update).await?;
     Ok(())
 }
+
+pub async fn delete_template(
+    client: &mongodb::Client,
+    template_name: &str,
+    company_id: &str,
+) -> Result<()> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<TemplateDocument> = db.collection("templates");
+
+    let filter = mongodb::bson::doc! {
+        "template_name": template_name,
+        "company_id": company_id,
+    };
+
+    collection.delete_one(filter).await?;
+    Ok(())
+}

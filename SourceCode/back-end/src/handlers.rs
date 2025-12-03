@@ -1676,3 +1676,63 @@ pub async fn rename_template(
     })?;
     Ok(Json(RenameTemplateResponse { message: "Template renamed successfully.".to_string() }))
 }
+
+#[derive(Deserialize, ToSchema, IntoParams)]
+pub struct DeleteTemplateRequest {
+    pub template_name: String,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct DeleteTemplateResponse {
+    pub message: String,
+}
+
+#[utoipa::path(
+    delete,
+    path = "/logs/templates",
+    params(
+        DeleteTemplateRequest
+    ),
+    responses(
+        (status = 200, description = "Template deleted successfully", body = DeleteTemplateResponse),
+        (status = 401, description = "Invalid or expired token", body = ErrorResponse),
+        (status = 400, description = "Password validation failed", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Templates"
+)]
+pub async fn delete_template(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    Query(payload): Query<DeleteTemplateRequest>,
+) -> Result<Json<DeleteTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user company ID: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "User is not associated with a company" })),
+        ))?;
+
+    logs_db::delete_template(
+        &state.mongodb,
+        &payload.template_name,
+        &company_id,
+    )
+    .await
+    .map_err(|e: anyhow::Error| {
+        tracing::error!("Failed to delete template: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to delete template" })),
+        )
+    })?;
+    Ok(Json(DeleteTemplateResponse { message: "Template deleted successfully.".to_string() }))
+}

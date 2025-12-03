@@ -481,6 +481,47 @@
 					}
 				},
 				"security": [{ "bearer_auth": [] }]
+			},
+			"delete": {
+				"tags": ["Templates"],
+				"operationId": "delete_template",
+				"parameters": [
+					{
+						"name": "template_name",
+						"in": "query",
+						"required": true,
+						"schema": { "type": "string" }
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Template deleted successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/DeleteTemplateResponse" }
+							}
+						}
+					},
+					"400": {
+						"description": "Password validation failed",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"401": {
+						"description": "Invalid or expired token",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
 			}
 		},
 		"/logs/templates/all": {
@@ -637,6 +678,16 @@
 					"token": { "type": "string" },
 					"user": { "$ref": "#/components/schemas/UserResponse" }
 				}
+			},
+			"DeleteTemplateRequest": {
+				"type": "object",
+				"required": ["template_name"],
+				"properties": { "template_name": { "type": "string" } }
+			},
+			"DeleteTemplateResponse": {
+				"type": "object",
+				"required": ["message"],
+				"properties": { "message": { "type": "string" } }
 			},
 			"ErrorResponse": {
 				"type": "object",
