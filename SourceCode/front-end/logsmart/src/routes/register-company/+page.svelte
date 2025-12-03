@@ -117,132 +117,183 @@
 	<title>Register Company - LogSmart</title>
 </svelte:head>
 
-<div class="register-wrapper">
-	<div class="form-container">
-		<div class="progress-indicator">
-			<div class="step" class:active={step === 1} class:completed={step > 1}>
-				<div class="step-number">1</div>
-				<div class="step-label">Company Details</div>
+<div class="flex h-full w-full items-center justify-center bg-bg-primary p-8">
+	<div class="w-full max-w-[600px]">
+		<div class="mb-8 flex items-center justify-center gap-4">
+			<div class="flex flex-col items-center gap-2">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-full font-semibold transition-all duration-300 {step ===
+					1
+						? 'bg-blue-600 text-white'
+						: step > 1
+							? 'bg-green-500 text-white'
+							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}"
+				>
+					1
+				</div>
+				<div
+					class="text-sm {step === 1 ? 'font-semibold text-text-primary' : 'text-text-secondary'}"
+				>
+					Company Details
+				</div>
 			</div>
-			<div class="progress-line" class:completed={step > 1}></div>
-			<div class="step" class:active={step === 2}>
-				<div class="step-number">2</div>
-				<div class="step-label">Your Details</div>
+			<div
+				class="h-0.5 w-20 transition-all duration-300 {step > 1 ? 'bg-green-500' : 'bg-gray-200'}"
+			></div>
+			<div class="flex flex-col items-center gap-2">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-full font-semibold transition-all duration-300 {step ===
+					2
+						? 'bg-blue-600 text-white'
+						: 'bg-gray-200 text-gray-500'}"
+				>
+					2
+				</div>
+				<div
+					class="text-sm {step === 2 ? 'font-semibold text-text-primary' : 'text-text-secondary'}"
+				>
+					Your Details
+				</div>
 			</div>
 		</div>
 
 		{#if step === 1}
-			<form onsubmit={nextStep} class="form">
-				<h1>Company Information</h1>
-				<p class="subtitle">Tell us about your company</p>
+			<form onsubmit={nextStep} class="w-full rounded-lg bg-bg-primary p-8 shadow-lg">
+				<h1 class="mb-2 text-2xl font-bold text-text-primary">Company Information</h1>
+				<p class="mb-6 text-text-secondary">Tell us about your company</p>
 
 				{#if error}
-					<div class="error" role="alert">{error}</div>
+					<div
+						class="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-200"
+						role="alert"
+					>
+						{error}
+					</div>
 				{/if}
 
-				<label class="field">
-					<span class="label-text">Company Name</span>
+				<label class="mb-4 flex flex-col">
+					<span class="mb-1 text-sm font-medium text-text-primary">Company Name</span>
 					<input
 						type="text"
 						bind:value={companyName}
 						onblur={() => (touched.companyName = true)}
 						aria-invalid={!companyNameValid}
 						placeholder="LogSmart Ltd"
+						class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
 						required
 					/>
 					{#if touched.companyName && !companyNameValid}
-						<div class="field-error">Company name is required.</div>
+						<div class="mt-2 text-sm text-red-600 dark:text-red-400">Company name is required.</div>
 					{/if}
 				</label>
 
-				<label class="field">
-					<span class="label-text">Company Address</span>
+				<label class="mb-4 flex flex-col">
+					<span class="mb-1 text-sm font-medium text-text-primary">Company Address</span>
 					<textarea
 						bind:value={companyAddress}
 						onblur={() => (touched.companyAddress = true)}
 						aria-invalid={!companyAddressValid}
 						placeholder="Plymouth, UK"
 						rows="3"
+						class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
 						required
 					></textarea>
 					{#if touched.companyAddress && !companyAddressValid}
-						<div class="field-error">Company address is required.</div>
+						<div class="mt-2 text-sm text-red-600 dark:text-red-400">
+							Company address is required.
+						</div>
 					{/if}
 				</label>
 
-				<button type="submit" class="btn btn-primary" disabled={!step1Valid}> Next Step </button>
+				<button
+					type="submit"
+					class="w-full rounded-md bg-blue-600 px-6 py-3 text-base font-medium text-white transition-all duration-200 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+					disabled={!step1Valid}
+				>
+					Next Step
+				</button>
 			</form>
 		{:else}
-			<form onsubmit={submit} class="form">
-				<h1>Your Details</h1>
-				<p class="subtitle">Create your admin account</p>
+			<form onsubmit={submit} class="w-full rounded-lg bg-bg-primary p-8 shadow-lg">
+				<h1 class="mb-2 text-2xl font-bold text-text-primary">Your Details</h1>
+				<p class="mb-6 text-text-secondary">Create your admin account</p>
 
 				{#if error}
-					<div class="error" role="alert">{error}</div>
+					<div
+						class="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-200"
+						role="alert"
+					>
+						{error}
+					</div>
 				{/if}
 
-				<div class="field-row">
-					<label class="field">
-						<span class="label-text">First Name</span>
+				<div class="grid grid-cols-2 gap-4">
+					<label class="mb-4 flex flex-col">
+						<span class="mb-1 text-sm font-medium text-text-primary">First Name</span>
 						<input
 							type="text"
 							bind:value={firstName}
 							onblur={() => (touched.firstName = true)}
 							aria-invalid={!firstNameValid}
 							placeholder="John"
+							class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
 							required
 						/>
 						{#if touched.firstName && !firstNameValid}
-							<div class="field-error">First name is required.</div>
+							<div class="mt-2 text-sm text-red-600 dark:text-red-400">First name is required.</div>
 						{/if}
 					</label>
 
-					<label class="field">
-						<span class="label-text">Last Name</span>
+					<label class="mb-4 flex flex-col">
+						<span class="mb-1 text-sm font-medium text-text-primary">Last Name</span>
 						<input
 							type="text"
 							bind:value={lastName}
 							onblur={() => (touched.lastName = true)}
 							aria-invalid={!lastNameValid}
 							placeholder="Doe"
+							class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
 							required
 						/>
 						{#if touched.lastName && !lastNameValid}
-							<div class="field-error">Last name is required.</div>
+							<div class="mt-2 text-sm text-red-600 dark:text-red-400">Last name is required.</div>
 						{/if}
 					</label>
 				</div>
 
-				<label class="field">
-					<span class="label-text">Email</span>
+				<label class="mb-4 flex flex-col">
+					<span class="mb-1 text-sm font-medium text-text-primary">Email</span>
 					<input
 						type="email"
 						bind:value={email}
 						onblur={() => (touched.email = true)}
 						aria-invalid={!emailValid}
 						placeholder="john@company.com"
+						class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
 						required
 					/>
 					{#if touched.email && !emailValid}
-						<div class="field-error">Enter a valid email address.</div>
+						<div class="mt-2 text-sm text-red-600 dark:text-red-400">
+							Enter a valid email address.
+						</div>
 					{/if}
 				</label>
 
-				<label class="field">
-					<span class="label-text">Password</span>
-					<div class="password-input-wrapper">
+				<label class="mb-4 flex flex-col">
+					<span class="mb-1 text-sm font-medium text-text-primary">Password</span>
+					<div class="relative block">
 						<input
 							type={showPassword ? 'text' : 'password'}
 							bind:value={password}
 							onblur={() => (touched.password = true)}
 							aria-invalid={!passwordValid}
 							placeholder="Min 8 chars, uppercase, lowercase, digit, special char"
-							class="password-input"
+							class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 pr-10 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
 							required
 						/>
 						<button
 							type="button"
-							class="password-toggle"
+							class="absolute top-1/2 right-2 flex -translate-y-1/2 cursor-pointer items-center justify-center border-none bg-transparent p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
 							onclick={() => (showPassword = !showPassword)}
 							aria-label={showPassword ? 'Hide password' : 'Show password'}
 						>
@@ -275,51 +326,73 @@
 					</div>
 					{#if password}
 						<div class="mt-2 space-y-1 text-xs">
-							<div class={passwordErrors.length === 0 ? 'text-green-600' : 'text-gray-500'}>
+							<div
+								class={passwordErrors.length === 0
+									? 'text-green-600 dark:text-green-400'
+									: 'text-gray-500 dark:text-gray-400'}
+							>
 								✓ Password requirements
 							</div>
-							<div class={!/[A-Z]/.test(password) ? 'text-red-600' : 'text-green-600'}>
+							<div
+								class={!/[A-Z]/.test(password)
+									? 'text-red-600 dark:text-red-400'
+									: 'text-green-600 dark:text-green-400'}
+							>
 								{!/[A-Z]/.test(password) ? '✗' : '✓'} Uppercase letter (A-Z)
 							</div>
-							<div class={!/[a-z]/.test(password) ? 'text-red-600' : 'text-green-600'}>
+							<div
+								class={!/[a-z]/.test(password)
+									? 'text-red-600 dark:text-red-400'
+									: 'text-green-600 dark:text-green-400'}
+							>
 								{!/[a-z]/.test(password) ? '✗' : '✓'} Lowercase letter (a-z)
 							</div>
-							<div class={!/\d/.test(password) ? 'text-red-600' : 'text-green-600'}>
+							<div
+								class={!/\d/.test(password)
+									? 'text-red-600 dark:text-red-400'
+									: 'text-green-600 dark:text-green-400'}
+							>
 								{!/\d/.test(password) ? '✗' : '✓'} Digit (0-9)
 							</div>
 							<div
 								class={!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(password)
-									? 'text-red-600'
-									: 'text-green-600'}
+									? 'text-red-600 dark:text-red-400'
+									: 'text-green-600 dark:text-green-400'}
 							>
 								{!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(password) ? '✗' : '✓'} Special character
 								(!@#$%^&* etc)
 							</div>
-							<div class={password.length < 8 ? 'text-red-600' : 'text-green-600'}>
+							<div
+								class={password.length < 8
+									? 'text-red-600 dark:text-red-400'
+									: 'text-green-600 dark:text-green-400'}
+							>
 								{password.length < 8 ? '✗' : '✓'} At least 8 characters
 							</div>
 						</div>
 					{/if}
 					{#if touched.password && !passwordValid}
-						<div class="field-error">Password must meet all requirements.</div>
+						<div class="mt-2 text-sm text-red-600 dark:text-red-400">
+							Password must meet all requirements.
+						</div>
 					{/if}
 				</label>
 
-				<label class="field">
-					<span class="label-text">Confirm Password</span>
-					<div class="password-input-wrapper">
+				<label class="mb-4 flex flex-col">
+					<span class="mb-1 text-sm font-medium text-text-primary">Confirm Password</span>
+					<div class="relative block">
 						<input
 							type={showConfirmPassword ? 'text' : 'password'}
 							bind:value={confirmPassword}
 							onblur={() => (touched.confirmPassword = true)}
 							aria-invalid={!passwordsMatch}
 							placeholder="Re-enter password"
-							class="password-input"
+							class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 pr-10 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
 							required
 						/>
 						<button
 							type="button"
-							class="password-toggle"
+							class="absolute top-1/2 right-2 flex -translate-y-1/2 cursor-pointer items-center justify-center border-none bg-transparent p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
 							onclick={() => (showConfirmPassword = !showConfirmPassword)}
 							aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
 						>
@@ -351,13 +424,23 @@
 						</button>
 					</div>
 					{#if touched.confirmPassword && !passwordsMatch}
-						<div class="field-error">Passwords do not match.</div>
+						<div class="mt-2 text-sm text-red-600 dark:text-red-400">Passwords do not match.</div>
 					{/if}
 				</label>
 
-				<div class="button-group">
-					<button type="button" class="btn btn-secondary" onclick={prevStep}> Back </button>
-					<button type="submit" class="btn btn-primary" disabled={!step2Valid || loading}>
+				<div class="mt-6 flex gap-4">
+					<button
+						type="button"
+						class="rounded-md bg-bg-secondary px-6 py-3 text-base font-medium text-text-primary transition-all duration-200 hover:bg-bg-secondary/80"
+						onclick={prevStep}
+					>
+						Back
+					</button>
+					<button
+						type="submit"
+						class="w-full flex-1 rounded-md bg-blue-600 px-6 py-3 text-base font-medium text-white transition-all duration-200 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+						disabled={!step2Valid || loading}
+					>
 						{#if loading}
 							Creating Account...
 						{:else}
@@ -368,257 +451,8 @@
 			</form>
 		{/if}
 
-		<p class="footer-text">
-			Already have an account? <a href="/login">Sign in</a>
+		<p class="mt-6 text-center text-text-secondary">
+			Already have an account? <a href="/login" class="text-blue-600 hover:underline">Sign in</a>
 		</p>
 	</div>
 </div>
-
-<style>
-	:global(body) {
-		font-family:
-			system-ui,
-			-apple-system,
-			'Segoe UI',
-			Roboto,
-			'Helvetica Neue',
-			Arial;
-		margin: 0;
-		padding: 0;
-		background: #f5f7fb;
-	}
-
-	.register-wrapper {
-		width: 100%;
-		height: 100%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 2rem;
-		box-sizing: border-box;
-	}
-
-	.form-container {
-		width: 100%;
-		max-width: 600px;
-	}
-
-	.progress-indicator {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin-bottom: 2rem;
-		gap: 1rem;
-	}
-
-	.step {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.step-number {
-		width: 40px;
-		height: 40px;
-		border-radius: 50%;
-		background: #e5e7eb;
-		color: #6b7280;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-weight: 600;
-		transition: all 0.3s;
-	}
-
-	.step.active .step-number {
-		background: #2f6fff;
-		color: white;
-	}
-
-	.step.completed .step-number {
-		background: #10b981;
-		color: white;
-	}
-
-	.step-label {
-		font-size: 0.875rem;
-		color: #6b7280;
-	}
-
-	.step.active .step-label {
-		color: #111827;
-		font-weight: 600;
-	}
-
-	.progress-line {
-		width: 80px;
-		height: 2px;
-		background: #e5e7eb;
-		transition: all 0.3s;
-	}
-
-	.progress-line.completed {
-		background: #10b981;
-	}
-
-	.form {
-		width: 100%;
-		background: white;
-		padding: 2rem;
-		border-radius: 8px;
-		box-shadow: 0 6px 20px rgba(20, 20, 50, 0.08);
-	}
-
-	h1 {
-		margin: 0 0 0.5rem 0;
-		font-size: 1.5rem;
-	}
-
-	.subtitle {
-		color: #6b7280;
-		margin: 0 0 1.5rem 0;
-	}
-
-	.field {
-		display: flex;
-		flex-direction: column;
-		margin-bottom: 1rem;
-	}
-
-	.field-row {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 1rem;
-	}
-
-	.label-text {
-		font-size: 0.9rem;
-		font-weight: 500;
-		margin-bottom: 0.25rem;
-	}
-
-	input,
-	textarea {
-		padding: 0.5rem 0.75rem;
-		border: 1px solid #d1d7e0;
-		border-radius: 6px;
-		font-size: 1rem;
-		outline: none;
-		font-family: inherit;
-		width: 100%;
-		box-sizing: border-box;
-	}
-
-	input:focus,
-	textarea:focus {
-		border-color: #6b8cff;
-		box-shadow: 0 0 0 3px rgba(107, 140, 255, 0.12);
-	}
-
-	textarea {
-		resize: vertical;
-	}
-
-	.field-error {
-		color: #c93838;
-		font-size: 0.875rem;
-		margin-top: 0.5rem;
-	}
-
-	.error {
-		background: #fdecea;
-		color: #821313;
-		padding: 0.5rem 0.75rem;
-		border-radius: 6px;
-		margin-bottom: 1rem;
-		font-size: 0.95rem;
-	}
-
-	.btn {
-		padding: 0.75rem 1.5rem;
-		border: none;
-		border-radius: 6px;
-		font-size: 1rem;
-		cursor: pointer;
-		font-weight: 500;
-		transition: all 0.2s;
-	}
-
-	.btn-primary {
-		width: 100%;
-		background: #2f6fff;
-		color: white;
-	}
-
-	.btn-primary:hover:not([disabled]) {
-		background: #1e5cff;
-	}
-
-	.btn-secondary {
-		background: #f3f4f6;
-		color: #374151;
-	}
-
-	.btn-secondary:hover {
-		background: #e5e7eb;
-	}
-
-	.btn[disabled] {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-
-	.button-group {
-		display: flex;
-		gap: 1rem;
-		margin-top: 1.5rem;
-	}
-
-	.button-group .btn-primary {
-		flex: 1;
-	}
-
-	.footer-text {
-		text-align: center;
-		margin-top: 1.5rem;
-		color: #6b7280;
-	}
-
-	.footer-text a {
-		color: #2f6fff;
-		text-decoration: none;
-	}
-
-	.footer-text a:hover {
-		text-decoration: underline;
-	}
-
-	.password-input-wrapper {
-		position: relative;
-		display: block;
-	}
-
-	.password-input {
-		padding-right: 2.5rem !important;
-	}
-
-	.password-toggle {
-		position: absolute;
-		right: 0.5rem;
-		top: 50%;
-		transform: translateY(-50%);
-		background: none;
-		border: none;
-		cursor: pointer;
-		color: #6b7280;
-		padding: 0.25rem;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	.password-toggle:hover {
-		color: #374151;
-	}
-</style>

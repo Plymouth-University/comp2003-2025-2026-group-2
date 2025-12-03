@@ -31,10 +31,22 @@
 						>
 							Dashboard
 						</a>
-						<a href="/logs-list" style="color: var(--text-secondary);" class="hover:opacity-80">
+						<a
+							href="/logs-list"
+							style="color: var(--text-secondary);"
+							class:font-bold={currentPath === '/logs-list'}
+							class:underline={currentPath === '/logs-list'}
+							class="hover:opacity-80"
+						>
 							Logs
 						</a>
-						<a href="/users-admin" style="color: var(--text-secondary);" class="hover:opacity-80">
+						<a
+							href="/users-admin"
+							style="color: var(--text-secondary);"
+							class:font-bold={currentPath === '/users-admin'}
+							class:underline={currentPath === '/users-admin'}
+							class="hover:opacity-80"
+						>
 							Users
 						</a>
 						<a

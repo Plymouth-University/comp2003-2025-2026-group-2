@@ -39,16 +39,17 @@
 <svelte:head>
 	<title>Log In</title>
 </svelte:head>
-<div class="flex h-full w-full items-center justify-center bg-gray-50 p-6">
-	<form onsubmit={submit} class="form">
-		<h1>Log in</h1>
+<div class="flex h-full w-full items-center justify-center bg-bg-primary p-6">
+	<form onsubmit={submit} class="form bg-bg-secondary">
+		<h1 class="font-semibold text-text-primary">Log in</h1>
 		{#if error}
 			<div class="error" role="alert">{error}</div>
 		{/if}
 		<label class="field">
-			<span class="label-text">Email</span>
+			<span class="label-text text-text-primary">Email</span>
 			<input
 				type="email"
+				class="text-text-primary"
 				bind:value={email}
 				onblur={() => (touched.email = true)}
 				aria-invalid={!emailValid}
@@ -61,9 +62,10 @@
 		</label>
 
 		<label class="field">
-			<span class="label-text">Password</span>
+			<span class="label-text text-text-primary">Password</span>
 			<input
 				type="password"
+				class="text-text-primary"
 				bind:value={password}
 				onblur={() => (touched.password = true)}
 				aria-invalid={!passwordValid}
@@ -99,12 +101,10 @@
 			Arial;
 		margin: 0;
 		padding: 0;
-		background: #f5f7fb;
 	}
 	.form {
 		width: 100%;
 		max-width: 400px;
-		background: white;
 		padding: 2rem;
 		border-radius: 8px;
 		box-shadow: 0 6px 20px rgba(20, 20, 50, 0.08);
