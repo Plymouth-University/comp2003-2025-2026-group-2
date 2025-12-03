@@ -1,242 +1,314 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
-	import TemplatesSidebar from './TemplatesSidebar.svelte';
-	import DesignCanvas from './DesignCanvas.svelte';
-	import ComponentsPalette from './ComponentsPalette.svelte';
-	import PropertiesPanel from './PropertiesPanel.svelte';
-	import type { CanvasItem, ComponentType, Template } from './types';
+	import { goto } from '$app/navigation';
+	import { api } from '$lib/api';
+	import type { components } from '$lib/api-types';
+	import type { Template, TemplateSchedule, DayOfWeek } from './types';
+	import TemplateRow from './TemplateRow.svelte';
+	import TemplateSettingsWizard from './TemplateSettingsWizard.svelte';
 
-	const templates: Template[] = [];
+	type ApiTemplateInfo = components['schemas']['TemplateInfo'];
+	type ApiSchedule = components['schemas']['Schedule'];
 
-	const componentTypes: ComponentType[] = [
-		{ type: 'text_input', name: 'Text Input', icon: 'T' },
-		{ type: 'checkbox', name: 'Checkbox', icon: '✓' },
-		{ type: 'temperature', name: 'Temperature Input', icon: '🌡' },
-		{ type: 'dropdown', name: 'Dropdown', icon: '≡' },
-		{ type: 'label', name: 'Text Label', icon: 'L' }
+	const dayNumberToName: DayOfWeek[] = [
+		'sunday',
+		'monday',
+		'tuesday',
+		'wednesday',
+		'thursday',
+		'friday',
+		'saturday'
 	];
 
-	let canvasItems = $state<CanvasItem[]>(
-		browser && localStorage.getItem('canvasItems')
-			? JSON.parse(localStorage.getItem('canvasItems')!)
-			: []
-	);
+	function mapApiScheduleToLocal(apiSchedule: ApiSchedule): TemplateSchedule {
+		const frequency = apiSchedule.frequency.toLowerCase() as TemplateSchedule['frequency'];
+		const schedule: TemplateSchedule = { frequency };
 
-	let logTitle = $state(
-		browser && localStorage.getItem('logTitle') ? localStorage.getItem('logTitle')! : ''
-	);
+		if (apiSchedule.days_of_week && apiSchedule.days_of_week.length > 0) {
+			schedule.daysOfWeek = apiSchedule.days_of_week.map((d) => dayNumberToName[d]);
+		}
+		if (apiSchedule.day_of_week !== null && apiSchedule.day_of_week !== undefined) {
+			schedule.dayOfWeek = dayNumberToName[apiSchedule.day_of_week];
+		}
+		if (apiSchedule.day_of_month !== null && apiSchedule.day_of_month !== undefined) {
+			schedule.dayOfMonth = apiSchedule.day_of_month;
+		}
+		if (apiSchedule.month_of_year !== null && apiSchedule.month_of_year !== undefined) {
+			schedule.monthOfYear = apiSchedule.month_of_year;
+		}
 
-	let selectedItemId = $state<string | null>(null);
+		return schedule;
+	}
 
-	// Debounced localStorage saves to prevent lag during dragging
-	let saveTimeout: ReturnType<typeof setTimeout> | null = null;
-	function debouncedSaveItems() {
-		if (saveTimeout) clearTimeout(saveTimeout);
-		saveTimeout = setTimeout(() => {
-			if (browser) {
-				localStorage.setItem('canvasItems', JSON.stringify(canvasItems));
-			}
-		}, 300);
+	function mapApiTemplateToLocal(apiTemplate: ApiTemplateInfo): Template {
+		return {
+			id: apiTemplate.template_name,
+			name: apiTemplate.template_name,
+			createdAt: apiTemplate.created_at,
+			updatedAt: apiTemplate.updated_at,
+			schedule: mapApiScheduleToLocal(apiTemplate.schedule),
+			layout: []
+		};
+	}
+
+	let templates = $state<Template[]>([]);
+	let loading = $state(true);
+	let error = $state<string | null>(null);
+
+	async function fetchTemplates() {
+		loading = true;
+		error = null;
+		const { data, error: apiError } = await api.GET('/logs/templates/all');
+		if (apiError) {
+			error = 'Failed to load templates';
+			loading = false;
+			return;
+		}
+		if (data?.templates) {
+			templates = data.templates.map(mapApiTemplateToLocal);
+		}
+		loading = false;
 	}
 
 	$effect(() => {
-		// Deep track canvasItems by serializing it
-		const serialized = JSON.stringify(canvasItems);
-		debouncedSaveItems();
+		fetchTemplates();
 	});
 
-	$effect(() => {
-		if (browser) {
-			localStorage.setItem('logTitle', logTitle);
-		}
-	});
+	let selectedTemplate = $state<Template | null>(null);
+	let settingsWizardOpen = $state(false);
+	let deleteConfirmOpen = $state(false);
+	let templateToDelete = $state<Template | null>(null);
+	let searchQuery = $state('');
 
-	function createNewTemplate() {
-		canvasItems = [];
-		logTitle = '';
-		selectedItemId = null;
+	const filteredTemplates = $derived(
+		templates.filter((t) => t.name.toLowerCase().includes(searchQuery.toLowerCase()))
+	);
+
+	function handleEdit(template: Template) {
+		goto(`/template-designer?id=${template.id}`);
 	}
 
-	function generateId() {
-		return Math.random().toString(36).substring(2, 9);
+	function handleSettings(template: Template) {
+		selectedTemplate = template;
+		settingsWizardOpen = true;
 	}
 
-	function getDefaultProps(type: string): Record<string, any> {
-		switch (type) {
-			case 'text_input':
-				return { text: '', size: 16, weight: 'normal' };
-			case 'checkbox':
-				return { text: 'Checkbox Label', size: '16px', weight: 'normal' };
-			case 'temperature':
-				return { value: 0, min: -20, max: 50, label: 'Temperature', unit: '°C' };
-			case 'dropdown':
-				return { selected: '', options: ['Option 1', 'Option 2', 'Option 3'] };
-			case 'label':
-				return { editable: true, text: 'Label Text', size: 16, weight: 'normal' };
-			default:
-				return {};
-		}
-	}
-
-	function addComponent(type: string, x: number, y: number) {
-		const newItem: CanvasItem = {
-			id: generateId(),
-			type,
-			x,
-			y,
-			props: getDefaultProps(type)
-		};
-		canvasItems.push(newItem);
-		selectedItemId = newItem.id;
-	}
-
-	function deleteSelected() {
-		if (selectedItemId) {
-			canvasItems = canvasItems.filter((item) => item.id !== selectedItemId);
-			selectedItemId = null;
-		}
-	}
-
-	function exportToJson() {
-		const exportData = {
-			title: logTitle,
-			items: canvasItems.map((item) => ({
-				type: item.type,
-				x: item.x,
-				y: item.y,
-				props: item.props
-			}))
-		};
-		console.log('Exported Template JSON:', JSON.stringify(exportData, null, 2));
-	}
-
-	function updateItemProp(itemId: string, propKey: string, value: any) {
-		if (propKey === 'lockX' || propKey === 'lockY' || propKey === 'x' || propKey === 'y') {
-			canvasItems = canvasItems.map((item) =>
-				item.id === itemId ? { ...item, [propKey]: value } : item
-			);
-		} else {
-			canvasItems = canvasItems.map((item) =>
-				item.id === itemId ? { ...item, props: { ...item.props, [propKey]: value } } : item
-			);
-		}
-	}
-
-	let selectedItem = $derived(canvasItems.find((item) => item.id === selectedItemId));
-
-	let canvasRef = $state<HTMLDivElement | null>(null);
-
-	function alignItem(
-		itemId: string,
-		horizontal: 'left' | 'center' | 'right' | null,
-		vertical: 'top' | 'center' | 'bottom' | null
-	) {
-		if (!canvasRef) return;
-
-		const canvasRect = canvasRef.getBoundingClientRect();
-		const itemElement = canvasRef.querySelector(`[data-item-id="${itemId}"]`) as HTMLElement;
-		if (!itemElement) return;
-
-		const itemRect = itemElement.getBoundingClientRect();
-		const itemWidth = itemRect.width;
-		const itemHeight = itemRect.height;
-
-		canvasItems = canvasItems.map((item) => {
-			if (item.id !== itemId) return item;
-
-			let newX = item.x;
-			let newY = item.y;
-
-			if (horizontal === 'left') {
-				newX = 0;
-			} else if (horizontal === 'center') {
-				newX = (canvasRect.width - itemWidth) / 2;
-			} else if (horizontal === 'right') {
-				newX = canvasRect.width - itemWidth;
+	function handleSaveSchedule(schedule: TemplateSchedule) {
+		if (selectedTemplate) {
+			const idx = templates.findIndex((t) => t.id === selectedTemplate!.id);
+			if (idx !== -1) {
+				templates[idx] = {
+					...templates[idx],
+					schedule,
+					updatedAt: new Date().toISOString()
+				};
 			}
-
-			if (vertical === 'top') {
-				newY = 0;
-			} else if (vertical === 'center') {
-				newY = (canvasRect.height - itemHeight) / 2;
-			} else if (vertical === 'bottom') {
-				newY = canvasRect.height - itemHeight;
-			}
-
-			return { ...item, x: newX, y: newY };
-		});
-	}
-
-	let paletteHeight = $state<number | null>(null);
-	let isResizing = $state(false);
-
-	function handleResizeStart(e: MouseEvent) {
-		e.preventDefault();
-		isResizing = true;
-		window.addEventListener('mousemove', handleResizeMove);
-		window.addEventListener('mouseup', handleResizeEnd);
-	}
-
-	function handleResizeMove(e: MouseEvent) {
-		if (!isResizing) return;
-		const sidebar = document.querySelector('[data-right-sidebar]');
-		if (sidebar) {
-			const sidebarRect = sidebar.getBoundingClientRect();
-			if (paletteHeight === null) {
-				paletteHeight = sidebarRect.height / 2;
-			}
-			const newHeight = e.clientY - sidebarRect.top;
-			paletteHeight = Math.max(100, Math.min(newHeight, sidebarRect.height - 100));
 		}
+		selectedTemplate = null;
 	}
 
-	function handleResizeEnd() {
-		isResizing = false;
-		window.removeEventListener('mousemove', handleResizeMove);
-		window.removeEventListener('mouseup', handleResizeEnd);
+	function handleDelete(template: Template) {
+		templateToDelete = template;
+		deleteConfirmOpen = true;
+	}
+
+	function confirmDelete() {
+		if (templateToDelete) {
+			templates = templates.filter((t) => t.id !== templateToDelete!.id);
+		}
+		templateToDelete = null;
+		deleteConfirmOpen = false;
+	}
+
+	function cancelDelete() {
+		templateToDelete = null;
+		deleteConfirmOpen = false;
+	}
+
+	function handleCreateNew() {
+		goto('/template-designer');
 	}
 </script>
 
 <svelte:head>
 	<title>Templates Dashboard</title>
 </svelte:head>
-<div class="min-h-full" style="background-color: var(--bg-secondary);">
-	<div class="flex h-[calc(100vh-73px)]">
-		<TemplatesSidebar {templates} onCreateNew={createNewTemplate} />
 
-		<DesignCanvas
-			bind:canvasItems
-			bind:logTitle
-			bind:selectedItemId
-			bind:canvasRef
-			onExport={exportToJson}
-			onDeleteSelected={deleteSelected}
-		/>
-
-		<div
-			data-right-sidebar
-			class="flex w-72 flex-col border-l-2"
-			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-		>
-			<div
-				style="height: {paletteHeight !== null
-					? `${paletteHeight}px`
-					: '35%'}; flex-shrink: 0; overflow: auto;"
+<div class="min-h-screen" style="background-color: var(--bg-secondary);">
+	<div class="mx-auto max-w-5xl px-6 py-8">
+		<div class="mb-8 flex items-center justify-between">
+			<h1 class="text-3xl font-bold" style="color: var(--text-primary);">Templates Dashboard</h1>
+			<button
+				type="button"
+				class="btn-create rounded px-6 py-3 font-medium text-white"
+				onclick={handleCreateNew}
 			>
-				<ComponentsPalette {componentTypes} onAddComponent={addComponent} />
-			</div>
-			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+				+ Create New Template
+			</button>
+		</div>
+
+		<div class="mb-6">
+			<input
+				type="text"
+				bind:value={searchQuery}
+				placeholder="Search templates..."
+				class="w-full rounded-lg border-2 px-4 py-3"
+				style="background-color: var(--bg-primary); border-color: var(--border-primary); color: var(--text-primary);"
+			/>
+		</div>
+
+		{#if loading}
 			<div
-				class="h-2 cursor-row-resize border-y-2 hover:bg-gray-200"
-				style="border-color: var(--border-primary); flex-shrink: 0;"
-				onmousedown={handleResizeStart}
-				ondblclick={() => (paletteHeight = null)}
-				role="separator"
-				aria-orientation="horizontal"
-			></div>
-			<div class="flex-1 overflow-auto">
-				<PropertiesPanel {selectedItem} onUpdateProp={updateItemProp} onAlign={alignItem} />
+				class="rounded-lg border-2 px-6 py-12 text-center"
+				style="background-color: var(--bg-primary); border-color: var(--border-primary);"
+			>
+				<p class="text-lg" style="color: var(--text-secondary);">Loading templates...</p>
 			</div>
+		{:else if error}
+			<div
+				class="rounded-lg border-2 px-6 py-12 text-center"
+				style="background-color: var(--bg-primary); border-color: #d9534f;"
+			>
+				<p class="text-lg" style="color: #d9534f;">{error}</p>
+				<button
+					type="button"
+					class="btn-retry mt-4 rounded px-4 py-2 font-medium text-white"
+					onclick={fetchTemplates}
+				>
+					Retry
+				</button>
+			</div>
+		{:else if filteredTemplates.length === 0}
+			<div
+				class="rounded-lg border-2 px-6 py-12 text-center"
+				style="background-color: var(--bg-primary); border-color: var(--border-primary);"
+			>
+				{#if searchQuery}
+					<p class="text-lg" style="color: var(--text-secondary);">
+						No templates found matching "{searchQuery}"
+					</p>
+				{:else}
+					<p class="text-lg" style="color: var(--text-secondary);">
+						No templates yet. Create your first template to get started!
+					</p>
+				{/if}
+			</div>
+		{:else}
+			<div class="space-y-4">
+				{#each filteredTemplates as template (template.id)}
+					<TemplateRow
+						{template}
+						onEdit={handleEdit}
+						onSettings={handleSettings}
+						onDelete={handleDelete}
+					/>
+				{/each}
+			</div>
+		{/if}
+
+		<div class="mt-6 text-sm" style="color: var(--text-secondary);">
+			{filteredTemplates.length} template{filteredTemplates.length !== 1 ? 's' : ''}
 		</div>
 	</div>
 </div>
+
+{#if selectedTemplate}
+	<TemplateSettingsWizard
+		template={selectedTemplate}
+		bind:isOpen={settingsWizardOpen}
+		onSave={handleSaveSchedule}
+	/>
+{/if}
+
+{#if deleteConfirmOpen && templateToDelete}
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+		onclick={(e) => e.target === e.currentTarget && cancelDelete()}
+		onkeydown={(e) => e.key === 'Escape' && cancelDelete()}
+		role="dialog"
+		aria-modal="true"
+		tabindex="-1"
+	>
+		<div
+			class="w-full max-w-md rounded-lg border-2 shadow-xl"
+			style="background-color: var(--bg-primary); border-color: var(--border-primary);"
+		>
+			<div class="px-6 py-6">
+				<h2 class="mb-4 text-xl font-bold" style="color: var(--text-primary);">Delete Template?</h2>
+				<p style="color: var(--text-secondary);">
+					Are you sure you want to delete "{templateToDelete.name}"? This action cannot be undone.
+				</p>
+			</div>
+			<div
+				class="flex justify-end gap-3 border-t-2 px-6 py-4"
+				style="border-color: var(--border-primary);"
+			>
+				<button
+					type="button"
+					class="btn-cancel rounded px-4 py-2 font-medium"
+					onclick={cancelDelete}
+				>
+					Cancel
+				</button>
+				<button
+					type="button"
+					class="btn-confirm-delete rounded px-4 py-2 font-medium text-white"
+					onclick={confirmDelete}
+				>
+					Delete
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<style>
+	.btn-create {
+		background-color: #5cb85c;
+		transition: background-color 0.15s ease;
+	}
+
+	.btn-create:hover {
+		background-color: #449d44;
+	}
+
+	.btn-create:active {
+		background-color: #398439;
+	}
+
+	.btn-cancel {
+		background-color: var(--bg-secondary);
+		color: var(--text-primary);
+		border: 2px solid var(--border-primary);
+		transition: background-color 0.15s ease;
+	}
+
+	.btn-cancel:hover {
+		background-color: var(--bg-primary);
+	}
+
+	.btn-confirm-delete {
+		background-color: #d9534f;
+		transition: background-color 0.15s ease;
+	}
+
+	.btn-confirm-delete:hover {
+		background-color: #c9302c;
+	}
+
+	.btn-confirm-delete:active {
+		background-color: #ac2925;
+	}
+
+	.btn-retry {
+		background-color: #337ab7;
+		transition: background-color 0.15s ease;
+	}
+
+	.btn-retry:hover {
+		background-color: #286090;
+	}
+
+	.btn-retry:active {
+		background-color: #204d74;
+	}
+</style>

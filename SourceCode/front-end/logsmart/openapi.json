@@ -482,6 +482,35 @@
 				},
 				"security": [{ "bearer_auth": [] }]
 			}
+		},
+		"/logs/templates/all": {
+			"get": {
+				"tags": ["Templates"],
+				"operationId": "get_all_templates",
+				"responses": {
+					"200": {
+						"description": "All templates retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/GetAllTemplatesResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Invalid or expired token",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
 		}
 	},
 	"components": {
@@ -498,8 +527,9 @@
 			},
 			"AddTemplateRequest": {
 				"type": "object",
-				"required": ["template_name", "template_layout"],
+				"required": ["template_name", "template_layout", "schedule"],
 				"properties": {
+					"schedule": { "$ref": "#/components/schemas/Schedule" },
 					"template_layout": { "$ref": "#/components/schemas/Vec" },
 					"template_name": { "type": "string", "example": "Kitchen Daily Log" }
 				}
@@ -526,6 +556,14 @@
 				"type": "object",
 				"required": ["error"],
 				"properties": { "error": { "type": "string" } }
+			},
+			"Frequency": { "type": "string", "enum": ["Daily", "Weekly", "Monthly", "Yearly"] },
+			"GetAllTemplatesResponse": {
+				"type": "object",
+				"required": ["templates"],
+				"properties": {
+					"templates": { "type": "array", "items": { "$ref": "#/components/schemas/TemplateInfo" } }
+				}
 			},
 			"GetCompanyMembersResponse": {
 				"type": "object",
@@ -629,25 +667,74 @@
 					"token": { "type": "string", "example": "reset-token-here" }
 				}
 			},
+			"Schedule": {
+				"type": "object",
+				"required": ["frequency"],
+				"properties": {
+					"day_of_month": { "type": ["integer", "null"], "format": "int32", "minimum": 0 },
+					"day_of_week": { "type": ["integer", "null"], "format": "int32", "minimum": 0 },
+					"days_of_week": {
+						"type": ["array", "null"],
+						"items": { "type": "integer", "format": "int32", "minimum": 0 }
+					},
+					"frequency": { "$ref": "#/components/schemas/Frequency" },
+					"month_of_year": { "type": ["integer", "null"], "format": "int32", "minimum": 0 }
+				}
+			},
 			"TemplateDocument": {
 				"type": "object",
-				"required": ["template_name", "template_layout", "company_id"],
+				"required": [
+					"template_name",
+					"template_layout",
+					"company_id",
+					"created_at",
+					"updated_at",
+					"schedule",
+					"created_by"
+				],
 				"properties": {
 					"company_id": { "type": "string" },
+					"created_at": { "type": "string", "format": "date-time" },
+					"created_by": { "type": "string", "format": "uuid" },
+					"schedule": { "$ref": "#/components/schemas/Schedule" },
 					"template_layout": { "$ref": "#/components/schemas/Vec" },
-					"template_name": { "type": "string" }
+					"template_name": { "type": "string" },
+					"updated_at": { "type": "string", "format": "date-time" }
 				}
 			},
 			"TemplateField": {
 				"type": "object",
-				"required": ["name", "field_type", "required", "position"],
+				"required": ["type", "position", "props"],
 				"properties": {
-					"field_type": { "type": "string" },
-					"label": { "type": ["string", "null"] },
-					"name": { "type": "string" },
-					"placeholder": { "type": ["string", "null"] },
 					"position": { "$ref": "#/components/schemas/Position" },
-					"required": { "type": "boolean" }
+					"props": { "$ref": "#/components/schemas/TemplateFieldProps" },
+					"type": { "type": "string" }
+				}
+			},
+			"TemplateFieldProps": {
+				"type": "object",
+				"properties": {
+					"editable": { "type": ["boolean", "null"] },
+					"max": { "type": ["number", "null"], "format": "double" },
+					"min": { "type": ["number", "null"], "format": "double" },
+					"options": { "type": ["array", "null"], "items": { "type": "string" } },
+					"selected": { "type": ["boolean", "null"] },
+					"size": { "type": ["integer", "null"], "format": "int32", "minimum": 0 },
+					"text": { "type": ["string", "null"] },
+					"unit": { "type": ["string", "null"] },
+					"value": { "type": ["string", "null"] },
+					"weight": { "type": ["string", "null"] }
+				}
+			},
+			"TemplateInfo": {
+				"type": "object",
+				"required": ["template_name", "schedule", "created_by", "created_at", "updated_at"],
+				"properties": {
+					"created_at": { "type": "string" },
+					"created_by": { "type": "string" },
+					"schedule": { "$ref": "#/components/schemas/Schedule" },
+					"template_name": { "type": "string" },
+					"updated_at": { "type": "string" }
 				}
 			},
 			"UpdateProfileRequest": {
@@ -673,14 +760,11 @@
 				"type": "array",
 				"items": {
 					"type": "object",
-					"required": ["name", "field_type", "required", "position"],
+					"required": ["type", "position", "props"],
 					"properties": {
-						"field_type": { "type": "string" },
-						"label": { "type": ["string", "null"] },
-						"name": { "type": "string" },
-						"placeholder": { "type": ["string", "null"] },
 						"position": { "$ref": "#/components/schemas/Position" },
-						"required": { "type": "boolean" }
+						"props": { "$ref": "#/components/schemas/TemplateFieldProps" },
+						"type": { "type": "string" }
 					}
 				}
 			},

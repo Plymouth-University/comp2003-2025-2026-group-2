@@ -98,6 +98,10 @@ async fn main() {
         .route("/auth/password/reset", post(handlers::reset_password))
         .route("/logs/templates", post(handlers::add_template))
         .route("/logs/templates", get(handlers::get_template))
+        .route(
+            "/logs/templates/all",
+            get(handlers::get_all_templates),
+        )
         .layer(middleware::from_fn_with_state(
             state.clone(),
             rate_limit::rate_limit_middleware,

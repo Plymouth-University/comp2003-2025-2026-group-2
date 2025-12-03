@@ -75,12 +75,28 @@ pub struct AddTemplateRequest {
     pub template_name: String,
     #[schema(example = "[\"field1\", \"field2\"]")]
     pub template_layout: logs_db::TemplateLayout,
+    #[schema(example = "{\"frequency\": \"daily\", \"time\": \"08:00\"}")]
+    pub schedule: logs_db::Schedule,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct GetTemplateRequest {
     #[schema(example = "Kitchen Daily Log")]
     pub template_name: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct TemplateInfo {
+    pub template_name: String,
+    pub schedule: logs_db::Schedule,
+    pub created_by: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct GetAllTemplatesResponse {
+    pub templates: Vec<TemplateInfo>,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -1281,9 +1297,19 @@ pub async fn add_template(
         ))?;
 
     let template_document = logs_db::TemplateDocument {
-        template_name: payload.template_name.clone(),
+        template_name: payload.template_name,
         template_layout: payload.template_layout,
         company_id,
+        created_at: chrono::Utc::now(),
+        updated_at: chrono::Utc::now(),
+        created_by: mongodb::bson::Uuid::parse_str(&claims.user_id).map_err(|e| {
+            tracing::error!("Failed to parse user ID as UUID: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Server error" })),
+            )
+        })?,
+        schedule: payload.schedule,
     };
 
     logs_db::add_template(&state.mongodb, &template_document)
@@ -1450,4 +1476,61 @@ pub async fn get_invitation_details(
         company_name,
         expires_at: invitation.expires_at,
     }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/logs/templates/all",
+    responses(
+        (status = 200, description = "All templates retrieved successfully", body = GetAllTemplatesResponse),
+        (status = 401, description = "Invalid or expired token", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Templates"
+)]
+pub async fn get_all_templates(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+) -> Result<Json<GetAllTemplatesResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user company ID: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "User is not associated with a company" })),
+        ))?;
+
+    let templates =
+        logs_db::get_templates_by_company(&state.mongodb, &company_id)
+            .await
+            .map_err(|e: anyhow::Error| {
+                tracing::error!("Failed to get templates: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Failed to get templates" })),
+                )
+            })?;
+
+    let response_templates = templates
+        .into_iter()
+        .map(|t| TemplateInfo {
+            template_name: t.template_name,
+            created_at: t.created_at.to_string(),
+            updated_at: t.updated_at.to_string(),
+            created_by: t.created_by.to_string(),
+            schedule: t.schedule,
+        })
+        .collect();
+
+    Ok(Json(GetAllTemplatesResponse {
+        templates: response_templates,
+    }))
+
 }

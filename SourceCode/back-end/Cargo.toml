@@ -2,6 +2,7 @@
 name = "back-end"
 version = "0.1.0"
 edition = "2024"
+default-run = "logsmart-srv"
 
 [lib]
 name = "back_end"
@@ -37,6 +38,7 @@ utoipa-swagger-ui = { version = "9", features = ["axum"] }
 lettre = { version = "0.11", features = ["tokio1-native-tls", "smtp-transport", "builder"] }
 dotenvy = "0.15"
 mongodb = "3.4.1"
+futures-util = "0.3.31"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

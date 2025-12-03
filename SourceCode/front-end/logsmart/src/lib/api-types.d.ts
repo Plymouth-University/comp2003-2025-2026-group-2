@@ -196,6 +196,22 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/logs/templates/all': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: operations['get_all_templates'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -211,6 +227,7 @@ export interface components {
 			token: string;
 		};
 		AddTemplateRequest: {
+			schedule: components['schemas']['Schedule'];
 			template_layout: components['schemas']['Vec'];
 			/** @example Kitchen Daily Log */
 			template_name: string;
@@ -227,6 +244,11 @@ export interface components {
 		};
 		ErrorResponse: {
 			error: string;
+		};
+		/** @enum {string} */
+		Frequency: 'Daily' | 'Weekly' | 'Monthly' | 'Yearly';
+		GetAllTemplatesResponse: {
+			templates: components['schemas']['TemplateInfo'][];
 		};
 		GetCompanyMembersResponse: {
 			members: components['schemas']['UserResponse'][];
@@ -298,18 +320,54 @@ export interface components {
 			/** @example reset-token-here */
 			token: string;
 		};
+		Schedule: {
+			/** Format: int32 */
+			day_of_month?: number | null;
+			/** Format: int32 */
+			day_of_week?: number | null;
+			days_of_week?: number[] | null;
+			frequency: components['schemas']['Frequency'];
+			/** Format: int32 */
+			month_of_year?: number | null;
+		};
 		TemplateDocument: {
 			company_id: string;
+			/** Format: date-time */
+			created_at: string;
+			/** Format: uuid */
+			created_by: string;
+			schedule: components['schemas']['Schedule'];
 			template_layout: components['schemas']['Vec'];
 			template_name: string;
+			/** Format: date-time */
+			updated_at: string;
 		};
 		TemplateField: {
-			field_type: string;
-			label?: string | null;
-			name: string;
-			placeholder?: string | null;
 			position: components['schemas']['Position'];
-			required: boolean;
+			props: components['schemas']['TemplateFieldProps'];
+			type: string;
+		};
+		TemplateFieldProps: {
+			editable?: boolean | null;
+			/** Format: double */
+			max?: number | null;
+			/** Format: double */
+			min?: number | null;
+			options?: string[] | null;
+			selected?: boolean | null;
+			/** Format: int32 */
+			size?: number | null;
+			text?: string | null;
+			unit?: string | null;
+			value?: string | null;
+			weight?: string | null;
+		};
+		TemplateInfo: {
+			created_at: string;
+			created_by: string;
+			schedule: components['schemas']['Schedule'];
+			template_name: string;
+			updated_at: string;
 		};
 		UpdateProfileRequest: {
 			/** @example John */
@@ -325,12 +383,9 @@ export interface components {
 			role: string;
 		};
 		Vec: {
-			field_type: string;
-			label?: string | null;
-			name: string;
-			placeholder?: string | null;
 			position: components['schemas']['Position'];
-			required: boolean;
+			props: components['schemas']['TemplateFieldProps'];
+			type: string;
 		}[];
 		VerifyTokenRequest: {
 			/** @example jwt-token-here */
@@ -933,6 +988,44 @@ export interface operations {
 				};
 				content: {
 					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Invalid or expired token */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	get_all_templates: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description All templates retrieved successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['GetAllTemplatesResponse'];
 				};
 			};
 			/** @description Invalid or expired token */

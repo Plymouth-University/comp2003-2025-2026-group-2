@@ -220,6 +220,7 @@ dependencies = [
  "chrono",
  "dashmap 6.1.0",
  "dotenvy",
+ "futures-util",
  "governor",
  "headers",
  "hyper",

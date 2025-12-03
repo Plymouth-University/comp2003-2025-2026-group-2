@@ -28,9 +28,7 @@
 	let isDragging = $state(false);
 	let snapEnabled = $state(true);
 
-	function getItemBounds(
-		itemId: string
-	): {
+	function getItemBounds(itemId: string): {
 		left: number;
 		right: number;
 		top: number;
