@@ -1,7 +1,7 @@
 use anyhow::Result;
+use futures_util::TryStreamExt;
 use mongodb::bson::Uuid;
 use utoipa::ToSchema;
-use futures_util::TryStreamExt;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize, ToSchema)]
 pub struct Position {
@@ -42,9 +42,9 @@ pub enum Frequency {
 pub struct Schedule {
     pub frequency: Frequency,
     pub days_of_week: Option<Vec<u8>>, // for daily schedule (one per day)
-    pub day_of_week: Option<u8>,        // for weekly schedule (one per week)
-    pub day_of_month: Option<u8>,   // for monthly schedule (one per month)
-    pub month_of_year: Option<u8>, // for yearly schedule (one per year)
+    pub day_of_week: Option<u8>,       // for weekly schedule (one per week)
+    pub day_of_month: Option<u8>,      // for monthly schedule (one per month)
+    pub month_of_year: Option<u8>,     // for yearly schedule (one per year)
 }
 
 pub type TemplateLayout = Vec<TemplateField>;
@@ -145,9 +145,7 @@ pub async fn update_template(
         "$set": set_doc
     };
 
-    collection
-        .update_one(filter, updated_template)
-        .await?;
+    collection.update_one(filter, updated_template).await?;
     Ok(())
 }
 
@@ -159,12 +157,15 @@ pub async fn rename_template(
 ) -> Result<()> {
     let db = client.database("logs_db");
     let collection: mongodb::Collection<TemplateDocument> = db.collection("templates");
-    
-    let existing_template = collection.find_one(mongodb::bson::doc! {
-        "template_name": new_name,
-        "company_id": company_id,
-    }).await?.is_some();
-    
+
+    let existing_template = collection
+        .find_one(mongodb::bson::doc! {
+            "template_name": new_name,
+            "company_id": company_id,
+        })
+        .await?
+        .is_some();
+
     if existing_template {
         anyhow::bail!("Template with the new name already exists");
     }
@@ -173,7 +174,7 @@ pub async fn rename_template(
         "template_name": old_name,
         "company_id": company_id,
     };
-    
+
     let update = mongodb::bson::doc! {
         "$set": {
             "template_name": new_name,

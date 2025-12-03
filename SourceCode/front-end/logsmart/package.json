@@ -4,7 +4,7 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "bun format --log-level error && vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -12,7 +12,7 @@
 		"deploy": "svelte-kit sync && bun run build && wrangler pages deploy .svelte-kit/cloudflare --project-name=logsmart",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"gen:api": "openapi-typescript openapi.json -o src/lib/api-types.d.ts",
+		"gen:api": "openapi-typescript openapi.json -o src/lib/api-types.d.ts && bun format",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint ."
 	},

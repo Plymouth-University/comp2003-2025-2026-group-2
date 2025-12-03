@@ -1,5 +1,5 @@
 use anyhow::Context;
-use axum::routing::{get, post, put, delete};
+use axum::routing::{delete, get, post, put};
 use axum::{Router, middleware};
 use back_end::logs_db;
 use back_end::{AppState, api_docs::ApiDoc, db, handlers, rate_limit};
@@ -86,10 +86,7 @@ async fn main() {
             "/auth/invitations/details",
             get(handlers::get_invitation_details),
         )
-        .route(
-            "/auth/profile",
-            put(handlers::update_profile),
-        )
+        .route("/auth/profile", put(handlers::update_profile))
         .route(
             "/auth/password/request-reset",
             post(handlers::request_password_reset),
@@ -98,22 +95,10 @@ async fn main() {
         .route("/auth/password/reset", post(handlers::reset_password))
         .route("/logs/templates", post(handlers::add_template))
         .route("/logs/templates", get(handlers::get_template))
-        .route(
-            "/logs/templates/all",
-            get(handlers::get_all_templates),
-        )
-        .route(
-            "/logs/templates/update",
-            put(handlers::update_template),
-        )
-        .route(
-            "/logs/templates/rename",
-            put(handlers::rename_template),
-        )
-        .route(
-            "/logs/templates",
-            delete(handlers::delete_template),
-        )
+        .route("/logs/templates/all", get(handlers::get_all_templates))
+        .route("/logs/templates/update", put(handlers::update_template))
+        .route("/logs/templates/rename", put(handlers::rename_template))
+        .route("/logs/templates", delete(handlers::delete_template))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             rate_limit::rate_limit_middleware,

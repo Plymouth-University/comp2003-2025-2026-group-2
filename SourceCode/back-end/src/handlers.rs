@@ -10,7 +10,7 @@ use crate::{
 use axum::{
     Json,
     extract::{ConnectInfo, Query, State},
-    http::{HeaderMap, StatusCode, header::SET_COOKIE},
+    http::{self, HeaderMap, StatusCode, header::SET_COOKIE},
     response::IntoResponse,
 };
 use chrono::Duration;
@@ -484,9 +484,16 @@ pub async fn register_company_admin(
     )
         .into_response();
 
-    response
-        .headers_mut()
-        .insert(SET_COOKIE, cookie.parse().unwrap());
+    response.headers_mut().insert(
+        SET_COOKIE,
+        http::HeaderValue::from_str(&cookie).map_err(|e| {
+            tracing::error!("Failed to set registration cookie: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to set authentication cookie" })),
+            )
+        })?,
+    );
 
     Ok(response)
 }
@@ -555,16 +562,12 @@ pub async fn login(
         ));
     }
 
-    let user = match user {
-        None => {
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                Json(json!({ "error": "Invalid email or password" })),
-            ));
-        }
-        Some(user) => user,
+    let Some(user) = user else {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "Invalid email or password" })),
+        ));
     };
-
     let password_valid = verify_password(&payload.password, &user.password_hash).map_err(|e| {
         tracing::error!("Password verification error: {:?}", e);
         (
@@ -640,9 +643,16 @@ pub async fn login(
     })
     .into_response();
 
-    response
-        .headers_mut()
-        .insert(SET_COOKIE, cookie.parse().unwrap());
+    response.headers_mut().insert(
+        SET_COOKIE,
+        http::header::HeaderValue::from_str(&cookie).map_err(|e| {
+            tracing::error!("Failed to set login cookie: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to set authentication cookie" })),
+            )
+        })?,
+    );
 
     Ok(response)
 }
@@ -1062,9 +1072,19 @@ pub async fn accept_invitation(
     )
         .into_response();
 
-    response
-        .headers_mut()
-        .insert(SET_COOKIE, cookie.parse().unwrap());
+    response.headers_mut().insert(
+        SET_COOKIE,
+        http::header::HeaderValue::from_str(&cookie).map_err(|e| {
+            tracing::error!(
+                "Failed to set cookie in invitation acceptance response: {:?}",
+                e
+            );
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to set authentication cookie" })),
+            )
+        })?,
+    );
 
     Ok(response)
 }
@@ -1311,15 +1331,16 @@ pub async fn add_template(
             Json(json!({ "error": "User is not associated with a company" })),
         ))?;
 
-    let existing_template = logs_db::get_template_by_name(&state.mongodb, &payload.template_name, &company_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to check for existing template: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?;
+    let existing_template =
+        logs_db::get_template_by_name(&state.mongodb, &payload.template_name, &company_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to check for existing template: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Database error" })),
+                )
+            })?;
 
     if existing_template.is_some() {
         return Err((
@@ -1539,16 +1560,15 @@ pub async fn get_all_templates(
             Json(json!({ "error": "User is not associated with a company" })),
         ))?;
 
-    let templates =
-        logs_db::get_templates_by_company(&state.mongodb, &company_id)
-            .await
-            .map_err(|e: anyhow::Error| {
-                tracing::error!("Failed to get templates: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({ "error": "Failed to get templates" })),
-                )
-            })?;
+    let templates = logs_db::get_templates_by_company(&state.mongodb, &company_id)
+        .await
+        .map_err(|e: anyhow::Error| {
+            tracing::error!("Failed to get templates: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to get templates" })),
+            )
+        })?;
 
     let response_templates = templates
         .into_iter()
@@ -1564,7 +1584,6 @@ pub async fn get_all_templates(
     Ok(Json(GetAllTemplatesResponse {
         templates: response_templates,
     }))
-
 }
 
 #[utoipa::path(
@@ -1614,7 +1633,9 @@ pub async fn update_template(
             Json(json!({ "error": "Failed to update template" })),
         )
     })?;
-    Ok(Json(UpdateTemplateResponse { message: "Template updated successfully.".to_string() }))
+    Ok(Json(UpdateTemplateResponse {
+        message: "Template updated successfully.".to_string(),
+    }))
 }
 
 #[derive(Deserialize, ToSchema)]
@@ -1674,7 +1695,9 @@ pub async fn rename_template(
             Json(json!({ "error": "Failed to rename template" })),
         )
     })?;
-    Ok(Json(RenameTemplateResponse { message: "Template renamed successfully.".to_string() }))
+    Ok(Json(RenameTemplateResponse {
+        message: "Template renamed successfully.".to_string(),
+    }))
 }
 
 #[derive(Deserialize, ToSchema, IntoParams)]
@@ -1721,18 +1744,16 @@ pub async fn delete_template(
             Json(json!({ "error": "User is not associated with a company" })),
         ))?;
 
-    logs_db::delete_template(
-        &state.mongodb,
-        &payload.template_name,
-        &company_id,
-    )
-    .await
-    .map_err(|e: anyhow::Error| {
-        tracing::error!("Failed to delete template: {:?}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": "Failed to delete template" })),
-        )
-    })?;
-    Ok(Json(DeleteTemplateResponse { message: "Template deleted successfully.".to_string() }))
+    logs_db::delete_template(&state.mongodb, &payload.template_name, &company_id)
+        .await
+        .map_err(|e: anyhow::Error| {
+            tracing::error!("Failed to delete template: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to delete template" })),
+            )
+        })?;
+    Ok(Json(DeleteTemplateResponse {
+        message: "Template deleted successfully.".to_string(),
+    }))
 }
