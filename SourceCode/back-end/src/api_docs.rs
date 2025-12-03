@@ -19,6 +19,8 @@ use utoipa::OpenApi;
         handlers::get_company_members,
         handlers::get_invitation_details,
         handlers::get_all_templates,
+        handlers::update_template,
+        handlers::rename_template,
     ),
     components(
         schemas(
@@ -43,6 +45,7 @@ use utoipa::OpenApi;
             logs_db::Frequency,
             logs_db::TemplateLayout,
             logs_db::TemplateFieldProps,
+
             handlers::AddTemplateRequest,
             handlers::GetTemplateRequest,
             handlers::GetTemplateResponse,
@@ -53,6 +56,10 @@ use utoipa::OpenApi;
             handlers::GetInvitationDetailsResponse,
             handlers::GetAllTemplatesResponse,
             handlers::TemplateInfo,
+            handlers::UpdateTemplateRequest,
+            handlers::UpdateTemplateResponse,
+            handlers::RenameTemplateRequest,
+            handlers::RenameTemplateResponse,
         )
     ),
     tags(

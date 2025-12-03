@@ -12,13 +12,13 @@ pub struct Position {
 #[derive(Debug, serde::Deserialize, serde::Serialize, ToSchema)]
 pub struct TemplateFieldProps {
     pub text: Option<String>,
-    pub size: Option<u32>,
+    pub size: Option<String>,
     pub weight: Option<String>,
     pub value: Option<String>,
-    pub min: Option<f64>,
-    pub max: Option<f64>,
+    pub min: Option<f32>,
+    pub max: Option<f32>,
     pub unit: Option<String>,
-    pub selected: Option<bool>,
+    pub selected: Option<String>,
     pub options: Option<Vec<String>>,
     pub editable: Option<bool>,
 }
@@ -111,4 +111,76 @@ pub async fn get_templates_by_company(
     }
 
     Ok(templates)
+}
+
+pub async fn update_template(
+    client: &mongodb::Client,
+    template_name: &str,
+    company_id: &str,
+    schedule: Option<&Schedule>,
+    layout: Option<&TemplateLayout>,
+) -> Result<()> {
+    if schedule.is_none() && layout.is_none() {
+        return Ok(());
+    }
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<TemplateDocument> = db.collection("templates");
+
+    let filter = mongodb::bson::doc! {
+        "template_name": template_name,
+        "company_id": company_id,
+    };
+
+    let mut set_doc = mongodb::bson::Document::new();
+
+    if let Some(schedule) = schedule {
+        set_doc.insert("schedule", mongodb::bson::to_bson(&schedule)?);
+    }
+    if let Some(layout) = layout {
+        set_doc.insert("template_layout", mongodb::bson::to_bson(&layout)?);
+    }
+    set_doc.insert("updated_at", mongodb::bson::to_bson(&chrono::Utc::now())?);
+
+    let updated_template = mongodb::bson::doc! {
+        "$set": set_doc
+    };
+
+    collection
+        .update_one(filter, updated_template)
+        .await?;
+    Ok(())
+}
+
+pub async fn rename_template(
+    client: &mongodb::Client,
+    old_name: &str,
+    new_name: &str,
+    company_id: &str,
+) -> Result<()> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<TemplateDocument> = db.collection("templates");
+    
+    let existing_template = collection.find_one(mongodb::bson::doc! {
+        "template_name": new_name,
+        "company_id": company_id,
+    }).await?.is_some();
+    
+    if existing_template {
+        anyhow::bail!("Template with the new name already exists");
+    }
+
+    let filter = mongodb::bson::doc! {
+        "template_name": old_name,
+        "company_id": company_id,
+    };
+    
+    let update = mongodb::bson::doc! {
+        "$set": {
+            "template_name": new_name,
+            "updated_at": mongodb::bson::to_bson(&chrono::Utc::now())?,
+        }
+    };
+
+    collection.update_one(filter, update).await?;
+    Ok(())
 }

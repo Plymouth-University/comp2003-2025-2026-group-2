@@ -79,6 +79,21 @@ pub struct AddTemplateRequest {
     pub schedule: logs_db::Schedule,
 }
 
+#[derive(Debug, Serialize, ToSchema)]
+pub struct UpdateTemplateResponse {
+    pub message: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct UpdateTemplateRequest {
+    #[schema(example = "Kitchen Daily Log")]
+    pub template_name: String,
+    #[schema(example = "[\"field1\", \"field2\"]")]
+    pub template_layout: Option<logs_db::TemplateLayout>,
+    #[schema(example = "{\"frequency\": \"daily\", \"time\": \"08:00\"}")]
+    pub schedule: Option<logs_db::Schedule>,
+}
+
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct GetTemplateRequest {
     #[schema(example = "Kitchen Daily Log")]
@@ -1296,6 +1311,23 @@ pub async fn add_template(
             Json(json!({ "error": "User is not associated with a company" })),
         ))?;
 
+    let existing_template = logs_db::get_template_by_name(&state.mongodb, &payload.template_name, &company_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to check for existing template: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?;
+
+    if existing_template.is_some() {
+        return Err((
+            StatusCode::CONFLICT,
+            Json(json!({ "error": "A template with this name already exists for your company" })),
+        ));
+    }
+
     let template_document = logs_db::TemplateDocument {
         template_name: payload.template_name,
         template_layout: payload.template_layout,
@@ -1533,4 +1565,114 @@ pub async fn get_all_templates(
         templates: response_templates,
     }))
 
+}
+
+#[utoipa::path(
+    put,
+    path = "/logs/templates/update",
+    request_body = UpdateTemplateRequest,
+    responses(
+        (status = 200, description = "Template updated successfully", body = UpdateTemplateResponse),
+        (status = 401, description = "Invalid or expired token", body = ErrorResponse),
+        (status = 400, description = "Password validation failed", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Templates"
+)]
+pub async fn update_template(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    Json(payload): Json<UpdateTemplateRequest>,
+) -> Result<Json<UpdateTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user company ID: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "User is not associated with a company" })),
+        ))?;
+
+    logs_db::update_template(
+        &state.mongodb,
+        &payload.template_name,
+        &company_id,
+        payload.schedule.as_ref(),
+        payload.template_layout.as_ref(),
+    )
+    .await
+    .map_err(|e: anyhow::Error| {
+        tracing::error!("Failed to update template: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to update template" })),
+        )
+    })?;
+    Ok(Json(UpdateTemplateResponse { message: "Template updated successfully.".to_string() }))
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct RenameTemplateRequest {
+    pub old_template_name: String,
+    pub new_template_name: String,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct RenameTemplateResponse {
+    pub message: String,
+}
+
+#[utoipa::path(
+    put,
+    path = "/logs/templates/rename",
+    request_body = RenameTemplateRequest,
+    responses(
+        (status = 200, description = "Template renamed successfully", body = RenameTemplateResponse),
+        (status = 401, description = "Invalid or expired token", body = ErrorResponse),
+        (status = 400, description = "Password validation failed", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Templates"
+)]
+pub async fn rename_template(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    Json(payload): Json<RenameTemplateRequest>,
+) -> Result<Json<RenameTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user company ID: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "User is not associated with a company" })),
+        ))?;
+
+    logs_db::rename_template(
+        &state.mongodb,
+        &payload.old_template_name,
+        &payload.new_template_name,
+        &company_id,
+    )
+    .await
+    .map_err(|e: anyhow::Error| {
+        tracing::error!("Failed to rename template: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to rename template" })),
+        )
+    })?;
+    Ok(Json(RenameTemplateResponse { message: "Template renamed successfully.".to_string() }))
 }

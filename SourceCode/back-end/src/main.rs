@@ -102,6 +102,10 @@ async fn main() {
             "/logs/templates/all",
             get(handlers::get_all_templates),
         )
+        .route(
+            "/logs/templates/update",
+            axum::routing::put(handlers::update_template),
+        )
         .layer(middleware::from_fn_with_state(
             state.clone(),
             rate_limit::rate_limit_middleware,
