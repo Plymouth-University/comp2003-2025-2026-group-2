@@ -1,11 +1,6 @@
 export async function GET() {
 	const site = 'https://logsmart.app'; // Replace with actual domain
-	const pages = [
-		'',
-		'/login',
-		'/register-company',
-		'/contact'
-	];
+	const pages = ['', '/login', '/register-company', '/contact'];
 
 	const sitemap = `<?xml version="1.0" encoding="UTF-8" ?>
 <urlset
