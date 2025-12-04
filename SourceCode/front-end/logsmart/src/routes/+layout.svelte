@@ -4,7 +4,6 @@
 	import type { LayoutData } from './$types';
 	import '../app.css';
 	import Icon from '$lib/assets/icon.svelte';
-	import favicon from '$lib/assets/favicon.svg';
 	import { isDarkMode } from '$lib/stores/theme';
 
 	let { children, data } = $props<{ children: any; data: LayoutData }>();
@@ -31,7 +30,6 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
 	<meta
 		name="description"
 		content="LogSmart - Digital logging system for the food service industry. Secure, eco-friendly, and audit-ready."

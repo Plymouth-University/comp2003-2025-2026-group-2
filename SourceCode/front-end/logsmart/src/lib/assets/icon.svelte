@@ -1,8 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500">
 	<defs>
-		<style fonts="Afacad">
-			@import url(https://fonts.googleapis.com/css2?family=Afacad%3Aital%2Cwght%400%2C400..700%3B1%2C400..700&amp;display=swap);
-		</style>
 		<mask id="mask-0">
 			<g transform="matrix(0.27269, 0, 0, 0.27269, 118.603706, 180.147034)" style="">
 				<path

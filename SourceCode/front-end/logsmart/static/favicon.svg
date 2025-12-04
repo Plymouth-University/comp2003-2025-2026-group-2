@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" xmlns:bx="https://boxy-svg.com">
   <defs>
-    <style bx:fonts="Afacad">@import url(https://fonts.googleapis.com/css2?family=Afacad%3Aital%2Cwght%400%2C400..700%3B1%2C400..700&amp;display=swap);</style>
+    <style>
+      @font-face {
+        font-family: 'Afacad';
+        src: url('/fonts/Afacad.woff2') format('woff2');
+      }
+    </style>
     <bx:export>
       <bx:file format="svg" normalization="web-secure-static"/>
     </bx:export>
