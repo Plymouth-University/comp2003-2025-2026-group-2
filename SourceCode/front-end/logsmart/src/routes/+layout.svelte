@@ -32,6 +32,15 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<meta name="description" content="LogSmart - Digital logging system for the food service industry. Secure, eco-friendly, and audit-ready." />
+	<meta property="og:site_name" content="LogSmart" />
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content="LogSmart - Digital Logging System" />
+	<meta property="og:description" content="Replace paper logs with LogSmart. Secure, cloud-based digital logging for the food service industry." />
+	<meta property="og:url" content="https://logsmart.app" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:title" content="LogSmart - Digital Logging System" />
+	<meta name="twitter:description" content="Replace paper logs with LogSmart. Secure, cloud-based digital logging for the food service industry." />
 </svelte:head>
 
 <div class="flex h-screen flex-col">

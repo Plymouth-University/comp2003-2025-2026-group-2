@@ -3,6 +3,13 @@
 	import banner from '$lib/assets/banner.webp';
 </script>
 
+<svelte:head>
+	<title>LogSmart - Digital Food Safety & Logging System</title>
+	<meta name="description" content="LogSmart is the premier digital logging solution for the food service industry. Replace paper logs with our secure, audit-ready cloud platform." />
+	<link rel="canonical" href="https://logsmart.app" />
+	<meta name="keywords" content="logsmart, logs, digital logs, food safety, haccp, temperature monitoring, kitchen management, audit ready, food hygiene, restaurant software, commercial kitchen, compliance, checklist app, paperless kitchen, fridge temperature log, cleaning schedule, due diligence" />
+</svelte:head>
+
 <div class="flex h-full w-full flex-col bg-bg-primary">
 	<section
 		class="relative px-6 py-6"
