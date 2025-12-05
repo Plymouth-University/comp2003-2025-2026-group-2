@@ -28,7 +28,7 @@
 		<div class="relative mx-auto max-w-7xl">
 			<div class="text-center">
 				<div class="mb-4 flex justify-center">
-					<div class="flex h-50 w-50 items-center justify-center rounded">
+					<div class="flex h-50 w-50 justify-center rounded">
 						<Icon />
 					</div>
 				</div>
