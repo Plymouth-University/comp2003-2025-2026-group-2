@@ -1,0 +1,10 @@
+import { redirect, type RequestEvent } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async ({ parent }) => {
+	const { user } = await parent();
+
+	if (user?.role !== 'admin') {
+		throw redirect(303, '/logs-list');
+	}
+};

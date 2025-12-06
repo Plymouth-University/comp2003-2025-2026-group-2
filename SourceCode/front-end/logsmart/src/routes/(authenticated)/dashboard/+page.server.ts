@@ -1,6 +1,13 @@
+import { redirect, type RequestEvent } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, cookies }) => {
+export const load: PageServerLoad = async ({ parent, fetch, cookies }: RequestEvent) => {
+	const { user } = await parent();
+
+	if (user?.role !== 'admin') {
+		throw redirect(303, '/logs-list');
+	}
+
 	const token = cookies.get('ls-token');
 
 	if (!token) {

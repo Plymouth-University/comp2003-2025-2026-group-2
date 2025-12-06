@@ -1,5 +1,5 @@
 import type { PageServerLoad, Actions } from './$types';
-import { fail } from '@sveltejs/kit';
+import { fail, type RequestEvent } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ fetch, cookies }) => {
 	const token = cookies.get('ls-token');

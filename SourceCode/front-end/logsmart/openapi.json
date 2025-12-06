@@ -400,6 +400,269 @@
 				}
 			}
 		},
+		"/logs/entries": {
+			"get": {
+				"tags": ["Log Entries"],
+				"operationId": "list_user_log_entries",
+				"responses": {
+					"200": {
+						"description": "User log entries retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ListLogEntriesResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing token",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			},
+			"post": {
+				"tags": ["Log Entries"],
+				"operationId": "create_log_entry",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": { "$ref": "#/components/schemas/CreateLogEntryRequest" }
+						}
+					},
+					"required": true
+				},
+				"responses": {
+					"201": {
+						"description": "Log entry created successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/CreateLogEntryResponse" }
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request data",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing token",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"404": {
+						"description": "Template not found",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/logs/entries/:entry_id": {
+			"get": {
+				"tags": ["Log Entries"],
+				"operationId": "get_log_entry",
+				"responses": {
+					"200": {
+						"description": "Log entry retrieved successfully",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/LogEntryResponse" } }
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing token",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden - entry does not belong to user",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"404": {
+						"description": "Entry not found",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			},
+			"put": {
+				"tags": ["Log Entries"],
+				"operationId": "update_log_entry",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": { "$ref": "#/components/schemas/UpdateLogEntryRequest" }
+						}
+					},
+					"required": true
+				},
+				"responses": {
+					"200": {
+						"description": "Log entry updated successfully",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/LogEntryResponse" } }
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing token",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden - entry does not belong to user",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"404": {
+						"description": "Entry not found",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			},
+			"delete": {
+				"tags": ["Log Entries"],
+				"operationId": "delete_log_entry",
+				"responses": {
+					"200": {
+						"description": "Log entry deleted successfully",
+						"content": { "application/json": { "schema": {} } }
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing token",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden - entry does not belong to user",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"404": {
+						"description": "Entry not found",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/logs/entries/:entry_id/submit": {
+			"post": {
+				"tags": ["Log Entries"],
+				"operationId": "submit_log_entry",
+				"responses": {
+					"200": {
+						"description": "Log entry submitted successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/SubmitLogEntryResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing token",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden - entry does not belong to user",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"404": {
+						"description": "Entry not found",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/logs/entries/due": {
+			"get": {
+				"tags": ["Log Entries"],
+				"operationId": "list_due_forms_today",
+				"responses": {
+					"200": {
+						"description": "Due forms retrieved successfully",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/DueFormsResponse" } }
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing token",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
 		"/logs/templates": {
 			"get": {
 				"tags": ["Templates"],
@@ -679,6 +942,16 @@
 					"user": { "$ref": "#/components/schemas/UserResponse" }
 				}
 			},
+			"CreateLogEntryRequest": {
+				"type": "object",
+				"required": ["template_name"],
+				"properties": { "template_name": { "type": "string", "example": "Kitchen Daily Log" } }
+			},
+			"CreateLogEntryResponse": {
+				"type": "object",
+				"required": ["id", "message"],
+				"properties": { "id": { "type": "string" }, "message": { "type": "string" } }
+			},
 			"DeleteTemplateRequest": {
 				"type": "object",
 				"required": ["template_name"],
@@ -688,6 +961,22 @@
 				"type": "object",
 				"required": ["message"],
 				"properties": { "message": { "type": "string" } }
+			},
+			"DueFormInfo": {
+				"type": "object",
+				"required": ["template_name", "template_layout"],
+				"properties": {
+					"last_submitted": { "type": ["string", "null"] },
+					"template_layout": { "$ref": "#/components/schemas/Vec" },
+					"template_name": { "type": "string" }
+				}
+			},
+			"DueFormsResponse": {
+				"type": "object",
+				"required": ["forms"],
+				"properties": {
+					"forms": { "type": "array", "items": { "$ref": "#/components/schemas/DueFormInfo" } }
+				}
 			},
 			"ErrorResponse": {
 				"type": "object",
@@ -750,6 +1039,29 @@
 				"type": "object",
 				"required": ["email"],
 				"properties": { "email": { "type": "string" } }
+			},
+			"ListLogEntriesResponse": {
+				"type": "object",
+				"required": ["entries"],
+				"properties": {
+					"entries": {
+						"type": "array",
+						"items": { "$ref": "#/components/schemas/LogEntryResponse" }
+					}
+				}
+			},
+			"LogEntryResponse": {
+				"type": "object",
+				"required": ["id", "template_name", "entry_data", "status", "created_at", "updated_at"],
+				"properties": {
+					"created_at": { "type": "string" },
+					"entry_data": {},
+					"id": { "type": "string" },
+					"status": { "type": "string" },
+					"submitted_at": { "type": ["string", "null"] },
+					"template_name": { "type": "string" },
+					"updated_at": { "type": "string" }
+				}
 			},
 			"LoginRequest": {
 				"type": "object",
@@ -831,6 +1143,12 @@
 					"month_of_year": { "type": ["integer", "null"], "format": "int32", "minimum": 0 }
 				}
 			},
+			"SubmitLogEntryRequest": { "type": "object" },
+			"SubmitLogEntryResponse": {
+				"type": "object",
+				"required": ["message"],
+				"properties": { "message": { "type": "string" } }
+			},
 			"TemplateDocument": {
 				"type": "object",
 				"required": [
@@ -886,6 +1204,11 @@
 					"template_name": { "type": "string" },
 					"updated_at": { "type": "string" }
 				}
+			},
+			"UpdateLogEntryRequest": {
+				"type": "object",
+				"required": ["entry_data"],
+				"properties": { "entry_data": {} }
 			},
 			"UpdateProfileRequest": {
 				"type": "object",
@@ -947,7 +1270,8 @@
 	"tags": [
 		{ "name": "Authentication", "description": "User authentication and registration endpoints" },
 		{ "name": "Invitations", "description": "Company member invitation management" },
-		{ "name": "Templates", "description": "Template1 management" },
-		{ "name": "Company Management", "description": "Company member management" }
+		{ "name": "Templates", "description": "Template management" },
+		{ "name": "Company Management", "description": "Company member management" },
+		{ "name": "Log Entries", "description": "Log entry management" }
 	]
 }

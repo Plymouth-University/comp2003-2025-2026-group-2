@@ -5,6 +5,7 @@
 	let { data, children } = $props<{ data: LayoutData; children: any }>();
 
 	const currentPath = $derived(page.url.pathname);
+	const isAdmin = $derived(data?.user?.role === 'admin');
 
 	async function handleLogout() {
 		await fetch('/api/logout', { method: 'POST' });
@@ -20,17 +21,23 @@
 		<div class="mx-auto max-w-7xl px-6 py-4">
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-8">
-					<a href="/dashboard" class="text-2xl font-bold" style="color: #94C5CC;">LogSmart</a>
+					<a
+						href={isAdmin ? '/dashboard' : '/logs-list'}
+						class="text-2xl font-bold"
+						style="color: #94C5CC;">LogSmart</a
+					>
 					<nav class="flex items-center gap-6">
-						<a
-							href="/dashboard"
-							class="hover:opacity-80"
-							style="color: var(--text-secondary);"
-							class:font-bold={currentPath === '/dashboard'}
-							class:underline={currentPath === '/dashboard'}
-						>
-							Dashboard
-						</a>
+						{#if isAdmin}
+							<a
+								href="/dashboard"
+								class="hover:opacity-80"
+								style="color: var(--text-secondary);"
+								class:font-bold={currentPath === '/dashboard'}
+								class:underline={currentPath === '/dashboard'}
+							>
+								Dashboard
+							</a>
+						{/if}
 						<a
 							href="/logs-list"
 							style="color: var(--text-secondary);"
@@ -41,32 +48,43 @@
 							Logs
 						</a>
 						<a
-							href="/users-admin"
+							href="/log-template"
 							style="color: var(--text-secondary);"
-							class:font-bold={currentPath === '/users-admin'}
-							class:underline={currentPath === '/users-admin'}
+							class:font-bold={currentPath === '/log-template'}
+							class:underline={currentPath === '/log-template'}
 							class="hover:opacity-80"
 						>
-							Users
+							Log Template
 						</a>
-						<a
-							href="/reports"
-							style="color: var(--text-secondary);"
-							class="hover:opacity-80"
-							class:font-bold={currentPath === '/reports'}
-							class:underline={currentPath === '/reports'}
-						>
-							Reports
-						</a>
-						<a
-							href="/templates-dashboard"
-							class="hover:opacity-80"
-							style="color: var(--text-secondary);"
-							class:font-bold={currentPath === '/templates-dashboard'}
-							class:underline={currentPath === '/templates-dashboard'}
-						>
-							Templates Dashboard
-						</a>
+						{#if isAdmin}
+							<a
+								href="/users-admin"
+								style="color: var(--text-secondary);"
+								class:font-bold={currentPath === '/users-admin'}
+								class:underline={currentPath === '/users-admin'}
+								class="hover:opacity-80"
+							>
+								Users
+							</a>
+							<a
+								href="/reports"
+								style="color: var(--text-secondary);"
+								class="hover:opacity-80"
+								class:font-bold={currentPath === '/reports'}
+								class:underline={currentPath === '/reports'}
+							>
+								Reports
+							</a>
+							<a
+								href="/templates-dashboard"
+								class="hover:opacity-80"
+								style="color: var(--text-secondary);"
+								class:font-bold={currentPath === '/templates-dashboard'}
+								class:underline={currentPath === '/templates-dashboard'}
+							>
+								Templates Dashboard
+							</a>
+						{/if}
 					</nav>
 				</div>
 				<div class="flex items-center gap-4">

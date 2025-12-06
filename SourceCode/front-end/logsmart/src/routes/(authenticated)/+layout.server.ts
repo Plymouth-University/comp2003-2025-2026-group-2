@@ -8,12 +8,11 @@ export const load = async ({ cookies, fetch }: RequestEvent) => {
 	}
 
 	try {
-		const response = await fetch('/api/auth/verify', {
-			method: 'POST',
+		const response = await fetch('/api/auth/me', {
+			method: 'GET',
 			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ token })
+				Authorization: `Bearer ${token}`
+			}
 		});
 
 		if (!response.ok) {
@@ -21,12 +20,10 @@ export const load = async ({ cookies, fetch }: RequestEvent) => {
 			throw redirect(303, '/login');
 		}
 
-		const data = await response.json();
+		const userData = await response.json();
 
 		return {
-			user: {
-				email: data.email
-			}
+			user: userData
 		};
 	} catch (error) {
 		cookies.delete('ls-token', { path: '/' });
