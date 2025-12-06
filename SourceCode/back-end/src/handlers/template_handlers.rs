@@ -105,27 +105,6 @@ pub async fn get_template(
     State(state): State<AppState>,
     Query(payload): Query<GetTemplateRequest>,
 ) -> Result<Json<GetTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
-    if !user.can_manage_company() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Only company admin or LogSmartAdmin can access templates" })),
-        ));
-    }
-
     let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
         .await
         .map_err(|e| {

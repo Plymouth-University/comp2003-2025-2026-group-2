@@ -750,7 +750,6 @@ pub fn process_template_layout_with_period(
     frequency: &Frequency,
 ) -> TemplateLayout {
     let period = format_period_for_frequency(frequency);
-    tracing::info!("Processing template layout with period: '{}'", period);
 
     layout
         .iter()
