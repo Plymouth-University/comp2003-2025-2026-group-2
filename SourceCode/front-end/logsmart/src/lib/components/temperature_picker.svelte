@@ -4,8 +4,16 @@
 		min = -20,
 		max = 50,
 		label = 'Temperature',
-		unit = '°C'
-	}: { value: number; min: number; max: number; label: string; unit: string } = $props();
+		unit = '°C',
+		disabled = false
+	}: {
+		value: number;
+		min: number;
+		max: number;
+		label: string;
+		unit: string;
+		disabled?: boolean;
+	} = $props();
 	const freezerMin = min;
 	const freezerMax = max;
 
@@ -40,18 +48,24 @@
 			type="number"
 			bind:value
 			onchange={handleInputChange}
-			max="10"
-			min="-10"
+			max={freezerMax}
+			min={freezerMin}
+			{disabled}
 			class="w-16 border-2 px-3 py-2 text-center text-xl font-medium"
-			style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+			style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary); {disabled
+				? 'opacity: 0.5; cursor: not-allowed;'
+				: ''}"
 		/>
 		<div class="flex flex-col gap-1">
 			<button
 				type="button"
 				onclick={increaseValue}
+				{disabled}
 				class="flex h-7 w-7 items-center justify-center rounded-sm border-2 transition-all
-                hover:scale-110 hover:bg-gray-100 active:scale-95"
-				style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+                {disabled ? '' : 'hover:scale-110 hover:bg-gray-100 active:scale-95'}"
+				style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary); {disabled
+					? 'opacity: 0.5; cursor: not-allowed;'
+					: ''}"
 				aria-label="Increase temperature"
 			>
 				<svg
@@ -68,8 +82,13 @@
 			<button
 				type="button"
 				onclick={decreaseValue}
-				class="flex h-7 w-7 items-center justify-center rounded-sm border-2 transition-all hover:scale-110 hover:bg-gray-100 active:scale-95"
-				style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+				{disabled}
+				class="flex h-7 w-7 items-center justify-center rounded-sm border-2 transition-all {disabled
+					? ''
+					: 'hover:scale-110 hover:bg-gray-100 active:scale-95'}"
+				style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary); {disabled
+					? 'opacity: 0.5; cursor: not-allowed;'
+					: ''}"
 				aria-label="Decrease temperature"
 			>
 				<svg

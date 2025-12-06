@@ -67,22 +67,53 @@ pub async fn list_due_forms_today(
 
     for template in templates {
         if logs_db::is_form_due_today(&template.schedule) {
-            let last_submitted = logs_db::get_latest_submitted_entry(
+            let has_submitted_entry = logs_db::has_submitted_entry_for_current_period(
                 &state.mongodb,
-                &claims.user_id,
                 &company_id,
                 &template.template_name,
+                &template.schedule.frequency,
             )
             .await
-            .ok()
-            .flatten();
+            .unwrap_or(false);
 
-            due_forms.push(DueFormInfo {
-                template_name: template.template_name,
-                template_layout: template.template_layout,
-                last_submitted: last_submitted
-                    .and_then(|e| e.submitted_at.map(|ts| ts.to_rfc3339())),
-            });
+            if !has_submitted_entry {
+                let last_submitted = logs_db::get_latest_submitted_entry(
+                    &state.mongodb,
+                    &claims.user_id,
+                    &company_id,
+                    &template.template_name,
+                )
+                .await
+                .ok()
+                .flatten();
+
+                let draft_entry = logs_db::get_draft_entry_for_current_period(
+                    &state.mongodb,
+                    &claims.user_id,
+                    &company_id,
+                    &template.template_name,
+                    &template.schedule.frequency,
+                )
+                .await
+                .ok()
+                .flatten();
+
+                let processed_layout = logs_db::process_template_layout_with_period(
+                    &template.template_layout,
+                    &template.schedule.frequency,
+                );
+
+                let period = logs_db::format_period_for_frequency(&template.schedule.frequency);
+
+                due_forms.push(DueFormInfo {
+                    template_name: template.template_name,
+                    template_layout: processed_layout,
+                    last_submitted: last_submitted
+                        .and_then(|e| e.submitted_at.map(|ts| ts.to_rfc3339())),
+                    period,
+                    status: draft_entry.map(|e| e.status),
+                });
+            }
         }
     }
 
@@ -154,14 +185,49 @@ pub async fn get_log_entry(
         .await
         .map_err(|(status, err)| (status, Json(err)))?;
 
+    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user company ID: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "User is not associated with a company" })),
+        ))?;
+
+    let template = logs_db::get_template_by_name(&state.mongodb, &entry.template_name, &company_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to get template: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to get template" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Template not found" })),
+        ))?;
+
+    let processed_layout = logs_db::process_template_layout_with_period_string(
+        &template.template_layout,
+        &entry.period,
+    );
+
     Ok(Json(LogEntryResponse {
         id: entry.entry_id,
         template_name: entry.template_name,
+        template_layout: processed_layout,
         entry_data: entry.entry_data,
         status: entry.status,
         created_at: entry.created_at.to_rfc3339(),
         updated_at: entry.updated_at.to_rfc3339(),
         submitted_at: entry.submitted_at.map(|ts| ts.to_rfc3339()),
+        period: entry.period,
     }))
 }
 
@@ -194,14 +260,50 @@ pub async fn update_log_entry(
     .await
     .map_err(|(status, err)| (status, Json(err)))?;
 
+    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user company ID: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "User is not associated with a company" })),
+        ))?;
+
+    let template =
+        logs_db::get_template_by_name(&state.mongodb, &updated_entry.template_name, &company_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to get template: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Failed to get template" })),
+                )
+            })?
+            .ok_or((
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": "Template not found" })),
+            ))?;
+
+    let processed_layout = logs_db::process_template_layout_with_period_string(
+        &template.template_layout,
+        &updated_entry.period,
+    );
+
     Ok(Json(LogEntryResponse {
         id: updated_entry.entry_id,
         template_name: updated_entry.template_name,
+        template_layout: processed_layout,
         entry_data: updated_entry.entry_data,
         status: updated_entry.status,
         created_at: updated_entry.created_at.to_rfc3339(),
         updated_at: updated_entry.updated_at.to_rfc3339(),
         submitted_at: updated_entry.submitted_at.map(|ts| ts.to_rfc3339()),
+        period: updated_entry.period,
     }))
 }
 
@@ -229,6 +331,33 @@ pub async fn submit_log_entry(
 
     Ok(Json(SubmitLogEntryResponse {
         message: "Log entry submitted successfully.".to_string(),
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/logs/entries/:entry_id/unsubmit",
+    responses(
+        (status = 200, description = "Log entry returned to draft successfully", body = SubmitLogEntryResponse),
+        (status = 401, description = "Unauthorized - invalid or missing token", body = ErrorResponse),
+        (status = 403, description = "Forbidden - only admins can unsubmit entries", body = ErrorResponse),
+        (status = 404, description = "Entry not found", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Log Entries"
+)]
+pub async fn unsubmit_log_entry(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    axum::extract::Path(entry_id): axum::extract::Path<String>,
+) -> Result<Json<SubmitLogEntryResponse>, (StatusCode, Json<serde_json::Value>)> {
+    services::LogEntryService::unsubmit_log_entry(&state, &claims.user_id, &entry_id)
+        .await
+        .map_err(|(status, err)| (status, Json(err)))?;
+
+    Ok(Json(SubmitLogEntryResponse {
+        message: "Log entry returned to draft successfully.".to_string(),
     }))
 }
 
@@ -319,18 +448,39 @@ pub async fn list_user_log_entries(
         entries.retain(|e| e.status == *status);
     }
 
-    let response_entries = entries
-        .into_iter()
-        .map(|e| LogEntryResponse {
+    let mut response_entries = Vec::new();
+    for e in entries {
+        let template = logs_db::get_template_by_name(&state.mongodb, &e.template_name, &company_id)
+            .await
+            .map_err(|err| {
+                tracing::error!("Failed to get template: {:?}", err);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Failed to get template" })),
+                )
+            })?;
+
+        let processed_layout = if let Some(template) = template {
+            logs_db::process_template_layout_with_period_string(
+                &template.template_layout,
+                &e.period,
+            )
+        } else {
+            Vec::new()
+        };
+
+        response_entries.push(LogEntryResponse {
             id: e.entry_id,
             template_name: e.template_name,
+            template_layout: processed_layout,
             entry_data: e.entry_data,
             status: e.status,
             created_at: e.created_at.to_rfc3339(),
             updated_at: e.updated_at.to_rfc3339(),
             submitted_at: e.submitted_at.map(|ts| ts.to_rfc3339()),
-        })
-        .collect();
+            period: e.period,
+        });
+    }
 
     Ok(Json(ListLogEntriesResponse {
         entries: response_entries,

@@ -26,6 +26,7 @@ use utoipa::OpenApi;
         handlers::get_log_entry,
         handlers::update_log_entry,
         handlers::submit_log_entry,
+        handlers::unsubmit_log_entry,
         handlers::delete_log_entry,
         handlers::list_user_log_entries,
     ),

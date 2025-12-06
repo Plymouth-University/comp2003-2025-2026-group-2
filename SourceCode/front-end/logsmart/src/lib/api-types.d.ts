@@ -228,6 +228,22 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/logs/entries/:entry_id/unsubmit': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: operations['unsubmit_log_entry'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	'/logs/entries/due': {
 		parameters: {
 			query?: never;
@@ -354,6 +370,8 @@ export interface components {
 		};
 		DueFormInfo: {
 			last_submitted?: string | null;
+			period: string;
+			status?: string | null;
 			template_layout: components['schemas']['Vec'];
 			template_name: string;
 		};
@@ -406,8 +424,10 @@ export interface components {
 			created_at: string;
 			entry_data: unknown;
 			id: string;
+			period: string;
 			status: string;
 			submitted_at?: string | null;
+			template_layout: components['schemas']['Vec'];
 			template_name: string;
 			updated_at: string;
 		};
@@ -1356,6 +1376,62 @@ export interface operations {
 				};
 			};
 			/** @description Forbidden - entry does not belong to user */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Entry not found */
+			404: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	unsubmit_log_entry: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Log entry returned to draft successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['SubmitLogEntryResponse'];
+				};
+			};
+			/** @description Unauthorized - invalid or missing token */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden - only admins can unsubmit entries */
 			403: {
 				headers: {
 					[name: string]: unknown;

@@ -65,16 +65,12 @@ export const actions: Actions = {
 			// Read response body once
 			const text = await response.text();
 
-			console.log('Profile update response status:', response.status);
-			console.log('Profile update response body:', text);
-
 			if (!response.ok) {
 				let errorMessage = 'Failed to update profile';
 				try {
 					if (text) {
 						const error = JSON.parse(text);
 						errorMessage = error.message || error.error || errorMessage;
-						console.log('Parsed error:', error);
 					}
 				} catch {
 					// Use text as-is if not JSON
@@ -91,10 +87,8 @@ export const actions: Actions = {
 			if (text) {
 				try {
 					const data = JSON.parse(text);
-					console.log('Profile update response:', data);
 				} catch {
 					// Non-JSON response is OK for updates
-					console.log('Profile update response (text):', text);
 				}
 			}
 
@@ -142,16 +136,12 @@ export const actions: Actions = {
 			// Read response body once
 			const text = await response.text();
 
-			console.log('Password reset request response status:', response.status);
-			console.log('Password reset request response body:', text);
-
 			if (!response.ok) {
 				let errorMessage = 'Failed to send password reset email';
 				try {
 					if (text) {
 						const error = JSON.parse(text);
 						errorMessage = error.message || error.error || errorMessage;
-						console.log('Parsed error:', error);
 					}
 				} catch {
 					// Use text as-is if not JSON
@@ -168,10 +158,8 @@ export const actions: Actions = {
 			if (text) {
 				try {
 					const data = JSON.parse(text);
-					console.log('Password reset request response:', data);
 				} catch {
 					// Non-JSON response is OK
-					console.log('Password reset request response (text):', text);
 				}
 			}
 

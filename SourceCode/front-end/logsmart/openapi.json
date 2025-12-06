@@ -636,6 +636,47 @@
 				"security": [{ "bearer_auth": [] }]
 			}
 		},
+		"/logs/entries/:entry_id/unsubmit": {
+			"post": {
+				"tags": ["Log Entries"],
+				"operationId": "unsubmit_log_entry",
+				"responses": {
+					"200": {
+						"description": "Log entry returned to draft successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/SubmitLogEntryResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing token",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden - only admins can unsubmit entries",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"404": {
+						"description": "Entry not found",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
 		"/logs/entries/due": {
 			"get": {
 				"tags": ["Log Entries"],
@@ -964,9 +1005,11 @@
 			},
 			"DueFormInfo": {
 				"type": "object",
-				"required": ["template_name", "template_layout"],
+				"required": ["template_name", "template_layout", "period"],
 				"properties": {
 					"last_submitted": { "type": ["string", "null"] },
+					"period": { "type": "string" },
+					"status": { "type": ["string", "null"] },
 					"template_layout": { "$ref": "#/components/schemas/Vec" },
 					"template_name": { "type": "string" }
 				}
@@ -1052,13 +1095,24 @@
 			},
 			"LogEntryResponse": {
 				"type": "object",
-				"required": ["id", "template_name", "entry_data", "status", "created_at", "updated_at"],
+				"required": [
+					"id",
+					"template_name",
+					"template_layout",
+					"entry_data",
+					"status",
+					"created_at",
+					"updated_at",
+					"period"
+				],
 				"properties": {
 					"created_at": { "type": "string" },
 					"entry_data": {},
 					"id": { "type": "string" },
+					"period": { "type": "string" },
 					"status": { "type": "string" },
 					"submitted_at": { "type": ["string", "null"] },
+					"template_layout": { "$ref": "#/components/schemas/Vec" },
 					"template_name": { "type": "string" },
 					"updated_at": { "type": "string" }
 				}

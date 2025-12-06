@@ -315,11 +315,13 @@ pub struct CreateLogEntryRequest {
 pub struct LogEntryResponse {
     pub id: String,
     pub template_name: String,
+    pub template_layout: logs_db::TemplateLayout,
     pub entry_data: serde_json::Value,
     pub status: String,
     pub created_at: String,
     pub updated_at: String,
     pub submitted_at: Option<String>,
+    pub period: String,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -335,6 +337,8 @@ pub struct DueFormInfo {
     pub template_name: String,
     pub template_layout: logs_db::TemplateLayout,
     pub last_submitted: Option<String>,
+    pub period: String,
+    pub status: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]

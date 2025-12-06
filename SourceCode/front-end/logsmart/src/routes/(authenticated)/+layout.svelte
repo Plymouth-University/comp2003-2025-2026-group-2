@@ -47,15 +47,6 @@
 						>
 							Logs
 						</a>
-						<a
-							href="/log-template"
-							style="color: var(--text-secondary);"
-							class:font-bold={currentPath === '/log-template'}
-							class:underline={currentPath === '/log-template'}
-							class="hover:opacity-80"
-						>
-							Log Template
-						</a>
 						{#if isAdmin}
 							<a
 								href="/users-admin"

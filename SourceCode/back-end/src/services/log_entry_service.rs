@@ -25,7 +25,7 @@ impl LogEntryService {
                 json!({ "error": "User is not associated with a company" }),
             ))?;
 
-        let _template = logs_db::get_template_by_name(&state.mongodb, template_name, &company_id)
+        let template = logs_db::get_template_by_name(&state.mongodb, template_name, &company_id)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to get template: {:?}", e);
@@ -39,8 +39,37 @@ impl LogEntryService {
                 json!({ "error": "Template not found" }),
             ))?;
 
+        let has_entry = logs_db::has_entry_for_current_period(
+            &state.mongodb,
+            &company_id,
+            template_name,
+            &template.schedule.frequency,
+        )
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to check for existing entries: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                json!({ "error": "Failed to check for existing entries" }),
+            )
+        })?;
+
+        if has_entry {
+            let period = match template.schedule.frequency {
+                logs_db::Frequency::Daily => "today",
+                logs_db::Frequency::Weekly => "this week",
+                logs_db::Frequency::Monthly => "this month",
+                logs_db::Frequency::Yearly => "this year",
+            };
+            return Err((
+                StatusCode::CONFLICT,
+                json!({ "error": format!("A log entry for this template has already been created {}", period) }),
+            ));
+        }
+
         let entry_id = Uuid::new_v4().to_string();
         let now = chrono::Utc::now();
+        let period = logs_db::format_period_for_frequency(&template.schedule.frequency);
 
         let entry = logs_db::LogEntry {
             entry_id: entry_id.clone(),
@@ -52,6 +81,7 @@ impl LogEntryService {
             updated_at: now,
             submitted_at: None,
             status: "draft".to_string(),
+            period,
         };
 
         logs_db::create_log_entry(&state.mongodb, &entry)
@@ -164,19 +194,89 @@ impl LogEntryService {
             ));
         }
 
-        let now = chrono::Utc::now();
-        let update_data = json!({
-            "submitted_at": now,
-            "status": "submitted"
-        });
-
-        logs_db::update_log_entry(&state.mongodb, entry_id, &update_data)
+        logs_db::submit_log_entry(&state.mongodb, entry_id)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to submit log entry: {:?}", e);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     json!({ "error": "Failed to submit log entry" }),
+                )
+            })?;
+
+        Ok(())
+    }
+
+    pub async fn unsubmit_log_entry(
+        state: &AppState,
+        user_id: &str,
+        entry_id: &str,
+    ) -> Result<(), (StatusCode, serde_json::Value)> {
+        let user = db::get_user_by_id(&state.sqlite, user_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error fetching user: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Database error" }),
+                )
+            })?
+            .ok_or((
+                StatusCode::UNAUTHORIZED,
+                json!({ "error": "User not found" }),
+            ))?;
+
+        let is_admin = user.is_admin() || user.is_logsmart_admin();
+
+        if !is_admin {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "Only admin users can unsubmit log entries" }),
+            ));
+        }
+
+        let entry = logs_db::get_log_entry(&state.mongodb, entry_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to get log entry: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to get log entry" }),
+                )
+            })?
+            .ok_or((StatusCode::NOT_FOUND, json!({ "error": "Entry not found" })))?;
+
+        let user_company_id = db::get_user_company_id(&state.sqlite, user_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error fetching user company ID: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Database error" }),
+                )
+            })?;
+
+        if let Some(company_id) = user_company_id {
+            if entry.company_id != company_id && !user.is_logsmart_admin() {
+                return Err((
+                    StatusCode::FORBIDDEN,
+                    json!({ "error": "You do not have permission to unsubmit this entry" }),
+                ));
+            }
+        } else if !user.is_logsmart_admin() {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "User is not associated with a company" }),
+            ));
+        }
+
+        logs_db::unsubmit_log_entry(&state.mongodb, entry_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to unsubmit log entry: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to unsubmit log entry" }),
                 )
             })?;
 

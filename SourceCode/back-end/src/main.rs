@@ -112,6 +112,10 @@ async fn main() {
             "/logs/entries/{entry_id}/submit",
             post(handlers::submit_log_entry),
         )
+        .route(
+            "/logs/entries/{entry_id}/unsubmit",
+            post(handlers::unsubmit_log_entry),
+        )
         .layer(middleware::from_fn_with_state(
             state.clone(),
             rate_limit::rate_limit_middleware,

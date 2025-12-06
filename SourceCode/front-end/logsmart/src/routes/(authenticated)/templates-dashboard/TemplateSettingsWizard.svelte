@@ -158,7 +158,7 @@
 				{#if frequency === 'weekly'}
 					<div>
 						<p class="mb-3 font-medium" style="color: var(--text-secondary);">
-							Select which day of the week:
+							Select which day of the week this template should be completed on:
 						</p>
 						<div class="flex flex-wrap gap-2">
 							{#each daysOfWeek as day (day.value)}
@@ -183,7 +183,7 @@
 							class="mb-2 block font-medium"
 							style="color: var(--text-secondary);"
 						>
-							Day of the month
+							Day of the month it will become available from
 						</label>
 						<input
 							id="monthly-day"
@@ -204,7 +204,7 @@
 							class="mb-2 block font-medium"
 							style="color: var(--text-secondary);"
 						>
-							Date of year
+							Date of year it will become available from
 						</label>
 						<input
 							id="yearly-date"

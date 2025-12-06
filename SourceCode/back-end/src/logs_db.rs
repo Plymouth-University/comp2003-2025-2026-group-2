@@ -4,13 +4,13 @@ use futures_util::TryStreamExt;
 use mongodb::bson::Uuid;
 use utoipa::ToSchema;
 
-#[derive(Debug, serde::Deserialize, serde::Serialize, ToSchema)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema)]
 pub struct Position {
     pub x: f64,
     pub y: f64,
 }
 
-#[derive(Debug, serde::Deserialize, serde::Serialize, ToSchema)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema)]
 pub struct TemplateFieldProps {
     pub text: Option<String>,
     pub size: Option<String>,
@@ -24,7 +24,7 @@ pub struct TemplateFieldProps {
     pub editable: Option<bool>,
 }
 
-#[derive(Debug, serde::Deserialize, serde::Serialize, ToSchema)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema)]
 pub struct TemplateField {
     pub field_type: String,
     pub position: Position,
@@ -215,6 +215,7 @@ pub struct LogEntry {
     pub updated_at: chrono::DateTime<chrono::Utc>,
     pub submitted_at: Option<chrono::DateTime<chrono::Utc>>,
     pub status: String,
+    pub period: String,
 }
 
 pub async fn create_log_entry(client: &mongodb::Client, entry: &LogEntry) -> Result<()> {
@@ -308,6 +309,271 @@ pub async fn get_latest_submitted_entry(
     Ok(result)
 }
 
+pub async fn has_entry_for_current_period(
+    client: &mongodb::Client,
+    company_id: &str,
+    template_name: &str,
+    frequency: &Frequency,
+) -> Result<bool> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let now = chrono::Utc::now();
+    let (period_start, period_end) = match frequency {
+        Frequency::Daily => {
+            let start = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc();
+            let end = now.date_naive().and_hms_opt(23, 59, 59).unwrap().and_utc();
+            (start, end)
+        }
+        Frequency::Weekly => {
+            let days_since_monday = now.weekday().num_days_from_monday();
+            let start = (now.date_naive() - chrono::Duration::days(days_since_monday as i64))
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_utc();
+            let end = (start.date_naive() + chrono::Duration::days(6))
+                .and_hms_opt(23, 59, 59)
+                .unwrap()
+                .and_utc();
+            (start, end)
+        }
+        Frequency::Monthly => {
+            let start = now
+                .date_naive()
+                .with_day(1)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_utc();
+            let next_month = if now.month() == 12 {
+                now.date_naive()
+                    .with_year(now.year() + 1)
+                    .unwrap()
+                    .with_month(1)
+                    .unwrap()
+            } else {
+                now.date_naive().with_month(now.month() + 1).unwrap()
+            };
+            let end = (next_month - chrono::Duration::days(1))
+                .and_hms_opt(23, 59, 59)
+                .unwrap()
+                .and_utc();
+            (start, end)
+        }
+        Frequency::Yearly => {
+            let start = now
+                .date_naive()
+                .with_month(1)
+                .unwrap()
+                .with_day(1)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_utc();
+            let end = now
+                .date_naive()
+                .with_month(12)
+                .unwrap()
+                .with_day(31)
+                .unwrap()
+                .and_hms_opt(23, 59, 59)
+                .unwrap()
+                .and_utc();
+            (start, end)
+        }
+    };
+
+    let filter = mongodb::bson::doc! {
+        "company_id": company_id,
+        "template_name": template_name,
+        "created_at": {
+            "$gte": mongodb::bson::to_bson(&period_start)?,
+            "$lte": mongodb::bson::to_bson(&period_end)?,
+        },
+    };
+
+    let result = collection.find_one(filter).await?;
+    Ok(result.is_some())
+}
+
+pub async fn has_submitted_entry_for_current_period(
+    client: &mongodb::Client,
+    company_id: &str,
+    template_name: &str,
+    frequency: &Frequency,
+) -> Result<bool> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let now = chrono::Utc::now();
+    let (period_start, period_end) = match frequency {
+        Frequency::Daily => {
+            let start = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc();
+            let end = now.date_naive().and_hms_opt(23, 59, 59).unwrap().and_utc();
+            (start, end)
+        }
+        Frequency::Weekly => {
+            let days_since_monday = now.weekday().num_days_from_monday();
+            let start = (now.date_naive() - chrono::Duration::days(days_since_monday as i64))
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_utc();
+            let end = (start.date_naive() + chrono::Duration::days(6))
+                .and_hms_opt(23, 59, 59)
+                .unwrap()
+                .and_utc();
+            (start, end)
+        }
+        Frequency::Monthly => {
+            let start = now
+                .date_naive()
+                .with_day(1)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_utc();
+            let next_month = if now.month() == 12 {
+                now.date_naive()
+                    .with_year(now.year() + 1)
+                    .unwrap()
+                    .with_month(1)
+                    .unwrap()
+            } else {
+                now.date_naive().with_month(now.month() + 1).unwrap()
+            };
+            let end = (next_month - chrono::Duration::days(1))
+                .and_hms_opt(23, 59, 59)
+                .unwrap()
+                .and_utc();
+            (start, end)
+        }
+        Frequency::Yearly => {
+            let start = now
+                .date_naive()
+                .with_month(1)
+                .unwrap()
+                .with_day(1)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_utc();
+            let end = now
+                .date_naive()
+                .with_month(12)
+                .unwrap()
+                .with_day(31)
+                .unwrap()
+                .and_hms_opt(23, 59, 59)
+                .unwrap()
+                .and_utc();
+            (start, end)
+        }
+    };
+
+    let filter = mongodb::bson::doc! {
+        "company_id": company_id,
+        "template_name": template_name,
+        "status": "submitted",
+        "created_at": {
+            "$gte": mongodb::bson::to_bson(&period_start)?,
+            "$lte": mongodb::bson::to_bson(&period_end)?,
+        },
+    };
+
+    let result = collection.find_one(filter).await?;
+    Ok(result.is_some())
+}
+
+pub async fn get_draft_entry_for_current_period(
+    client: &mongodb::Client,
+    user_id: &str,
+    company_id: &str,
+    template_name: &str,
+    frequency: &Frequency,
+) -> Result<Option<LogEntry>> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let now = chrono::Utc::now();
+    let (period_start, period_end) = match frequency {
+        Frequency::Daily => {
+            let start = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc();
+            let end = now.date_naive().and_hms_opt(23, 59, 59).unwrap().and_utc();
+            (start, end)
+        }
+        Frequency::Weekly => {
+            let days_since_monday = now.weekday().num_days_from_monday();
+            let start = (now.date_naive() - chrono::Duration::days(days_since_monday as i64))
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_utc();
+            let end = (start.date_naive() + chrono::Duration::days(6))
+                .and_hms_opt(23, 59, 59)
+                .unwrap()
+                .and_utc();
+            (start, end)
+        }
+        Frequency::Monthly => {
+            let start = now
+                .date_naive()
+                .with_day(1)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_utc();
+            let next_month = if now.month() == 12 {
+                now.date_naive()
+                    .with_year(now.year() + 1)
+                    .unwrap()
+                    .with_month(1)
+                    .unwrap()
+            } else {
+                now.date_naive().with_month(now.month() + 1).unwrap()
+            };
+            let end = (next_month - chrono::Duration::days(1))
+                .and_hms_opt(23, 59, 59)
+                .unwrap()
+                .and_utc();
+            (start, end)
+        }
+        Frequency::Yearly => {
+            let start = now
+                .date_naive()
+                .with_month(1)
+                .unwrap()
+                .with_day(1)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_utc();
+            let end = now
+                .date_naive()
+                .with_month(12)
+                .unwrap()
+                .with_day(31)
+                .unwrap()
+                .and_hms_opt(23, 59, 59)
+                .unwrap()
+                .and_utc();
+            (start, end)
+        }
+    };
+
+    let filter = mongodb::bson::doc! {
+        "user_id": user_id,
+        "company_id": company_id,
+        "template_name": template_name,
+        "status": "draft",
+        "created_at": {
+            "$gte": mongodb::bson::to_bson(&period_start)?,
+            "$lte": mongodb::bson::to_bson(&period_end)?,
+        },
+    };
+
+    let result = collection.find_one(filter).await?;
+    Ok(result)
+}
+
 pub async fn update_log_entry(
     client: &mongodb::Client,
     entry_id: &str,
@@ -343,6 +609,26 @@ pub async fn submit_log_entry(client: &mongodb::Client, entry_id: &str) -> Resul
         "$set": {
             "status": "submitted",
             "submitted_at": mongodb::bson::to_bson(&chrono::Utc::now())?,
+            "updated_at": mongodb::bson::to_bson(&chrono::Utc::now())?,
+        }
+    };
+
+    collection.update_one(filter, update).await?;
+    Ok(())
+}
+
+pub async fn unsubmit_log_entry(client: &mongodb::Client, entry_id: &str) -> Result<()> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "entry_id": entry_id,
+    };
+
+    let update = mongodb::bson::doc! {
+        "$set": {
+            "status": "draft",
+            "submitted_at": mongodb::bson::Bson::Null,
             "updated_at": mongodb::bson::to_bson(&chrono::Utc::now())?,
         }
     };
@@ -402,23 +688,103 @@ pub fn is_form_due_today(schedule: &Schedule) -> bool {
         }
         Frequency::Monthly => {
             if let Some(day) = schedule.day_of_month {
-                today.day() == u32::from(day)
+                today.day() >= u32::from(day)
             } else {
                 false
             }
         }
         Frequency::Yearly => {
-            let day_match = if let Some(day) = schedule.day_of_month {
-                today.day() == u32::from(day)
+            if let Some(month) = schedule.month_of_year {
+                if let Some(day) = schedule.day_of_month {
+                    let target_month = u32::from(month);
+                    let target_day = u32::from(day);
+
+                    if today.month() > target_month {
+                        true
+                    } else if today.month() == target_month {
+                        today.day() >= target_day
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
             } else {
                 false
-            };
-            let month_match = if let Some(month) = schedule.month_of_year {
-                today.month() == u32::from(month)
-            } else {
-                false
-            };
-            day_match && month_match
+            }
         }
     }
+}
+
+pub fn format_period_for_frequency(frequency: &Frequency) -> String {
+    let now = chrono::Utc::now();
+
+    match frequency {
+        Frequency::Daily => now.format("%d/%m/%y").to_string(),
+        Frequency::Weekly => {
+            let days_since_monday = now.weekday().num_days_from_monday();
+            let week_start = (now.date_naive() - chrono::Duration::days(days_since_monday as i64))
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_utc();
+            let week_end = (week_start.date_naive() + chrono::Duration::days(6))
+                .and_hms_opt(23, 59, 59)
+                .unwrap()
+                .and_utc();
+
+            format!(
+                "{}-{}/{}/{}",
+                week_start.day(),
+                week_end.day(),
+                week_end.month(),
+                week_end.format("%y")
+            )
+        }
+        Frequency::Monthly => now.format("%m/%y").to_string(),
+        Frequency::Yearly => now.format("%Y").to_string(),
+    }
+}
+
+pub fn process_template_layout_with_period(
+    layout: &TemplateLayout,
+    frequency: &Frequency,
+) -> TemplateLayout {
+    let period = format_period_for_frequency(frequency);
+    tracing::info!("Processing template layout with period: '{}'", period);
+
+    layout
+        .iter()
+        .map(|field| {
+            let mut processed_field = field.clone();
+            if let Some(text) = &field.props.text {
+                if text.contains("{period}") {
+                    let new_text = text.replace("{period}", &period);
+                    tracing::info!(
+                        "Field type: {}, Original text: '{}', Replaced text: '{}'",
+                        field.field_type,
+                        text,
+                        new_text
+                    );
+                    processed_field.props.text = Some(new_text);
+                }
+            }
+            processed_field
+        })
+        .collect()
+}
+
+pub fn process_template_layout_with_period_string(
+    layout: &TemplateLayout,
+    period: &str,
+) -> TemplateLayout {
+    layout
+        .iter()
+        .map(|field| {
+            let mut processed_field = field.clone();
+            if let Some(text) = &field.props.text {
+                processed_field.props.text = Some(text.replace("{period}", period));
+            }
+            processed_field
+        })
+        .collect()
 }

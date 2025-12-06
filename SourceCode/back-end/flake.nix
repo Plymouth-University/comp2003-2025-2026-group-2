@@ -10,6 +10,9 @@
       pkgs = import nixpkgs {
         inherit system;
         overlays = [ (import rust-overlay) ];
+        config = {
+          allowUnfree = true;
+        };
       };
       pkgsCross = import nixpkgs {
         inherit system;
@@ -63,6 +66,7 @@
           libz
           pkg-config
           sqlx-cli
+          mongodb-compass
         ];
         env = {
           PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";

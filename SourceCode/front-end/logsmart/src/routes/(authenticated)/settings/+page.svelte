@@ -36,9 +36,7 @@
 	});
 
 	function handleToggleDarkMode() {
-		console.log('Before toggle, isDarkMode:', $isDarkMode);
 		isDarkMode.toggle();
-		console.log('After toggle, HTML classes:', document.documentElement.classList.toString());
 	}
 </script>
 
