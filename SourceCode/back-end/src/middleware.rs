@@ -1,9 +1,4 @@
-use crate::handlers::get_jwt_secret;
-use crate::{
-    AppState,
-    auth::{Claims, JwtConfig},
-    db::UserRole,
-};
+use crate::{AppState, auth::Claims, db::UserRole, jwt_manager::JwtManager};
 use axum::{
     Json,
     extract::FromRequestParts,
@@ -26,7 +21,7 @@ impl FromRequestParts<crate::AppState> for AuthToken {
         Output = Result<Self, <Self as FromRequestParts<AppState>>::Rejection>,
     > + Send {
         Box::pin(async move {
-            let jwt_config = JwtConfig::new(get_jwt_secret());
+            let jwt_config = JwtManager::get_config();
 
             let TypedHeader(Authorization::<Bearer>(bearer)) =
                 TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, &())
@@ -112,7 +107,7 @@ impl FromRequestParts<crate::AppState> for AdminUser {
         state: &crate::AppState,
     ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
         Box::pin(async move {
-            let jwt_config = JwtConfig::new(get_jwt_secret());
+            let jwt_config = JwtManager::get_config();
 
             let TypedHeader(Authorization::<Bearer>(bearer)) =
                 TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, &())
@@ -148,7 +143,7 @@ impl FromRequestParts<crate::AppState> for MemberUser {
         state: &crate::AppState,
     ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
         Box::pin(async move {
-            let jwt_config = JwtConfig::new(get_jwt_secret());
+            let jwt_config = JwtManager::get_config();
 
             let TypedHeader(Authorization::<Bearer>(bearer)) =
                 TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, &())
@@ -165,7 +160,10 @@ impl FromRequestParts<crate::AppState> for MemberUser {
                 .map_err(|_| RoleError::InvalidToken)?
                 .ok_or(RoleError::InvalidToken)?;
 
-            if !matches!(user.get_role(), UserRole::Member | UserRole::Admin | UserRole::LogSmartAdmin) {
+            if !matches!(
+                user.get_role(),
+                UserRole::Member | UserRole::Admin | UserRole::LogSmartAdmin
+            ) {
                 return Err(RoleError::InsufficientPermissions);
             }
 
@@ -184,7 +182,7 @@ impl FromRequestParts<crate::AppState> for LogSmartAdminUser {
         state: &crate::AppState,
     ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
         Box::pin(async move {
-            let jwt_config = JwtConfig::new(get_jwt_secret());
+            let jwt_config = JwtManager::get_config();
 
             let TypedHeader(Authorization::<Bearer>(bearer)) =
                 TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, &())

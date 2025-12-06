@@ -1,7 +1,8 @@
 use back_end::handlers::{
     AcceptInvitationRequest, AuthResponse, InvitationResponse, InviteUserRequest, LoginRequest,
-    RegisterRequest, UserResponse, get_jwt_secret,
+    RegisterRequest, UserResponse,
 };
+use back_end::jwt_manager::JwtManager;
 
 #[test]
 fn test_register_request_validation() {
@@ -179,21 +180,17 @@ fn test_auth_response_structure() {
 }
 
 #[test]
-fn test_get_jwt_secret_from_env() {
-    unsafe {
-        std::env::set_var("JWT_SECRET", "custom_test_secret");
-    }
-    let secret = get_jwt_secret();
-    assert_eq!(secret, "custom_test_secret");
+fn test_jwt_manager_get_secret() {
+    let secret = JwtManager::get_secret();
+    assert!(!secret.is_empty());
+    assert!(secret.len() > 0);
 }
 
 #[test]
-fn test_get_jwt_secret_default() {
-    unsafe {
-        std::env::remove_var("JWT_SECRET");
-    }
-    let secret = get_jwt_secret();
-    assert_eq!(secret, "logsmart_secret_key_for_testing");
+fn test_jwt_manager_caches_secret() {
+    let secret1 = JwtManager::get_secret();
+    let secret2 = JwtManager::get_secret();
+    assert_eq!(secret1, secret2);
 }
 
 #[test]

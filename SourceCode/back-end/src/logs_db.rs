@@ -217,10 +217,7 @@ pub struct LogEntry {
     pub status: String,
 }
 
-pub async fn create_log_entry(
-    client: &mongodb::Client,
-    entry: &LogEntry,
-) -> Result<()> {
+pub async fn create_log_entry(client: &mongodb::Client, entry: &LogEntry) -> Result<()> {
     let db = client.database("logs_db");
     let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
 
@@ -228,10 +225,7 @@ pub async fn create_log_entry(
     Ok(())
 }
 
-pub async fn get_log_entry(
-    client: &mongodb::Client,
-    entry_id: &str,
-) -> Result<Option<LogEntry>> {
+pub async fn get_log_entry(client: &mongodb::Client, entry_id: &str) -> Result<Option<LogEntry>> {
     let db = client.database("logs_db");
     let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
 
@@ -337,10 +331,7 @@ pub async fn update_log_entry(
     Ok(())
 }
 
-pub async fn submit_log_entry(
-    client: &mongodb::Client,
-    entry_id: &str,
-) -> Result<()> {
+pub async fn submit_log_entry(client: &mongodb::Client, entry_id: &str) -> Result<()> {
     let db = client.database("logs_db");
     let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
 
@@ -360,10 +351,7 @@ pub async fn submit_log_entry(
     Ok(())
 }
 
-pub async fn delete_log_entry(
-    client: &mongodb::Client,
-    entry_id: &str,
-) -> Result<()> {
+pub async fn delete_log_entry(client: &mongodb::Client, entry_id: &str) -> Result<()> {
     let db = client.database("logs_db");
     let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
 

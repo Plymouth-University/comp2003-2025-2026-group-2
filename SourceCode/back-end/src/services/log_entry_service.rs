@@ -1,0 +1,253 @@
+use crate::{AppState, db, logs_db};
+use axum::http::StatusCode;
+use serde_json::json;
+use uuid::Uuid;
+
+pub struct LogEntryService;
+
+impl LogEntryService {
+    pub async fn create_log_entry(
+        state: &AppState,
+        user_id: &str,
+        template_name: &str,
+    ) -> Result<String, (StatusCode, serde_json::Value)> {
+        let company_id = db::get_user_company_id(&state.sqlite, user_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error fetching user company ID: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Database error" }),
+                )
+            })?
+            .ok_or((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "User is not associated with a company" }),
+            ))?;
+
+        let _template = logs_db::get_template_by_name(&state.mongodb, template_name, &company_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to get template: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to get template" }),
+                )
+            })?
+            .ok_or((
+                StatusCode::NOT_FOUND,
+                json!({ "error": "Template not found" }),
+            ))?;
+
+        let entry_id = Uuid::new_v4().to_string();
+        let now = chrono::Utc::now();
+
+        let entry = logs_db::LogEntry {
+            entry_id: entry_id.clone(),
+            template_name: template_name.to_string(),
+            company_id,
+            user_id: user_id.to_string(),
+            entry_data: serde_json::json!({}),
+            created_at: now,
+            updated_at: now,
+            submitted_at: None,
+            status: "draft".to_string(),
+        };
+
+        logs_db::create_log_entry(&state.mongodb, &entry)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to create log entry: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to create log entry" }),
+                )
+            })?;
+
+        Ok(entry_id)
+    }
+
+    pub async fn get_log_entry(
+        state: &AppState,
+        user_id: &str,
+        entry_id: &str,
+    ) -> Result<logs_db::LogEntry, (StatusCode, serde_json::Value)> {
+        let entry = logs_db::get_log_entry(&state.mongodb, entry_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to get log entry: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to get log entry" }),
+                )
+            })?
+            .ok_or((StatusCode::NOT_FOUND, json!({ "error": "Entry not found" })))?;
+
+        if entry.user_id != user_id {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "You do not have permission to view this entry" }),
+            ));
+        }
+
+        Ok(entry)
+    }
+
+    pub async fn update_log_entry(
+        state: &AppState,
+        user_id: &str,
+        entry_id: &str,
+        entry_data: &serde_json::Value,
+    ) -> Result<logs_db::LogEntry, (StatusCode, serde_json::Value)> {
+        let entry = logs_db::get_log_entry(&state.mongodb, entry_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to get log entry: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to get log entry" }),
+                )
+            })?
+            .ok_or((StatusCode::NOT_FOUND, json!({ "error": "Entry not found" })))?;
+
+        if entry.user_id != user_id {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "You do not have permission to update this entry" }),
+            ));
+        }
+
+        logs_db::update_log_entry(&state.mongodb, entry_id, entry_data)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to update log entry: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to update log entry" }),
+                )
+            })?;
+
+        let updated_entry = logs_db::get_log_entry(&state.mongodb, entry_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to fetch updated log entry: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to fetch updated entry" }),
+                )
+            })?
+            .ok_or((StatusCode::NOT_FOUND, json!({ "error": "Entry not found" })))?;
+
+        Ok(updated_entry)
+    }
+
+    pub async fn submit_log_entry(
+        state: &AppState,
+        user_id: &str,
+        entry_id: &str,
+    ) -> Result<(), (StatusCode, serde_json::Value)> {
+        let entry = logs_db::get_log_entry(&state.mongodb, entry_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to get log entry: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to get log entry" }),
+                )
+            })?
+            .ok_or((StatusCode::NOT_FOUND, json!({ "error": "Entry not found" })))?;
+
+        if entry.user_id != user_id {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "You do not have permission to submit this entry" }),
+            ));
+        }
+
+        let now = chrono::Utc::now();
+        let update_data = json!({
+            "submitted_at": now,
+            "status": "submitted"
+        });
+
+        logs_db::update_log_entry(&state.mongodb, entry_id, &update_data)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to submit log entry: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to submit log entry" }),
+                )
+            })?;
+
+        Ok(())
+    }
+
+    pub async fn delete_log_entry(
+        state: &AppState,
+        user_id: &str,
+        entry_id: &str,
+        is_company_admin: bool,
+    ) -> Result<(), (StatusCode, serde_json::Value)> {
+        let entry = logs_db::get_log_entry(&state.mongodb, entry_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to get log entry: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to get log entry" }),
+                )
+            })?
+            .ok_or((StatusCode::NOT_FOUND, json!({ "error": "Entry not found" })))?;
+
+        if entry.user_id != user_id && !is_company_admin {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "You do not have permission to delete this entry" }),
+            ));
+        }
+
+        logs_db::delete_log_entry(&state.mongodb, entry_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to delete log entry: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to delete log entry" }),
+                )
+            })?;
+
+        Ok(())
+    }
+
+    pub async fn list_due_forms(
+        state: &AppState,
+        company_id: &str,
+    ) -> Result<Vec<logs_db::TemplateDocument>, (StatusCode, serde_json::Value)> {
+        logs_db::get_templates_by_company(&state.mongodb, company_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to get templates: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to get templates" }),
+                )
+            })
+    }
+
+    pub async fn get_user_log_entries(
+        state: &AppState,
+        user_id: &str,
+        company_id: &str,
+    ) -> Result<Vec<logs_db::LogEntry>, (StatusCode, serde_json::Value)> {
+        logs_db::get_user_log_entries(&state.mongodb, user_id, company_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to get log entries: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to get log entries" }),
+                )
+            })
+    }
+}
