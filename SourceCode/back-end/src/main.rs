@@ -99,6 +99,13 @@ async fn main() {
         .route("/logs/templates/update", put(handlers::update_template))
         .route("/logs/templates/rename", put(handlers::rename_template))
         .route("/logs/templates", delete(handlers::delete_template))
+        .route("/logs/entries/due", get(handlers::list_due_forms_today))
+        .route("/logs/entries", post(handlers::create_log_entry))
+        .route("/logs/entries", get(handlers::list_user_log_entries))
+        .route("/logs/entries/:entry_id", get(handlers::get_log_entry))
+        .route("/logs/entries/:entry_id", put(handlers::update_log_entry))
+        .route("/logs/entries/:entry_id", delete(handlers::delete_log_entry))
+        .route("/logs/entries/:entry_id/submit", post(handlers::submit_log_entry))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             rate_limit::rate_limit_middleware,

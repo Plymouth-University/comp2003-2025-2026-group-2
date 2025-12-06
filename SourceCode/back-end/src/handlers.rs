@@ -239,6 +239,60 @@ pub struct ResetPasswordRequest {
     pub new_password: String,
 }
 
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct CreateLogEntryRequest {
+    #[schema(example = "Kitchen Daily Log")]
+    pub template_name: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct LogEntryResponse {
+    pub id: String,
+    pub template_name: String,
+    pub entry_data: serde_json::Value,
+    pub status: String,
+    pub created_at: String,
+    pub updated_at: String,
+    pub submitted_at: Option<String>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UpdateLogEntryRequest {
+    pub entry_data: serde_json::Value,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct SubmitLogEntryRequest {
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct DueFormInfo {
+    pub template_name: String,
+    pub template_layout: logs_db::TemplateLayout,
+    pub last_submitted: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct DueFormsResponse {
+    pub forms: Vec<DueFormInfo>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ListLogEntriesResponse {
+    pub entries: Vec<LogEntryResponse>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CreateLogEntryResponse {
+    pub id: String,
+    pub message: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SubmitLogEntryResponse {
+    pub message: String,
+}
+
 #[utoipa::path(
     post,
     path = "/auth/verify",
@@ -1881,5 +1935,495 @@ pub async fn delete_template(
         })?;
     Ok(Json(DeleteTemplateResponse {
         message: "Template deleted successfully.".to_string(),
+    }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/logs/entries/due",
+    responses(
+        (status = 200, description = "Due forms retrieved successfully", body = DueFormsResponse),
+        (status = 401, description = "Unauthorized - invalid or missing token", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Log Entries"
+)]
+pub async fn list_due_forms_today(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+) -> Result<Json<DueFormsResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let _user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "User not found" })),
+        ))?;
+
+    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user company ID: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "User is not associated with a company" })),
+        ))?;
+
+    let templates = logs_db::get_templates_by_company(&state.mongodb, &company_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to get templates: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to get templates" })),
+            )
+        })?;
+
+    let mut due_forms = Vec::new();
+
+    for template in templates {
+        if logs_db::is_form_due_today(&template.schedule) {
+            let last_submitted = logs_db::get_latest_submitted_entry(
+                &state.mongodb,
+                &claims.user_id,
+                &company_id,
+                &template.template_name,
+            )
+            .await
+            .ok()
+            .flatten();
+
+            due_forms.push(DueFormInfo {
+                template_name: template.template_name,
+                template_layout: template.template_layout,
+                last_submitted: last_submitted.and_then(|e| e.submitted_at.map(|ts| ts.to_rfc3339())),
+            });
+        }
+    }
+
+    Ok(Json(DueFormsResponse { forms: due_forms }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/logs/entries",
+    request_body = CreateLogEntryRequest,
+    responses(
+        (status = 201, description = "Log entry created successfully", body = CreateLogEntryResponse),
+        (status = 400, description = "Invalid request data", body = ErrorResponse),
+        (status = 401, description = "Unauthorized - invalid or missing token", body = ErrorResponse),
+        (status = 404, description = "Template not found", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Log Entries"
+)]
+pub async fn create_log_entry(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    Json(payload): Json<CreateLogEntryRequest>,
+) -> Result<(StatusCode, Json<CreateLogEntryResponse>), (StatusCode, Json<serde_json::Value>)> {
+    if payload.template_name.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Template name is required" })),
+        ));
+    }
+
+    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user company ID: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "User is not associated with a company" })),
+        ))?;
+
+    let _template = logs_db::get_template_by_name(&state.mongodb, &payload.template_name, &company_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to get template: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to get template" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Template not found" })),
+        ))?;
+
+    let entry_id = Uuid::new_v4().to_string();
+    let now = chrono::Utc::now();
+
+    let entry = logs_db::LogEntry {
+        entry_id: entry_id.clone(),
+        template_name: payload.template_name,
+        company_id,
+        user_id: claims.user_id.clone(),
+        entry_data: serde_json::json!({}),
+        created_at: now,
+        updated_at: now,
+        submitted_at: None,
+        status: "draft".to_string(),
+    };
+
+    logs_db::create_log_entry(&state.mongodb, &entry)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to create log entry: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to create log entry" })),
+            )
+        })?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(CreateLogEntryResponse {
+            id: entry_id,
+            message: "Log entry created successfully.".to_string(),
+        }),
+    ))
+}
+
+#[utoipa::path(
+    get,
+    path = "/logs/entries/:entry_id",
+    responses(
+        (status = 200, description = "Log entry retrieved successfully", body = LogEntryResponse),
+        (status = 401, description = "Unauthorized - invalid or missing token", body = ErrorResponse),
+        (status = 403, description = "Forbidden - entry does not belong to user", body = ErrorResponse),
+        (status = 404, description = "Entry not found", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Log Entries"
+)]
+pub async fn get_log_entry(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    axum::extract::Path(entry_id): axum::extract::Path<String>,
+) -> Result<Json<LogEntryResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let entry = logs_db::get_log_entry(&state.mongodb, &entry_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to get log entry: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to get log entry" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Entry not found" })),
+        ))?;
+
+    if entry.user_id != claims.user_id {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "You do not have permission to view this entry" })),
+        ));
+    }
+
+    Ok(Json(LogEntryResponse {
+        id: entry.entry_id,
+        template_name: entry.template_name,
+        entry_data: entry.entry_data,
+        status: entry.status,
+        created_at: entry.created_at.to_rfc3339(),
+        updated_at: entry.updated_at.to_rfc3339(),
+        submitted_at: entry.submitted_at.map(|ts| ts.to_rfc3339()),
+    }))
+}
+
+#[utoipa::path(
+    put,
+    path = "/logs/entries/:entry_id",
+    request_body = UpdateLogEntryRequest,
+    responses(
+        (status = 200, description = "Log entry updated successfully", body = LogEntryResponse),
+        (status = 401, description = "Unauthorized - invalid or missing token", body = ErrorResponse),
+        (status = 403, description = "Forbidden - entry does not belong to user", body = ErrorResponse),
+        (status = 404, description = "Entry not found", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Log Entries"
+)]
+pub async fn update_log_entry(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    axum::extract::Path(entry_id): axum::extract::Path<String>,
+    Json(payload): Json<UpdateLogEntryRequest>,
+) -> Result<Json<LogEntryResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let entry = logs_db::get_log_entry(&state.mongodb, &entry_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to get log entry: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to get log entry" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Entry not found" })),
+        ))?;
+
+    if entry.user_id != claims.user_id {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "You do not have permission to update this entry" })),
+        ));
+    }
+
+    logs_db::update_log_entry(&state.mongodb, &entry_id, &payload.entry_data)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to update log entry: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to update log entry" })),
+            )
+        })?;
+
+    let updated_entry = logs_db::get_log_entry(&state.mongodb, &entry_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to fetch updated log entry: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to fetch updated entry" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Entry not found" })),
+        ))?;
+
+    Ok(Json(LogEntryResponse {
+        id: updated_entry.entry_id,
+        template_name: updated_entry.template_name,
+        entry_data: updated_entry.entry_data,
+        status: updated_entry.status,
+        created_at: updated_entry.created_at.to_rfc3339(),
+        updated_at: updated_entry.updated_at.to_rfc3339(),
+        submitted_at: updated_entry.submitted_at.map(|ts| ts.to_rfc3339()),
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/logs/entries/:entry_id/submit",
+    responses(
+        (status = 200, description = "Log entry submitted successfully", body = SubmitLogEntryResponse),
+        (status = 401, description = "Unauthorized - invalid or missing token", body = ErrorResponse),
+        (status = 403, description = "Forbidden - entry does not belong to user", body = ErrorResponse),
+        (status = 404, description = "Entry not found", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Log Entries"
+)]
+pub async fn submit_log_entry(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    axum::extract::Path(entry_id): axum::extract::Path<String>,
+) -> Result<Json<SubmitLogEntryResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let entry = logs_db::get_log_entry(&state.mongodb, &entry_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to get log entry: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to get log entry" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Entry not found" })),
+        ))?;
+
+    if entry.user_id != claims.user_id {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "You do not have permission to submit this entry" })),
+        ));
+    }
+
+    logs_db::submit_log_entry(&state.mongodb, &entry_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to submit log entry: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to submit log entry" })),
+            )
+        })?;
+
+    let _ = db::log_security_event(
+        &state.sqlite,
+        "log_entry_submitted".to_string(),
+        Some(claims.user_id.clone()),
+        None,
+        None,
+        None,
+        Some(format!("Entry {} submitted for template {}", entry_id, entry.template_name)),
+        true,
+    )
+    .await;
+
+    Ok(Json(SubmitLogEntryResponse {
+        message: "Log entry submitted successfully.".to_string(),
+    }))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/logs/entries/:entry_id",
+    responses(
+        (status = 200, description = "Log entry deleted successfully", body = serde_json::Value),
+        (status = 401, description = "Unauthorized - invalid or missing token", body = ErrorResponse),
+        (status = 403, description = "Forbidden - entry does not belong to user", body = ErrorResponse),
+        (status = 404, description = "Entry not found", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Log Entries"
+)]
+pub async fn delete_log_entry(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    axum::extract::Path(entry_id): axum::extract::Path<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    let entry = logs_db::get_log_entry(&state.mongodb, &entry_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to get log entry: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to get log entry" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Entry not found" })),
+        ))?;
+
+    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "User not found" })),
+        ))?;
+
+    if entry.user_id != claims.user_id && !user.can_manage_company() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "You do not have permission to delete this entry" })),
+        ));
+    }
+
+    logs_db::delete_log_entry(&state.mongodb, &entry_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to delete log entry: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to delete log entry" })),
+            )
+        })?;
+
+    Ok(Json(json!({ "message": "Log entry deleted successfully" })))
+}
+
+#[utoipa::path(
+    get,
+    path = "/logs/entries",
+    responses(
+        (status = 200, description = "User log entries retrieved successfully", body = ListLogEntriesResponse),
+        (status = 401, description = "Unauthorized - invalid or missing token", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Log Entries"
+)]
+pub async fn list_user_log_entries(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<ListLogEntriesResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user company ID: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "User is not associated with a company" })),
+        ))?;
+
+    let mut entries = logs_db::get_user_log_entries(&state.mongodb, &claims.user_id, &company_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to get log entries: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to get log entries" })),
+            )
+        })?;
+
+    if let Some(template_name) = params.get("template_name") {
+        entries.retain(|e| e.template_name == *template_name);
+    }
+
+    if let Some(status) = params.get("status") {
+        entries.retain(|e| e.status == *status);
+    }
+
+    let response_entries = entries
+        .into_iter()
+        .map(|e| LogEntryResponse {
+            id: e.entry_id,
+            template_name: e.template_name,
+            entry_data: e.entry_data,
+            status: e.status,
+            created_at: e.created_at.to_rfc3339(),
+            updated_at: e.updated_at.to_rfc3339(),
+            submitted_at: e.submitted_at.map(|ts| ts.to_rfc3339()),
+        })
+        .collect();
+
+    Ok(Json(ListLogEntriesResponse {
+        entries: response_entries,
     }))
 }

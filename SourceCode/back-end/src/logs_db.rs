@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::Datelike;
 use futures_util::TryStreamExt;
 use mongodb::bson::Uuid;
 use utoipa::ToSchema;
@@ -201,4 +202,235 @@ pub async fn delete_template(
 
     collection.delete_one(filter).await?;
     Ok(())
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize, ToSchema)]
+pub struct LogEntry {
+    pub entry_id: String,
+    pub template_name: String,
+    pub company_id: String,
+    pub user_id: String,
+    pub entry_data: serde_json::Value,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+    pub submitted_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub status: String,
+}
+
+pub async fn create_log_entry(
+    client: &mongodb::Client,
+    entry: &LogEntry,
+) -> Result<()> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    collection.insert_one(entry).await?;
+    Ok(())
+}
+
+pub async fn get_log_entry(
+    client: &mongodb::Client,
+    entry_id: &str,
+) -> Result<Option<LogEntry>> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "entry_id": entry_id,
+    };
+
+    let result = collection.find_one(filter).await?;
+    Ok(result)
+}
+
+pub async fn get_user_log_entries(
+    client: &mongodb::Client,
+    user_id: &str,
+    company_id: &str,
+) -> Result<Vec<LogEntry>> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "user_id": user_id,
+        "company_id": company_id,
+    };
+
+    let mut cursor = collection.find(filter).await?;
+    let mut entries = Vec::new();
+
+    while let Some(entry) = cursor.try_next().await? {
+        entries.push(entry);
+    }
+
+    Ok(entries)
+}
+
+pub async fn get_user_log_entries_by_template(
+    client: &mongodb::Client,
+    user_id: &str,
+    company_id: &str,
+    template_name: &str,
+) -> Result<Vec<LogEntry>> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "user_id": user_id,
+        "company_id": company_id,
+        "template_name": template_name,
+    };
+
+    let mut cursor = collection.find(filter).await?;
+    let mut entries = Vec::new();
+
+    while let Some(entry) = cursor.try_next().await? {
+        entries.push(entry);
+    }
+
+    Ok(entries)
+}
+
+pub async fn get_latest_submitted_entry(
+    client: &mongodb::Client,
+    user_id: &str,
+    company_id: &str,
+    template_name: &str,
+) -> Result<Option<LogEntry>> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "user_id": user_id,
+        "company_id": company_id,
+        "template_name": template_name,
+        "status": "submitted",
+    };
+
+    let result = collection
+        .find_one(filter)
+        .sort(mongodb::bson::doc! { "submitted_at": -1 })
+        .await?;
+    Ok(result)
+}
+
+pub async fn update_log_entry(
+    client: &mongodb::Client,
+    entry_id: &str,
+    entry_data: &serde_json::Value,
+) -> Result<()> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "entry_id": entry_id,
+    };
+
+    let update = mongodb::bson::doc! {
+        "$set": {
+            "entry_data": mongodb::bson::to_bson(&entry_data)?,
+            "updated_at": mongodb::bson::to_bson(&chrono::Utc::now())?,
+        }
+    };
+
+    collection.update_one(filter, update).await?;
+    Ok(())
+}
+
+pub async fn submit_log_entry(
+    client: &mongodb::Client,
+    entry_id: &str,
+) -> Result<()> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "entry_id": entry_id,
+    };
+
+    let update = mongodb::bson::doc! {
+        "$set": {
+            "status": "submitted",
+            "submitted_at": mongodb::bson::to_bson(&chrono::Utc::now())?,
+            "updated_at": mongodb::bson::to_bson(&chrono::Utc::now())?,
+        }
+    };
+
+    collection.update_one(filter, update).await?;
+    Ok(())
+}
+
+pub async fn delete_log_entry(
+    client: &mongodb::Client,
+    entry_id: &str,
+) -> Result<()> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "entry_id": entry_id,
+    };
+
+    collection.delete_one(filter).await?;
+    Ok(())
+}
+
+pub fn is_form_due_today(schedule: &Schedule) -> bool {
+    let today = chrono::Local::now();
+    let weekday = today.weekday();
+
+    match schedule.frequency {
+        Frequency::Daily => {
+            if let Some(days) = &schedule.days_of_week {
+                let day_num = match weekday {
+                    chrono::Weekday::Mon => 0,
+                    chrono::Weekday::Tue => 1,
+                    chrono::Weekday::Wed => 2,
+                    chrono::Weekday::Thu => 3,
+                    chrono::Weekday::Fri => 4,
+                    chrono::Weekday::Sat => 5,
+                    chrono::Weekday::Sun => 6,
+                };
+                days.contains(&day_num)
+            } else {
+                true
+            }
+        }
+        Frequency::Weekly => {
+            if let Some(day) = schedule.day_of_week {
+                let day_num = match weekday {
+                    chrono::Weekday::Mon => 0,
+                    chrono::Weekday::Tue => 1,
+                    chrono::Weekday::Wed => 2,
+                    chrono::Weekday::Thu => 3,
+                    chrono::Weekday::Fri => 4,
+                    chrono::Weekday::Sat => 5,
+                    chrono::Weekday::Sun => 6,
+                };
+                day_num == day
+            } else {
+                false
+            }
+        }
+        Frequency::Monthly => {
+            if let Some(day) = schedule.day_of_month {
+                today.day() == u32::from(day)
+            } else {
+                false
+            }
+        }
+        Frequency::Yearly => {
+            let day_match = if let Some(day) = schedule.day_of_month {
+                today.day() == u32::from(day)
+            } else {
+                false
+            };
+            let month_match = if let Some(month) = schedule.month_of_year {
+                today.month() == u32::from(month)
+            } else {
+                false
+            };
+            day_match && month_match
+        }
+    }
 }
