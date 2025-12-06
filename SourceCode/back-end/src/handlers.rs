@@ -750,7 +750,7 @@ pub async fn invite_user(
         SELECT u.id, u.email, u.first_name, u.last_name, u.password_hash, u.company_id, u.role
         FROM users u
         INNER JOIN companies c ON u.company_id = c.id
-        WHERE u.id = ? AND u.role = 'admin'
+        WHERE u.id = ? AND (u.role = 'admin' OR u.role = 'logsmart_admin')
         ",
     )
     .bind(&claims.user_id)
@@ -777,7 +777,7 @@ pub async fn invite_user(
         _admin_role,
     ) = result.ok_or((
         StatusCode::FORBIDDEN,
-        Json(json!({ "error": "Only company admin can invite users" })),
+        Json(json!({ "error": "Only company admin or LogSmartAdmin can invite users" })),
     ))?;
 
     let company_id = company_id_opt.ok_or((
@@ -1317,6 +1317,27 @@ pub async fn add_template(
     State(state): State<AppState>,
     Json(payload): Json<AddTemplateRequest>,
 ) -> Result<Json<AddTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "User not found" })),
+        ))?;
+
+    if !user.can_manage_company() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Only company admin or LogSmartAdmin can create templates" })),
+        ));
+    }
+
     let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
         .await
         .map_err(|e| {
@@ -1400,6 +1421,27 @@ pub async fn get_template(
     State(state): State<AppState>,
     Query(payload): Query<GetTemplateRequest>,
 ) -> Result<Json<GetTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "User not found" })),
+        ))?;
+
+    if !user.can_manage_company() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Only company admin or LogSmartAdmin can access templates" })),
+        ));
+    }
+
     let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
         .await
         .map_err(|e| {
@@ -1546,6 +1588,27 @@ pub async fn get_all_templates(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
 ) -> Result<Json<GetAllTemplatesResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "User not found" })),
+        ))?;
+
+    if !user.can_manage_company() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Only company admin or LogSmartAdmin can access templates" })),
+        ));
+    }
+
     let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
         .await
         .map_err(|e| {
@@ -1604,6 +1667,27 @@ pub async fn update_template(
     State(state): State<AppState>,
     Json(payload): Json<UpdateTemplateRequest>,
 ) -> Result<Json<UpdateTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "User not found" })),
+        ))?;
+
+    if !user.can_manage_company() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Only company admin or LogSmartAdmin can update templates" })),
+        ));
+    }
+
     let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
         .await
         .map_err(|e| {
@@ -1667,6 +1751,27 @@ pub async fn rename_template(
     State(state): State<AppState>,
     Json(payload): Json<RenameTemplateRequest>,
 ) -> Result<Json<RenameTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "User not found" })),
+        ))?;
+
+    if !user.can_manage_company() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Only company admin or LogSmartAdmin can rename templates" })),
+        ));
+    }
+
     let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
         .await
         .map_err(|e| {
@@ -1730,6 +1835,27 @@ pub async fn delete_template(
     State(state): State<AppState>,
     Query(payload): Query<DeleteTemplateRequest>,
 ) -> Result<Json<DeleteTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "User not found" })),
+        ))?;
+
+    if !user.can_manage_company() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Only company admin or LogSmartAdmin can delete templates" })),
+        ));
+    }
+
     let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
         .await
         .map_err(|e| {

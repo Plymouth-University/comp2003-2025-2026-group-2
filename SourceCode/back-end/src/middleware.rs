@@ -2,6 +2,7 @@ use crate::handlers::get_jwt_secret;
 use crate::{
     AppState,
     auth::{Claims, JwtConfig},
+    db::UserRole,
 };
 use axum::{
     Json,
@@ -66,5 +67,145 @@ impl IntoResponse for AuthError {
         }));
 
         (status, body).into_response()
+    }
+}
+
+#[derive(Debug)]
+pub enum RoleError {
+    MissingToken,
+    InvalidToken,
+    InsufficientPermissions,
+}
+
+impl IntoResponse for RoleError {
+    fn into_response(self) -> Response {
+        let (status, error_message) = match self {
+            RoleError::MissingToken => (
+                axum::http::StatusCode::UNAUTHORIZED,
+                "Missing authorization token",
+            ),
+            RoleError::InvalidToken => (
+                axum::http::StatusCode::UNAUTHORIZED,
+                "Invalid or expired token",
+            ),
+            RoleError::InsufficientPermissions => (
+                axum::http::StatusCode::FORBIDDEN,
+                "Insufficient permissions for this operation",
+            ),
+        };
+
+        let body = Json(json!({
+            "error": error_message
+        }));
+
+        (status, body).into_response()
+    }
+}
+
+pub struct AdminUser(pub Claims);
+
+impl FromRequestParts<crate::AppState> for AdminUser {
+    type Rejection = RoleError;
+
+    fn from_request_parts(
+        parts: &mut Parts,
+        state: &crate::AppState,
+    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
+        Box::pin(async move {
+            let jwt_config = JwtConfig::new(get_jwt_secret());
+
+            let TypedHeader(Authorization::<Bearer>(bearer)) =
+                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, &())
+                    .await
+                    .map_err(|_| RoleError::MissingToken)?;
+
+            let token = bearer.token();
+            let claims = jwt_config
+                .validate_token(token)
+                .map_err(|_| RoleError::InvalidToken)?;
+
+            let user = crate::db::get_user_by_id(&state.sqlite, &claims.user_id)
+                .await
+                .map_err(|_| RoleError::InvalidToken)?
+                .ok_or(RoleError::InvalidToken)?;
+
+            if !user.can_manage_company() {
+                return Err(RoleError::InsufficientPermissions);
+            }
+
+            Ok(AdminUser(claims))
+        })
+    }
+}
+
+pub struct MemberUser(pub Claims);
+
+impl FromRequestParts<crate::AppState> for MemberUser {
+    type Rejection = RoleError;
+
+    fn from_request_parts(
+        parts: &mut Parts,
+        state: &crate::AppState,
+    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
+        Box::pin(async move {
+            let jwt_config = JwtConfig::new(get_jwt_secret());
+
+            let TypedHeader(Authorization::<Bearer>(bearer)) =
+                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, &())
+                    .await
+                    .map_err(|_| RoleError::MissingToken)?;
+
+            let token = bearer.token();
+            let claims = jwt_config
+                .validate_token(token)
+                .map_err(|_| RoleError::InvalidToken)?;
+
+            let user = crate::db::get_user_by_id(&state.sqlite, &claims.user_id)
+                .await
+                .map_err(|_| RoleError::InvalidToken)?
+                .ok_or(RoleError::InvalidToken)?;
+
+            if !matches!(user.get_role(), UserRole::Member | UserRole::Admin | UserRole::LogSmartAdmin) {
+                return Err(RoleError::InsufficientPermissions);
+            }
+
+            Ok(MemberUser(claims))
+        })
+    }
+}
+
+pub struct LogSmartAdminUser(pub Claims);
+
+impl FromRequestParts<crate::AppState> for LogSmartAdminUser {
+    type Rejection = RoleError;
+
+    fn from_request_parts(
+        parts: &mut Parts,
+        state: &crate::AppState,
+    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
+        Box::pin(async move {
+            let jwt_config = JwtConfig::new(get_jwt_secret());
+
+            let TypedHeader(Authorization::<Bearer>(bearer)) =
+                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, &())
+                    .await
+                    .map_err(|_| RoleError::MissingToken)?;
+
+            let token = bearer.token();
+            let claims = jwt_config
+                .validate_token(token)
+                .map_err(|_| RoleError::InvalidToken)?;
+
+            let user = crate::db::get_user_by_id(&state.sqlite, &claims.user_id)
+                .await
+                .map_err(|_| RoleError::InvalidToken)?
+                .ok_or(RoleError::InvalidToken)?;
+
+            if !user.is_logsmart_admin() {
+                return Err(RoleError::InsufficientPermissions);
+            }
+
+            Ok(LogSmartAdminUser(claims))
+        })
     }
 }

@@ -9,6 +9,8 @@ pub enum UserRole {
     Admin,
     #[serde(rename = "member")]
     Member,
+    #[serde(rename = "logsmart_admin")]
+    LogSmartAdmin,
 }
 
 impl std::fmt::Display for UserRole {
@@ -16,6 +18,7 @@ impl std::fmt::Display for UserRole {
         match self {
             UserRole::Admin => write!(f, "admin"),
             UserRole::Member => write!(f, "member"),
+            UserRole::LogSmartAdmin => write!(f, "logsmart_admin"),
         }
     }
 }
@@ -27,6 +30,7 @@ impl std::str::FromStr for UserRole {
         match s {
             "admin" => Ok(UserRole::Admin),
             "member" => Ok(UserRole::Member),
+            "logsmart_admin" => Ok(UserRole::LogSmartAdmin),
             _ => Err(format!("Unknown role: {s}")),
         }
     }
@@ -63,6 +67,26 @@ impl UserRecord {
     #[must_use]
     pub fn is_admin(&self) -> bool {
         self.get_role() == UserRole::Admin
+    }
+
+    #[must_use]
+    pub fn is_member(&self) -> bool {
+        self.get_role() == UserRole::Member
+    }
+
+    #[must_use]
+    pub fn is_logsmart_admin(&self) -> bool {
+        self.get_role() == UserRole::LogSmartAdmin
+    }
+
+    #[must_use]
+    pub fn is_company_admin(&self) -> bool {
+        self.is_admin()
+    }
+
+    #[must_use]
+    pub fn can_manage_company(&self) -> bool {
+        self.is_admin() || self.is_logsmart_admin()
     }
 }
 

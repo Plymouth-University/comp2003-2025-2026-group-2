@@ -75,9 +75,7 @@ async fn main() {
     let api_routes = Router::new()
         .route("/auth/register", post(handlers::register_company_admin))
         .route("/auth/login", post(handlers::login))
-        .route("/auth/me", get(handlers::get_current_user))
         .route("/auth/verify", post(handlers::verify_token))
-        .route("/auth/invitations/send", post(handlers::invite_user))
         .route(
             "/auth/invitations/accept",
             post(handlers::accept_invitation),
@@ -86,13 +84,15 @@ async fn main() {
             "/auth/invitations/details",
             get(handlers::get_invitation_details),
         )
-        .route("/auth/profile", put(handlers::update_profile))
         .route(
             "/auth/password/request-reset",
             post(handlers::request_password_reset),
         )
-        .route("/auth/company/members", get(handlers::get_company_members))
         .route("/auth/password/reset", post(handlers::reset_password))
+        .route("/auth/me", get(handlers::get_current_user))
+        .route("/auth/profile", put(handlers::update_profile))
+        .route("/auth/invitations/send", post(handlers::invite_user))
+        .route("/auth/company/members", get(handlers::get_company_members))
         .route("/logs/templates", post(handlers::add_template))
         .route("/logs/templates", get(handlers::get_template))
         .route("/logs/templates/all", get(handlers::get_all_templates))
