@@ -34,6 +34,8 @@
 		name="description"
 		content="LogSmart - Digital logging system for the food service industry. Secure, eco-friendly, and audit-ready."
 	/>
+	<meta name="robots" content="index,follow" />
+	<meta name="theme-color" content="#0b172a" />
 	<meta property="og:site_name" content="LogSmart" />
 	<meta property="og:type" content="website" />
 	<meta property="og:title" content="LogSmart - Digital Logging System" />
@@ -42,12 +44,57 @@
 		content="Replace paper logs with LogSmart. Secure, cloud-based digital logging for the food service industry."
 	/>
 	<meta property="og:url" content="https://logsmart.app" />
+	<meta property="og:image" content="https://logsmart.app/og-image.jpg" />
+	<meta property="og:image:width" content="1200" />
+	<meta property="og:image:height" content="630" />
 	<meta name="twitter:card" content="summary_large_image" />
 	<meta name="twitter:title" content="LogSmart - Digital Logging System" />
 	<meta
 		name="twitter:description"
 		content="Replace paper logs with LogSmart. Secure, cloud-based digital logging for the food service industry."
 	/>
+	<meta name="twitter:image" content="https://logsmart.app/og-image.jpg" />
+	<script type="application/ld+json">
+		{
+			"@context": "https://schema.org",
+			"@type": "Organization",
+			"name": "LogSmart",
+			"url": "https://logsmart.app",
+			"logo": "https://logsmart.app/favicon.svg"
+		}
+	</script>
+	<script type="application/ld+json">
+		{
+			"@context": "https://schema.org",
+			"@type": "FAQPage",
+			"mainEntity": [
+				{
+					"@type": "Question",
+					"name": "How does LogSmart help with audits?",
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": "LogSmart keeps tamper-proof digital records so audits are faster and easier."
+					}
+				},
+				{
+					"@type": "Question",
+					"name": "Can I customize templates?",
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": "Yes. Use built-in templates or customize them to match your operation."
+					}
+				},
+				{
+					"@type": "Question",
+					"name": "Is my data secure?",
+					"acceptedAnswer": {
+						"@type": "Answer",
+						"text": "Data is stored securely in the cloud with access controls for your team."
+					}
+				}
+			]
+		}
+	</script>
 </svelte:head>
 
 <div class="flex h-screen flex-col">
