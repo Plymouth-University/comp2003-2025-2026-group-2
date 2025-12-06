@@ -177,7 +177,7 @@
 						/>
 					{:else if field.field_type === 'label'}
 						<UserTextLabel
-							editable={field.props.editable ?? false}
+							editable={false}
 							text={field.props.text || `Field ${index + 1}`}
 							size={field.props.size ?? 16}
 							weight={field.props.weight || 'normal'}
