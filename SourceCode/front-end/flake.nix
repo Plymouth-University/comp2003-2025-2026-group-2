@@ -15,7 +15,12 @@
           buildInputs = [
             pkgs.bun
             pkgs.nodejs
+            pkgs.playwright-driver.browsers
           ];
+          env = {
+            PLAYWRIGHT_BROWSERS_PATH = "${pkgs.playwright-driver.browsers}";
+            PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = "true";
+          };
         };
       });
 }
