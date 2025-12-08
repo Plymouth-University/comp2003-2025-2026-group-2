@@ -256,13 +256,13 @@
 <div class="min-h-full" style="background-color: var(--bg-secondary);">
 	<!-- Main Content -->
 	<div class="mx-auto max-w-7xl px-6 py-8">
-		<h1 class="mb-8 text-center text-4xl font-bold" style="color: var(--text-primary);">
+		<h1 class="mb-8 text-center text-3xl md:text-4xl font-bold" style="color: var(--text-primary);">
 			Generate Report
 		</h1>
 
-		<div class="flex gap-8">
+		<div class="flex flex-col gap-8 lg:flex-row lg:gap-8">
 			<!-- Left Side - Form -->
-			<div class="w-96">
+			<div class="w-full lg:w-96">
 				<!-- Date From -->
 				<div class="mb-8">
 					<label
@@ -308,7 +308,7 @@
 						{#if showDateFromPicker}
 							<div
 								class="absolute top-full left-0 z-50 mt-2 rounded-lg border-2 p-4 shadow-lg"
-								style="border-color: var(--border-primary); background-color: var(--bg-primary); min-width: 320px; overflow: hidden;"
+								style="border-color: var(--border-primary); background-color: var(--bg-primary); min-width: 280px; sm:min-width: 320px; overflow: hidden; right: auto;"
 							>
 								<!-- Day View -->
 								{#if pickerView === 'day'}
@@ -578,7 +578,7 @@
 						{#if showDateToPicker}
 							<div
 								class="absolute top-full left-0 z-50 mt-2 rounded-lg border-2 p-4 shadow-lg"
-								style="border-color: var(--border-primary); background-color: var(--bg-primary); min-width: 320px; overflow: hidden;"
+								style="border-color: var(--border-primary); background-color: var(--bg-primary); min-width: 280px; sm:min-width: 320px; overflow: hidden; right: auto;"
 							>
 								<!-- Day View -->
 								{#if pickerView === 'day'}
@@ -850,23 +850,23 @@
 			</div>
 
 			<!-- Right Side - Report Preview -->
-			<div class="flex-1">
+			<div class="w-full lg:flex-1">
 				<!-- Download Buttons -->
-				<div class="mb-4 flex justify-end gap-4">
+				<div class="mb-4 flex flex-col gap-2 sm:flex-row sm:justify-end sm:gap-4">
 					<button
-						class="border-2 px-4 py-2 font-medium hover:opacity-80"
+						class="border-2 px-4 py-2 font-medium hover:opacity-80 text-sm sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						Download PDF
 					</button>
 					<button
-						class="border-2 px-4 py-2 font-medium hover:opacity-80"
+						class="border-2 px-4 py-2 font-medium hover:opacity-80 text-sm sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						Download DOCX
 					</button>
 					<button
-						class="border-2 px-4 py-2 font-medium hover:opacity-80"
+						class="border-2 px-4 py-2 font-medium hover:opacity-80 text-sm sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						Download RTF
@@ -875,7 +875,7 @@
 
 				<!-- Report Preview Area -->
 				<div
-					class="min-h-[600px] border-2 p-8"
+					class="min-h-[400px] sm:min-h-[600px] border-2 p-4 sm:p-8"
 					style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 				>
 					{#if reportGenerated}
