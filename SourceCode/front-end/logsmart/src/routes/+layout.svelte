@@ -99,14 +99,14 @@
 
 <div class="flex h-screen flex-col">
 	{#if !isAuthenticatedRoute}
-		<header id="header" class="border-border-secondary bg-bg-primary border-b">
+		<header id="header" class="border-b border-border-secondary bg-bg-primary">
 			<div class="mx-auto max-w-7xl px-6 py-2">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center">
 						<div class="h-12 w-12">
 							<Icon />
 						</div>
-						<a href="/" class="text-text-primary text-2xl font-bold">LogSmart</a>
+						<a href="/" class="text-2xl font-bold text-text-primary">LogSmart</a>
 					</div>
 					<nav class="hidden items-center gap-6 md:flex">
 						<a href="/#features" class="text-text-secondary hover:opacity-80">Features</a>
@@ -116,27 +116,27 @@
 						{#if data.isAuthenticated}
 							<a
 								href="/dashboard"
-								class="border-border-secondary bg-bg-secondary text-text-secondary rounded border px-4 py-2 hover:opacity-80"
+								class="rounded border border-border-secondary bg-bg-secondary px-4 py-2 text-text-secondary hover:opacity-80"
 							>
 								Dashboard
 							</a>
 							<button
 								onclick={handleLogout}
-								class="border-border-primary bg-bg-secondary text-text-primary rounded border px-4 py-2 hover:opacity-80"
+								class="rounded border border-border-primary bg-bg-secondary px-4 py-2 text-text-primary hover:opacity-80"
 							>
 								Logout
 							</button>
 						{:else}
 							<a
 								href="/register-company"
-								class="border-border-secondary bg-bg-secondary text-text-secondary ml-3 rounded border px-4 py-2 whitespace-nowrap hover:opacity-80"
+								class="ml-3 rounded border border-border-secondary bg-bg-secondary px-4 py-2 whitespace-nowrap text-text-secondary hover:opacity-80"
 							>
 								<span class="hidden sm:inline">Register Company</span>
 								<span class="sm:hidden">Register</span>
 							</a>
 							<a
 								href="/login"
-								class="border-border-primary bg-bg-secondary text-text-primary rounded border px-4 py-2 hover:opacity-80"
+								class="rounded border border-border-primary bg-bg-secondary px-4 py-2 text-text-primary hover:opacity-80"
 							>
 								Login
 							</a>

@@ -5,9 +5,9 @@
 
 	let { data, form } = $props<{ data: PageData; form: ActionData }>();
 
-	let firstName = $state(data.user?.first_name || '');
-	let lastName = $state(data.user?.last_name || '');
-	let email = $state(data.user?.email || '');
+	let firstName = $derived(data.user?.first_name || '');
+	let lastName = $derived(data.user?.last_name || '');
+	let email = $derived(data.user?.email || '');
 	let isSubmitting = $state(false);
 	let showSuccessMessage = $state(false);
 	let errorMessage = $state('');

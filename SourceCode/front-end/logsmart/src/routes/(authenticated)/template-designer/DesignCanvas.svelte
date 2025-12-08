@@ -55,7 +55,7 @@
 <div class="flex-1 overflow-auto p-6">
 	<div class="mx-auto max-w-4xl">
 		<div class="mb-4 flex items-center justify-between">
-			<h2 class="text-text-secondary text-3xl font-bold">Canvas</h2>
+			<h2 class="text-3xl font-bold text-text-secondary">Canvas</h2>
 			<div class="flex gap-2">
 				<button
 					class="rounded px-4 py-2 font-medium"
@@ -111,17 +111,17 @@
 
 		{#if loading}
 			<div class="flex items-center justify-center py-8">
-				<div class="text-text-secondary text-lg">Loading template...</div>
+				<div class="text-lg text-text-secondary">Loading template...</div>
 			</div>
 		{:else}
-			<div class="border-border-primary bg-bg-primary rounded-lg border-2 p-4">
+			<div class="rounded-lg border-2 border-border-primary bg-bg-primary p-4">
 				<div class="mb-4">
 					<input
 						id="log-title-input"
 						type="text"
 						bind:value={logTitle}
 						placeholder="Enter template title..."
-						class="border-border-primary bg-bg-primary text-text-primary w-full border-2 px-4 py-2"
+						class="w-full border-2 border-border-primary bg-bg-primary px-4 py-2 text-text-primary"
 					/>
 				</div>
 
@@ -130,7 +130,7 @@
 				<div
 					bind:this={canvasRef}
 					data-canvas
-					class="border-border-secondary bg-bg-secondary relative min-h-[500px] rounded border-2 border-dashed"
+					class="relative min-h-[500px] rounded border-2 border-dashed border-border-secondary bg-bg-secondary"
 					onclick={handleCanvasClick}
 					onkeydown={(e) => {
 						const target = e.target as HTMLElement;
@@ -147,7 +147,7 @@
 				>
 					{#if canvasItems.length === 0}
 						<div class="pointer-events-none absolute inset-0 flex items-center justify-center">
-							<p class="text-text-secondary text-lg opacity-50">
+							<p class="text-lg text-text-secondary opacity-50">
 								Drag components here to start designing
 							</p>
 						</div>

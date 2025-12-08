@@ -21,17 +21,17 @@
 	<title>Contact Us - LogSmart</title>
 </svelte:head>
 
-<div class="bg-bg-primary flex h-full w-full flex-col">
+<div class="flex h-full w-full flex-col bg-bg-primary">
 	<div class="mx-auto max-w-4xl flex-1 px-6 py-16">
 		<div class="mb-8 text-center">
-			<h1 class="text-text-primary mb-4 text-4xl font-bold">Get in Touch</h1>
-			<p class="text-text-secondary text-lg">
+			<h1 class="mb-4 text-4xl font-bold text-text-primary">Get in Touch</h1>
+			<p class="text-lg text-text-secondary">
 				Have questions about LogSmart? We'd love to hear from you.
 			</p>
 		</div>
 
-		<div class="bg-bg-secondary rounded-lg p-8 shadow-sm">
-			<div class="bg-bg-primary mb-8 rounded-lg p-6 text-center">
+		<div class="rounded-lg bg-bg-secondary p-8 shadow-sm">
+			<div class="mb-8 rounded-lg bg-bg-primary p-6 text-center">
 				<svg
 					class="mx-auto mb-4 h-12 w-12 text-blue-600"
 					fill="none"
@@ -45,14 +45,14 @@
 						d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
 					/>
 				</svg>
-				<h2 class="text-text-primary mb-2 text-2xl font-bold">Email Us Directly</h2>
+				<h2 class="mb-2 text-2xl font-bold text-text-primary">Email Us Directly</h2>
 				<a
 					href="mailto:team@logsmart.app"
 					class="text-xl font-semibold text-blue-600 hover:text-blue-700"
 				>
 					team@logsmart.app
 				</a>
-				<p class="text-text-secondary mt-3">
+				<p class="mt-3 text-text-secondary">
 					Click the email above or use the form below to reach our team
 				</p>
 			</div>
@@ -65,7 +65,7 @@
 
 			<form onsubmit={handleSubmit} class="space-y-6">
 				<div>
-					<label for="name" class="text-text-primary mb-2 block text-sm font-semibold">
+					<label for="name" class="mb-2 block text-sm font-semibold text-text-primary">
 						Your Name
 					</label>
 					<input
@@ -73,13 +73,13 @@
 						id="name"
 						bind:value={name}
 						required
-						class="border-border-primary bg-bg-primary text-text-primary w-full rounded border px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+						class="w-full rounded border border-border-primary bg-bg-primary px-4 py-2 text-text-primary focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
 						placeholder="John Doe"
 					/>
 				</div>
 
 				<div>
-					<label for="email" class="text-text-primary mb-2 block text-sm font-semibold">
+					<label for="email" class="mb-2 block text-sm font-semibold text-text-primary">
 						Your Email
 					</label>
 					<input
@@ -87,13 +87,13 @@
 						id="email"
 						bind:value={email}
 						required
-						class="border-border-primary bg-bg-primary text-text-primary w-full rounded border px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+						class="w-full rounded border border-border-primary bg-bg-primary px-4 py-2 text-text-primary focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
 						placeholder="you@company.com"
 					/>
 				</div>
 
 				<div>
-					<label for="message" class="text-text-primary mb-2 block text-sm font-semibold">
+					<label for="message" class="mb-2 block text-sm font-semibold text-text-primary">
 						Message
 					</label>
 					<textarea
@@ -101,7 +101,7 @@
 						bind:value={message}
 						required
 						rows="6"
-						class="border-border-primary bg-bg-primary text-text-primary w-full rounded border px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+						class="w-full rounded border border-border-primary bg-bg-primary px-4 py-2 text-text-primary focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
 						placeholder="Tell us about your needs..."
 					></textarea>
 				</div>
@@ -115,8 +115,8 @@
 			</form>
 
 			<div class="mt-8 border-t border-gray-200 pt-8">
-				<h3 class="text-text-primary mb-4 text-lg font-semibold">Other Ways to Reach Us</h3>
-				<div class="text-text-secondary space-y-3">
+				<h3 class="mb-4 text-lg font-semibold text-text-primary">Other Ways to Reach Us</h3>
+				<div class="space-y-3 text-text-secondary">
 					<p>
 						<span class="font-semibold">Support:</span> For technical assistance or account issues, email
 						us directly at team@logsmart.app
@@ -134,7 +134,7 @@
 		</div>
 	</div>
 
-	<footer class="border-border-primary bg-bg-primary border-t px-6 py-12">
+	<footer class="border-t border-border-primary bg-bg-primary px-6 py-12">
 		<div class="mx-auto max-w-7xl text-center">
 			<p class="text-text-secondary">© 2025 LogSmart. All rights reserved.</p>
 		</div>

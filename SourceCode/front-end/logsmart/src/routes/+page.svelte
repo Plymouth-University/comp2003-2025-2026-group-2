@@ -16,7 +16,7 @@
 	/>
 </svelte:head>
 
-<div class="bg-bg-primary flex h-full w-full flex-col">
+<div class="flex h-full w-full flex-col bg-bg-primary">
 	<section
 		class="relative px-6 py-6"
 		style="background-image: url('{banner}'); background-size: cover; background-position: center;"
@@ -43,13 +43,13 @@
 				<div class="flex flex-col items-center justify-center gap-3 sm:flex-row">
 					<a
 						href="/register-company"
-						class="bg-text-primary text-bg-primary rounded px-5 py-3 text-sm font-semibold transition hover:opacity-90"
+						class="rounded bg-text-primary px-5 py-3 text-sm font-semibold text-bg-primary transition hover:opacity-90"
 					>
 						Start free trial
 					</a>
 					<a
 						href="/contact"
-						class="border-border-primary bg-bg-secondary text-text-primary rounded border px-5 py-3 text-sm font-semibold transition hover:opacity-90"
+						class="rounded border border-border-primary bg-bg-secondary px-5 py-3 text-sm font-semibold text-text-primary transition hover:opacity-90"
 					>
 						Book a demo
 					</a>
@@ -58,96 +58,96 @@
 		</div>
 	</section>
 
-	<section id="features" class="border-border-primary bg-bg-primary flex-1 border-t px-6 py-10">
+	<section id="features" class="flex-1 border-t border-border-primary bg-bg-primary px-6 py-10">
 		<div class="mx-auto max-w-7xl">
-			<h2 class="text-text-secondary mb-3 text-sm font-semibold tracking-wide uppercase">
+			<h2 class="mb-3 text-sm font-semibold tracking-wide text-text-secondary uppercase">
 				Why LogSmart
 			</h2>
-			<h3 class="text-text-primary mb-8 text-3xl font-bold">Built for daily compliance</h3>
+			<h3 class="mb-8 text-3xl font-bold text-text-primary">Built for daily compliance</h3>
 			<div class="grid gap-8 md:grid-cols-2 lg:grid-cols-2">
-				<div class="bg-bg-secondary rounded p-6 shadow-sm">
-					<h4 class="text-text-primary mb-2 text-lg font-semibold">Stay audit-ready</h4>
-					<p class="text-text-secondary mb-3 text-sm">
+				<div class="rounded bg-bg-secondary p-6 shadow-sm">
+					<h4 class="mb-2 text-lg font-semibold text-text-primary">Stay audit-ready</h4>
+					<p class="mb-3 text-sm text-text-secondary">
 						24/7 Access instant, tamper-proof, and audit-ready records stored securely in the cloud.
 						Breeze through your next inspection with complete, organised digital logs at your
 						fingertips.
 					</p>
 				</div>
 
-				<div class="bg-bg-secondary rounded p-6 shadow-sm">
-					<h4 class="text-text-primary mb-2 text-lg font-semibold">Optimize your workflow</h4>
-					<p class="text-text-secondary mb-3 text-sm">
+				<div class="rounded bg-bg-secondary p-6 shadow-sm">
+					<h4 class="mb-2 text-lg font-semibold text-text-primary">Optimize your workflow</h4>
+					<p class="mb-3 text-sm text-text-secondary">
 						Stop wasting time on manual paperwork. Our digital system frees up your team to focus on
 						what matters—quality service. Streamline daily checks, reduce errors, and improve
 						operational efficiency.
 					</p>
 				</div>
 
-				<div class="bg-bg-secondary rounded p-6 shadow-sm">
-					<h4 class="text-text-primary mb-2 text-lg font-semibold">
+				<div class="rounded bg-bg-secondary p-6 shadow-sm">
+					<h4 class="mb-2 text-lg font-semibold text-text-primary">
 						Smart, customizable templates
 					</h4>
-					<p class="text-text-secondary mb-3 text-sm">
+					<p class="mb-3 text-sm text-text-secondary">
 						Get started immediately with pre-loaded, regulatory-standard templates for all your food
 						safety needs. Customize them easily to fit your specific operations, ensuring full
 						compliance.
 					</p>
 				</div>
 
-				<div class="bg-bg-secondary rounded p-6 shadow-sm">
-					<h4 class="text-text-primary mb-2 text-lg font-semibold">Go green, go digital</h4>
-					<p class="text-text-secondary mb-3 text-sm">
+				<div class="rounded bg-bg-secondary p-6 shadow-sm">
+					<h4 class="mb-2 text-lg font-semibold text-text-primary">Go green, go digital</h4>
+					<p class="mb-3 text-sm text-text-secondary">
 						Make a positive environmental impact by eliminating paper waste. Our digital solution is
 						not only good for your business, but it's also good for the planet.
 					</p>
 				</div>
 			</div>
 			<div class="mt-12 grid gap-8 lg:grid-cols-2">
-				<div class="bg-bg-secondary rounded p-6 shadow-sm">
-					<h3 class="text-text-primary mb-3 text-2xl font-bold">How it works</h3>
-					<ul class="text-text-secondary space-y-3 text-sm">
+				<div class="rounded bg-bg-secondary p-6 shadow-sm">
+					<h3 class="mb-3 text-2xl font-bold text-text-primary">How it works</h3>
+					<ul class="space-y-3 text-sm text-text-secondary">
 						<li>
-							<span class="text-text-primary font-semibold">1. Pick a template:</span> Choose from pre-built
+							<span class="font-semibold text-text-primary">1. Pick a template:</span> Choose from pre-built
 							food safety, cleaning, and temperature templates.
 						</li>
 						<li>
-							<span class="text-text-primary font-semibold">2. Assign and remind:</span> Set schedules,
+							<span class="font-semibold text-text-primary">2. Assign and remind:</span> Set schedules,
 							owners, and reminders so checks never slip.
 						</li>
 						<li>
-							<span class="text-text-primary font-semibold">3. Capture and store:</span> Team members
+							<span class="font-semibold text-text-primary">3. Capture and store:</span> Team members
 							log data on any device, stored securely in the cloud.
 						</li>
 						<li>
-							<span class="text-text-primary font-semibold">4. Review and export:</span> Managers audit
+							<span class="font-semibold text-text-primary">4. Review and export:</span> Managers audit
 							completion, track trends, and export reports for inspectors.
 						</li>
 					</ul>
 				</div>
-				<div class="bg-bg-secondary rounded p-6 shadow-sm">
-					<h3 class="text-text-primary mb-3 text-2xl font-bold">Who it is for</h3>
+				<div class="rounded bg-bg-secondary p-6 shadow-sm">
+					<h3 class="mb-3 text-2xl font-bold text-text-primary">Who it is for</h3>
 					<div class="grid gap-3 md:grid-cols-2">
-						<div class="border-border-primary bg-bg-primary rounded border p-4">
-							<h4 class="text-text-primary text-lg font-semibold">Restaurants</h4>
-							<p class="text-text-secondary text-sm">
+						<div class="rounded border border-border-primary bg-bg-primary p-4">
+							<h4 class="text-lg font-semibold text-text-primary">Restaurants</h4>
+							<p class="text-sm text-text-secondary">
 								Keep HACCP logs current across shifts and locations.
 							</p>
 						</div>
-						<div class="border-border-primary bg-bg-primary rounded border p-4">
-							<h4 class="text-text-primary text-lg font-semibold">Hotels and catering</h4>
-							<p class="text-text-secondary text-sm">
+						<div class="rounded border border-border-primary bg-bg-primary p-4">
+							<h4 class="text-lg font-semibold text-text-primary">Hotels and catering</h4>
+							<p class="text-sm text-text-secondary">
 								Standardise back-of-house checks for banquets and room service.
 							</p>
 						</div>
-						<div class="border-border-primary bg-bg-primary rounded border p-4">
-							<h4 class="text-text-primary text-lg font-semibold">Education</h4>
-							<p class="text-text-secondary text-sm">
+						<div class="rounded border border-border-primary bg-bg-primary p-4">
+							<h4 class="text-lg font-semibold text-text-primary">Education</h4>
+							<p class="text-sm text-text-secondary">
 								Run consistent compliance in cafeterias without paper binders.
 							</p>
 						</div>
-						<div class="border-border-primary bg-bg-primary rounded border p-4">
-							<h4 class="text-text-primary text-lg font-semibold">Franchises</h4>
-							<p class="text-text-secondary text-sm">
+						<div class="rounded border border-border-primary bg-bg-primary p-4">
+							<h4 class="text-lg font-semibold text-text-primary">Franchises</h4>
+							<p class="text-sm text-text-secondary">
 								Roll out templates network-wide and monitor completion in real time.
 							</p>
 						</div>
@@ -155,9 +155,9 @@
 				</div>
 			</div>
 			<div class="mt-12 grid gap-6 md:grid-cols-2">
-				<div class="bg-bg-secondary rounded p-6 shadow-sm">
-					<h3 class="text-text-primary mb-3 text-2xl font-bold">What you get</h3>
-					<ul class="text-text-secondary space-y-2 text-sm">
+				<div class="rounded bg-bg-secondary p-6 shadow-sm">
+					<h3 class="mb-3 text-2xl font-bold text-text-primary">What you get</h3>
+					<ul class="space-y-2 text-sm text-text-secondary">
 						<li>Real-time completion dashboards and alerts.</li>
 						<li>Offline-friendly logging for low-connectivity kitchens.</li>
 						<li>Role-based access so the right people see the right logs.</li>
@@ -165,19 +165,19 @@
 						<li>Secure storage with backups and permissions.</li>
 					</ul>
 				</div>
-				<div class="bg-bg-secondary rounded p-6 shadow-sm">
-					<h3 class="text-text-primary mb-3 text-2xl font-bold">Frequently asked questions</h3>
-					<dl class="text-text-secondary space-y-4 text-sm">
+				<div class="rounded bg-bg-secondary p-6 shadow-sm">
+					<h3 class="mb-3 text-2xl font-bold text-text-primary">Frequently asked questions</h3>
+					<dl class="space-y-4 text-sm text-text-secondary">
 						<div>
-							<dt class="text-text-primary font-semibold">How fast can we go live?</dt>
+							<dt class="font-semibold text-text-primary">How fast can we go live?</dt>
 							<dd>Most teams launch in under a week using the pre-built templates.</dd>
 						</div>
 						<div>
-							<dt class="text-text-primary font-semibold">Do you support multiple sites?</dt>
+							<dt class="font-semibold text-text-primary">Do you support multiple sites?</dt>
 							<dd>Yes. Manage locations centrally and view completion by site.</dd>
 						</div>
 						<div>
-							<dt class="text-text-primary font-semibold">What about inspections?</dt>
+							<dt class="font-semibold text-text-primary">What about inspections?</dt>
 							<dd>Share digital reports or exports with inspectors to speed up audits.</dd>
 						</div>
 					</dl>
@@ -186,7 +186,7 @@
 		</div>
 	</section>
 
-	<section class="border-border-primary bg-bg-primary border-t px-6 py-12">
+	<section class="border-t border-border-primary bg-bg-primary px-6 py-12">
 		<div class="mx-auto max-w-7xl text-center">
 			<p class="text-text-secondary">© 2025 LogSmart. All rights reserved.</p>
 		</div>

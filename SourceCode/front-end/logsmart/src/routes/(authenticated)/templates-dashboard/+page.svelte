@@ -200,10 +200,11 @@
 			<h1 class="text-3xl font-bold" style="color: var(--text-primary);">Templates Dashboard</h1>
 			<button
 				type="button"
-				class="btn-create rounded px-6 py-3 font-medium text-white"
+				class="btn-create rounded px-6 py-3 text-white md:font-medium"
 				onclick={handleCreateNew}
 			>
-				+ Create New Template
+				<span class="hidden sm:inline">➕ Create New Template</span>
+				<span class="sm:hidden">➕</span>
 			</button>
 		</div>
 

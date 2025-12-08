@@ -103,7 +103,7 @@
 			onclick={() => onEdit(template)}
 			title="Edit template design"
 		>
-			<span class="xs:inline hidden">✏️ Edit</span>
+			<span class="hidden xs:inline">✏️ Edit</span>
 			<span class="xs:hidden">✏️</span>
 		</button>
 		<button
@@ -112,7 +112,7 @@
 			onclick={() => onSettings(template)}
 			title="Schedule settings"
 		>
-			<span class="xs:inline hidden">⚙️ Settings</span>
+			<span class="hidden xs:inline">⚙️ Settings</span>
 			<span class="xs:hidden">⚙️</span>
 		</button>
 		<button
