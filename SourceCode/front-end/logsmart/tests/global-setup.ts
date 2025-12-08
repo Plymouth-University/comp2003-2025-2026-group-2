@@ -33,15 +33,24 @@ async function globalSetup() {
 
 	console.log('Starting backend server...');
 
-	const backendSourceDir = path.resolve(__dirname, '../../../back-end');
+  const isWindows = process.platform === 'win32';
+  const backendSourceDir = path.resolve(__dirname, '../../../back-end');
 
-	await copyFile(path.join(backendSourceDir, '.env'), path.join(tempDir, '.env'), (err) => {
-		if (err) throw err;
-	});
-	backendProcess = spawn('nix', ['run', `${backendSourceDir}`], {
-		cwd: tempDir,
-		shell: true
-	});
+  await copyFile(path.join(backendSourceDir, '.env'), path.join(tempDir, '.env'), (err) => {
+    if (err) throw err;
+  });
+
+  if (isWindows) {
+    backendProcess = spawn('cargo', ['run'], {
+      cwd: backendSourceDir,
+      shell: true
+    });
+  } else {
+    backendProcess = spawn('nix', ['run', `${backendSourceDir}`], {
+      cwd: tempDir,
+      shell: true
+    });
+  }
 
 	// backendProcess.stderr?.on('data', (data: Buffer) => {
 	// 	console.log(`[Backend Error] ${data}`);
