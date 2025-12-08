@@ -116,6 +116,7 @@
 		{:else}
 			<div class="rounded-lg border-2 border-border-primary bg-bg-primary p-4">
 				<div class="mb-4">
+					<label for="log-title-input" class="sr-only">Template title</label>
 					<input
 						id="log-title-input"
 						type="text"
@@ -239,15 +240,15 @@
 	}
 
 	.btn-snap-on {
-		background-color: #5cb85c;
+		background-color: #2c7c2c;
 		color: white;
 		transition: background-color 0.15s ease;
 	}
 	.btn-snap-on:hover {
-		background-color: #449d44;
+		background-color: #236b23;
 	}
 	.btn-snap-on:active {
-		background-color: #398439;
+		background-color: #1a5a1a;
 	}
 
 	.btn-snap-off {

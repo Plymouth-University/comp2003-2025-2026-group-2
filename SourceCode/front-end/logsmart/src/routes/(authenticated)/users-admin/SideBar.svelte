@@ -37,7 +37,7 @@
 			/>
 			<input
 				class="mb-2 border-2 border-border-primary bg-bg-primary px-3 py-1 text-text-primary"
-				id="email"
+				id="sidebar-email"
 				type="text"
 				value={selectedUser?.email}
 				required
