@@ -256,7 +256,7 @@
 <div class="min-h-full" style="background-color: var(--bg-secondary);">
 	<!-- Main Content -->
 	<div class="mx-auto max-w-7xl px-6 py-8">
-		<h1 class="mb-8 text-center text-3xl md:text-4xl font-bold" style="color: var(--text-primary);">
+		<h1 class="mb-8 text-center text-3xl font-bold md:text-4xl" style="color: var(--text-primary);">
 			Generate Report
 		</h1>
 
@@ -854,19 +854,19 @@
 				<!-- Download Buttons -->
 				<div class="mb-4 flex flex-col gap-2 sm:flex-row sm:justify-end sm:gap-4">
 					<button
-						class="border-2 px-4 py-2 font-medium hover:opacity-80 text-sm sm:text-base"
+						class="border-2 px-4 py-2 text-sm font-medium hover:opacity-80 sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						Download PDF
 					</button>
 					<button
-						class="border-2 px-4 py-2 font-medium hover:opacity-80 text-sm sm:text-base"
+						class="border-2 px-4 py-2 text-sm font-medium hover:opacity-80 sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						Download DOCX
 					</button>
 					<button
-						class="border-2 px-4 py-2 font-medium hover:opacity-80 text-sm sm:text-base"
+						class="border-2 px-4 py-2 text-sm font-medium hover:opacity-80 sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						Download RTF
@@ -875,7 +875,7 @@
 
 				<!-- Report Preview Area -->
 				<div
-					class="min-h-[400px] sm:min-h-[600px] border-2 p-4 sm:p-8"
+					class="min-h-[400px] border-2 p-4 sm:min-h-[600px] sm:p-8"
 					style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 				>
 					{#if reportGenerated}

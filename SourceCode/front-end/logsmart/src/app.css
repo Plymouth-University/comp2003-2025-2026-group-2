@@ -20,6 +20,7 @@
 	--color-component-temperature: var(--component-temperature);
 	--color-component-dropdown: var(--component-dropdown);
 	--color-component-label: var(--component-label);
+	--breakpoint-xs: 350px;
 }
 
 :root {

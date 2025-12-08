@@ -79,40 +79,45 @@
 </script>
 
 <div
-	class="flex items-center justify-between rounded-lg border-2 px-6 py-4 transition-colors hover:shadow-md"
+	class="flex flex-col gap-3 rounded-lg border-2 px-4 py-4 transition-colors hover:shadow-md sm:flex-row sm:items-center sm:justify-between sm:px-6"
 	style="background-color: var(--bg-primary); border-color: var(--border-primary);"
 >
-	<div class="flex-1">
-		<h3 class="text-lg font-bold" style="color: var(--text-primary);">
+	<div class="min-w-0 flex-1">
+		<h3 class="truncate text-base font-bold sm:text-lg" style="color: var(--text-primary);">
 			{template.name}
 		</h3>
-		<div class="mt-1 flex gap-4 text-sm" style="color: var(--text-secondary);">
-			<span>Schedule: {formatSchedule(template.schedule)}</span>
-			<span>•</span>
-			<span>Updated: {formatDate(template.updatedAt)}</span>
+		<div
+			class="mt-1 flex flex-wrap gap-2 text-xs sm:gap-4 sm:text-sm"
+			style="color: var(--text-secondary);"
+		>
+			<span class="truncate">Schedule: {formatSchedule(template.schedule)}</span>
+			<span class="hidden sm:inline">•</span>
+			<span class="truncate">Updated: {formatDate(template.updatedAt)}</span>
 		</div>
 	</div>
 
-	<div class="flex gap-2">
+	<div class="flex w-full shrink-0 gap-1 sm:w-auto sm:gap-2">
 		<button
 			type="button"
-			class="btn-edit rounded px-4 py-2 font-medium text-white"
+			class="btn-edit flex-1 rounded px-2 py-2 text-xs font-medium text-white sm:flex-none sm:px-4 sm:text-base"
 			onclick={() => onEdit(template)}
 			title="Edit template design"
 		>
-			✏️ Edit
+			<span class="xs:inline hidden">✏️ Edit</span>
+			<span class="xs:hidden">✏️</span>
 		</button>
 		<button
 			type="button"
-			class="btn-settings rounded px-4 py-2 font-medium text-white"
+			class="btn-settings flex-1 rounded px-2 py-2 text-xs font-medium text-white sm:flex-none sm:px-4 sm:text-base"
 			onclick={() => onSettings(template)}
 			title="Schedule settings"
 		>
-			⚙️ Settings
+			<span class="xs:inline hidden">⚙️ Settings</span>
+			<span class="xs:hidden">⚙️</span>
 		</button>
 		<button
 			type="button"
-			class="btn-delete rounded px-4 py-2 font-medium text-white"
+			class="btn-delete flex-none rounded px-2 py-2 text-xs font-medium text-white sm:px-4 sm:text-base"
 			onclick={() => onDelete(template)}
 			title="Delete template"
 		>

@@ -39,9 +39,9 @@
 <svelte:head>
 	<title>Log In</title>
 </svelte:head>
-<div class="flex h-full w-full items-center justify-center bg-bg-primary p-6">
+<div class="bg-bg-primary flex h-full w-full items-center justify-center p-6">
 	<form onsubmit={submit} class="form bg-bg-secondary">
-		<h1 class="font-semibold text-text-primary">Log in</h1>
+		<h1 class="text-text-primary font-semibold">Log in</h1>
 		{#if error}
 			<div class="error" role="alert">{error}</div>
 		{/if}

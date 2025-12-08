@@ -117,7 +117,7 @@
 	<title>Register Company - LogSmart</title>
 </svelte:head>
 
-<div class="flex h-full w-full items-center justify-center bg-bg-primary p-8">
+<div class="bg-bg-primary flex h-full w-full items-center justify-center p-8">
 	<div class="w-full max-w-[600px]">
 		<div class="mb-8 flex items-center justify-center gap-4">
 			<div class="flex flex-col items-center gap-2">
@@ -132,7 +132,7 @@
 					1
 				</div>
 				<div
-					class="text-sm {step === 1 ? 'font-semibold text-text-primary' : 'text-text-secondary'}"
+					class="text-sm {step === 1 ? 'text-text-primary font-semibold' : 'text-text-secondary'}"
 				>
 					Company Details
 				</div>
@@ -150,7 +150,7 @@
 					2
 				</div>
 				<div
-					class="text-sm {step === 2 ? 'font-semibold text-text-primary' : 'text-text-secondary'}"
+					class="text-sm {step === 2 ? 'text-text-primary font-semibold' : 'text-text-secondary'}"
 				>
 					Your Details
 				</div>
@@ -158,9 +158,9 @@
 		</div>
 
 		{#if step === 1}
-			<form onsubmit={nextStep} class="w-full rounded-lg bg-bg-primary p-8 shadow-lg">
-				<h1 class="mb-2 text-2xl font-bold text-text-primary">Company Information</h1>
-				<p class="mb-6 text-text-secondary">Tell us about your company</p>
+			<form onsubmit={nextStep} class="bg-bg-primary w-full rounded-lg p-8 shadow-lg">
+				<h1 class="text-text-primary mb-2 text-2xl font-bold">Company Information</h1>
+				<p class="text-text-secondary mb-6">Tell us about your company</p>
 
 				{#if error}
 					<div
@@ -172,14 +172,14 @@
 				{/if}
 
 				<label class="mb-4 flex flex-col">
-					<span class="mb-1 text-sm font-medium text-text-primary">Company Name</span>
+					<span class="text-text-primary mb-1 text-sm font-medium">Company Name</span>
 					<input
 						type="text"
 						bind:value={companyName}
 						onblur={() => (touched.companyName = true)}
 						aria-invalid={!companyNameValid}
 						placeholder="LogSmart Ltd"
-						class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+						class="border-border-secondary bg-bg-primary text-text-primary w-full rounded-md border px-3 py-2 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
 						required
 					/>
 					{#if touched.companyName && !companyNameValid}
@@ -188,14 +188,14 @@
 				</label>
 
 				<label class="mb-4 flex flex-col">
-					<span class="mb-1 text-sm font-medium text-text-primary">Company Address</span>
+					<span class="text-text-primary mb-1 text-sm font-medium">Company Address</span>
 					<textarea
 						bind:value={companyAddress}
 						onblur={() => (touched.companyAddress = true)}
 						aria-invalid={!companyAddressValid}
 						placeholder="Plymouth, UK"
 						rows="3"
-						class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+						class="border-border-secondary bg-bg-primary text-text-primary w-full rounded-md border px-3 py-2 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
 						required
 					></textarea>
 					{#if touched.companyAddress && !companyAddressValid}
@@ -214,9 +214,9 @@
 				</button>
 			</form>
 		{:else}
-			<form onsubmit={submit} class="w-full rounded-lg bg-bg-primary p-8 shadow-lg">
-				<h1 class="mb-2 text-2xl font-bold text-text-primary">Your Details</h1>
-				<p class="mb-6 text-text-secondary">Create your admin account</p>
+			<form onsubmit={submit} class="bg-bg-primary w-full rounded-lg p-8 shadow-lg">
+				<h1 class="text-text-primary mb-2 text-2xl font-bold">Your Details</h1>
+				<p class="text-text-secondary mb-6">Create your admin account</p>
 
 				{#if error}
 					<div
@@ -229,14 +229,14 @@
 
 				<div class="grid grid-cols-2 gap-4">
 					<label class="mb-4 flex flex-col">
-						<span class="mb-1 text-sm font-medium text-text-primary">First Name</span>
+						<span class="text-text-primary mb-1 text-sm font-medium">First Name</span>
 						<input
 							type="text"
 							bind:value={firstName}
 							onblur={() => (touched.firstName = true)}
 							aria-invalid={!firstNameValid}
 							placeholder="John"
-							class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+							class="border-border-secondary bg-bg-primary text-text-primary w-full rounded-md border px-3 py-2 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
 							required
 						/>
 						{#if touched.firstName && !firstNameValid}
@@ -245,14 +245,14 @@
 					</label>
 
 					<label class="mb-4 flex flex-col">
-						<span class="mb-1 text-sm font-medium text-text-primary">Last Name</span>
+						<span class="text-text-primary mb-1 text-sm font-medium">Last Name</span>
 						<input
 							type="text"
 							bind:value={lastName}
 							onblur={() => (touched.lastName = true)}
 							aria-invalid={!lastNameValid}
 							placeholder="Doe"
-							class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+							class="border-border-secondary bg-bg-primary text-text-primary w-full rounded-md border px-3 py-2 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
 							required
 						/>
 						{#if touched.lastName && !lastNameValid}
@@ -262,14 +262,14 @@
 				</div>
 
 				<label class="mb-4 flex flex-col">
-					<span class="mb-1 text-sm font-medium text-text-primary">Email</span>
+					<span class="text-text-primary mb-1 text-sm font-medium">Email</span>
 					<input
 						type="email"
 						bind:value={email}
 						onblur={() => (touched.email = true)}
 						aria-invalid={!emailValid}
 						placeholder="john@company.com"
-						class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+						class="border-border-secondary bg-bg-primary text-text-primary w-full rounded-md border px-3 py-2 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
 						required
 					/>
 					{#if touched.email && !emailValid}
@@ -280,7 +280,7 @@
 				</label>
 
 				<label class="mb-4 flex flex-col">
-					<span class="mb-1 text-sm font-medium text-text-primary">Password</span>
+					<span class="text-text-primary mb-1 text-sm font-medium">Password</span>
 					<div class="relative block">
 						<input
 							type={showPassword ? 'text' : 'password'}
@@ -288,7 +288,7 @@
 							onblur={() => (touched.password = true)}
 							aria-invalid={!passwordValid}
 							placeholder="Min 8 chars, uppercase, lowercase, digit, special char"
-							class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 pr-10 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+							class="border-border-secondary bg-bg-primary text-text-primary w-full rounded-md border px-3 py-2 pr-10 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
 							required
 						/>
 						<button
@@ -379,7 +379,7 @@
 				</label>
 
 				<label class="mb-4 flex flex-col">
-					<span class="mb-1 text-sm font-medium text-text-primary">Confirm Password</span>
+					<span class="text-text-primary mb-1 text-sm font-medium">Confirm Password</span>
 					<div class="relative block">
 						<input
 							type={showConfirmPassword ? 'text' : 'password'}
@@ -387,7 +387,7 @@
 							onblur={() => (touched.confirmPassword = true)}
 							aria-invalid={!passwordsMatch}
 							placeholder="Re-enter password"
-							class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 pr-10 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+							class="border-border-secondary bg-bg-primary text-text-primary w-full rounded-md border px-3 py-2 pr-10 text-base outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
 							required
 						/>
 						<button
@@ -431,7 +431,7 @@
 				<div class="mt-6 flex gap-4">
 					<button
 						type="button"
-						class="rounded-md bg-bg-secondary px-6 py-3 text-base font-medium text-text-primary transition-all duration-200 hover:bg-bg-secondary/80"
+						class="bg-bg-secondary text-text-primary hover:bg-bg-secondary/80 rounded-md px-6 py-3 text-base font-medium transition-all duration-200"
 						onclick={prevStep}
 					>
 						Back
@@ -451,7 +451,7 @@
 			</form>
 		{/if}
 
-		<p class="mt-6 text-center text-text-secondary">
+		<p class="text-text-secondary mt-6 text-center">
 			Already have an account? <a href="/login" class="text-blue-600 hover:underline">Sign in</a>
 		</p>
 	</div>
