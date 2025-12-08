@@ -13,20 +13,20 @@
 	}
 </script>
 
-<div class="min-h-screen w-full" style="background-color: var(--bg-secondary);">
+<div class="flex h-screen w-full flex-col" style="background-color: var(--bg-secondary);">
 	<header
 		style="border-color: var(--border-secondary); background-color: var(--bg-primary);"
-		class="border-b shadow-sm"
+		class="shrink-0 border-b shadow-sm"
 	>
 		<div class="mx-auto max-w-7xl px-6 py-4">
-			<div class="flex items-center justify-between">
-				<div class="flex items-center gap-8">
+			<div class="flex flex-wrap items-center justify-between gap-4">
+				<div class="flex flex-wrap items-center gap-4 md:gap-8">
 					<a
 						href={isAdmin ? '/dashboard' : '/logs-list'}
 						class="text-2xl font-bold"
 						style="color: #94C5CC;">LogSmart</a
 					>
-					<nav class="flex items-center gap-6">
+					<nav class="flex flex-wrap items-center gap-4 md:gap-6">
 						{#if isAdmin}
 							<a
 								href="/dashboard"
@@ -78,7 +78,7 @@
 						{/if}
 					</nav>
 				</div>
-				<div class="flex items-center gap-4">
+				<div class="flex flex-wrap items-center gap-4">
 					{#if data?.user}
 						<span class="text-sm" style="color: var(--text-secondary);">{data.user.email}</span>
 					{/if}
@@ -101,7 +101,7 @@
 		</div>
 	</header>
 
-	<main>
+	<main class="flex-1 overflow-auto">
 		{@render children()}
 	</main>
 </div>

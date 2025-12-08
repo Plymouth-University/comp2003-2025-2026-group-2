@@ -129,9 +129,10 @@
 						{:else}
 							<a
 								href="/register-company"
-								class="rounded border border-border-secondary bg-bg-secondary px-4 py-2 text-text-secondary hover:opacity-80"
+								class="whitespace-nowrap rounded border border-border-secondary bg-bg-secondary px-4 py-2 text-text-secondary hover:opacity-80"
 							>
-								Register Company
+								<span class="hidden sm:inline">Register Company</span>
+								<span class="sm:hidden">Register</span>
 							</a>
 							<a
 								href="/login"
