@@ -25,13 +25,18 @@
         extensions = [ "rust-src" "rust-std" ];
         targets = [ "aarch64-unknown-linux-gnu" ];
       });
-      logSmartBackend = pkgsCross.rustPlatform.buildRustPackage {
+      swaggerUiZip = pkgs.fetchurl {
+        url = "https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.17.14.zip";
+        hash = "sha256-SBJE0IEgl7Efuu73n3HZQrFxYX+cn5UU5jrL4T5xzNw=";
+      };
+      logSmartBackendAarch64 = pkgsCross.rustPlatform.buildRustPackage {
         pname = "logsmart-backend";
         version = "latest";
         src = ./.;
         cargoLock = {
           lockFile = ./Cargo.lock;
         };
+        doCheck = false;
         installTargets = [ "logsmart-srv" ];
         nativeBuildInputs = [ pkgs.pkg-config pkgs.openssl ];
         buildInputs = [ pkgsCross.openssl ];
@@ -52,8 +57,28 @@
         CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "${pkgsCross.stdenv.cc}/bin/aarch64-unknown-linux-gnu-gcc";
         CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS = "-C linker=${pkgsCross.stdenv.cc}/bin/aarch64-unknown-linux-gnu-gcc -L ${pkgsCross.openssl.out}/lib -C link-args=-Wl,--enable-new-dtags,-rpath,$ORIGIN/../lib:$ORIGIN/lib:/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu:/usr/lib:/lib,--dynamic-linker=/lib/ld-linux-aarch64.so.1";
       };
+      logSmartBackend = pkgs.rustPlatform.buildRustPackage {
+        pname = "logsmart-backend";
+        version = "latest";
+        src = ./.;
+        cargoLock = {
+          lockFile = ./Cargo.lock;
+        };
+        doCheck = false;
+        installTargets = [ "logsmart-srv" ];
+        nativeBuildInputs = [ pkgs.pkg-config pkgs.openssl ];
+        buildInputs = [ pkgs.openssl ];
+        preBuild = ''
+          mkdir -p /tmp/swagger-ui
+          cp ${swaggerUiZip} /tmp/swagger-ui/v5.17.14.zip
+          chmod +w /tmp/swagger-ui/v5.17.14.zip
+        '';
+        SWAGGER_UI_DOWNLOAD_URL = "file:///tmp/swagger-ui/v5.17.14.zip";
+      };
       packages = {
-        aarch64-linux = logSmartBackend;
+        aarch64-linux = logSmartBackendAarch64;
+        x86_64-linux = logSmartBackend;
+        default = logSmartBackend;
       };
     in
     {
@@ -84,6 +109,14 @@
         };
       };
       packages = packages;
+      apps.default = {
+        type = "app";
+        program = "${logSmartBackend}/bin/logsmart-srv";
+      };
+      apps.aarch64-linux = {
+        type = "app";
+        program = "${logSmartBackendAarch64}/bin/logsmart-srv";
+      };
     }
   );
 }
