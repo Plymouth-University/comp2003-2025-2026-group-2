@@ -383,7 +383,7 @@
 														class="flex aspect-square items-center justify-center rounded transition-colors hover:opacity-80"
 														class:font-bold={isSelectedDay(day)}
 														style={isSelectedDay(day)
-															? 'background-color: #94C5CC; color: white;'
+															? 'background-color: #3D7A82; color: white;'
 															: 'color: var(--text-primary);'}
 													>
 														{day}
@@ -454,7 +454,7 @@
 													class="rounded px-4 py-3 font-medium transition-colors"
 													class:font-bold={calendarDate.getMonth() === index}
 													style={calendarDate.getMonth() === index
-														? 'background-color: #94C5CC; color: white;'
+														? 'background-color: #3D7A82; color: white;'
 														: 'color: var(--text-primary); background-color: transparent;'}
 												>
 													{month}
@@ -519,7 +519,7 @@
 													class="rounded px-4 py-3 font-medium transition-colors"
 													class:font-bold={calendarDate.getFullYear() === year}
 													style={calendarDate.getFullYear() === year
-														? 'background-color: #94C5CC; color: white;'
+														? 'background-color: #3D7A82; color: white;'
 														: 'color: var(--text-primary); background-color: transparent;'}
 												>
 													{year}
@@ -655,7 +655,7 @@
 														class="flex aspect-square items-center justify-center rounded transition-colors"
 														class:font-bold={isSelectedDay(day)}
 														style={isSelectedDay(day)
-															? 'background-color: #94C5CC; color: white;'
+															? 'background-color: #3D7A82; color: white;'
 															: 'color: var(--text-primary); background-color: transparent;'}
 													>
 														{day}
@@ -726,7 +726,7 @@
 													class="rounded px-4 py-3 font-medium transition-colors hover:bg-gray-100"
 													class:font-bold={calendarDate.getMonth() === index}
 													style={calendarDate.getMonth() === index
-														? 'background-color: #94C5CC; color: white;'
+														? 'background-color: #3D7A82; color: white;'
 														: 'color: #000100;'}
 												>
 													{month}
@@ -791,7 +791,7 @@
 													class="rounded px-4 py-3 font-medium transition-colors hover:bg-gray-100"
 													class:font-bold={calendarDate.getFullYear() === year}
 													style={calendarDate.getFullYear() === year
-														? 'background-color: #94C5CC; color: white;'
+														? 'background-color: #3D7A82; color: white;'
 														: 'color: #000100;'}
 												>
 													{year}
@@ -832,7 +832,7 @@
 					<button
 						onclick={generateReport}
 						class="flex items-center gap-2 border-2 px-8 py-2 font-medium hover:opacity-80"
-						style="border-color: var(--border-primary); background-color: var(--text-secondary); color: var(--text-primary);"
+						style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 					>
 						Generate
 						<svg

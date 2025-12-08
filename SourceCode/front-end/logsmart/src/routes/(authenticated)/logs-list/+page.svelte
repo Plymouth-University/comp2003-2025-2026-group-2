@@ -176,7 +176,7 @@
 									<button
 										onclick={() => handleFillLog(form.template_name, form.period, form.status)}
 										class="rounded px-6 py-2 font-semibold hover:opacity-80"
-										style="background-color: #94C5CC; color: white;"
+										style="background-color: #3D7A82; color: white;"
 									>
 										Fill Out
 									</button>
@@ -269,7 +269,7 @@
 									<button
 										onclick={() => handleFillLog(form.template_name, form.period, form.status)}
 										class="rounded px-6 py-2 font-semibold hover:opacity-80"
-										style="background-color: #94C5CC; color: white;"
+										style="background-color: #3D7A82; color: white;"
 									>
 										Fill Out
 									</button>
@@ -331,7 +331,7 @@
 											<button
 												onclick={() => handleEditLog(log.id)}
 												class="rounded px-6 py-2 hover:opacity-80"
-												style="background-color: #94C5CC; color: white;"
+												style="background-color: #3D7A82; color: white;"
 											>
 												Edit
 											</button>

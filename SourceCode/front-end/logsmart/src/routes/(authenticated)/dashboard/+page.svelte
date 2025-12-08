@@ -51,7 +51,7 @@
 						<!-- Profile Picture (Initials) -->
 						<div
 							class="flex h-16 w-16 items-center justify-center rounded-full text-xl font-bold text-white"
-							style="background-color: #94C5CC;"
+							style="background-color: #3D7A82;"
 						>
 							{user().initials}
 						</div>

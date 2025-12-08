@@ -272,8 +272,8 @@
 
 <style>
 	.day-selected {
-		background-color: #94c5cc;
-		border-color: #94c5cc;
+		background-color: #3d7a82;
+		border-color: #3d7a82;
 		color: white;
 	}
 
@@ -285,7 +285,7 @@
 
 	.day-unselected:hover {
 		background-color: var(--bg-primary);
-		border-color: #94c5cc;
+		border-color: #3d7a82;
 	}
 
 	.btn-cancel {
