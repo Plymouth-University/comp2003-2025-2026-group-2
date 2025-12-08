@@ -46,8 +46,8 @@
 			type="number"
 			bind:value
 			onchange={handleInputChange}
-			max={max}
-			min={min}
+			{max}
+			{min}
 			{disabled}
 			class="w-16 border-2 px-3 py-2 text-center text-xl font-medium"
 			style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary); {disabled

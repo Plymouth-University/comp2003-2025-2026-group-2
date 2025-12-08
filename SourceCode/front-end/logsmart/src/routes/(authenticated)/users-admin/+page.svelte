@@ -30,8 +30,8 @@
 	<title>Users Administration</title>
 </svelte:head>
 <main class="min-h-full bg-bg-secondary">
-	<div class="overflow-none flex h-[calc(100vh-73px)]">
-		<div class="mx-auto w-1/3 md:w-full">
+	<div class="overflow-none flex">
+		<div class="mx-auto md:w-full">
 			<div class="flex-1 gap-1 overflow-auto p-6">
 				<div id="eventHide" class="flex flex-auto flex-col">
 					{#each members as item (item.email)}
