@@ -3,12 +3,7 @@
 
 	let { data } = $props<{ data: PageData }>();
 
-	// Sample data for today's logs
-	const todaysLogs = $state([
-		'Kitchen Daily Log (27th)',
-		'Kitchen Cleaning Log (w/e 27th)',
-		'Weekly Log'
-	]);
+	const todaysLogs = $derived(data?.todaysLogs ?? []);
 
 	// Get user data from server load
 	const user = $derived(() => {
@@ -44,7 +39,7 @@
 	<!-- Main Content -->
 	<div class="mx-auto max-w-7xl px-6 py-8">
 		<!-- Header with User Profile -->
-		<div class="mb-8 flex items-start justify-between">
+		<div class="mb-8 flex flex-wrap items-start justify-between">
 			<h1 class="mb-8 text-3xl font-bold" style="color: var(--text-primary);">
 				Dashboard Overview
 			</h1>
@@ -87,11 +82,18 @@
 					class="min-h-[280px] min-w-[380px] px-6 py-6"
 					style="background-color: var(--bg-primary);"
 				>
-					<ul class="space-y-2">
-						{#each todaysLogs as log}
-							<li style="color: var(--text-primary);">- {log}</li>
-						{/each}
-					</ul>
+					{#if todaysLogs.length === 0}
+						<div style="color: var(--text-secondary);">No logs due today</div>
+					{:else}
+						<ul class="space-y-2">
+							{#each todaysLogs as log}
+								<li style="color: var(--text-primary);">
+									- {log.template_name}
+									{log.period ? `(${log.period})` : ''}
+								</li>
+							{/each}
+						</ul>
+					{/if}
 				</div>
 			</div>
 		</div>

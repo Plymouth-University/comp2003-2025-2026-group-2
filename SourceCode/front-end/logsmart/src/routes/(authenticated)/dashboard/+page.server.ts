@@ -1,7 +1,7 @@
 import { redirect, type RequestEvent } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ parent, fetch, cookies }: RequestEvent) => {
+export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 	const { user } = await parent();
 
 	if (user?.role !== 'admin') {
@@ -12,7 +12,8 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }: RequestEv
 
 	if (!token) {
 		return {
-			user: null
+			user: null,
+			todaysLogs: []
 		};
 	}
 
@@ -26,19 +27,38 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }: RequestEv
 
 		if (!response.ok) {
 			return {
-				user: null
+				user: null,
+				todaysLogs: []
 			};
 		}
 
 		const userData = await response.json();
 
+		let todaysLogs = [];
+		try {
+			const logsResponse = await fetch('/api/log-entries/due-today', {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${token}`
+				}
+			});
+
+			if (logsResponse.ok) {
+				todaysLogs = await logsResponse.json();
+			}
+		} catch (err) {
+			console.error('Error fetching due logs:', err);
+		}
+
 		return {
-			user: userData
+			user: userData,
+			todaysLogs
 		};
 	} catch (error) {
 		console.error('Error fetching user data:', error);
 		return {
-			user: null
+			user: null,
+			todaysLogs: []
 		};
 	}
 };
