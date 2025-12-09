@@ -1,6 +1,7 @@
 use crate::AppState;
 use crate::dto::LayoutGenerationRequest;
 use crate::llm::{self};
+use crate::middleware::AuthToken;
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use serde_json::json;
 
@@ -17,6 +18,7 @@ use serde_json::json;
     security(("bearer_token" = []))
 )]
 pub async fn generate_layout(
+    AuthToken(_claims): AuthToken,
     State(_state): State<AppState>,
     Json(req): Json<LayoutGenerationRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
