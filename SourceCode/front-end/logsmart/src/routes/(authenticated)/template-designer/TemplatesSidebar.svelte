@@ -17,7 +17,7 @@
 </script>
 
 <div
-	class="w-64 border-r-2"
+	class="flex flex-col"
 	style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 >
 	<div class="p-6">
