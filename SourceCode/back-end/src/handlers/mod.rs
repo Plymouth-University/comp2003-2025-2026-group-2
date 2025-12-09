@@ -1,11 +1,13 @@
 pub mod auth_handlers;
 pub mod invitation_handlers;
+pub mod llm_handlers;
 pub mod log_entry_handlers;
 pub mod template_handlers;
 pub mod user_handlers;
 
 pub use auth_handlers::*;
 pub use invitation_handlers::*;
+pub use llm_handlers::*;
 pub use log_entry_handlers::*;
 pub use template_handlers::*;
 pub use user_handlers::*;
