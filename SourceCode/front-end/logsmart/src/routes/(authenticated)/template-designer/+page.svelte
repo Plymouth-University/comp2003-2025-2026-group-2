@@ -8,6 +8,7 @@
 	import DesignCanvas from './DesignCanvas.svelte';
 	import ComponentsPalette from './ComponentsPalette.svelte';
 	import PropertiesPanel from './PropertiesPanel.svelte';
+	import AiGeneratorSidebar from './AiGeneratorSidebar.svelte';
 	import type { CanvasItem, ComponentType, Template } from './types';
 
 	type ApiTemplateField = components['schemas']['TemplateField'];
@@ -488,26 +489,53 @@
 </svelte:head>
 <div class="min-h-full" style="background-color: var(--bg-secondary);">
 	<div class="flex h-[calc(100vh-73px)]">
-		<TemplatesSidebar
-			{templates}
-			onCreateNew={createNewTemplate}
-			onSelectTemplate={selectTemplate}
-			currentTemplateName={isEditing ? (originalTemplateName ?? '') : logTitle}
-			isNewTemplate={!isEditing}
-		/>
-
+		<div
+			data-left-sidebar
+			class="flex w-72 flex-col border-r-2"
+			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+		>
+			<div
+				style="height: {paletteHeight !== null
+					? `${paletteHeight}px`
+					: '60%'}; flex-shrink: 0; overflow: auto;"
+			>
+				<TemplatesSidebar
+					{templates}
+					onCreateNew={createNewTemplate}
+					onSelectTemplate={selectTemplate}
+					currentTemplateName={isEditing ? (originalTemplateName ?? '') : logTitle}
+					isNewTemplate={!isEditing}
+				/>
+			</div>
+			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+			<div
+				class="h-2 cursor-row-resize border-y-2 hover:bg-gray-200"
+				style="border-color: var(--border-primary); flex-shrink: 0;"
+				onmousedown={handleResizeStart}
+				ondblclick={() => (paletteHeight = null)}
+				role="separator"
+				aria-orientation="horizontal"
+			></div>
+			<div class="flex-1 overflow-auto">
+				<AiGeneratorSidebar
+					bind:aiPrompt
+					onGenerateLayout={generateLayoutFromPrompt}
+					onUndoGeneration={undoGeneration}
+					{aiLoading}
+					{aiError}
+					{hasUndoAvailable}
+				/>
+			</div>
+		</div>
 		<DesignCanvas
 			bind:canvasItems
 			bind:logTitle
 			bind:selectedItemId
 			bind:canvasRef
-			bind:aiPrompt
 			onSave={saveTemplate}
 			onDeleteSelected={deleteSelected}
 			onDeleteTemplate={deleteTemplate}
 			onItemMoved={markUnsavedChanges}
-			onGenerateLayout={generateLayoutFromPrompt}
-			onUndoGeneration={undoGeneration}
 			{saving}
 			{saveError}
 			{saveSuccess}
@@ -515,9 +543,6 @@
 			{isEditing}
 			{deleting}
 			{deleteError}
-			{aiLoading}
-			{aiError}
-			{hasUndoAvailable}
 		/>
 
 		<div
