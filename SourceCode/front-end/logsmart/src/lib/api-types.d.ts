@@ -180,6 +180,22 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/llm/generate-layout': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post: operations['generate_layout'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	'/logs/entries': {
 		parameters: {
 			query?: never;
@@ -416,6 +432,12 @@ export interface components {
 		};
 		JwtVerifyResponse: {
 			email: string;
+		};
+		LayoutGenerationRequest: {
+			user_prompt: string;
+		};
+		LayoutGenerationResponse: {
+			layout: unknown;
 		};
 		ListLogEntriesResponse: {
 			entries: components['schemas']['LogEntryResponse'][];
@@ -1075,6 +1097,44 @@ export interface operations {
 				content: {
 					'application/json': components['schemas']['ErrorResponse'];
 				};
+			};
+		};
+	};
+	generate_layout: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['LayoutGenerationRequest'];
+			};
+		};
+		responses: {
+			/** @description Layout generated successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': unknown;
+				};
+			};
+			/** @description Invalid request */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Internal server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
 			};
 		};
 	};
