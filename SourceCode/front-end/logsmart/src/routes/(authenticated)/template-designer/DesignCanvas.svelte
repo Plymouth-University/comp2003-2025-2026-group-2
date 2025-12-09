@@ -8,26 +8,35 @@
 		logTitle = $bindable(),
 		selectedItemId = $bindable(),
 		canvasRef = $bindable(),
+		aiPrompt = $bindable(''),
 		onSave,
 		onDeleteSelected,
 		onDeleteTemplate,
 		onItemMoved,
+		onGenerateLayout,
+		onUndoGeneration,
 		saving = false,
 		saveError = null,
 		saveSuccess = false,
 		loading = false,
 		isEditing = false,
 		deleting = false,
-		deleteError = null
+		deleteError = null,
+		aiLoading = false,
+		aiError = null,
+		hasUndoAvailable = false
 	}: {
 		canvasItems: CanvasItem[];
 		logTitle: string;
 		selectedItemId: string | null;
 		canvasRef: HTMLDivElement | null;
+		aiPrompt?: string;
 		onSave: () => void;
 		onDeleteSelected: () => void;
 		onDeleteTemplate: () => void;
 		onItemMoved?: () => void;
+		onGenerateLayout?: () => void;
+		onUndoGeneration?: () => void;
 		saving?: boolean;
 		saveError?: string | null;
 		saveSuccess?: boolean;
@@ -35,6 +44,9 @@
 		isEditing?: boolean;
 		deleting?: boolean;
 		deleteError?: string | null;
+		aiLoading?: boolean;
+		aiError?: string | null;
+		hasUndoAvailable?: boolean;
 	} = $props();
 
 	let snapLines = $state<{ x: number[]; y: number[] }>({ x: [], y: [] });
@@ -108,6 +120,50 @@
 		{#if saveSuccess}
 			<div class="mt-2 text-sm text-green-600">Template saved successfully!</div>
 		{/if}
+
+		<div
+			class="mb-4 rounded-lg border-2 p-4"
+			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+		>
+			<div class="mb-3 flex items-center justify-between">
+				<h3 class="text-lg font-semibold text-text-primary">AI Layout Generator</h3>
+				{#if hasUndoAvailable}
+					<button
+						class="rounded px-3 py-1 text-sm font-medium"
+						style="background-color: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-primary);"
+						onclick={onUndoGeneration}
+						disabled={aiLoading}
+					>
+						↶ Undo Generation
+					</button>
+				{/if}
+			</div>
+			<div class="flex gap-2">
+				<input
+					type="text"
+					bind:value={aiPrompt}
+					placeholder="Describe your log template layout..."
+					class="flex-1 rounded border-2 px-3 py-2"
+					style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+					disabled={aiLoading}
+				/>
+				<button
+					class="rounded px-4 py-2 font-medium text-white disabled:opacity-50"
+					style="background-color: #6366f1;"
+					onclick={onGenerateLayout}
+					disabled={aiLoading || !aiPrompt.trim()}
+				>
+					{#if aiLoading}
+						Generating...
+					{:else}
+						✨ Generate
+					{/if}
+				</button>
+			</div>
+			{#if aiError}
+				<div class="mt-2 text-sm text-red-600">{aiError}</div>
+			{/if}
+		</div>
 
 		{#if loading}
 			<div class="flex items-center justify-center py-8">
