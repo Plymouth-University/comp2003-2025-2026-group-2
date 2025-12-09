@@ -400,6 +400,29 @@
 				}
 			}
 		},
+		"/llm/generate-layout": {
+			"post": {
+				"tags": ["LLM"],
+				"operationId": "generate_layout",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": { "$ref": "#/components/schemas/LayoutGenerationRequest" }
+						}
+					},
+					"required": true
+				},
+				"responses": {
+					"200": {
+						"description": "Layout generated successfully",
+						"content": { "application/json": { "schema": {} } }
+					},
+					"400": { "description": "Invalid request" },
+					"500": { "description": "Internal server error" }
+				},
+				"security": [{ "bearer_token": [] }]
+			}
+		},
 		"/logs/entries": {
 			"get": {
 				"tags": ["Log Entries"],
@@ -1082,6 +1105,16 @@
 				"type": "object",
 				"required": ["email"],
 				"properties": { "email": { "type": "string" } }
+			},
+			"LayoutGenerationRequest": {
+				"type": "object",
+				"required": ["user_prompt"],
+				"properties": { "user_prompt": { "type": "string" } }
+			},
+			"LayoutGenerationResponse": {
+				"type": "object",
+				"required": ["layout"],
+				"properties": { "layout": {} }
 			},
 			"ListLogEntriesResponse": {
 				"type": "object",
