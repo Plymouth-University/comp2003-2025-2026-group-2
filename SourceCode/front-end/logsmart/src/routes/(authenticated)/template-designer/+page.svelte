@@ -395,9 +395,36 @@
 		aiError = null;
 
 		try {
+			let promptWithContext = '';
+
+			if (canvasRef) {
+				const rect = canvasRef.getBoundingClientRect();
+				const canvasWidth = Math.round(rect.width);
+				const canvasHeight = Math.round(rect.height);
+				promptWithContext += ` Canvas dimensions: ${canvasWidth}px width × ${canvasHeight}px height.`;
+
+				const componentDimensions: Record<string, { width: number; height: number }> = {
+					text_input: { width: 260, height: 50 },
+					checkbox: { width: 100, height: 60 },
+					temperature: { width: 440, height: 80 },
+					dropdown: { width: 160, height: 60 },
+					label: { width: 100, height: 40 }
+				};
+
+				const componentSizes = componentTypes
+					.map((comp) => {
+						const dims = componentDimensions[comp.type] || { width: 150, height: 40 };
+						return `${comp.name} (${comp.type}): ${dims.width}px × ${dims.height}px`;
+					})
+					.join(', ');
+
+				promptWithContext += ` Available components with typical sizes: ${componentSizes}.`;
+				promptWithContext += ` User prompt: \n ${aiPrompt}`;
+			}
+
 			const { data, error } = await api.POST('/llm/generate-layout', {
 				body: {
-					user_prompt: aiPrompt
+					user_prompt: promptWithContext
 				}
 			});
 
