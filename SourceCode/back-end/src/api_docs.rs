@@ -29,6 +29,7 @@ use utoipa::OpenApi;
         handlers::unsubmit_log_entry,
         handlers::delete_log_entry,
         handlers::list_user_log_entries,
+        handlers::generate_layout
     ),
     components(
         schemas(
@@ -71,6 +72,8 @@ use utoipa::OpenApi;
             dto::DueFormInfo,
             dto::DueFormsResponse,
             dto::ListLogEntriesResponse,
+            dto::LayoutGenerationRequest,
+            dto::LayoutGenerationResponse,
             logs_db::TemplateDocument,
             logs_db::TemplateField,
             logs_db::Position,

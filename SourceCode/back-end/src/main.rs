@@ -116,6 +116,7 @@ async fn main() {
             "/logs/entries/{entry_id}/unsubmit",
             post(handlers::unsubmit_log_entry),
         )
+        .route("/llm/generate-layout", post(handlers::generate_layout))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             rate_limit::rate_limit_middleware,

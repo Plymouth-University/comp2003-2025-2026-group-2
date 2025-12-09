@@ -2,15 +2,16 @@ use anyhow::Result;
 use chrono::Datelike;
 use futures_util::TryStreamExt;
 use mongodb::bson::Uuid;
+use schemars::JsonSchema;
 use utoipa::ToSchema;
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema, JsonSchema)]
 pub struct Position {
     pub x: f64,
     pub y: f64,
 }
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema, JsonSchema)]
 pub struct TemplateFieldProps {
     pub text: Option<String>,
     pub size: Option<String>,
@@ -24,14 +25,14 @@ pub struct TemplateFieldProps {
     pub editable: Option<bool>,
 }
 
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema, JsonSchema)]
 pub struct TemplateField {
     pub field_type: String,
     pub position: Position,
     pub props: TemplateFieldProps,
 }
 
-#[derive(Debug, serde::Deserialize, serde::Serialize, ToSchema)]
+#[derive(Debug, serde::Deserialize, serde::Serialize, ToSchema, JsonSchema)]
 pub enum Frequency {
     Daily,
     Weekly,
@@ -755,8 +756,8 @@ pub fn process_template_layout_with_period(
         .iter()
         .map(|field| {
             let mut processed_field = field.clone();
-            if let Some(text) = &field.props.text {
-                if text.contains("{period}") {
+            if let Some(text) = &field.props.text
+                && text.contains("{period}") {
                     let new_text = text.replace("{period}", &period);
                     tracing::info!(
                         "Field type: {}, Original text: '{}', Replaced text: '{}'",
@@ -766,7 +767,6 @@ pub fn process_template_layout_with_period(
                     );
                     processed_field.props.text = Some(new_text);
                 }
-            }
             processed_field
         })
         .collect()

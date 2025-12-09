@@ -382,3 +382,13 @@ pub struct DeleteTemplateRequest {
 pub struct DeleteTemplateResponse {
     pub message: String,
 }
+
+#[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]
+pub struct LayoutGenerationRequest {
+    pub user_prompt: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]
+pub struct LayoutGenerationResponse {
+    pub layout: serde_json::Value,
+}

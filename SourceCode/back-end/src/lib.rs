@@ -5,6 +5,7 @@ pub mod dto;
 pub mod email;
 pub mod handlers;
 pub mod jwt_manager;
+pub mod llm;
 pub mod logs_db;
 pub mod metrics;
 pub mod middleware;
