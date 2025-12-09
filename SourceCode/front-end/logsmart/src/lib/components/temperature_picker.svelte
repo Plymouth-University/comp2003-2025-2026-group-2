@@ -14,16 +14,14 @@
 		unit: string;
 		disabled?: boolean;
 	} = $props();
-	const freezerMin = min;
-	const freezerMax = max;
 
 	const increaseValue = () => {
-		if (value < freezerMax) {
+		if (value < max) {
 			value += 1;
 		}
 	};
 	const decreaseValue = () => {
-		if (value > freezerMin) {
+		if (value > min) {
 			value -= 1;
 		}
 	};
@@ -31,12 +29,12 @@
 		const input = event.target as HTMLInputElement;
 		let newValue = parseInt(input.value);
 		if (isNaN(newValue)) {
-			newValue = freezerMin;
+			newValue = min;
 		}
-		if (newValue < freezerMin) {
-			newValue = freezerMin;
-		} else if (newValue > freezerMax) {
-			newValue = freezerMax;
+		if (newValue < min) {
+			newValue = min;
+		} else if (newValue > max) {
+			newValue = max;
 		}
 		value = newValue;
 	};
@@ -48,8 +46,8 @@
 			type="number"
 			bind:value
 			onchange={handleInputChange}
-			max={freezerMax}
-			min={freezerMin}
+			{max}
+			{min}
 			{disabled}
 			class="w-16 border-2 px-3 py-2 text-center text-xl font-medium"
 			style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary); {disabled

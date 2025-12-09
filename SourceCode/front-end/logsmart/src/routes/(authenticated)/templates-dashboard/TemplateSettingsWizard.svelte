@@ -29,12 +29,12 @@
 		{ value: 'sunday', label: 'Sunday', short: 'Sun' }
 	];
 
-	let frequency = $state<ScheduleFrequency>(template.schedule.frequency);
-	let selectedDays = $state<DayOfWeek[]>(template.schedule.daysOfWeek || []);
-	let weeklyDay = $state<DayOfWeek>(template.schedule.dayOfWeek || 'monday');
-	let dayOfMonth = $state(template.schedule.dayOfMonth || 1);
-	let monthOfYear = $state(template.schedule.monthOfYear || 1);
-	let customIntervalDays = $state(template.schedule.customIntervalDays || 7);
+	let frequency = $derived<ScheduleFrequency>(template.schedule.frequency);
+	let selectedDays = $derived<DayOfWeek[]>(template.schedule.daysOfWeek || []);
+	let weeklyDay = $derived<DayOfWeek>(template.schedule.dayOfWeek || 'monday');
+	let dayOfMonth = $derived(template.schedule.dayOfMonth || 1);
+	let monthOfYear = $derived(template.schedule.monthOfYear || 1);
+	let customIntervalDays = $derived(template.schedule.customIntervalDays || 7);
 
 	function toggleDay(day: DayOfWeek) {
 		if (selectedDays.includes(day)) {

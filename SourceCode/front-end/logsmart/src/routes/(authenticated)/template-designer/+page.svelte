@@ -37,6 +37,11 @@
 	let deleting = $state(false);
 	let deleteError = $state<string | null>(null);
 	let hasUnsavedChanges = $state(false);
+	let aiPrompt = $state('');
+	let aiLoading = $state(false);
+	let aiError = $state<string | null>(null);
+	let canvasItemsBackup = $state<CanvasItem[] | null>(null);
+	let hasUndoAvailable = $derived(canvasItemsBackup !== null);
 
 	const templateId = $derived(page.url.searchParams.get('id'));
 
@@ -376,6 +381,78 @@
 		hasUnsavedChanges = true;
 	}
 
+	async function generateLayoutFromPrompt() {
+		if (!aiPrompt.trim()) {
+			aiError = 'Please enter a prompt';
+			setTimeout(() => {
+				aiError = null;
+			}, 3000);
+			return;
+		}
+
+		aiLoading = true;
+		aiError = null;
+
+		try {
+			const { data, error } = await api.POST('/llm/generate-layout', {
+				body: {
+					user_prompt: aiPrompt
+				}
+			});
+
+			if (error) {
+				aiError = 'Failed to generate layout';
+				setTimeout(() => {
+					aiError = null;
+				}, 3000);
+				aiLoading = false;
+				return;
+			}
+
+			if (!data || typeof data !== 'object') {
+				aiError = 'Invalid response from backend';
+				setTimeout(() => {
+					aiError = null;
+				}, 3000);
+				aiLoading = false;
+				return;
+			}
+
+			const layoutObj = data as { layout?: { template_layout?: unknown } };
+			const layoutData = layoutObj.layout?.template_layout;
+
+			if (!Array.isArray(layoutData)) {
+				aiError = 'Invalid response from backend';
+				setTimeout(() => {
+					aiError = null;
+				}, 3000);
+				aiLoading = false;
+				return;
+			}
+
+			canvasItemsBackup = [...canvasItems];
+			canvasItems = layoutData.map(mapApiFieldToCanvasItem);
+			selectedItemId = null;
+			hasUnsavedChanges = true;
+			aiPrompt = '';
+			aiLoading = false;
+		} catch (e) {
+			aiError = `Error: ${e instanceof Error ? e.message : 'Unknown error'}`;
+			setTimeout(() => {
+				aiError = null;
+			}, 3000);
+			aiLoading = false;
+		}
+	}
+
+	function undoGeneration() {
+		if (canvasItemsBackup !== null) {
+			canvasItems = canvasItemsBackup;
+			canvasItemsBackup = null;
+			selectedItemId = null;
+		}
+	}
+
 	let paletteHeight = $state<number | null>(null);
 	let isResizing = $state(false);
 
@@ -424,10 +501,13 @@
 			bind:logTitle
 			bind:selectedItemId
 			bind:canvasRef
+			bind:aiPrompt
 			onSave={saveTemplate}
 			onDeleteSelected={deleteSelected}
 			onDeleteTemplate={deleteTemplate}
 			onItemMoved={markUnsavedChanges}
+			onGenerateLayout={generateLayoutFromPrompt}
+			onUndoGeneration={undoGeneration}
 			{saving}
 			{saveError}
 			{saveSuccess}
@@ -435,6 +515,9 @@
 			{isEditing}
 			{deleting}
 			{deleteError}
+			{aiLoading}
+			{aiError}
+			{hasUndoAvailable}
 		/>
 
 		<div
