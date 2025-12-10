@@ -85,12 +85,10 @@
 
 				<div class="rounded bg-bg-secondary p-6 shadow-sm">
 					<h4 class="mb-2 text-lg font-semibold text-text-primary">
-						Smart, customizable templates
+						AI-powered templates
 					</h4>
 					<p class="mb-3 text-sm text-text-secondary">
-						Get started immediately with pre-loaded, regulatory-standard templates for all your food
-						safety needs. Customize them easily to fit your specific operations, ensuring full
-						compliance.
+						Get started in seconds. Use our built-in AI to generate custom templates from plain English, or start with pre-loaded, regulatory-standard templates for all your food safety needs and customize them easily.
 					</p>
 				</div>
 
@@ -108,7 +106,7 @@
 					<ul class="space-y-3 text-sm text-text-secondary">
 						<li>
 							<span class="font-semibold text-text-primary">1. Pick a template:</span> Choose from pre-built
-							food safety, cleaning, and temperature templates.
+							food safety, cleaning, and temperature templates, or generate one with AI.
 						</li>
 						<li>
 							<span class="font-semibold text-text-primary">2. Assign and remind:</span> Set schedules,
@@ -124,6 +122,28 @@
 						</li>
 					</ul>
 				</div>
+				<div class="rounded bg-bg-secondary p-6 shadow-sm">
+					<h3 class="mb-3 text-2xl font-bold text-text-primary">Generate templates with AI</h3>
+					<p class="mb-4 text-sm text-text-secondary">
+						Describe your logging needs in plain English, and our AI will instantly generate a custom template tailored to your operations.
+					</p>
+					<ul class="space-y-2 text-sm text-text-secondary">
+						<li class="flex items-start gap-2">
+							<span class="font-semibold text-text-primary">✓</span>
+							<span>Generate in seconds from natural language</span>
+						</li>
+						<li class="flex items-start gap-2">
+							<span class="font-semibold text-text-primary">✓</span>
+							<span>Customize layout with drag-and-drop components</span>
+						</li>
+						<li class="flex items-start gap-2">
+							<span class="font-semibold text-text-primary">✓</span>
+							<span>Combine with pre-built templates</span>
+						</li>
+					</ul>
+				</div>
+			</div>
+			<div class="mt-12 grid gap-8 lg:grid-cols-2">
 				<div class="rounded bg-bg-secondary p-6 shadow-sm">
 					<h3 class="mb-3 text-2xl font-bold text-text-primary">Who it is for</h3>
 					<div class="grid gap-3 md:grid-cols-2">
