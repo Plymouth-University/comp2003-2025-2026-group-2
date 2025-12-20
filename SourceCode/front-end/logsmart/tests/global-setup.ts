@@ -1,7 +1,7 @@
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { mkdtempSync, rmSync, copyFile } from 'fs';
+import { mkdtempSync, rmSync, copyFile, writeFileSync } from 'fs';
 import os from 'os';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -9,6 +9,7 @@ const BACKEND_PORT = process.env.BACKEND_PORT || 6767;
 const BACKEND_URL = `http://localhost:${BACKEND_PORT}`;
 const FRONTEND_PORT = process.env.FRONTEND_PORT || 5173;
 const FRONTEND_URL = `http://localhost:${FRONTEND_PORT}`;
+const PID_FILE = path.join(os.tmpdir(), 'logsmart-test-pids.json');
 let backendProcess: any = null;
 let frontendProcess: any = null;
 let tempDir: string | null = null;
@@ -52,10 +53,6 @@ async function globalSetup() {
 		});
 	}
 
-	// backendProcess.stderr?.on('data', (data: Buffer) => {
-	// 	console.log(`[Backend Error] ${data}`);
-	// });
-
 	backendProcess.on('error', (error: Error) => {
 		console.error(`Failed to start backend: ${error.message}`);
 	});
@@ -63,6 +60,13 @@ async function globalSetup() {
 	await waitForServer(BACKEND_URL);
 	process.env.BACKEND_URL = BACKEND_URL;
 	process.env.PUBLIC_API_URL = BACKEND_URL;
+
+	let pidData = {
+		backendPid: backendProcess?.pid,
+		frontendPid: null,
+		tempDir
+	};
+	writeFileSync(PID_FILE, JSON.stringify(pidData, null, 2));
 
 	console.log('Starting frontend dev server...');
 	``;
@@ -88,13 +92,39 @@ async function globalSetup() {
 	await waitForServer(FRONTEND_URL);
 	process.env.FRONTEND_URL = FRONTEND_URL;
 
-	process.on('exit', () => {
-		if (backendProcess) backendProcess.kill();
-		if (frontendProcess) frontendProcess.kill();
-		if (tempDir) {
-			console.log('Cleaning up temporary directory...');
-			rmSync(tempDir, { recursive: true, force: true });
+	pidData = {
+		backendPid: backendProcess?.pid,
+		frontendPid: frontendProcess?.pid,
+		tempDir
+	};
+	writeFileSync(PID_FILE, JSON.stringify(pidData, null, 2));
+
+	const cleanupProcesses = () => {
+		if (backendProcess?.pid) {
+			try {
+				process.kill(-backendProcess.pid, 'SIGTERM');
+			} catch (e) {}
 		}
+		if (frontendProcess?.pid) {
+			try {
+				process.kill(-frontendProcess.pid, 'SIGTERM');
+			} catch (e) {}
+		}
+		if (tempDir) {
+			try {
+				rmSync(tempDir, { recursive: true, force: true });
+			} catch (e) {}
+		}
+	};
+
+	process.on('exit', cleanupProcesses);
+	process.on('SIGINT', () => {
+		cleanupProcesses();
+		process.exit(0);
+	});
+	process.on('SIGTERM', () => {
+		cleanupProcesses();
+		process.exit(0);
 	});
 }
 
