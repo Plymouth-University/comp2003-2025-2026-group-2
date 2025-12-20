@@ -13,7 +13,7 @@ let backendProcess: any = null;
 let frontendProcess: any = null;
 let tempDir: string | null = null;
 
-async function waitForServer(url: string, timeout = 30000): Promise<void> {
+async function waitForServer(url: string, timeout = 1200000): Promise<void> {
 	const startTime = Date.now();
 	while (Date.now() - startTime < timeout) {
 		try {

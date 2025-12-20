@@ -84,11 +84,11 @@
 				</div>
 
 				<div class="rounded bg-bg-secondary p-6 shadow-sm">
-					<h4 class="mb-2 text-lg font-semibold text-text-primary">
-						AI-powered templates
-					</h4>
+					<h4 class="mb-2 text-lg font-semibold text-text-primary">AI-powered templates</h4>
 					<p class="mb-3 text-sm text-text-secondary">
-						Get started in seconds. Use our built-in AI to generate custom templates from plain English, or start with pre-loaded, regulatory-standard templates for all your food safety needs and customize them easily.
+						Get started in seconds. Use our built-in AI to generate custom templates from plain
+						English, or start with pre-loaded, regulatory-standard templates for all your food
+						safety needs and customize them easily.
 					</p>
 				</div>
 
@@ -125,7 +125,8 @@
 				<div class="rounded bg-bg-secondary p-6 shadow-sm">
 					<h3 class="mb-3 text-2xl font-bold text-text-primary">Generate templates with AI</h3>
 					<p class="mb-4 text-sm text-text-secondary">
-						Describe your logging needs in plain English, and our AI will instantly generate a custom template tailored to your operations.
+						Describe your logging needs in plain English, and our AI will instantly generate a
+						custom template tailored to your operations.
 					</p>
 					<ul class="space-y-2 text-sm text-text-secondary">
 						<li class="flex items-start gap-2">
