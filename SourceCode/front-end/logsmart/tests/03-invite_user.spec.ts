@@ -18,5 +18,5 @@ test('invite_user', async ({ page }) => {
 	await page.getByRole('button', { name: '➕' }).click();
 	await page.getByRole('textbox', { name: "New user's email" }).click();
 	await page.getByRole('textbox', { name: "New user's email" }).fill('testuser2@logsmart.app');
-	await page.getByRole('button', { name: 'Send email' }).click();
+	await page.getByRole('button', { name: 'Send Invite' }).click();
 });
