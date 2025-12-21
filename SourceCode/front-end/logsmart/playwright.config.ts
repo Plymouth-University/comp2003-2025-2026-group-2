@@ -3,10 +3,10 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
 	testDir: './tests',
-	fullyParallel: false,
+	fullyParallel: true,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
-	workers: 1,
+	workers: 6,
 	reporter: 'html',
 	use: {
 		baseURL: process.env.FRONTEND_URL || 'http://localhost:5173',

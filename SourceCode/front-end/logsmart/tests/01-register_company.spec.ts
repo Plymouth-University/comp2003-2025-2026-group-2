@@ -22,16 +22,19 @@ test('register_company', async ({ page }) => {
 	await page.getByRole('textbox', { name: 'Confirm Password Show password' }).click();
 	await page.getByRole('textbox', { name: 'Confirm Password Show password' }).fill('Test123!');
 	await page.getByRole('button', { name: 'Create Account' }).click();
-	if (
-		await page
-			.locator('body')
-			.textContent()
-			.then((text) => text?.includes('Email already exists'))
-	) {
-		console.error('Email already exists. Cannot register the same email again.');
-		return;
+	try {
+		await page.waitForURL('**/dashboard', { timeout: 1000 });
+	} catch {
+		if (
+			await page
+				.locator('body')
+				.textContent()
+				.then((text) => text?.includes('Email already exists'))
+		) {
+			console.error('Email already exists. Cannot register the same email again.');
+			return;
+		}
 	}
-	await page.waitForURL('**/dashboard');
 	await expect(page.locator('span')).toContainText('testuser@logsmart.app');
 	await expect(page.locator('body')).toContainText('Test User');
 	await expect(page.locator('body')).toContainText('testuser@logsmart.app');

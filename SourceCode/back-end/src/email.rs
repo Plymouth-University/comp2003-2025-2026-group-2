@@ -4,6 +4,7 @@ use lettre::{
     transport::smtp::authentication::Credentials,
 };
 
+#[derive(Debug, Clone)]
 struct SmtpConfig {
     server: String,
     username: String,
@@ -74,17 +75,31 @@ async fn send_email(to_email: &str, subject: &str, body: &str) -> Result<()> {
         .body(body.to_string())
         .map_err(|e| anyhow!("Failed to build email message: {e}"))?;
 
-    let creds = Credentials::new(config.username, config.password);
+    let creds = Credentials::new(config.username.clone(), config.password.clone());
 
-    let mailer = SmtpTransport::relay(&config.server)
-        .map_err(|e| anyhow!("Failed to connect to SMTP server: {e}"))?
-        .credentials(creds)
-        .build();
+    let (host, port) = if let Some((h, p)) = config.server.split_once(':') {
+        (h.to_string(), p.parse::<u16>().unwrap_or(587))
+    } else {
+        (config.server.clone(), 587)
+    };
+
+    let mailer = if host == "127.0.0.1" || host == "localhost" {
+        SmtpTransport::builder_dangerous(&host)
+            .credentials(creds)
+            .port(port)
+            .build()
+    } else {
+        SmtpTransport::relay(&host)
+            .map_err(|e| anyhow!("Failed to connect to SMTP server: {e}"))?
+            .credentials(creds)
+            .port(port)
+            .build()
+    };
 
     tokio::task::spawn_blocking(move || {
         mailer
             .send(&email)
-            .map_err(|e| anyhow!("Failed to send email: {e}"))
+            .map_err(|e| anyhow!("Failed to send email: {e} {config:?}"))
     })
     .await
     .map_err(|e| anyhow!("Task join error: {e}"))??;

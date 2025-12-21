@@ -14,7 +14,7 @@ async function globalTeardown() {
 		if (backendPid) {
 			console.log(`Killing backend process ${backendPid}`);
 			try {
-				process.kill(-backendPid, 'SIGTERM');
+				process.kill(backendPid, 'SIGTERM');
 				await new Promise((resolve) => setTimeout(resolve, 500));
 			} catch (error: any) {
 				if (error.code !== 'ESRCH') {
@@ -26,7 +26,7 @@ async function globalTeardown() {
 		if (frontendPid) {
 			console.log(`Killing frontend process ${frontendPid}`);
 			try {
-				process.kill(-frontendPid, 'SIGTERM');
+				process.kill(frontendPid, 'SIGTERM');
 				await new Promise((resolve) => setTimeout(resolve, 500));
 			} catch (error: any) {
 				if (error.code !== 'ESRCH') {
