@@ -37,7 +37,7 @@ async fn setup_test_app_with_rate_limit() -> (
         .await
         .expect("Failed to initialize test db");
 
-    let rate_limit_state = RateLimitState::new();
+    let rate_limit_state = RateLimitState::disabled();
     let state = AppState {
         sqlite: pool,
         rate_limit: rate_limit_state.clone(),

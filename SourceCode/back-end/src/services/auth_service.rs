@@ -271,7 +271,9 @@ impl AuthService {
     pub async fn request_password_reset(
         db_pool: &SqlitePool,
         email: &str,
-    ) -> Result<String, (StatusCode, serde_json::Value)> {
+        ip_address: Option<String>,
+        user_agent: Option<String>,
+    ) -> Result<(), (StatusCode, serde_json::Value)> {
         let user = db::get_user_by_email(db_pool, email).await.map_err(|e| {
             tracing::error!("Database error: {:?}", e);
             (
@@ -284,32 +286,58 @@ impl AuthService {
             let reset_token = generate_uuid6_token();
             let expires_at = (chrono::Utc::now() + Duration::hours(24)).to_rfc3339();
 
-            let _ = db::create_password_reset_token(
+            db::create_password_reset_token(
                 db_pool,
                 user_record.id.clone(),
                 reset_token.clone(),
                 expires_at,
             )
-            .await;
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to create password reset token: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to process password reset request" }),
+                )
+            })?;
+
+            let reset_link = format!(
+                "{}/reset-password?token={}",
+                "https://logsmart.app", reset_token
+            );
+
+            crate::email::send_password_reset_email(&user_record.email, &reset_link)
+                .await
+                .map_err(|e| {
+                    tracing::error!("Failed to send password reset email: {:?}", e);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        json!({ "error": "Failed to send password reset email" }),
+                    )
+                })?;
 
             AuditLogger::log_password_reset_requested(
                 db_pool,
                 Some(user_record.id),
                 email.to_string(),
                 None,
+                ip_address,
+                user_agent,
             )
             .await;
 
-            Ok(reset_token)
+            Ok(())
         } else {
             AuditLogger::log_password_reset_requested(
                 db_pool,
                 None,
                 email.to_string(),
                 Some("User not found"),
+                ip_address,
+                user_agent,
             )
             .await;
-            Ok(String::new())
+            Ok(())
         }
     }
 }

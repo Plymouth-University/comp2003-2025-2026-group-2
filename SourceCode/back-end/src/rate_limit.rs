@@ -134,6 +134,9 @@ impl RateLimitState {
 
     #[must_use]
     pub fn check_login(&self, ip: IpAddr) -> bool {
+        if self.disabled {
+            return true;
+        }
         let quota = Quota::per_minute(NonZeroU32::new(5).unwrap());
         let limiter = Self::get_or_create_ip_limiter(&self.ip_login_limiter, ip, quota);
         limiter.check().is_ok()
@@ -141,6 +144,9 @@ impl RateLimitState {
 
     #[must_use]
     pub fn check_login_email(&self, email: &str) -> bool {
+        if self.disabled {
+            return true;
+        }
         let quota = Quota::per_minute(NonZeroU32::new(10).unwrap());
         let limiter = Self::get_or_create_string_limiter(
             &self.email_login_limiter,
@@ -152,6 +158,9 @@ impl RateLimitState {
 
     #[must_use]
     pub fn check_register(&self, ip: IpAddr) -> bool {
+        if self.disabled {
+            return true;
+        }
         let quota = Quota::per_minute(NonZeroU32::new(10).unwrap());
         let limiter = Self::get_or_create_ip_limiter(&self.ip_register_limiter, ip, quota);
         limiter.check().is_ok()
@@ -159,6 +168,9 @@ impl RateLimitState {
 
     #[must_use]
     pub fn check_register_email(&self, email: &str) -> bool {
+        if self.disabled {
+            return true;
+        }
         let quota = Quota::per_minute(NonZeroU32::new(20).unwrap());
         let limiter = Self::get_or_create_string_limiter(
             &self.email_register_limiter,
@@ -170,6 +182,9 @@ impl RateLimitState {
 
     #[must_use]
     pub fn check_general(&self, ip: IpAddr) -> bool {
+        if self.disabled {
+            return true;
+        }
         let quota = Quota::per_minute(NonZeroU32::new(60).unwrap());
         let limiter = Self::get_or_create_ip_limiter(&self.ip_general_limiter, ip, quota);
         limiter.check().is_ok()
@@ -206,6 +221,7 @@ pub async fn rate_limit_middleware(
         .unwrap_or_else(|| addr.ip());
 
     if app_state.rate_limit.disabled {
+        tracing::debug!("Rate limiting disabled, allowing request from {}", ip);
         return next.run(req).await;
     }
 

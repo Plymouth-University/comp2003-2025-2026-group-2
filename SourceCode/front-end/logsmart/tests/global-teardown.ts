@@ -38,7 +38,6 @@ async function globalTeardown() {
 		if (tempDir) {
 			try {
 				rmSync(tempDir, { recursive: true, force: true });
-				console.log('Temporary directory cleaned up');
 			} catch (error) {
 				console.log('Temporary directory cleanup failed or already removed');
 			}

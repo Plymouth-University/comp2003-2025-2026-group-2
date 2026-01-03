@@ -6,8 +6,8 @@ export default defineConfig({
 	fullyParallel: true,
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
-	workers: 6,
-	reporter: 'html',
+	workers: 8,
+	reporter: 'list',
 	use: {
 		baseURL: process.env.FRONTEND_URL || 'http://localhost:5173',
 		trace: 'on-first-retry'

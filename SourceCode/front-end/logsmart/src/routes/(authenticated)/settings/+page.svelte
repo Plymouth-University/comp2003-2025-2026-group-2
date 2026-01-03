@@ -158,7 +158,10 @@
 						<div class="pt-2">
 							<button
 								type="submit"
-								disabled={isSubmitting}
+								disabled={isSubmitting ||
+									!firstName.trim() ||
+									!lastName.trim() ||
+									(firstName === data.user?.first_name && lastName === data.user?.last_name)}
 								class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 							>

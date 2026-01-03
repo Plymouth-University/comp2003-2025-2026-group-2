@@ -37,7 +37,9 @@ const getEmailByRecipient = async (email: string): Promise<MailhogEmail | null> 
 		const emails = data.items || [];
 
 		return (
-			emails.find((e: MailhogEmail) => e.To[0]?.Mailbox + '@' + e.To[0]?.Domain === email) || null
+			emails.find((e: MailhogEmail) =>
+				e.To?.some((to) => `${to.Mailbox}@${to.Domain}`.toLowerCase() === email.toLowerCase())
+			) || null
 		);
 	} catch (error) {
 		console.error('Failed to fetch emails from Mailhog:', error);
@@ -45,7 +47,7 @@ const getEmailByRecipient = async (email: string): Promise<MailhogEmail | null> 
 	}
 };
 
-const getInvitationToken = async (email: string, maxAttempts = 10): Promise<string | null> => {
+const getInvitationToken = async (email: string, maxAttempts = 20): Promise<string | null> => {
 	for (let i = 0; i < maxAttempts; i++) {
 		const mailhogEmail = await getEmailByRecipient(email);
 
@@ -67,6 +69,41 @@ const getInvitationToken = async (email: string, maxAttempts = 10): Promise<stri
 	return null;
 };
 
+const decodeMailBody = (email: MailhogEmail): string => {
+	const encoding = email.Content.Headers['Content-Transfer-Encoding']?.[0]?.toLowerCase();
+	let body = email.Content.Body;
+
+	if (encoding === 'base64') {
+		try {
+			body = Buffer.from(body, 'base64').toString('utf-8');
+		} catch (e) {}
+	}
+
+	body = body.replace(/=\r?\n/g, '');
+	body = body.replace(/=3D/g, '=');
+
+	return body;
+};
+
+const getPasswordResetToken = async (email: string, maxAttempts = 10): Promise<string | null> => {
+	for (let i = 0; i < maxAttempts; i++) {
+		const mailhogEmail = await getEmailByRecipient(email);
+
+		if (mailhogEmail) {
+			const body = decodeMailBody(mailhogEmail);
+
+			const tokenMatch = body.match(/token=([a-zA-Z0-9_-]+)/);
+			if (tokenMatch) {
+				return tokenMatch[1];
+			}
+		}
+
+		await new Promise((resolve) => setTimeout(resolve, 500));
+	}
+
+	return null;
+};
+
 const clearMailhogEmails = async (): Promise<void> => {
 	try {
 		await fetch(`${MAILHOG_API_URL}/v1/messages`, { method: 'DELETE' });
@@ -75,7 +112,22 @@ const clearMailhogEmails = async (): Promise<void> => {
 	}
 };
 
-const register = async (browser: Browser) => {
+const requestPasswordResetToken = async (
+	browser: Browser,
+	email: string
+): Promise<string | null> => {
+	await clearMailhogEmails();
+	const page = await browser.newPage();
+	await page.goto('http://localhost:5173/reset-password');
+	await page.getByRole('textbox', { name: 'Email' }).fill(email);
+	await page.getByRole('button', { name: 'Send Reset Link' }).click();
+	await page.waitForTimeout(1000);
+	await page.close();
+
+	return await getPasswordResetToken(email);
+};
+
+const register = async (browser: Browser, close = true) => {
 	const slug = `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
 	const companyName = `TestCompany-${slug}`;
 	const firstName = `Test-${slug}`;
@@ -114,9 +166,11 @@ const register = async (browser: Browser) => {
 		return null;
 	}
 	await page.waitForURL('**/dashboard');
-	await page.close();
-
-	return { companyName, firstName, lastName, email, password };
+	if (close) {
+		await page.close();
+		return { companyName, firstName, lastName, email, password };
+	}
+	return { companyName, firstName, lastName, email, password, page };
 };
 
 const sendInvitation = async (
@@ -168,7 +222,9 @@ export {
 	register,
 	getEmailByRecipient,
 	getInvitationToken,
+	getPasswordResetToken,
 	clearMailhogEmails,
+	requestPasswordResetToken,
 	sendInvitation,
 	acceptInvitation
 };

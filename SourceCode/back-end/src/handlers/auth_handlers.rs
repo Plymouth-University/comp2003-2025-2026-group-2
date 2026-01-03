@@ -348,16 +348,50 @@ pub async fn update_profile(
     request_body = RequestPasswordResetRequest,
     responses(
         (status = 200, description = "Password reset email sent", body = PasswordResetResponse),
-        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 400, description = "Invalid email", body = ErrorResponse),
         (status = 500, description = "Server error", body = ErrorResponse),
     ),
     tag = "Authentication"
 )]
 pub async fn request_password_reset(
     State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
+    headers: HeaderMap,
     Json(payload): Json<RequestPasswordResetRequest>,
 ) -> Result<Json<PasswordResetResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let _ = services::AuthService::request_password_reset(&state.sqlite, &payload.email).await;
+    let _timer = crate::metrics::RequestTimer::new();
+    state.metrics.increment_total_requests();
+
+    if payload.email.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Email is required" })),
+        ));
+    }
+
+    if let Err(e) = validate_email(&payload.email) {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": e.to_string() })),
+        ));
+    }
+
+    let ip_address = extract_ip_from_headers_and_addr(&headers, &addr);
+    let user_agent = extract_user_agent(&headers);
+
+    services::AuthService::request_password_reset(
+        &state.sqlite,
+        &payload.email,
+        Some(ip_address),
+        user_agent,
+    )
+    .await
+    .map_err(|(status, err)| {
+        state.metrics.increment_failed_requests();
+        (status, Json(err))
+    })?;
+
+    state.metrics.increment_successful_requests();
 
     Ok(Json(PasswordResetResponse {
         message: "If an account exists with this email, a password reset link has been sent."
@@ -388,7 +422,7 @@ pub async fn reset_password(
             (e.0, Json(e.1))
         })?;
 
-    state.metrics.increment_registrations();
+    state.metrics.increment_successful_requests();
 
     Ok(Json(PasswordResetResponse {
         message: "Password has been reset successfully.".to_string(),

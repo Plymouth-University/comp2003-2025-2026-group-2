@@ -92,7 +92,7 @@ async fn setup_test_app() -> (Router, NamedTempFile) {
 
     let state = AppState {
         sqlite: pool,
-        rate_limit: back_end::rate_limit::RateLimitState::new(),
+        rate_limit: back_end::rate_limit::RateLimitState::disabled(),
         metrics: back_end::metrics::Metrics::new(),
         mongodb: back_end::logs_db::init_mongodb()
             .await

@@ -283,7 +283,10 @@
 				<button
 					class="w-full rounded bg-indigo-600 px-4 py-2 font-semibold text-white transition hover:bg-indigo-500"
 					type="submit"
-					disabled={status === 'submitting' || status === 'success'}
+					disabled={status === 'submitting' ||
+						status === 'success' ||
+						!email ||
+						!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)}
 				>
 					{#if status === 'submitting'}
 						Sending...

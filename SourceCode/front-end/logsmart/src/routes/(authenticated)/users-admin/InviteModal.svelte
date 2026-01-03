@@ -62,6 +62,7 @@
 				</div>
 				<button
 					class="flex cursor-pointer self-center rounded border-2 border-border-primary bg-bg-primary px-5 py-2.5 text-center text-sm font-medium text-text-primary hover:opacity-80"
+					disabled={!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)}
 					aria-label="Send Invite"
 					onclick={async () => {
 						let { error } = await api.POST('/auth/invitations/send', { body: { email: email } });

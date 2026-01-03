@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import os from 'os';
+import { createConnection } from 'net';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BACKEND_PORT = process.env.BACKEND_PORT || 6767;
@@ -30,6 +31,51 @@ async function waitForServer(url: string, timeout = 1200000): Promise<void> {
 	throw new Error(`Server did not start within ${timeout}ms at ${url}`);
 }
 
+async function checkMongoDB(timeout = 5000): Promise<void> {
+	const startTime = Date.now();
+	while (Date.now() - startTime < timeout) {
+		try {
+			await new Promise<void>((resolve, reject) => {
+				const socket = createConnection({ host: '127.0.0.1', port: 27017 });
+				socket.on('connect', () => {
+					socket.destroy();
+					resolve();
+				});
+				socket.on('error', (err) => {
+					reject(err);
+				});
+				setTimeout(() => {
+					socket.destroy();
+					reject(new Error('Connection timeout'));
+				}, 1000);
+			});
+			console.log('✓ MongoDB is running');
+			return;
+		} catch (e) {}
+		await new Promise((resolve) => setTimeout(resolve, 500));
+	}
+	throw new Error(
+		'MongoDB is not running on 127.0.0.1:27017. Please start MongoDB before running tests.'
+	);
+}
+
+async function checkMailhog(timeout = 5000): Promise<void> {
+	const startTime = Date.now();
+	while (Date.now() - startTime < timeout) {
+		try {
+			const response = await fetch(`${MAILHOG_API_URL}/v1/messages`);
+			if (response.ok || response.status === 404 || response.status === 405) {
+				console.log('✓ MailHog is running');
+				return;
+			}
+		} catch (e) {}
+		await new Promise((resolve) => setTimeout(resolve, 500));
+	}
+	throw new Error(
+		'MailHog is not running at http://localhost:8025. Please start MailHog before running tests.'
+	);
+}
+
 async function clearMailhogEmails(): Promise<void> {
 	try {
 		const response = await fetch(`${MAILHOG_API_URL}/v1/messages`, { method: 'DELETE' });
@@ -41,11 +87,7 @@ async function clearMailhogEmails(): Promise<void> {
 	}
 }
 
-async function globalSetup() {
-	tempDir = mkdtempSync(path.join(os.tmpdir(), 'logsmart-test-'));
-
-	console.log('Starting backend server...');
-
+async function startBackendProcess(): Promise<void> {
 	const isWindows = process.platform === 'win32';
 	const backendSourceDir = path.resolve(__dirname, '../../../back-end');
 
@@ -69,18 +111,18 @@ async function globalSetup() {
 		});
 	} else {
 		backendProcess = spawn('nix', ['run', `${backendSourceDir}`], {
-			cwd: tempDir,
+			cwd: tempDir!,
 			shell: true,
 			env: backendEnv
 		});
 	}
 
 	// backendProcess.stdout?.on('data', (data: Buffer) => {
-	// 	console.log(`[Backend] ${data}`);
+	// 	console.log(`[Backend] ${data.toString().trim()}`);
 	// });
 
 	// backendProcess.stderr?.on('data', (data: Buffer) => {
-	// 	console.log(`[Backend Error] ${data}`);
+	// 	console.log(`[Backend Error] ${data.toString().trim()}`);
 	// });
 
 	backendProcess.on('error', (error: Error) => {
@@ -90,29 +132,22 @@ async function globalSetup() {
 	await waitForServer(BACKEND_URL);
 	process.env.BACKEND_URL = BACKEND_URL;
 	process.env.PUBLIC_API_URL = BACKEND_URL;
+}
 
-	let pidData = {
-		backendPid: backendProcess?.pid,
-		frontendPid: null,
-		tempDir
-	};
-	writeFileSync(PID_FILE, JSON.stringify(pidData, null, 2));
-
-	console.log('Starting frontend dev server...');
-	``;
+async function startFrontendProcess(): Promise<void> {
 	const frontendDir = path.resolve(__dirname, '..');
 	frontendProcess = spawn('bun', ['run', 'dev'], {
 		cwd: frontendDir,
 		shell: true,
-		env: { ...process.env }
+		env: { ...process.env, PUBLIC_API_URL: BACKEND_URL }
 	});
 
 	// frontendProcess.stdout?.on('data', (data: Buffer) => {
-	// 	console.log(`[Frontend] ${data}`);
+	// 	console.log(`[Frontend] ${data.toString().trim()}`);
 	// });
 
 	// frontendProcess.stderr?.on('data', (data: Buffer) => {
-	// 	console.log(`[Frontend Error] ${data}`);
+	// 	console.log(`[Frontend Error] ${data.toString().trim()}`);
 	// });
 
 	frontendProcess.on('error', (error: Error) => {
@@ -121,10 +156,29 @@ async function globalSetup() {
 
 	await waitForServer(FRONTEND_URL);
 	process.env.FRONTEND_URL = FRONTEND_URL;
+}
+
+async function globalSetup() {
+	tempDir = mkdtempSync(path.join(os.tmpdir(), 'logsmart-test-'));
+
+	console.log('Checking MongoDB...');
+	await checkMongoDB();
+
+	console.log('Checking MailHog...');
+	await checkMailhog();
+
+	console.log('Starting backend and frontend servers...');
+
+	try {
+		await Promise.all([startBackendProcess(), startFrontendProcess()]);
+	} catch (error) {
+		console.error('Failed to start servers:', error);
+		throw error;
+	}
 
 	await clearMailhogEmails();
 
-	pidData = {
+	let pidData = {
 		backendPid: backendProcess?.pid,
 		frontendPid: frontendProcess?.pid,
 		tempDir

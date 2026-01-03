@@ -151,6 +151,8 @@ impl AuditLogger {
         user_id: Option<String>,
         email: String,
         reason: Option<&str>,
+        ip_address: Option<String>,
+        user_agent: Option<String>,
     ) {
         let is_success = user_id.is_some();
         Self::log(
@@ -158,8 +160,8 @@ impl AuditLogger {
             "password_reset_requested",
             user_id,
             Some(email),
-            None,
-            None,
+            ip_address,
+            user_agent,
             reason.map(|s| s.to_string()),
             is_success,
         )
