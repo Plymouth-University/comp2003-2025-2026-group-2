@@ -30,7 +30,7 @@
 	<title>Users Administration</title>
 </svelte:head>
 <main class="min-h-full bg-bg-secondary">
-	<div class="overflow-none flex">
+	<div class="overflow-hidden grow-1 flex">
 		<div class="mx-auto md:w-full">
 			<div class="flex-1 gap-1 overflow-auto p-6">
 				<div id="eventHide" class="flex flex-auto flex-col">
