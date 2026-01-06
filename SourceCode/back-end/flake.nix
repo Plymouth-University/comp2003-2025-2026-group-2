@@ -36,32 +36,33 @@
         url = "https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.17.14.zip";
         hash = "sha256-SBJE0IEgl7Efuu73n3HZQrFxYX+cn5UU5jrL4T5xzNw=";
       };
-      logSmartBackendAarch64 = naersk-lib-cross.buildPackage {
+      logSmartBackendAarch64 = pkgsCross.rustPlatform.buildRustPackage {
+        pname = "logsmart-backend";
+        version = "latest";
         src = ./.;
-        buildInputs = with pkgsCross; [ openssl pkg-config ];
-        nativeBuildInputs = with pkgsCross; [ pkg-config openssl cargo rustc patchelf ];
-        runtimeDependencies = with pkgsCross; [ openssl ];
-        SWAGGER_UI_DOWNLOAD_URL = "file://" + (pkgs.fetchurl {
+        cargoLock = {
+          lockFile = ./Cargo.lock;
+        };
+        doCheck = false;
+        installTargets = [ "logsmart-srv" ];
+        nativeBuildInputs = [ pkgs.pkg-config pkgs.openssl ];
+        buildInputs = [ pkgsCross.openssl ];
+        SWAGGER_UI_DOWNLOAD_URL = "file://" + pkgs.fetchurl {
           url = "https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.17.14.zip";
           hash = "sha256-SBJE0IEgl7Efuu73n3HZQrFxYX+cn5UU5jrL4T5xzNw=";
-        });
-        OPENSSL_DIR = "${pkgsCross.openssl.out}";
-        OPENSSL_LIB_DIR = "${pkgsCross.openssl.out}/lib";
-        OPENSSL_INCLUDE_DIR = "${pkgsCross.openssl.dev}/include";
+        };
+        HOST_CC = "${pkgs.stdenv.cc}/bin/cc";
+        OPENSSL_DIR = "${pkgs.openssl.out}";
+        OPENSSL_LIB_DIR = "${pkgs.openssl.out}/lib";
+        OPENSSL_INCLUDE_DIR = "${pkgs.openssl.dev}/include";
         AARCH64_UNKNOWN_LINUX_GNU_OPENSSL_DIR = "${pkgsCross.openssl.out}";
         AARCH64_UNKNOWN_LINUX_GNU_OPENSSL_LIB_DIR = "${pkgsCross.openssl.out}/lib";
         AARCH64_UNKNOWN_LINUX_GNU_OPENSSL_INCLUDE_DIR = "${pkgsCross.openssl.dev}/include";
-        PKG_CONFIG_PATH = "${pkgsCross.openssl.dev}/lib/pkgconfig";
+        PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
         PKG_CONFIG_PATH_aarch64_unknown_linux_gnu = "${pkgsCross.openssl.dev}/lib/pkgconfig";
         PKG_CONFIG_SYSROOT_DIR = "${pkgsCross.stdenv.cc.libc}";
         CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "${pkgsCross.stdenv.cc}/bin/aarch64-unknown-linux-gnu-gcc";
         CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS = "-C linker=${pkgsCross.stdenv.cc}/bin/aarch64-unknown-linux-gnu-gcc -L ${pkgsCross.openssl.out}/lib -C link-args=-Wl,--enable-new-dtags,-rpath,$ORIGIN/../lib:$ORIGIN/lib:/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu:/usr/lib:/lib,--dynamic-linker=/lib/ld-linux-aarch64.so.1";
-        CC_aarch64_unknown_linux_gnu = "${pkgsCross.stdenv.cc}/bin/aarch64-unknown-linux-gnu-gcc";
-        CXX_aarch64_unknown_linux_gnu = "${pkgsCross.stdenv.cc}/bin/aarch64-unknown-linux-gnu-g++";
-        AR_aarch64_unknown_linux_gnu = "${pkgsCross.stdenv.cc}/bin/aarch64-unknown-linux-gnu-ar";
-        postInstall = ''
-          patchelf --set-rpath "${pkgsCross.lib.makeLibraryPath [ pkgsCross.openssl ]}" $out/bin/logsmart-srv
-        '';
       };
       logSmartBackend = naersk-lib.buildPackage {
         src = ./.;
