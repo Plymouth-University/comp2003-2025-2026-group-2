@@ -92,7 +92,6 @@ async fn send_email(to_email: &str, subject: &str, body: &str) -> Result<()> {
         SmtpTransport::relay(&host)
             .map_err(|e| anyhow!("Failed to connect to SMTP server: {e}"))?
             .credentials(creds)
-            .port(port)
             .build()
     };
 
