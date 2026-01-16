@@ -21,12 +21,27 @@
 		const lastName = data.user.last_name || '';
 		const fullName = `${firstName} ${lastName}`.trim();
 		const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
+		let role = '';
+		switch (data.user.role) {
+			case 'logsmart_admin':
+				role = 'LogSmart Internal Administrator';
+				break;
+			case 'member':
+				role = 'Member';
+				break;
+			case 'admin':
+				role = 'Company Admin';
+				break;
+			default:
+				role = 'Member';
+				break;
+		}
 
 		return {
 			name: fullName || 'User',
 			email: data.user.email || '',
 			company: data.user.company_name || 'N/A',
-			role: data.user.role || 'User',
+			role: role,
 			initials: initials || '?'
 		};
 	});
