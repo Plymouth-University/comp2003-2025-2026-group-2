@@ -11,7 +11,7 @@ impl LogEntryService {
         user_id: &str,
         template_name: &str,
     ) -> Result<String, (StatusCode, serde_json::Value)> {
-        let company_id = db::get_user_company_id(&state.sqlite, user_id)
+        let company_id = db::get_user_company_id(&state.postgres, user_id)
             .await
             .map_err(|e| {
                 tracing::error!("Database error fetching user company ID: {:?}", e);
@@ -212,7 +212,7 @@ impl LogEntryService {
         user_id: &str,
         entry_id: &str,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
-        let user = db::get_user_by_id(&state.sqlite, user_id)
+        let user = db::get_user_by_id(&state.postgres, user_id)
             .await
             .map_err(|e| {
                 tracing::error!("Database error fetching user: {:?}", e);
@@ -246,7 +246,7 @@ impl LogEntryService {
             })?
             .ok_or((StatusCode::NOT_FOUND, json!({ "error": "Entry not found" })))?;
 
-        let user_company_id = db::get_user_company_id(&state.sqlite, user_id)
+        let user_company_id = db::get_user_company_id(&state.postgres, user_id)
             .await
             .map_err(|e| {
                 tracing::error!("Database error fetching user company ID: {:?}", e);

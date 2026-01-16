@@ -12,7 +12,7 @@ use back_end::{
     rate_limit::{RateLimitState, rate_limit_middleware},
 };
 use serde_json::json;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     str::FromStr,
@@ -29,7 +29,7 @@ async fn setup_test_app_with_rate_limit() -> (
     let db_path = temp_file.path().to_str().expect("Failed to get temp path");
 
     let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = SqlitePool::connect(&connection_string)
+    let pool = PgPool::connect(&connection_string)
         .await
         .expect("Failed to create test db");
 
@@ -39,7 +39,7 @@ async fn setup_test_app_with_rate_limit() -> (
 
     let rate_limit_state = RateLimitState::disabled();
     let state = AppState {
-        sqlite: pool,
+        postgres: pool,
         rate_limit: rate_limit_state.clone(),
         metrics: back_end::metrics::Metrics::new(),
         mongodb: back_end::logs_db::init_mongodb()

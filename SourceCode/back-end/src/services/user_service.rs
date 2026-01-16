@@ -1,13 +1,13 @@
 use crate::db;
 use axum::http::StatusCode;
 use serde_json::json;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 
 pub struct UserService;
 
 impl UserService {
     pub async fn get_user_by_id(
-        db_pool: &SqlitePool,
+        db_pool: &PgPool,
         user_id: &str,
     ) -> Result<db::UserRecord, (StatusCode, serde_json::Value)> {
         db::get_user_by_id(db_pool, user_id)
@@ -23,7 +23,7 @@ impl UserService {
     }
 
     pub async fn update_profile(
-        db_pool: &SqlitePool,
+        db_pool: &PgPool,
         user_id: &str,
         first_name: String,
         last_name: String,
@@ -40,7 +40,7 @@ impl UserService {
     }
 
     pub async fn get_company_members(
-        db_pool: &SqlitePool,
+        db_pool: &PgPool,
         company_id: &str,
     ) -> Result<Vec<db::UserRecord>, (StatusCode, serde_json::Value)> {
         db::get_users_by_company_id(db_pool, company_id)
@@ -55,7 +55,7 @@ impl UserService {
     }
 
     pub async fn get_user_company_id(
-        db_pool: &SqlitePool,
+        db_pool: &PgPool,
         user_id: &str,
     ) -> Result<String, (StatusCode, serde_json::Value)> {
         db::get_user_company_id(db_pool, user_id)

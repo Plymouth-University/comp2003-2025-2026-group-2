@@ -44,7 +44,7 @@ pub async fn verify_token(
             Json(json!({ "error": "Invalid or expired token" })),
         )
     })?;
-    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!(
@@ -115,7 +115,7 @@ pub async fn register_company_admin(
         ));
     }
 
-    if db::get_user_by_email(&state.sqlite, &payload.email)
+    if db::get_user_by_email(&state.postgres, &payload.email)
         .await
         .map_err(|e| {
             tracing::error!("Database error checking existing user: {:?}", e);
@@ -133,7 +133,7 @@ pub async fn register_company_admin(
     }
 
     let (token, user_id, role_str) = services::AuthService::register_admin(
-        &state.sqlite,
+        &state.postgres,
         &payload.email,
         &payload.first_name,
         &payload.last_name,
@@ -222,7 +222,7 @@ pub async fn login(
     }
 
     let (token, user) = services::AuthService::verify_credentials(
-        &state.sqlite,
+        &state.postgres,
         &payload.email,
         &payload.password,
         Some(ip_address),
@@ -288,7 +288,7 @@ pub async fn get_current_user(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
 ) -> Result<Json<UserResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching current user: {:?}", e);
@@ -323,7 +323,7 @@ pub async fn update_profile(
     Json(payload): Json<UpdateProfileRequest>,
 ) -> Result<Json<UserResponse>, (StatusCode, Json<serde_json::Value>)> {
     let user = db::update_user_profile(
-        &state.sqlite,
+        &state.postgres,
         &claims.user_id,
         payload.first_name,
         payload.last_name,
@@ -337,7 +337,7 @@ pub async fn update_profile(
         )
     })?;
 
-    AuditLogger::log_profile_updated(&state.sqlite, claims.user_id, user.email.clone()).await;
+    AuditLogger::log_profile_updated(&state.postgres, claims.user_id, user.email.clone()).await;
 
     Ok(Json(user.into()))
 }
@@ -380,7 +380,7 @@ pub async fn request_password_reset(
     let user_agent = extract_user_agent(&headers);
 
     services::AuthService::request_password_reset(
-        &state.sqlite,
+        &state.postgres,
         &payload.email,
         Some(ip_address),
         user_agent,
@@ -415,7 +415,7 @@ pub async fn reset_password(
     State(state): State<AppState>,
     Json(payload): Json<ResetPasswordRequest>,
 ) -> Result<Json<PasswordResetResponse>, (StatusCode, Json<serde_json::Value>)> {
-    services::AuthService::reset_password(&state.sqlite, &payload.token, &payload.new_password)
+    services::AuthService::reset_password(&state.postgres, &payload.token, &payload.new_password)
         .await
         .map_err(|e| {
             tracing::error!("Password reset failed: {:?}", e);

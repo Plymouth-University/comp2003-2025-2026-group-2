@@ -79,7 +79,7 @@ impl<T: 'static + RoleValidator> FromRequestParts<AppState> for AuthorizedUser<T
             .validate_token(token)
             .map_err(|_| RoleError::InvalidToken)?;
 
-        let user = crate::db::get_user_by_id(&state.sqlite, &claims.user_id)
+        let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
             .await
             .map_err(|_| RoleError::InvalidToken)?
             .ok_or(RoleError::InvalidToken)?;

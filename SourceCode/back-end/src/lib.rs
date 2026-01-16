@@ -15,11 +15,11 @@ pub mod services;
 pub mod utils;
 
 use rate_limit::RateLimitState;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub sqlite: SqlitePool,
+    pub postgres: PgPool,
     pub rate_limit: RateLimitState,
     pub metrics: metrics::Metrics,
     pub mongodb: mongodb::Client,

@@ -19,7 +19,6 @@ use axum::{
     response::IntoResponse,
 };
 use serde_json::json;
-use uuid::Uuid;
 
 #[utoipa::path(
     post,
@@ -64,7 +63,7 @@ pub async fn invite_user(
         ));
     }
 
-    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user: {:?}", e);
@@ -85,7 +84,7 @@ pub async fn invite_user(
         ));
     }
 
-    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user company ID: {:?}", e);
@@ -100,7 +99,7 @@ pub async fn invite_user(
         ))?;
 
     let (invitation_id, expires_at) = services::InvitationService::send_invitation(
-        &state.sqlite,
+        &state.postgres,
         claims.user_id,
         user.email,
         payload.email.clone(),
@@ -169,7 +168,7 @@ pub async fn accept_invitation(
         ));
     }
 
-    let invitation = db::get_invitation_by_token(&state.sqlite, &payload.token)
+    let invitation = db::get_invitation_by_token(&state.postgres, &payload.token)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching invitation by token: {:?}", e);
@@ -184,21 +183,15 @@ pub async fn accept_invitation(
         ))?;
 
     let now = chrono::Utc::now();
-    let expires_at = chrono::DateTime::parse_from_rfc3339(&invitation.expires_at)
-        .ok()
-        .ok_or((
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": "Invalid invitation expiration date" })),
-        ))?;
 
-    if now > expires_at {
+    if now > invitation.expires_at {
         return Err((
             StatusCode::UNAUTHORIZED,
             Json(json!({ "error": "Invitation has expired" })),
         ));
     }
 
-    if db::get_user_by_email(&state.sqlite, &invitation.email)
+    if db::get_user_by_email(&state.postgres, &invitation.email)
         .await
         .map_err(|e| {
             tracing::error!(
@@ -229,72 +222,25 @@ pub async fn accept_invitation(
         )
     })?;
 
-    let mut tx = state.sqlite.begin().await.map_err(|e| {
-        tracing::error!(
-            "Failed to begin transaction for invitation acceptance: {:?}",
-            e
-        );
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": "Database transaction error" })),
-        )
-    })?;
-
-    let user_id = Uuid::new_v4().to_string();
-    let created_at = chrono::Utc::now().to_rfc3339();
-    let role_str = db::UserRole::Member.to_string();
-
-    sqlx::query(
-        r"
-        INSERT INTO users (id, email, first_name, last_name, password_hash, company_id, role, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ",
+    let _created_user = db::accept_invitation_with_user_creation(
+        &state.postgres,
+        &invitation.id,
+        &invitation.email,
+        payload.first_name.clone(),
+        payload.last_name.clone(),
+        password_hash,
+        &invitation.company_id,
     )
-    .bind(&user_id)
-    .bind(&invitation.email)
-    .bind(&payload.first_name)
-    .bind(&payload.last_name)
-    .bind(&password_hash)
-    .bind(&invitation.company_id)
-    .bind(&role_str)
-    .bind(&created_at)
-    .execute(&mut *tx)
     .await
     .map_err(|e| {
-        tracing::error!("Failed to create user in invitation acceptance transaction: {:?}", e);
-        (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "error": "Failed to create user" })))
-    })?;
-
-    let accept_time = chrono::Utc::now().to_rfc3339();
-    sqlx::query(
-        r"
-        UPDATE invitations
-        SET accepted_at = ?
-        WHERE id = ?
-        ",
-    )
-    .bind(&accept_time)
-    .bind(&invitation.id)
-    .execute(&mut *tx)
-    .await
-    .map_err(|e| {
-        tracing::error!("Failed to mark invitation as accepted: {:?}", e);
+        tracing::error!("Failed to create user and accept invitation: {:?}", e);
         (
             StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": "Failed to accept invitation" })),
+            Json(json!({ "error": "Failed to create user" })),
         )
     })?;
 
-    tx.commit().await.map_err(|e| {
-        tracing::error!(
-            "Failed to commit invitation acceptance transaction: {:?}",
-            e
-        );
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": "Failed to commit transaction" })),
-        )
-    })?;
+    let user_id = _created_user.id.clone();
 
     let jwt_config = JwtManager::get_config();
     let token = jwt_config
@@ -311,7 +257,7 @@ pub async fn accept_invitation(
         })?;
 
     AuditLogger::log_invitation_accepted(
-        &state.sqlite,
+        &state.postgres,
         user_id.clone(),
         invitation.email.clone(),
         invitation.company_id.clone(),
@@ -339,7 +285,7 @@ pub async fn accept_invitation(
                 first_name: payload.first_name,
                 last_name: payload.last_name,
                 company_name: None,
-                role: role_str,
+                role: _created_user.role,
             },
         }),
     )
@@ -379,7 +325,7 @@ pub async fn get_invitation_details(
     State(state): State<AppState>,
     Query(payload): Query<GetInvitationDetailsRequest>,
 ) -> Result<Json<GetInvitationDetailsResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let invitation = db::get_invitation_by_token(&state.sqlite, &payload.token)
+    let invitation = db::get_invitation_by_token(&state.postgres, &payload.token)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching invitation by token: {:?}", e);
@@ -393,7 +339,7 @@ pub async fn get_invitation_details(
             Json(json!({ "error": "Invitation not found" })),
         ))?;
 
-    let company_name = db::get_company_by_id(&state.sqlite, &invitation.company_id)
+    let company_name = db::get_company_by_id(&state.postgres, &invitation.company_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching company name: {:?}", e);

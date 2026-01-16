@@ -3,7 +3,7 @@ use axum::routing::{delete, get, post, put};
 use axum::{Router, middleware};
 use back_end::logs_db;
 use back_end::{AppState, api_docs::ApiDoc, db, handlers, rate_limit};
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -31,18 +31,21 @@ async fn main() {
             .init();
     }
 
-    let connect_options = SqliteConnectOptions::new()
-        .filename("auth.db")
-        .create_if_missing(true)
-        .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
-        .synchronous(sqlx::sqlite::SqliteSynchronous::Normal)
-        .pragma("cache_size", "2000")
-        .pragma("temp_store", "memory")
-        .pragma("mmap_size", "268435456")
-        .pragma("foreign_keys", "ON")
-        .pragma("busy_timeout", "30000");
+    let connect_options = PgConnectOptions::new()
+        .host(&std::env::var("POSTGRES_HOST").unwrap_or_else(|_| "localhost".to_string()))
+        .port(
+            std::env::var("POSTGRES_PORT")
+                .unwrap_or_else(|_| "5432".to_string())
+                .parse()
+                .unwrap_or(5432),
+        )
+        .username(&std::env::var("POSTGRES_USER").unwrap_or_else(|_| "admin".to_string()))
+        .password(
+            &std::env::var("POSTGRES_PASSWORD").unwrap_or_else(|_| "adminpassword".to_string()),
+        )
+        .database(&std::env::var("POSTGRES_DB").unwrap_or_else(|_| "mydatabase".to_string()));
 
-    let auth_db_sqlite_pool = SqlitePoolOptions::new()
+    let auth_db_postgres_pool = PgPoolOptions::new()
         .max_connections(20)
         .min_connections(2)
         .max_lifetime(Some(std::time::Duration::from_secs(1800)))
@@ -50,10 +53,10 @@ async fn main() {
         .acquire_timeout(std::time::Duration::from_secs(30))
         .connect_with(connect_options)
         .await
-        .with_context(|| "Failed to create auth_db_sqlite_pool")
+        .with_context(|| "Failed to create auth_db_postgres_pool")
         .expect("Cannot create authentication db");
 
-    db::init_db(&auth_db_sqlite_pool)
+    db::init_db(&auth_db_postgres_pool)
         .await
         .expect("Failed to initialize database");
 
@@ -64,7 +67,7 @@ async fn main() {
     metrics.clone().spawn_logging_task();
 
     let state = AppState {
-        sqlite: auth_db_sqlite_pool,
+        postgres: auth_db_postgres_pool,
         rate_limit: rate_limit_state.clone(),
         metrics,
         mongodb: logs_db::init_mongodb()

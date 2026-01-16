@@ -7,13 +7,13 @@ use crate::{
 use axum::http::StatusCode;
 use chrono::Duration;
 use serde_json::json;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 
 pub struct AuthService;
 
 impl AuthService {
     pub async fn register_admin(
-        db_pool: &SqlitePool,
+        db_pool: &PgPool,
         email: &str,
         first_name: &str,
         last_name: &str,
@@ -31,9 +31,6 @@ impl AuthService {
             )
         })?;
 
-        let user_id = uuid::Uuid::new_v4().to_string();
-        let now = chrono::Utc::now().to_rfc3339();
-        let role_str = db::UserRole::Admin.to_string();
         let password_hash = hash_password(password).map_err(|e| {
             tracing::error!("Failed to hash password: {:?}", e);
             (
@@ -42,20 +39,15 @@ impl AuthService {
             )
         })?;
 
-        sqlx::query(
-            r"
-            INSERT INTO users (id, email, first_name, last_name, password_hash, company_id, role, created_at)
-            VALUES (?, ?, ?, ?, ?, NULL, ?, ?)
-            ",
+        let user = db::create_user(
+            &mut *tx,
+            email.to_string(),
+            first_name.to_string(),
+            last_name.to_string(),
+            password_hash,
+            None,
+            db::UserRole::Admin,
         )
-        .bind(&user_id)
-        .bind(email)
-        .bind(first_name)
-        .bind(last_name)
-        .bind(&password_hash)
-        .bind(&role_str)
-        .bind(&now)
-        .execute(&mut *tx)
         .await
         .map_err(|e| {
             tracing::error!("Failed to create user in transaction: {:?}", e);
@@ -65,19 +57,11 @@ impl AuthService {
             )
         })?;
 
-        let company_id = uuid::Uuid::new_v4().to_string();
-
-        sqlx::query(
-            r"
-            INSERT INTO companies (id, name, address, created_at)
-            VALUES (?, ?, ?, ?)
-            ",
+        let company = db::create_company(
+            &mut *tx,
+            company_name.to_string(),
+            company_address.to_string(),
         )
-        .bind(&company_id)
-        .bind(company_name)
-        .bind(company_address)
-        .bind(&now)
-        .execute(&mut *tx)
         .await
         .map_err(|e| {
             tracing::error!("Failed to create company in transaction: {:?}", e);
@@ -87,10 +71,7 @@ impl AuthService {
             )
         })?;
 
-        sqlx::query("UPDATE users SET company_id = ? WHERE id = ?")
-            .bind(&company_id)
-            .bind(&user_id)
-            .execute(&mut *tx)
+        db::update_user_company(&mut *tx, &user.id, &company.id)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to link user to company: {:?}", e);
@@ -110,7 +91,7 @@ impl AuthService {
 
         let jwt_config = JwtManager::get_config();
         let token = jwt_config
-            .generate_token(user_id.clone(), 24)
+            .generate_token(user.id.clone(), 24)
             .map_err(|e| {
                 tracing::error!("Failed to generate JWT token: {:?}", e);
                 (
@@ -121,7 +102,7 @@ impl AuthService {
 
         AuditLogger::log_registration(
             db_pool,
-            user_id.clone(),
+            user.id.clone(),
             email.to_string(),
             company_name.to_string(),
             ip_address,
@@ -129,11 +110,11 @@ impl AuthService {
         )
         .await;
 
-        Ok((token, user_id, role_str))
+        Ok((token, user.id, user.role))
     }
 
     pub async fn verify_credentials(
-        db_pool: &SqlitePool,
+        db_pool: &PgPool,
         email: &str,
         password: &str,
         ip_address: Option<String>,
@@ -212,7 +193,7 @@ impl AuthService {
     }
 
     pub async fn reset_password(
-        db_pool: &SqlitePool,
+        db_pool: &PgPool,
         reset_token: &str,
         new_password: &str,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
@@ -269,7 +250,7 @@ impl AuthService {
     }
 
     pub async fn request_password_reset(
-        db_pool: &SqlitePool,
+        db_pool: &PgPool,
         email: &str,
         ip_address: Option<String>,
         user_agent: Option<String>,
@@ -284,7 +265,7 @@ impl AuthService {
 
         if let Some(user_record) = user {
             let reset_token = generate_uuid6_token();
-            let expires_at = (chrono::Utc::now() + Duration::hours(24)).to_rfc3339();
+            let expires_at = chrono::Utc::now() + Duration::hours(24);
 
             db::create_password_reset_token(
                 db_pool,

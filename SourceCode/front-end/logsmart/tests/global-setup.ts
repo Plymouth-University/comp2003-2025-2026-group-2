@@ -76,6 +76,34 @@ async function checkMailhog(timeout = 5000): Promise<void> {
 	);
 }
 
+async function checkPostgres(timeout = 5000): Promise<void> {
+	const startTime = Date.now();
+	while (Date.now() - startTime < timeout) {
+		try {
+			await new Promise<void>((resolve, reject) => {
+				const socket = createConnection({ host: '127.0.0.1', port: 5432 });
+				socket.on('connect', () => {
+					socket.destroy();
+					resolve();
+				});
+				socket.on('error', (err) => {
+					reject(err);
+				});
+				setTimeout(() => {
+					socket.destroy();
+					reject(new Error('Connection timeout'));
+				}, 1000);
+			});
+			console.log('✓ PostgreSQL is running');
+			return;
+		} catch (e) {}
+		await new Promise((resolve) => setTimeout(resolve, 500));
+	}
+	throw new Error(
+		'PostgreSQL is not running on 127.0.0.1:5432. Please start PostgreSQL before running tests.'
+	);
+}
+
 async function clearMailhogEmails(): Promise<void> {
 	try {
 		const response = await fetch(`${MAILHOG_API_URL}/v1/messages`, { method: 'DELETE' });
@@ -99,7 +127,11 @@ async function startBackendProcess(): Promise<void> {
 		SMTP_PASSWORD: '',
 		SMTP_FROM_EMAIL: 'noreply@logsmart.app',
 		SMTP_FROM_NAME: 'LogSmart',
-		DATABASE_URL: 'sqlite:auth.db',
+		POSTGRES_HOST: 'localhost',
+		POSTGRES_PORT: '5432',
+		POSTGRES_DB: 'logsmartdb',
+		POSTGRES_USER: 'admin',
+		POSTGRES_PASSWORD: 'adminpassword',
 		MONGODB_URI: 'mongodb://root:rootpassword@127.0.0.1'
 	};
 
@@ -117,13 +149,13 @@ async function startBackendProcess(): Promise<void> {
 		});
 	}
 
-	// backendProcess.stdout?.on('data', (data: Buffer) => {
-	// 	console.log(`[Backend] ${data.toString().trim()}`);
-	// });
+	backendProcess.stdout?.on('data', (data: Buffer) => {
+		console.log(`[Backend] ${data.toString().trim()}`);
+	});
 
-	// backendProcess.stderr?.on('data', (data: Buffer) => {
-	// 	console.log(`[Backend Error] ${data.toString().trim()}`);
-	// });
+	backendProcess.stderr?.on('data', (data: Buffer) => {
+		console.log(`[Backend Error] ${data.toString().trim()}`);
+	});
 
 	backendProcess.on('error', (error: Error) => {
 		console.error(`Failed to start backend: ${error.message}`);
@@ -166,6 +198,9 @@ async function globalSetup() {
 
 	console.log('Checking MailHog...');
 	await checkMailhog();
+
+	console.log('Checking PostgreSQL...');
+	await checkPostgres();
 
 	console.log('Starting backend and frontend servers...');
 

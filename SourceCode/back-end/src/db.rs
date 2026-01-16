@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -55,7 +55,7 @@ pub struct UserRecord {
     pub company_id: Option<String>,
     pub company_name: Option<String>,
     pub role: String,
-    pub created_at: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl UserRecord {
@@ -95,7 +95,7 @@ pub struct Company {
     pub id: String,
     pub name: String,
     pub address: String,
-    pub created_at: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -104,9 +104,9 @@ pub struct Invitation {
     pub company_id: String,
     pub email: String,
     pub token: String,
-    pub created_at: String,
-    pub expires_at: String,
-    pub accepted_at: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub expires_at: chrono::DateTime<chrono::Utc>,
+    pub accepted_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -119,17 +119,17 @@ pub struct SecurityLog {
     pub user_agent: Option<String>,
     pub details: Option<String>,
     pub success: bool,
-    pub created_at: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-pub async fn init_db(pool: &SqlitePool) -> Result<()> {
+pub async fn init_db(pool: &PgPool) -> Result<()> {
     sqlx::query(
         r"
         CREATE TABLE IF NOT EXISTS companies (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             address TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
         )
         ",
     )
@@ -146,7 +146,7 @@ pub async fn init_db(pool: &SqlitePool) -> Result<()> {
             password_hash TEXT NOT NULL,
             company_id TEXT,
             role TEXT NOT NULL DEFAULT 'member',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (company_id) REFERENCES companies(id)
         )
         ",
@@ -161,9 +161,9 @@ pub async fn init_db(pool: &SqlitePool) -> Result<()> {
             company_id TEXT NOT NULL,
             email TEXT NOT NULL,
             token TEXT NOT NULL UNIQUE,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            expires_at DATETIME NOT NULL,
-            accepted_at DATETIME,
+            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMPTZ NOT NULL,
+            accepted_at TIMESTAMPTZ,
             FOREIGN KEY (company_id) REFERENCES companies(id),
             UNIQUE(company_id, email)
         )
@@ -182,8 +182,8 @@ pub async fn init_db(pool: &SqlitePool) -> Result<()> {
             ip_address TEXT,
             user_agent TEXT,
             details TEXT,
-            success INTEGER NOT NULL DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            success BOOLEAN NOT NULL DEFAULT FALSE,
+            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id)
         )
         ",
@@ -261,9 +261,9 @@ pub async fn init_db(pool: &SqlitePool) -> Result<()> {
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
             token TEXT NOT NULL UNIQUE,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            expires_at DATETIME NOT NULL,
-            used_at DATETIME,
+            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMPTZ NOT NULL,
+            used_at TIMESTAMPTZ,
             FOREIGN KEY (user_id) REFERENCES users(id)
         )
         ",
@@ -290,34 +290,37 @@ pub async fn init_db(pool: &SqlitePool) -> Result<()> {
     Ok(())
 }
 
-pub async fn create_user(
-    pool: &SqlitePool,
+pub async fn create_user<'a, E>(
+    executor: E,
     email: String,
     first_name: String,
     last_name: String,
     password_hash: String,
     company_id: Option<String>,
     role: UserRole,
-) -> Result<UserRecord> {
+) -> Result<UserRecord>
+where
+    E: sqlx::Executor<'a, Database = sqlx::Postgres>,
+{
     let id = Uuid::new_v4().to_string();
-    let now = chrono::Utc::now().to_rfc3339();
+    let now = chrono::Utc::now();
     let role_str = role.to_string();
 
-    sqlx::query!(
+    sqlx::query(
         r#"
         INSERT INTO users (id, email, first_name, last_name, password_hash, company_id, role, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        "#,
-        id,
-        email,
-        first_name,
-        last_name,
-        password_hash,
-        company_id,
-        role_str,
-        now
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        "#
     )
-    .execute(pool)
+    .bind(&id)
+    .bind(&email)
+    .bind(&first_name)
+    .bind(&last_name)
+    .bind(&password_hash)
+    .bind(&company_id)
+    .bind(&role_str)
+    .bind(now)
+    .execute(executor)
     .await?;
 
     Ok(UserRecord {
@@ -333,72 +336,78 @@ pub async fn create_user(
     })
 }
 
-pub async fn get_user_company_id(pool: &SqlitePool, user_id: &str) -> Result<Option<String>> {
-    let record = sqlx::query!(
+pub async fn get_user_company_id(pool: &PgPool, user_id: &str) -> Result<Option<String>> {
+    #[derive(sqlx::FromRow)]
+    struct CompanyIdRow {
+        company_id: Option<String>,
+    }
+
+    let record = sqlx::query_as::<_, CompanyIdRow>(
         r#"
         SELECT company_id
         FROM users
-        WHERE id = ?
+        WHERE id = $1
         "#,
-        user_id
     )
+    .bind(user_id)
     .fetch_optional(pool)
     .await?;
 
     Ok(record.and_then(|r| r.company_id))
 }
 
-pub async fn get_user_by_email(pool: &SqlitePool, email: &str) -> Result<Option<UserRecord>> {
-    let user = sqlx::query_as!(
-        UserRecord,
+pub async fn get_user_by_email(pool: &PgPool, email: &str) -> Result<Option<UserRecord>> {
+    let user = sqlx::query_as::<_, UserRecord>(
         r#"
-        SELECT users.id as "id!", email as "email!", first_name as "first_name!", last_name as "last_name!", 
-               password_hash as "password_hash!", company_id, role as "role!", users.created_at as "created_at!: String", name as "company_name?"
+        SELECT users.id, users.email, users.first_name, users.last_name, 
+               users.password_hash, users.company_id, users.role, users.created_at, companies.name as company_name
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
-        WHERE email = ?
-        "#,
-        email
+        WHERE users.email = $1
+        "#
     )
+    .bind(email)
     .fetch_optional(pool)
     .await?;
 
     Ok(user)
 }
 
-pub async fn get_user_by_id(pool: &SqlitePool, id: &str) -> Result<Option<UserRecord>> {
-    let user = sqlx::query_as!(
-        UserRecord,
+pub async fn get_user_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRecord>> {
+    let user = sqlx::query_as::<_, UserRecord>(
         r#"
-        SELECT users.id as "id!", email as "email!", first_name as "first_name!", last_name as "last_name!", 
-            role as "role!", users.created_at as "created_at!: String", password_hash as "password_hash!", company_id as "company_id?", name as "company_name?"
+        SELECT users.id, users.email, users.first_name, users.last_name, 
+            users.password_hash, users.company_id, users.role, users.created_at, companies.name as company_name
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
-        WHERE users.id = ?
-        "#,
-        id
+        WHERE users.id = $1
+        "#
     )
+    .bind(id)
     .fetch_optional(pool)
     .await?;
 
     Ok(user)
 }
 
-pub async fn create_company(pool: &SqlitePool, name: String, address: String) -> Result<Company> {
+pub async fn create_company<'a, E>(executor: E, name: String, address: String) -> Result<Company>
+where
+    E: sqlx::Executor<'a, Database = sqlx::Postgres>,
+{
     let id = Uuid::new_v4().to_string();
-    let now = chrono::Utc::now().to_rfc3339();
+    let now = chrono::Utc::now();
 
-    sqlx::query!(
+    sqlx::query(
         r#"
         INSERT INTO companies (id, name, address, created_at)
-        VALUES (?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4)
         "#,
-        id,
-        name,
-        address,
-        now
     )
-    .execute(pool)
+    .bind(&id)
+    .bind(&name)
+    .bind(&address)
+    .bind(now)
+    .execute(executor)
     .await?;
 
     Ok(Company {
@@ -409,16 +418,15 @@ pub async fn create_company(pool: &SqlitePool, name: String, address: String) ->
     })
 }
 
-pub async fn get_company_by_id(pool: &SqlitePool, id: &str) -> Result<Option<Company>> {
-    let company = sqlx::query_as!(
-        Company,
+pub async fn get_company_by_id(pool: &PgPool, id: &str) -> Result<Option<Company>> {
+    let company = sqlx::query_as::<_, Company>(
         r#"
-        SELECT id as "id!", name as "name!", address as "address!", created_at as "created_at!: String"
+        SELECT id, name, address, created_at
         FROM companies
-        WHERE id = ?
+        WHERE id = $1
         "#,
-        id
     )
+    .bind(id)
     .fetch_optional(pool)
     .await?;
 
@@ -426,27 +434,27 @@ pub async fn get_company_by_id(pool: &SqlitePool, id: &str) -> Result<Option<Com
 }
 
 pub async fn create_invitation(
-    pool: &SqlitePool,
+    pool: &PgPool,
     company_id: String,
     email: String,
     token: String,
-    expires_at: String,
+    expires_at: chrono::DateTime<chrono::Utc>,
 ) -> Result<Invitation> {
     let id = Uuid::new_v4().to_string();
-    let now = chrono::Utc::now().to_rfc3339();
+    let now = chrono::Utc::now();
 
-    sqlx::query!(
+    sqlx::query(
         r#"
         INSERT INTO invitations (id, company_id, email, token, created_at, expires_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5, $6)
         "#,
-        id,
-        company_id,
-        email,
-        token,
-        now,
-        expires_at
     )
+    .bind(&id)
+    .bind(&company_id)
+    .bind(&email)
+    .bind(&token)
+    .bind(now)
+    .bind(expires_at)
     .execute(pool)
     .await?;
 
@@ -461,35 +469,33 @@ pub async fn create_invitation(
     })
 }
 
-pub async fn get_invitation_by_token(pool: &SqlitePool, token: &str) -> Result<Option<Invitation>> {
-    let invitation = sqlx::query_as!(
-        Invitation,
+pub async fn get_invitation_by_token(pool: &PgPool, token: &str) -> Result<Option<Invitation>> {
+    let invitation = sqlx::query_as::<_, Invitation>(
         r#"
-        SELECT id as "id!", company_id as "company_id!", email as "email!", token as "token!", 
-               created_at as "created_at!: String", expires_at as "expires_at!: String", accepted_at as "accepted_at: String"
+        SELECT id, company_id, email, token, created_at, expires_at, accepted_at
         FROM invitations
-        WHERE token = ? AND accepted_at IS NULL
+        WHERE token = $1 AND accepted_at IS NULL
         "#,
-        token
     )
+    .bind(token)
     .fetch_optional(pool)
     .await?;
 
     Ok(invitation)
 }
 
-pub async fn accept_invitation(pool: &SqlitePool, invitation_id: &str) -> Result<()> {
-    let now = chrono::Utc::now().to_rfc3339();
+pub async fn accept_invitation(pool: &PgPool, invitation_id: &str) -> Result<()> {
+    let now = chrono::Utc::now();
 
-    sqlx::query!(
+    sqlx::query(
         r#"
         UPDATE invitations
-        SET accepted_at = ?
-        WHERE id = ?
+        SET accepted_at = $1
+        WHERE id = $2
         "#,
-        now,
-        invitation_id
     )
+    .bind(now)
+    .bind(invitation_id)
     .execute(pool)
     .await?;
 
@@ -497,7 +503,7 @@ pub async fn accept_invitation(pool: &SqlitePool, invitation_id: &str) -> Result
 }
 
 pub async fn log_security_event(
-    pool: &SqlitePool,
+    pool: &PgPool,
     event_type: String,
     user_id: Option<String>,
     email: Option<String>,
@@ -507,24 +513,23 @@ pub async fn log_security_event(
     success: bool,
 ) -> Result<SecurityLog> {
     let id = Uuid::new_v4().to_string();
-    let now = chrono::Utc::now().to_rfc3339();
-    let success_int = i32::from(success);
+    let now = chrono::Utc::now();
 
-    sqlx::query!(
+    sqlx::query(
         r#"
         INSERT INTO security_logs (id, event_type, user_id, email, ip_address, user_agent, details, success, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        "#,
-        id,
-        event_type,
-        user_id,
-        email,
-        ip_address,
-        user_agent,
-        details,
-        success_int,
-        now
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        "#
     )
+    .bind(&id)
+    .bind(&event_type)
+    .bind(&user_id)
+    .bind(&email)
+    .bind(&ip_address)
+    .bind(&user_agent)
+    .bind(&details)
+    .bind(success)
+    .bind(now)
     .execute(pool)
     .await?;
 
@@ -542,7 +547,7 @@ pub async fn log_security_event(
 }
 
 pub async fn get_security_logs_by_user(
-    pool: &SqlitePool,
+    pool: &PgPool,
     user_id: &str,
     limit: i64,
 ) -> Result<Vec<SecurityLog>> {
@@ -550,9 +555,9 @@ pub async fn get_security_logs_by_user(
         r"
         SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
         FROM security_logs
-        WHERE user_id = ?
+        WHERE user_id = $1
         ORDER BY created_at DESC
-        LIMIT ?
+        LIMIT $2
         ",
     )
     .bind(user_id)
@@ -564,7 +569,7 @@ pub async fn get_security_logs_by_user(
 }
 
 pub async fn get_recent_security_logs(
-    pool: &SqlitePool,
+    pool: &PgPool,
     event_type: Option<String>,
     limit: i64,
 ) -> Result<Vec<SecurityLog>> {
@@ -573,9 +578,9 @@ pub async fn get_recent_security_logs(
             r"
             SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
             FROM security_logs
-            WHERE event_type = ?
+            WHERE event_type = $1
             ORDER BY created_at DESC
-            LIMIT ?
+            LIMIT $2
             ",
         )
         .bind(evt)
@@ -588,7 +593,7 @@ pub async fn get_recent_security_logs(
             SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
             FROM security_logs
             ORDER BY created_at DESC
-            LIMIT ?
+            LIMIT $1
             ",
         )
         .bind(limit)
@@ -600,21 +605,21 @@ pub async fn get_recent_security_logs(
 }
 
 pub async fn update_user_profile(
-    pool: &SqlitePool,
+    pool: &PgPool,
     user_id: &str,
     first_name: String,
     last_name: String,
 ) -> Result<UserRecord> {
-    sqlx::query!(
+    sqlx::query(
         r#"
         UPDATE users
-        SET first_name = ?, last_name = ?
-        WHERE id = ?
+        SET first_name = $1, last_name = $2
+        WHERE id = $3
         "#,
-        first_name,
-        last_name,
-        user_id
     )
+    .bind(&first_name)
+    .bind(&last_name)
+    .bind(user_id)
     .execute(pool)
     .await?;
 
@@ -626,19 +631,19 @@ pub async fn update_user_profile(
 }
 
 pub async fn update_user_password(
-    pool: &SqlitePool,
+    pool: &PgPool,
     user_id: &str,
     password_hash: String,
 ) -> Result<()> {
-    sqlx::query!(
+    sqlx::query(
         r#"
         UPDATE users
-        SET password_hash = ?
-        WHERE id = ?
+        SET password_hash = $1
+        WHERE id = $2
         "#,
-        password_hash,
-        user_id
     )
+    .bind(&password_hash)
+    .bind(user_id)
     .execute(pool)
     .await?;
 
@@ -646,25 +651,25 @@ pub async fn update_user_password(
 }
 
 pub async fn create_password_reset_token(
-    pool: &SqlitePool,
+    pool: &PgPool,
     user_id: String,
     token: String,
-    expires_at: String,
+    expires_at: chrono::DateTime<chrono::Utc>,
 ) -> Result<String> {
     let id = Uuid::new_v4().to_string();
-    let now = chrono::Utc::now().to_rfc3339();
+    let now = chrono::Utc::now();
 
-    sqlx::query!(
+    sqlx::query(
         r#"
         INSERT INTO password_resets (id, user_id, token, created_at, expires_at)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5)
         "#,
-        id,
-        user_id,
-        token,
-        now,
-        expires_at
     )
+    .bind(&id)
+    .bind(&user_id)
+    .bind(&token)
+    .bind(now)
+    .bind(expires_at)
     .execute(pool)
     .await?;
 
@@ -672,14 +677,14 @@ pub async fn create_password_reset_token(
 }
 
 pub async fn get_password_reset_by_token(
-    pool: &SqlitePool,
+    pool: &PgPool,
     token: &str,
 ) -> Result<Option<(String, String)>> {
     let result = sqlx::query_as::<_, (String, String)>(
         r"
         SELECT id, user_id
         FROM password_resets
-        WHERE token = ? AND used_at IS NULL AND expires_at > datetime('now')
+        WHERE token = $1 AND used_at IS NULL AND expires_at > now()
         ",
     )
     .bind(token)
@@ -689,41 +694,115 @@ pub async fn get_password_reset_by_token(
     Ok(result)
 }
 
-pub async fn mark_password_reset_used(pool: &SqlitePool, reset_id: &str) -> Result<()> {
-    let now = chrono::Utc::now().to_rfc3339();
+pub async fn mark_password_reset_used(pool: &PgPool, reset_id: &str) -> Result<()> {
+    let now = chrono::Utc::now();
 
-    sqlx::query!(
+    sqlx::query(
         r#"
         UPDATE password_resets
-        SET used_at = ?
-        WHERE id = ?
+        SET used_at = $1
+        WHERE id = $2
         "#,
-        now,
-        reset_id
     )
+    .bind(now)
+    .bind(reset_id)
     .execute(pool)
     .await?;
 
     Ok(())
 }
 
-pub async fn get_users_by_company_id(
-    pool: &SqlitePool,
-    company_id: &str,
-) -> Result<Vec<UserRecord>> {
-    let users = sqlx::query_as!(
-        UserRecord,
+pub async fn get_users_by_company_id(pool: &PgPool, company_id: &str) -> Result<Vec<UserRecord>> {
+    let users = sqlx::query_as::<_, UserRecord>(
         r#"
-        SELECT users.id as "id!", email as "email!", first_name as "first_name!", last_name as "last_name!", 
-               password_hash as "password_hash!", company_id, role as "role!", users.created_at as "created_at!: String", name as "company_name?"
+        SELECT users.id, users.email, users.first_name, users.last_name, 
+               users.password_hash, users.company_id, users.role, users.created_at, companies.name as company_name
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
-        WHERE company_id = ?
-        "#,
-        company_id
+        WHERE users.company_id = $1
+        "#
     )
+    .bind(company_id)
     .fetch_all(pool)
     .await?;
 
     Ok(users)
+}
+
+pub async fn update_user_company<'a, E>(executor: E, user_id: &str, company_id: &str) -> Result<()>
+where
+    E: sqlx::Executor<'a, Database = sqlx::Postgres>,
+{
+    sqlx::query(
+        r#"
+        UPDATE users
+        SET company_id = $1
+        WHERE id = $2
+        "#,
+    )
+    .bind(company_id)
+    .bind(user_id)
+    .execute(executor)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn accept_invitation_with_user_creation(
+    pool: &PgPool,
+    invitation_id: &str,
+    email: &str,
+    first_name: String,
+    last_name: String,
+    password_hash: String,
+    company_id: &str,
+) -> Result<UserRecord> {
+    let mut tx = pool.begin().await?;
+
+    let user_id = Uuid::new_v4().to_string();
+    let now = chrono::Utc::now();
+    let role_str = UserRole::Member.to_string();
+
+    sqlx::query(
+        r#"
+        INSERT INTO users (id, email, first_name, last_name, password_hash, company_id, role, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        "#
+    )
+    .bind(&user_id)
+    .bind(email)
+    .bind(&first_name)
+    .bind(&last_name)
+    .bind(&password_hash)
+    .bind(company_id)
+    .bind(&role_str)
+    .bind(now)
+    .execute(&mut *tx)
+    .await?;
+
+    sqlx::query(
+        r#"
+        UPDATE invitations
+        SET accepted_at = $1
+        WHERE id = $2
+        "#,
+    )
+    .bind(now)
+    .bind(invitation_id)
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(UserRecord {
+        id: user_id,
+        email: email.to_string(),
+        first_name,
+        last_name,
+        password_hash,
+        company_id: Some(company_id.to_string()),
+        company_name: None,
+        role: role_str,
+        created_at: now,
+    })
 }

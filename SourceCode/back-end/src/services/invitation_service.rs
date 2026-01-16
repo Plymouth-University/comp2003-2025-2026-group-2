@@ -2,22 +2,22 @@ use crate::{auth::generate_uuid6_token, db, email, utils::AuditLogger};
 use axum::http::StatusCode;
 use chrono::Duration;
 use serde_json::json;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 
 pub struct InvitationService;
 
 impl InvitationService {
     pub async fn send_invitation(
-        db_pool: &SqlitePool,
+        db_pool: &PgPool,
         admin_id: String,
         admin_email: String,
         recipient_email: String,
         company_id: String,
         ip_address: Option<String>,
         user_agent: Option<String>,
-    ) -> Result<(String, String), (StatusCode, serde_json::Value)> {
+    ) -> Result<(String, chrono::DateTime<chrono::Utc>), (StatusCode, serde_json::Value)> {
         let token = generate_uuid6_token();
-        let expires_at = (chrono::Utc::now() + Duration::days(7)).to_rfc3339();
+        let expires_at = chrono::Utc::now() + Duration::days(7);
 
         let invitation = db::create_invitation(
             db_pool,
@@ -75,7 +75,7 @@ impl InvitationService {
     }
 
     pub async fn accept_invitation(
-        db_pool: &SqlitePool,
+        db_pool: &PgPool,
         token: &str,
     ) -> Result<
         (db::Invitation, chrono::DateTime<chrono::FixedOffset>),
@@ -96,12 +96,7 @@ impl InvitationService {
             ))?;
 
         let now = chrono::Utc::now();
-        let expires_at = chrono::DateTime::parse_from_rfc3339(&invitation.expires_at)
-            .ok()
-            .ok_or((
-                StatusCode::BAD_REQUEST,
-                json!({ "error": "Invalid invitation expiration date" }),
-            ))?;
+        let expires_at = invitation.expires_at.fixed_offset();
 
         if now > expires_at {
             return Err((
@@ -114,9 +109,9 @@ impl InvitationService {
     }
 
     pub async fn get_invitation_details(
-        db_pool: &SqlitePool,
+        db_pool: &PgPool,
         token: &str,
-    ) -> Result<(String, String), (StatusCode, serde_json::Value)> {
+    ) -> Result<(String, chrono::DateTime<chrono::Utc>), (StatusCode, serde_json::Value)> {
         let invitation = db::get_invitation_by_token(db_pool, token)
             .await
             .map_err(|e| {
@@ -149,7 +144,7 @@ impl InvitationService {
     }
 
     pub async fn mark_invitation_accepted(
-        db_pool: &SqlitePool,
+        db_pool: &PgPool,
         invitation_id: &str,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
         let accept_time = chrono::Utc::now().to_rfc3339();

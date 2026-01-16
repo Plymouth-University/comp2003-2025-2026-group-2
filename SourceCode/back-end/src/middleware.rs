@@ -119,7 +119,7 @@ impl FromRequestParts<crate::AppState> for AdminUser {
                 .validate_token(token)
                 .map_err(|_| RoleError::InvalidToken)?;
 
-            let user = crate::db::get_user_by_id(&state.sqlite, &claims.user_id)
+            let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
                 .await
                 .map_err(|_| RoleError::InvalidToken)?
                 .ok_or(RoleError::InvalidToken)?;
@@ -155,7 +155,7 @@ impl FromRequestParts<crate::AppState> for MemberUser {
                 .validate_token(token)
                 .map_err(|_| RoleError::InvalidToken)?;
 
-            let user = crate::db::get_user_by_id(&state.sqlite, &claims.user_id)
+            let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
                 .await
                 .map_err(|_| RoleError::InvalidToken)?
                 .ok_or(RoleError::InvalidToken)?;
@@ -194,7 +194,7 @@ impl FromRequestParts<crate::AppState> for LogSmartAdminUser {
                 .validate_token(token)
                 .map_err(|_| RoleError::InvalidToken)?;
 
-            let user = crate::db::get_user_by_id(&state.sqlite, &claims.user_id)
+            let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
                 .await
                 .map_err(|_| RoleError::InvalidToken)?
                 .ok_or(RoleError::InvalidToken)?;

@@ -757,16 +757,17 @@ pub fn process_template_layout_with_period(
         .map(|field| {
             let mut processed_field = field.clone();
             if let Some(text) = &field.props.text
-                && text.contains("{period}") {
-                    let new_text = text.replace("{period}", &period);
-                    tracing::info!(
-                        "Field type: {}, Original text: '{}', Replaced text: '{}'",
-                        field.field_type,
-                        text,
-                        new_text
-                    );
-                    processed_field.props.text = Some(new_text);
-                }
+                && text.contains("{period}")
+            {
+                let new_text = text.replace("{period}", &period);
+                tracing::info!(
+                    "Field type: {}, Original text: '{}', Replaced text: '{}'",
+                    field.field_type,
+                    text,
+                    new_text
+                );
+                processed_field.props.text = Some(new_text);
+            }
             processed_field
         })
         .collect()

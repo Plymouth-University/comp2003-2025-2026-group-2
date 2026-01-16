@@ -34,7 +34,7 @@ pub async fn add_template(
     State(state): State<AppState>,
     Json(payload): Json<AddTemplateRequest>,
 ) -> Result<Json<AddTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user: {:?}", e);
@@ -55,7 +55,7 @@ pub async fn add_template(
         ));
     }
 
-    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user company ID: {:?}", e);
@@ -105,7 +105,7 @@ pub async fn get_template(
     State(state): State<AppState>,
     Query(payload): Query<GetTemplateRequest>,
 ) -> Result<Json<GetTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user company ID: {:?}", e);
@@ -145,7 +145,7 @@ pub async fn get_all_templates(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
 ) -> Result<Json<GetAllTemplatesResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user: {:?}", e);
@@ -166,7 +166,7 @@ pub async fn get_all_templates(
         ));
     }
 
-    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user company ID: {:?}", e);
@@ -220,7 +220,7 @@ pub async fn update_template(
     State(state): State<AppState>,
     Json(payload): Json<UpdateTemplateRequest>,
 ) -> Result<Json<UpdateTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user: {:?}", e);
@@ -241,7 +241,7 @@ pub async fn update_template(
         ));
     }
 
-    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user company ID: {:?}", e);
@@ -287,7 +287,7 @@ pub async fn rename_template(
     State(state): State<AppState>,
     Json(payload): Json<RenameTemplateRequest>,
 ) -> Result<Json<RenameTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user: {:?}", e);
@@ -308,7 +308,7 @@ pub async fn rename_template(
         ));
     }
 
-    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user company ID: {:?}", e);
@@ -355,7 +355,7 @@ pub async fn delete_template(
     State(state): State<AppState>,
     Query(payload): Query<DeleteTemplateRequest>,
 ) -> Result<Json<DeleteTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user: {:?}", e);
@@ -376,7 +376,7 @@ pub async fn delete_template(
         ));
     }
 
-    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user company ID: {:?}", e);

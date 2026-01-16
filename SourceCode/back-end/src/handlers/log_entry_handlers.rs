@@ -31,7 +31,7 @@ pub async fn list_due_forms_today(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
 ) -> Result<Json<DueFormsResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let _user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+    let _user = db::get_user_by_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user: {:?}", e);
@@ -45,7 +45,7 @@ pub async fn list_due_forms_today(
             Json(json!({ "error": "User not found" })),
         ))?;
 
-    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user company ID: {:?}", e);
@@ -185,7 +185,7 @@ pub async fn get_log_entry(
         .await
         .map_err(|(status, err)| (status, Json(err)))?;
 
-    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user company ID: {:?}", e);
@@ -260,7 +260,7 @@ pub async fn update_log_entry(
     .await
     .map_err(|(status, err)| (status, Json(err)))?;
 
-    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user company ID: {:?}", e);
@@ -379,7 +379,7 @@ pub async fn delete_log_entry(
     State(state): State<AppState>,
     axum::extract::Path(entry_id): axum::extract::Path<String>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.sqlite, &claims.user_id)
+    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user: {:?}", e);
@@ -421,7 +421,7 @@ pub async fn list_user_log_entries(
     State(state): State<AppState>,
     Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Result<Json<ListLogEntriesResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user company ID: {:?}", e);

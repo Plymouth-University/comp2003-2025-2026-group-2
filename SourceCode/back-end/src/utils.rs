@@ -1,12 +1,12 @@
 use crate::db;
 use axum::http::HeaderMap;
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 
 pub struct AuditLogger;
 
 impl AuditLogger {
     pub async fn log(
-        db: &SqlitePool,
+        db: &PgPool,
         event_type: &str,
         user_id: Option<String>,
         email: Option<String>,
@@ -29,7 +29,7 @@ impl AuditLogger {
     }
 
     pub async fn log_registration(
-        db: &SqlitePool,
+        db: &PgPool,
         user_id: String,
         email: String,
         company_name: String,
@@ -50,7 +50,7 @@ impl AuditLogger {
     }
 
     pub async fn log_login_success(
-        db: &SqlitePool,
+        db: &PgPool,
         user_id: String,
         email: String,
         ip_address: Option<String>,
@@ -70,7 +70,7 @@ impl AuditLogger {
     }
 
     pub async fn log_login_failed(
-        db: &SqlitePool,
+        db: &PgPool,
         user_id: Option<String>,
         email: String,
         ip_address: Option<String>,
@@ -91,7 +91,7 @@ impl AuditLogger {
     }
 
     pub async fn log_invitation_sent(
-        db: &SqlitePool,
+        db: &PgPool,
         admin_id: String,
         admin_email: String,
         recipient_email: String,
@@ -112,7 +112,7 @@ impl AuditLogger {
     }
 
     pub async fn log_invitation_accepted(
-        db: &SqlitePool,
+        db: &PgPool,
         user_id: String,
         email: String,
         company_id: String,
@@ -132,7 +132,7 @@ impl AuditLogger {
         .await;
     }
 
-    pub async fn log_profile_updated(db: &SqlitePool, user_id: String, email: String) {
+    pub async fn log_profile_updated(db: &PgPool, user_id: String, email: String) {
         Self::log(
             db,
             "profile_updated",
@@ -147,7 +147,7 @@ impl AuditLogger {
     }
 
     pub async fn log_password_reset_requested(
-        db: &SqlitePool,
+        db: &PgPool,
         user_id: Option<String>,
         email: String,
         reason: Option<&str>,
@@ -168,7 +168,7 @@ impl AuditLogger {
         .await;
     }
 
-    pub async fn log_password_reset_completed(db: &SqlitePool, user_id: String) {
+    pub async fn log_password_reset_completed(db: &PgPool, user_id: String) {
         Self::log(
             db,
             "password_reset_completed",

@@ -2,6 +2,8 @@ services:
   mongodb:
     image: mongo:latest
     container_name: mongodb
+    restart: always
+    shm_size: 256mb
     ports:
       - "27017:27017"
     volumes:
@@ -9,6 +11,19 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=rootpassword
+    
+  postgres:
+    image: postgres:alpine
+    container_name: postgres
+    restart: always
+    shm_size: 256mb
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=adminpassword
+      - POSTGRES_DB=logsmartdb
 
 volumes:
   mongodb_data:
+  postgres_data:

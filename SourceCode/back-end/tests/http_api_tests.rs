@@ -8,7 +8,7 @@ use axum::{
 };
 use back_end::{AppState, db, handlers, middleware::AuthToken};
 use serde_json::{Value, json};
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use std::net::SocketAddr;
 use tempfile::NamedTempFile;
 use tower::ServiceExt;
@@ -82,7 +82,7 @@ async fn setup_test_app() -> (Router, NamedTempFile) {
     let db_path = temp_file.path().to_str().expect("Failed to get temp path");
 
     let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = SqlitePool::connect(&connection_string)
+    let pool = PgPool::connect(&connection_string)
         .await
         .expect("Failed to create test db");
 
@@ -482,7 +482,7 @@ async fn test_invite_user_by_non_admin() {
     assert_eq!(invite_response.0, StatusCode::CREATED);
     let invitation_id = invite_response.1["id"].as_str().unwrap().to_string();
 
-    let pool = SqlitePool::connect(&format!(
+    let pool = PgPool::connect(&format!(
         "sqlite://{}?mode=rwc",
         temp.path().to_str().unwrap()
     ))
@@ -692,7 +692,7 @@ async fn test_security_logging_on_successful_registration() {
     let (mut app, temp) = setup_test_app().await;
     let db_path = temp.path().to_str().unwrap();
     let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = SqlitePool::connect(&connection_string).await.unwrap();
+    let pool = PgPool::connect(&connection_string).await.unwrap();
 
     let (status, _) = make_request(
         &mut app,
@@ -733,7 +733,7 @@ async fn test_security_logging_on_successful_login() {
     let (mut app, temp) = setup_test_app().await;
     let db_path = temp.path().to_str().unwrap();
     let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = SqlitePool::connect(&connection_string).await.unwrap();
+    let pool = PgPool::connect(&connection_string).await.unwrap();
 
     let _ = make_request(
         &mut app,
@@ -785,7 +785,7 @@ async fn test_security_logging_on_failed_login_wrong_password() {
     let (mut app, temp) = setup_test_app().await;
     let db_path = temp.path().to_str().unwrap();
     let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = SqlitePool::connect(&connection_string).await.unwrap();
+    let pool = PgPool::connect(&connection_string).await.unwrap();
 
     let _ = make_request(
         &mut app,
@@ -847,7 +847,7 @@ async fn test_security_logging_on_failed_login_user_not_found() {
     let (mut app, temp) = setup_test_app().await;
     let db_path = temp.path().to_str().unwrap();
     let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = SqlitePool::connect(&connection_string).await.unwrap();
+    let pool = PgPool::connect(&connection_string).await.unwrap();
 
     let (status, body) = make_request(
         &mut app,
@@ -889,7 +889,7 @@ async fn test_security_logging_on_invitation_sent() {
     let (mut app, temp) = setup_test_app().await;
     let db_path = temp.path().to_str().unwrap();
     let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = SqlitePool::connect(&connection_string).await.unwrap();
+    let pool = PgPool::connect(&connection_string).await.unwrap();
 
     let (_, register_response) = make_request(
         &mut app,
@@ -945,7 +945,7 @@ async fn test_security_logging_on_invitation_accepted() {
     let (mut app, temp) = setup_test_app().await;
     let db_path = temp.path().to_str().unwrap();
     let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = SqlitePool::connect(&connection_string).await.unwrap();
+    let pool = PgPool::connect(&connection_string).await.unwrap();
 
     let (_, register_response) = make_request(
         &mut app,
@@ -1020,7 +1020,7 @@ async fn test_security_logs_order_by_time() {
     let (mut app, temp) = setup_test_app().await;
     let db_path = temp.path().to_str().unwrap();
     let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = SqlitePool::connect(&connection_string).await.unwrap();
+    let pool = PgPool::connect(&connection_string).await.unwrap();
 
     let _ = make_request(
         &mut app,

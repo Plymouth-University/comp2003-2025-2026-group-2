@@ -10,7 +10,7 @@ pub struct UserDto {
     pub last_name: String,
     pub company_id: Option<String>,
     pub role: String,
-    pub created_at: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl From<crate::db::UserRecord> for UserDto {
@@ -32,7 +32,7 @@ pub struct CompanyDto {
     pub id: String,
     pub name: String,
     pub address: String,
-    pub created_at: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl From<crate::db::Company> for CompanyDto {
@@ -52,9 +52,9 @@ pub struct InvitationDto {
     pub company_id: String,
     pub email: String,
     pub token: String,
-    pub created_at: String,
-    pub expires_at: String,
-    pub accepted_at: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub expires_at: chrono::DateTime<chrono::Utc>,
+    pub accepted_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl From<crate::db::Invitation> for InvitationDto {
@@ -81,7 +81,7 @@ pub struct SecurityLogDto {
     pub user_agent: Option<String>,
     pub details: Option<String>,
     pub success: bool,
-    pub created_at: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl From<crate::db::SecurityLog> for SecurityLogDto {
@@ -247,14 +247,14 @@ pub struct GetInvitationDetailsRequest {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct GetInvitationDetailsResponse {
     pub company_name: String,
-    pub expires_at: String,
+    pub expires_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct InvitationResponse {
     pub id: String,
     pub email: String,
-    pub expires_at: String,
+    pub expires_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]

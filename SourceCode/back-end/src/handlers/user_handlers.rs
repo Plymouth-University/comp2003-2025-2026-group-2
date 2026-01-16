@@ -21,7 +21,7 @@ pub async fn get_company_members(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
 ) -> Result<Json<GetCompanyMembersResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = db::get_user_company_id(&state.sqlite, &claims.user_id)
+    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user company ID: {:?}", e);
@@ -35,7 +35,7 @@ pub async fn get_company_members(
             Json(json!({ "error": "User is not associated with a company" })),
         ))?;
 
-    let members = db::get_users_by_company_id(&state.sqlite, &company_id)
+    let members = db::get_users_by_company_id(&state.postgres, &company_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching company members: {:?}", e);

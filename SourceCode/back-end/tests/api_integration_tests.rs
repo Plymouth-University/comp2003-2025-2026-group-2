@@ -3,15 +3,15 @@ use back_end::{
     db::{self, UserRole},
     handlers::{AcceptInvitationRequest, InviteUserRequest, LoginRequest, RegisterRequest},
 };
-use sqlx::SqlitePool;
+use sqlx::PgPool;
 use tempfile::NamedTempFile;
 
-async fn setup_test_db() -> (SqlitePool, NamedTempFile) {
+async fn setup_test_db() -> (PgPool, NamedTempFile) {
     let _temp_file = NamedTempFile::new().expect("Failed to create temp file");
     let db_path = _temp_file.path().to_str().expect("Failed to get temp path");
 
     let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = SqlitePool::connect(&connection_string)
+    let pool = PgPool::connect(&connection_string)
         .await
         .expect("Failed to create test db");
 

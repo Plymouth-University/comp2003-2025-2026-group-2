@@ -1,8 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
 	register,
-	clearMailhogEmails,
-	getInvitationToken,
 	sendInvitation,
 	acceptInvitation
 } from './utils';
@@ -16,7 +14,6 @@ let adminCreds: {
 };
 
 test.beforeAll(async ({ browser }) => {
-	await clearMailhogEmails();
 	const creds = await register(browser);
 	if (!creds) throw new Error('Failed to register admin user');
 	adminCreds = creds;

@@ -3,8 +3,6 @@ import {
 	register,
 	sendInvitation,
 	acceptInvitation,
-	getInvitationToken,
-	clearMailhogEmails
 } from './utils';
 
 let adminCreds: {
@@ -77,7 +75,6 @@ test.describe('Integration Flow: Admin Invites Member to Complete Log', () => {
 		const timestamp = Date.now();
 		const memberEmail = `flowmember${timestamp}@logsmart.app`;
 
-		await clearMailhogEmails();
 		await page.goto('http://localhost:5173/');
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
