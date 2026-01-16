@@ -16,6 +16,17 @@
 
 	const selectedCompany = $derived(companies.find((c: any) => c.id === selectedCompanyId) || null);
 
+	const companyRecentLogs = $derived(() => {
+		if (!selectedCompanyId || !metrics.recent_logs) return [];
+		return metrics.recent_logs.filter((log: any) => {
+			// Extract company ID from log or match by company_name
+			if (selectedCompany && log.company_name) {
+				return log.company_name === selectedCompany.name;
+			}
+			return false;
+		});
+	});
+
 	// Get user data from server load
 	const user = $derived(() => {
 		if (!data.user) {
@@ -134,6 +145,29 @@
 		}
 	}
 
+	// View company dashboard as admin
+	async function viewCompanyDashboard(companyId: string, companyName: string) {
+		try {
+			const response = await fetch(`/api/admin/companies/${companyId}/login`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
+
+			if (response.ok) {
+				const result = await response.json();
+				// Store temporary admin viewing context
+				window.location.href = `/dashboard?admin_view=${companyId}`;
+			} else {
+				alert('Failed to access company dashboard');
+			}
+		} catch (err) {
+			console.error('Error accessing company dashboard:', err);
+			alert('Error accessing company dashboard');
+		}
+	}
+
 	// Format date helper
 	function formatDate(dateString: string): string {
 		const date = new Date(dateString);
@@ -248,12 +282,16 @@
 			</div>
 		</div>
 
-		{#if data.error}
-			<div
-				class="mb-4 rounded border-2 p-4"
-				style="background-color: #fee; border-color: #fcc; color: #c00;"
-			>
-				{data.error}
+		{#if selectedCompany}
+			<!-- View Company Dashboard Button -->
+			<div class="mb-8">
+				<button
+					onclick={() => viewCompanyDashboard(selectedCompany.id, selectedCompany.name)}
+					class="rounded px-6 py-3 font-semibold text-white hover:opacity-80"
+					style="background-color: #3D7A82;"
+				>
+					→ Access {selectedCompany.name} Dashboard
+				</button>
 			</div>
 		{/if}
 
@@ -313,27 +351,38 @@
 					>
 						{#if metrics.recent_logs && metrics.recent_logs.length > 0}
 							<ol class="space-y-3">
-								{#each metrics.recent_logs as log, index}
-									<li style="color: var(--text-primary);">
-										<div class="flex items-center gap-3">
-											<span class="font-semibold">{index + 1})</span>
-											<div class="flex-1">
-												<div class="font-medium">{log.template_name}</div>
-												<div class="text-sm" style="color: var(--text-secondary);">
-													{log.company_name} - {formatRelativeTime(log.created_at)}
-												</div>
+						{#each metrics.recent_logs.filter((log: any) => !selectedCompanyId || log.company_name === selectedCompany?.name) as log, index}
+								<li style="color: var(--text-primary);">
+									<div class="flex items-center gap-3">
+										<span class="font-semibold">{index + 1})</span>
+										<div class="flex-1">
+											<div class="font-medium">{log.template_name}</div>
+											<div class="text-sm" style="color: var(--text-secondary);">
+												{formatRelativeTime(log.created_at)}
 											</div>
 										</div>
-									</li>
-								{/each}
-							</ol>
-						{:else}
-							<p style="color: var(--text-secondary);">No recent logs created</p>
+									</div>
+								</li>
+							{/each}
+						</ol>
+					{:else if selectedCompanyId}
+						<p style="color: var(--text-secondary);">No recent logs created for this company</p>
+					{:else}
+						<p style="color: var(--text-secondary);">Select a company to view recent logs</p>
 						{/if}
 					</div>
 				</div>
 			</div>
 		</div>
+
+		{#if data.error}
+			<div
+				class="mb-4 rounded border-2 p-4"
+				style="background-color: #fee; border-color: #fcc; color: #c00;"
+			>
+				{data.error}
+			</div>
+		{/if}
 
 		{#if selectedCompany}
 			<!-- Company Users Section -->
@@ -474,6 +523,7 @@
 					</div>
 				</div>
 			</div>
+
 		{/if}
 	</div>
 </div>

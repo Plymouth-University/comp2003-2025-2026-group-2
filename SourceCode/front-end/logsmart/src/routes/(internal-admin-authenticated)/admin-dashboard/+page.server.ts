@@ -21,6 +21,20 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 
 		const companies = companiesResponse.ok ? await companiesResponse.json() : { companies: [] };
 
+		// Temporary mock company for testing
+		const mockCompanies = [
+			{
+				id: 'temp-company-001',
+				name: 'Test Company Ltd',
+				created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString()
+			},
+			{
+				id: 'temp-company-002',
+				name: 'Demo Industries Inc',
+				created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15).toISOString()
+			}
+		];
+
 		// Fetch metrics (recent logins/signups) - endpoint to be created
 		const metricsResponse = await fetch('/api/admin/metrics', {
 			headers: {
@@ -61,7 +75,7 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 
 		return {
 			user,
-			companies: companies.companies || [],
+			companies: companies.companies && companies.companies.length > 0 ? companies.companies : mockCompanies,
 			metrics: metrics.total_accounts ? metrics : mockMetrics,
 			error: null
 		};
