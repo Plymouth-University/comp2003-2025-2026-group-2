@@ -29,7 +29,11 @@ use utoipa::OpenApi;
         handlers::unsubmit_log_entry,
         handlers::delete_log_entry,
         handlers::list_user_log_entries,
-        handlers::generate_layout
+        handlers::generate_layout,
+        handlers::get_db_health,
+        handlers::get_db_slow_queries,
+        handlers::get_db_index_usage,
+        handlers::get_db_table_sizes
     ),
     components(
         schemas(
@@ -74,6 +78,14 @@ use utoipa::OpenApi;
             dto::ListLogEntriesResponse,
             dto::LayoutGenerationRequest,
             dto::LayoutGenerationResponse,
+            handlers::HealthResponse,
+            handlers::SlowQueriesResponse,
+            handlers::IndexUsageResponse,
+            handlers::TableSizesResponse,
+            crate::db::DatabaseHealthMetrics,
+            crate::db::SlowQueryInfo,
+            crate::db::IndexUsageStats,
+            crate::db::TableSizeInfo,
             logs_db::TemplateDocument,
             logs_db::TemplateField,
             logs_db::Position,
@@ -89,6 +101,7 @@ use utoipa::OpenApi;
         (name = "Templates", description = "Template management"),
         (name = "Company Management", description = "Company member management"),
         (name = "Log Entries", description = "Log entry management"),
+        (name = "Health Monitoring", description = "Database health and performance monitoring (LogSmart Admin only)"),
     ),
     modifiers(&SecurityAddon)
 )]

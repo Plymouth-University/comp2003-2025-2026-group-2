@@ -853,7 +853,7 @@ pub async fn accept_invitation_with_user_creation(
     })
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct DatabaseHealthMetrics {
     pub total_connections: i64,
     pub active_connections: i64,
@@ -864,7 +864,7 @@ pub struct DatabaseHealthMetrics {
     pub index_count: i64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, utoipa::ToSchema)]
 pub struct SlowQueryInfo {
     pub query: String,
     pub calls: i64,
@@ -873,7 +873,7 @@ pub struct SlowQueryInfo {
     pub max_time_ms: f64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, utoipa::ToSchema)]
 pub struct IndexUsageStats {
     pub table_name: String,
     pub index_name: String,
@@ -882,7 +882,7 @@ pub struct IndexUsageStats {
     pub rows_fetched: i64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct TableSizeInfo {
     pub table_name: String,
     pub row_count: i64,

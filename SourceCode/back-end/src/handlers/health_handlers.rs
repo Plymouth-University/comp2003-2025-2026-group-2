@@ -5,28 +5,40 @@ use axum::response::{IntoResponse, Json};
 use serde::Serialize;
 use serde_json::json;
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 pub struct HealthResponse {
     pub status: String,
     pub metrics: db::DatabaseHealthMetrics,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 pub struct SlowQueriesResponse {
     pub queries: Vec<db::SlowQueryInfo>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 pub struct IndexUsageResponse {
     pub indexes: Vec<db::IndexUsageStats>,
     pub unused_indexes: Vec<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 pub struct TableSizesResponse {
     pub tables: Vec<db::TableSizeInfo>,
 }
 
+#[utoipa::path(
+    get,
+    path = "/health/database",
+    responses(
+        (status = 200, description = "Database health metrics retrieved successfully", body = HealthResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - LogSmart admin only"),
+        (status = 500, description = "Server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Health Monitoring"
+)]
 pub async fn get_db_health(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -50,6 +62,21 @@ pub async fn get_db_health(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/health/slow-queries",
+    params(
+        ("limit" = Option<i64>, Query, description = "Maximum number of slow queries to return (default: 20)")
+    ),
+    responses(
+        (status = 200, description = "Slow queries retrieved successfully", body = SlowQueriesResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - LogSmart admin only"),
+        (status = 500, description = "Server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Health Monitoring"
+)]
 pub async fn get_db_slow_queries(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -76,6 +103,18 @@ pub async fn get_db_slow_queries(
     }
 }
 
+#[utoipa::path(
+    get,
+    path = "/health/index-usage",
+    responses(
+        (status = 200, description = "Index usage statistics retrieved successfully", body = IndexUsageResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - LogSmart admin only"),
+        (status = 500, description = "Server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Health Monitoring"
+)]
 pub async fn get_db_index_usage(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -106,6 +145,18 @@ pub async fn get_db_index_usage(
     }).into_response()
 }
 
+#[utoipa::path(
+    get,
+    path = "/health/table-sizes",
+    responses(
+        (status = 200, description = "Table sizes retrieved successfully", body = TableSizesResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - LogSmart admin only"),
+        (status = 500, description = "Server error"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Health Monitoring"
+)]
 pub async fn get_db_table_sizes(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
