@@ -1,9 +1,5 @@
 import { test, expect } from '@playwright/test';
-import {
-	register,
-	sendInvitation,
-	acceptInvitation,
-} from './utils';
+import { register, sendInvitation, acceptInvitation } from './utils';
 
 let adminCreds: {
 	email: string;
