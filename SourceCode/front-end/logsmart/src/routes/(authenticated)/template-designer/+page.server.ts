@@ -4,7 +4,7 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ parent }) => {
 	const { user } = await parent();
 
-	if (user?.role !== 'admin') {
+	if (user?.role == 'member') {
 		throw redirect(303, '/logs-list');
 	}
 };
