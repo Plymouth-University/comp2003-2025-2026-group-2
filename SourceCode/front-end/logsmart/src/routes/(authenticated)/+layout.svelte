@@ -7,7 +7,7 @@
 	let mobileMenuOpen = $state(false);
 
 	const currentPath = $derived(page.url.pathname);
-	const isAdmin = $derived(data?.user?.role === 'admin');
+	const isAdmin = $derived(data?.user?.role !== 'member');
 
 	async function handleLogout() {
 		await fetch('/api/logout', { method: 'POST' });
