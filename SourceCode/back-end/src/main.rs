@@ -120,6 +120,10 @@ async fn main() {
             post(handlers::unsubmit_log_entry),
         )
         .route("/llm/generate-layout", post(handlers::generate_layout))
+        .route("/health/database", get(handlers::get_db_health))
+        .route("/health/slow-queries", get(handlers::get_db_slow_queries))
+        .route("/health/index-usage", get(handlers::get_db_index_usage))
+        .route("/health/table-sizes", get(handlers::get_db_table_sizes))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             rate_limit::rate_limit_middleware,

@@ -125,6 +125,18 @@ pub struct SecurityLog {
 pub async fn init_db(pool: &PgPool) -> Result<()> {
     sqlx::query(
         r"
+        DO $$ BEGIN
+            CREATE TYPE user_role AS ENUM ('admin', 'member', 'logsmart_admin');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+        ",
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r"
         CREATE TABLE IF NOT EXISTS companies (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
@@ -145,9 +157,10 @@ pub async fn init_db(pool: &PgPool) -> Result<()> {
             last_name TEXT NOT NULL,
             password_hash TEXT NOT NULL,
             company_id TEXT,
-            role TEXT NOT NULL DEFAULT 'member',
+            role user_role NOT NULL DEFAULT 'member',
             created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (company_id) REFERENCES companies(id)
+            FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL,
+            CONSTRAINT valid_email CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
         )
         ",
     )
@@ -164,8 +177,10 @@ pub async fn init_db(pool: &PgPool) -> Result<()> {
             created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
             expires_at TIMESTAMPTZ NOT NULL,
             accepted_at TIMESTAMPTZ,
-            FOREIGN KEY (company_id) REFERENCES companies(id),
-            UNIQUE(company_id, email)
+            FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
+            UNIQUE(company_id, email),
+            CONSTRAINT valid_invitation_email CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+            CONSTRAINT valid_expiry CHECK (expires_at > created_at)
         )
         ",
     )
@@ -184,7 +199,7 @@ pub async fn init_db(pool: &PgPool) -> Result<()> {
             details TEXT,
             success BOOLEAN NOT NULL DEFAULT FALSE,
             created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id)
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
         )
         ",
     )
@@ -210,6 +225,16 @@ pub async fn init_db(pool: &PgPool) -> Result<()> {
     sqlx::query(
         r"
         CREATE INDEX IF NOT EXISTS idx_security_logs_created_at ON security_logs(created_at)
+        ",
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r"
+        CREATE INDEX IF NOT EXISTS idx_security_logs_failed_logins 
+        ON security_logs(email, created_at) 
+        WHERE event_type = 'login' AND success = false
         ",
     )
     .execute(pool)
@@ -257,6 +282,16 @@ pub async fn init_db(pool: &PgPool) -> Result<()> {
 
     sqlx::query(
         r"
+        CREATE INDEX IF NOT EXISTS idx_invitations_active 
+        ON invitations(company_id, email, expires_at) 
+        WHERE accepted_at IS NULL
+        ",
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r"
         CREATE TABLE IF NOT EXISTS password_resets (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
@@ -264,7 +299,8 @@ pub async fn init_db(pool: &PgPool) -> Result<()> {
             created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
             expires_at TIMESTAMPTZ NOT NULL,
             used_at TIMESTAMPTZ,
-            FOREIGN KEY (user_id) REFERENCES users(id)
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT valid_reset_expiry CHECK (expires_at > created_at)
         )
         ",
     )
@@ -282,6 +318,16 @@ pub async fn init_db(pool: &PgPool) -> Result<()> {
     sqlx::query(
         r"
         CREATE INDEX IF NOT EXISTS idx_password_resets_token ON password_resets(token)
+        ",
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r"
+        CREATE INDEX IF NOT EXISTS idx_password_resets_active 
+        ON password_resets(token, expires_at) 
+        WHERE used_at IS NULL
         ",
     )
     .execute(pool)
@@ -805,4 +851,219 @@ pub async fn accept_invitation_with_user_creation(
         role: role_str,
         created_at: now,
     })
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DatabaseHealthMetrics {
+    pub total_connections: i64,
+    pub active_connections: i64,
+    pub idle_connections: i64,
+    pub max_connections: i32,
+    pub database_size_mb: f64,
+    pub table_count: i64,
+    pub index_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct SlowQueryInfo {
+    pub query: String,
+    pub calls: i64,
+    pub total_time_ms: f64,
+    pub mean_time_ms: f64,
+    pub max_time_ms: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct IndexUsageStats {
+    pub table_name: String,
+    pub index_name: String,
+    pub index_scans: i64,
+    pub rows_read: i64,
+    pub rows_fetched: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TableSizeInfo {
+    pub table_name: String,
+    pub row_count: i64,
+    pub total_size_mb: f64,
+    pub table_size_mb: f64,
+    pub index_size_mb: f64,
+}
+
+pub async fn get_database_health(pool: &PgPool) -> Result<DatabaseHealthMetrics> {
+    #[derive(sqlx::FromRow)]
+    struct ConnectionStats {
+        total: i64,
+        active: i64,
+        idle: i64,
+        max_conn: i32,
+    }
+
+    #[derive(sqlx::FromRow)]
+    struct DbSize {
+        size_mb: f64,
+    }
+
+    #[derive(sqlx::FromRow)]
+    struct TableCount {
+        count: i64,
+    }
+
+    #[derive(sqlx::FromRow)]
+    struct IndexCount {
+        count: i64,
+    }
+
+    let conn_stats = sqlx::query_as::<_, ConnectionStats>(
+        r"
+        SELECT 
+            COUNT(*) as total,
+            COUNT(*) FILTER (WHERE state = 'active') as active,
+            COUNT(*) FILTER (WHERE state = 'idle') as idle,
+            (SELECT setting::int FROM pg_settings WHERE name = 'max_connections') as max_conn
+        FROM pg_stat_activity
+        WHERE datname = current_database()
+        "
+    )
+    .fetch_one(pool)
+    .await?;
+
+    let db_size = sqlx::query_as::<_, DbSize>(
+        r"
+        SELECT pg_database_size(current_database()) / (1024.0 * 1024.0) as size_mb
+        "
+    )
+    .fetch_one(pool)
+    .await?;
+
+    let table_count = sqlx::query_as::<_, TableCount>(
+        r"
+        SELECT COUNT(*) as count
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+        "
+    )
+    .fetch_one(pool)
+    .await?;
+
+    let index_count = sqlx::query_as::<_, IndexCount>(
+        r"
+        SELECT COUNT(*) as count
+        FROM pg_indexes
+        WHERE schemaname = 'public'
+        "
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(DatabaseHealthMetrics {
+        total_connections: conn_stats.total,
+        active_connections: conn_stats.active,
+        idle_connections: conn_stats.idle,
+        max_connections: conn_stats.max_conn,
+        database_size_mb: db_size.size_mb,
+        table_count: table_count.count,
+        index_count: index_count.count,
+    })
+}
+
+pub async fn get_slow_queries(pool: &PgPool, limit: i64) -> Result<Vec<SlowQueryInfo>> {
+    let queries = sqlx::query_as::<_, SlowQueryInfo>(
+        r"
+        SELECT 
+            query,
+            calls,
+            total_exec_time as total_time_ms,
+            mean_exec_time as mean_time_ms,
+            max_exec_time as max_time_ms
+        FROM pg_stat_statements
+        WHERE query NOT LIKE '%pg_stat_statements%'
+        ORDER BY mean_exec_time DESC
+        LIMIT $1
+        "
+    )
+    .bind(limit)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+
+    Ok(queries)
+}
+
+pub async fn get_index_usage(pool: &PgPool) -> Result<Vec<IndexUsageStats>> {
+    let stats = sqlx::query_as::<_, IndexUsageStats>(
+        r"
+        SELECT 
+            schemaname || '.' || tablename as table_name,
+            indexname as index_name,
+            idx_scan as index_scans,
+            idx_tup_read as rows_read,
+            idx_tup_fetch as rows_fetched
+        FROM pg_stat_user_indexes
+        WHERE schemaname = 'public'
+        ORDER BY idx_scan DESC
+        "
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(stats)
+}
+
+pub async fn get_table_sizes(pool: &PgPool) -> Result<Vec<TableSizeInfo>> {
+    #[derive(sqlx::FromRow)]
+    struct TableSizeRow {
+        table_name: String,
+        row_count: i64,
+        total_size_mb: f64,
+        table_size_mb: f64,
+        index_size_mb: f64,
+    }
+
+    let sizes = sqlx::query_as::<_, TableSizeRow>(
+        r"
+        SELECT 
+            tablename as table_name,
+            n_live_tup as row_count,
+            pg_total_relation_size(schemaname||'.'||tablename)::numeric / (1024*1024) as total_size_mb,
+            pg_relation_size(schemaname||'.'||tablename)::numeric / (1024*1024) as table_size_mb,
+            pg_indexes_size(schemaname||'.'||tablename)::numeric / (1024*1024) as index_size_mb
+        FROM pg_stat_user_tables
+        WHERE schemaname = 'public'
+        ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+        "
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(sizes.into_iter().map(|s| TableSizeInfo {
+        table_name: s.table_name,
+        row_count: s.row_count,
+        total_size_mb: s.total_size_mb,
+        table_size_mb: s.table_size_mb,
+        index_size_mb: s.index_size_mb,
+    }).collect())
+}
+
+pub async fn check_unused_indexes(pool: &PgPool) -> Result<Vec<String>> {
+    #[derive(sqlx::FromRow)]
+    struct UnusedIndex {
+        index_name: String,
+    }
+
+    let unused = sqlx::query_as::<_, UnusedIndex>(
+        r"
+        SELECT indexname as index_name
+        FROM pg_stat_user_indexes
+        WHERE schemaname = 'public'
+        AND idx_scan = 0
+        AND indexname NOT LIKE '%_pkey'
+        ORDER BY indexname
+        "
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(unused.into_iter().map(|u| u.index_name).collect())
 }

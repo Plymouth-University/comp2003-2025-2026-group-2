@@ -11,14 +11,18 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=rootpassword
-    
+
   postgres:
-    image: postgres:alpine
+    image: postgres:latest
     container_name: postgres
     restart: always
     shm_size: 256mb
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     environment:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=adminpassword
