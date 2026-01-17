@@ -169,4 +169,19 @@ impl InvitationService {
 
         Ok(())
     }
+
+    pub async fn get_pending_invitations(
+        db_pool: &PgPool,
+        company_id: &str,
+    ) -> Result<Vec<db::Invitation>, (StatusCode, serde_json::Value)> {
+        db::get_pending_invitations_by_company_id(db_pool, company_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error fetching pending invitations: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Database error" }),
+                )
+            })
+    }
 }

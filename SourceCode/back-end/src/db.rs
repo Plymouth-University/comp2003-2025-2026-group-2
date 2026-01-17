@@ -1100,3 +1100,21 @@ pub async fn check_unused_indexes(pool: &PgPool) -> Result<Vec<String>> {
 
     Ok(unused.into_iter().map(|u| u.index_name).collect())
 }
+
+pub async fn get_pending_invitations_by_company_id(
+    pool: &PgPool,
+    company_id: &str,
+) -> Result<Vec<Invitation>> {
+    let invitations = sqlx::query_as::<_, Invitation>(
+        r"
+        SELECT id, company_id, email, token, created_at, expires_at, accepted_at
+        FROM invitations
+        WHERE company_id = $1 AND accepted_at IS NULL AND expires_at > now()
+        ",
+    )
+    .bind(company_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(invitations)
+}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { api } from '$lib/api';
 
 	const { showingCreateModel, setShowingCreateModel } = $props<{
@@ -68,6 +69,7 @@
 						let { error } = await api.POST('/auth/invitations/send', { body: { email: email } });
 						if (!error) {
 							setShowingCreateModel(false);
+							window.location.reload();
 						} else {
 							console.error('Error sending invite:', error);
 						}

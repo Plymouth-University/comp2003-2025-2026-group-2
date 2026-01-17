@@ -34,7 +34,8 @@ use utoipa::OpenApi;
         handlers::get_db_health,
         handlers::get_db_slow_queries,
         handlers::get_db_index_usage,
-        handlers::get_db_table_sizes
+        handlers::get_db_table_sizes,
+        handlers::get_pending_invitations,
     ),
     components(
         schemas(

@@ -95,6 +95,7 @@ async fn main() {
         .route("/auth/me", get(handlers::get_current_user))
         .route("/auth/profile", put(handlers::update_profile))
         .route("/auth/invitations/send", post(handlers::invite_user))
+        .route("/auth/invitations/pending", get(handlers::get_pending_invitations))
         .route("/auth/company/members", get(handlers::get_company_members))
         .route(
             "/auth/admin/update-member",

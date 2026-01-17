@@ -359,3 +359,75 @@ pub async fn get_invitation_details(
         expires_at: invitation.expires_at,
     }))
 }
+
+#[utoipa::path(
+    get,
+    path = "/auth/invitations/pending",
+    responses(
+        (status = 200, description = "Invitations retrieved successfully", body = [InvitationResponse]),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(
+        ("bearer_auth" = [])
+    ),
+    tag = "Invitations"
+)]
+pub async fn get_pending_invitations(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<InvitationResponse>>, (StatusCode, Json<serde_json::Value>)> {
+    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "User not found" })),
+        ))?;
+
+    if !user.can_manage_company() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Only company admin or LogSmartAdmin can view invitations" })),
+        ));
+    }
+
+    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user company ID: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "User is not associated with a company" })),
+        ))?;
+
+    let invitations = services::InvitationService::get_pending_invitations(
+        &state.postgres,
+        &company_id,
+    )
+    .await
+    .map(|inv_list| {
+        inv_list
+            .into_iter()
+            .map(|inv| InvitationResponse {
+                id: inv.id,
+                email: inv.email,
+                expires_at: inv.expires_at,
+            })
+            .collect()
+    })
+    .map_err(|(status, err)| (status, Json(err)))?;
+
+    Ok(Json(invitations))
+}

@@ -2,6 +2,7 @@
 	import type { components } from '$lib/api-types';
 	import type { PageData } from './$types';
 	import InviteModal from './InviteModal.svelte';
+	import InviteRow from './InviteRow.svelte';
 	import SideBar from './SideBar.svelte';
 	import UserRow from './UserRow.svelte';
 
@@ -9,6 +10,7 @@
 
 	const data = $props<{ data: PageData }>();
 	const members = $state(data.data.members);
+	const invitations = $state(data.data.invitations);
 
 	let showingCreateModel = $state(false);
 
@@ -34,10 +36,13 @@
 		<div class="mx-auto md:w-full">
 			<div class="flex-1 gap-1 overflow-auto p-6">
 				<div id="eventHide" class="flex flex-auto flex-col">
+					{#each invitations as invite (invite.email)}
+						<InviteRow {invite} />
+					{/each}
 					{#each members as item (item.email)}
 						<UserRow {item} {setSelectedUser} />
 					{/each}
-					<div class="mr-5 flex flex-col place-items-end self-end text-4xl hover:animate-bounce">
+					<div class="add-button-container mr-5 flex flex-col place-items-end self-end text-4xl">
 						<button
 							class="z-80 h-20 w-20 cursor-pointer self-end rounded-full border-4 border-border-primary bg-bg-primary text-text-primary drop-shadow-lg duration-300 hover:drop-shadow-2xl"
 							type="button"
@@ -54,3 +59,19 @@
 		<SideBar {selectedUser} {setSelectedUser} />
 	</div>
 </main>
+
+<style>
+	.add-button-container:hover {
+		animation: bounce-once 0.6s ease-in-out;
+	}
+
+	@keyframes bounce-once {
+		0%,
+		100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(-10px);
+		}
+	}
+</style>

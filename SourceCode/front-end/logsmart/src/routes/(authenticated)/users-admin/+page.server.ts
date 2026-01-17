@@ -17,15 +17,25 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 	}
 
 	try {
-		const response = await fetch('/api/auth/company/members');
-		if (!response.ok) {
+		const members_resp = await fetch('/api/auth/company/members');
+		if (!members_resp.ok) {
 			return {
-				error: await response.text(),
+				error: await members_resp.text(),
 				members: null
 			};
 		}
 
-		return await response.json();
+		const invitations_resp = await fetch('/api/auth/invitations/pending');
+		if (!invitations_resp.ok) {
+			return {
+				error: await invitations_resp.text(),
+				members: null
+			};
+		}
+		return {
+			...(await members_resp.json()),
+			invitations: await invitations_resp.json()
+		};
 	} catch (error) {
 		console.error('Error fetching user data:', error);
 		return {
