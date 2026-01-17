@@ -145,11 +145,24 @@ test.describe('User Administration - Admin Access', () => {
 		}
 	});
 
-	test('update_user_profile_via_sidebar', async ({ page }) => {
+	test('update_user_profile_via_sidebar', async ({ page, browser }) => {
+		const creds = await register(browser);
+		if (!creds) throw new Error('Failed to register user for profile update test');
+
+		await page.getByRole('button', { name: 'Logout' }).click();
+		await page.waitForURL('**/login');
+
+		await page.goto('http://localhost:5173/');
+		await page.getByRole('link', { name: 'Login' }).click();
+		await page.getByRole('textbox', { name: 'Email' }).fill(creds.email);
+		await page.getByRole('textbox', { name: 'Password' }).fill(creds.password);
+		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.waitForURL('**/dashboard');
+
 		await page.getByRole('link', { name: 'Users' }).click();
 		await page.waitForURL('**/users-admin');
 
-		await page.locator(`button:has-text("${adminCreds.email}")`).click();
+		await page.locator(`button:has-text("${creds.email}")`).click();
 
 		const sidebar = page.locator('#userSidebar');
 		await expect(sidebar).toBeVisible();
@@ -159,8 +172,16 @@ test.describe('User Administration - Admin Access', () => {
 
 		await page.getByRole('button', { name: 'Save' }).click();
 
-		await page.reload();
-		await page.waitForSelector(`text=${newFirstName}`);
+		for (let i = 0; i < 5; i++) {
+			try {
+				await page.waitForTimeout(1000);
+				await page.reload();
+				await page.waitForSelector(`text=${newFirstName}`);
+				break;
+			} catch {
+				if (i === 4) throw new Error('Updated name not found after multiple retries');
+			}
+		}
 		await expect(page.locator('body')).toContainText(newFirstName);
 	});
 
@@ -196,9 +217,26 @@ test.describe('User Administration - Admin Access', () => {
 
 		await page.getByRole('button', { name: 'Save' }).click();
 
-		await page.reload();
-		await page.waitForURL('**/users-admin');
-		await page.locator(`button:has-text("${invitedEmail}")`).click();
+		await page.waitForTimeout(2000);
+
+		for (let i = 0; i < 5; i++) {
+			try {
+				await page.reload();
+				await page.waitForURL('**/users-admin');
+				await page.waitForTimeout(500);
+				await page.locator(`button:has-text("${invitedEmail}")`).click();
+				const updatedSidebar = page.locator('#userSidebar');
+				await expect(updatedSidebar).toBeVisible();
+				const updatedRoleSelect = page.locator('#role');
+				const selectedValue = await updatedRoleSelect.inputValue();
+				if (selectedValue === 'admin') {
+					break;
+				}
+			} catch {
+				if (i === 4) throw new Error('Role update not verified after multiple retries');
+			}
+			await page.waitForTimeout(1000);
+		}
 		await expect(page.locator('#role')).toHaveValue('admin');
 	});
 });

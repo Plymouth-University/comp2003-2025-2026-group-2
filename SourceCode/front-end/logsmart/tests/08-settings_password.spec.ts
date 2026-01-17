@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 import { acceptInvitation, register, requestPasswordResetToken, sendInvitation } from './utils';
 
-let adminCreds: { email: string; password: string };
+let adminCreds: { email: string; password: string; firstName?: string; lastName?: string };
 let passwordResetCreds: { email: string; password: string };
 
 test.beforeAll(async ({ browser }) => {
 	const creds = await register(browser);
 	if (!creds) throw new Error('Failed to register admin user');
-	adminCreds = creds;
+	adminCreds = { ...creds };
 });
 
 test.describe('Settings - Profile Updates', () => {
@@ -99,16 +99,21 @@ test.describe('Settings - Profile Updates', () => {
 	test('special_characters_in_names', async ({ page }) => {
 		await page.getByRole('link', { name: 'Settings' }).click();
 		await page.waitForURL('**/settings');
+
+		const originalFirstName = await page.getByRole('textbox', { name: 'First Name' }).inputValue();
+		const originalLastName = await page.getByRole('textbox', { name: 'Last Name' }).inputValue();
+
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill("O'Connor");
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
 		await page.getByRole('textbox', { name: 'Last Name' }).fill('Smith-Jones');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
 		await page.waitForTimeout(1000);
+
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
-		await page.getByRole('textbox', { name: 'First Name' }).fill('Test');
+		await page.getByRole('textbox', { name: 'First Name' }).fill(originalFirstName);
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
-		await page.getByRole('textbox', { name: 'Last Name' }).fill('User');
+		await page.getByRole('textbox', { name: 'Last Name' }).fill(originalLastName);
 		await page.getByRole('button', { name: 'Save Profile' }).click();
 		await page.waitForTimeout(1000);
 	});
