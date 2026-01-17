@@ -60,6 +60,7 @@ pub struct UserRecord {
     pub company_name: Option<String>,
     pub role: UserRole,
     pub created_at: chrono::DateTime<chrono::Utc>,
+    pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl UserRecord {
@@ -164,9 +165,18 @@ pub async fn init_db(pool: &PgPool) -> Result<()> {
             company_id TEXT,
             role user_role NOT NULL DEFAULT 'member',
             created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+            deleted_at TIMESTAMPTZ,
             FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL,
             CONSTRAINT valid_email CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
         )
+        ",
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r"
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ
         ",
     )
     .execute(pool)
@@ -393,6 +403,7 @@ where
         company_name: None,
         role,
         created_at: now,
+        deleted_at: None,
     })
 }
 
@@ -420,10 +431,10 @@ pub async fn get_user_by_email(pool: &PgPool, email: &str) -> Result<Option<User
     let user = sqlx::query_as::<_, UserRecord>(
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
-               users.password_hash, users.company_id, users.role, users.created_at, companies.name as company_name
+               users.password_hash, users.company_id, users.role, users.created_at, users.deleted_at, companies.name as company_name
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
-        WHERE users.email = $1
+        WHERE users.email = $1 AND users.deleted_at IS NULL
         "
     )
     .bind(email)
@@ -437,10 +448,10 @@ pub async fn get_user_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRecord
     let user = sqlx::query_as::<_, UserRecord>(
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
-            users.password_hash, users.company_id, users.role, users.created_at, companies.name as company_name
+            users.password_hash, users.company_id, users.role, users.created_at, users.deleted_at, companies.name as company_name
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
-        WHERE users.id = $1
+        WHERE users.id = $1 AND users.deleted_at IS NULL
         "
     )
     .bind(id)
@@ -448,6 +459,22 @@ pub async fn get_user_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRecord
     .await?;
 
     Ok(user)
+}
+
+pub async fn delete_user_by_email(pool: &PgPool, email: &str) -> Result<()> {
+    sqlx::query(
+        r"
+        UPDATE users
+        SET deleted_at = $1
+        WHERE email = $2 AND deleted_at IS NULL
+        ",
+    )
+    .bind(chrono::Utc::now())
+    .bind(email)
+    .execute(pool)
+    .await?;
+
+    Ok(())
 }
 
 pub async fn create_company<'a, E>(executor: E, name: String, address: String) -> Result<Company>
@@ -839,10 +866,10 @@ pub async fn get_users_by_company_id(pool: &PgPool, company_id: &str) -> Result<
     let users = sqlx::query_as::<_, UserRecord>(
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
-               users.password_hash, users.company_id, users.role, users.created_at, companies.name as company_name
+               users.password_hash, users.company_id, users.role, users.created_at, users.deleted_at, companies.name as company_name
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
-        WHERE users.company_id = $1
+        WHERE users.company_id = $1 AND users.deleted_at IS NULL
         "
     )
     .bind(company_id)
@@ -926,6 +953,7 @@ pub async fn accept_invitation_with_user_creation(
         company_name: None,
         role: UserRole::Member,
         created_at: now,
+        deleted_at: None,
     })
 }
 

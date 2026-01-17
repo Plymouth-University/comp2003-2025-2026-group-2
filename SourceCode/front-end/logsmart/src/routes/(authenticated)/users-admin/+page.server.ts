@@ -12,7 +12,9 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 
 	if (!token) {
 		return {
-			members: null
+			members: null,
+			invitations: null,
+			user: null
 		};
 	}
 
@@ -21,7 +23,9 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 		if (!members_resp.ok) {
 			return {
 				error: await members_resp.text(),
-				members: null
+				members: null,
+				invitations: null,
+				user: user
 			};
 		}
 
@@ -29,17 +33,22 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 		if (!invitations_resp.ok) {
 			return {
 				error: await invitations_resp.text(),
-				members: null
+				members: null,
+				invitations: null,
+				user: user
 			};
 		}
 		return {
 			...(await members_resp.json()),
-			...(await invitations_resp.json())
+			...(await invitations_resp.json()),
+			user: user
 		};
 	} catch (error) {
 		console.error('Error fetching user data:', error);
 		return {
-			members: null
+			members: null,
+			invitations: null,
+			user: user
 		};
 	}
 };

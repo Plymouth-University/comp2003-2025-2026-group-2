@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+	'/auth/admin/remove-member': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post?: never;
+		delete: operations['admin_delete_member'];
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	'/auth/admin/update-member': {
 		parameters: {
 			query?: never;
@@ -647,6 +663,10 @@ export interface components {
 			/** @example SecurePass123! */
 			password: string;
 		};
+		RemoveMemberRequest: {
+			/** @example user@example.com */
+			email: string;
+		};
 		RenameTemplateRequest: {
 			new_template_name: string;
 			old_template_name: string;
@@ -789,6 +809,73 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+	admin_delete_member: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['RemoveMemberRequest'];
+			};
+		};
+		responses: {
+			/** @description Member deleted successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Invalid request */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden - not an admin or different company */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description User not found */
+			404: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
 	admin_update_member_profile: {
 		parameters: {
 			query?: never;

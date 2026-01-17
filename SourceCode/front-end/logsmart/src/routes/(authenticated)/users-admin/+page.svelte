@@ -13,6 +13,7 @@
 	const data = $props<{ data: PageData }>();
 	const members = $state(data.data.members);
 	const invitations = $state(data.data.invitations);
+	const user = $state(data.data.user);
 
 	let showingCreateModel = $state(false);
 
@@ -55,6 +56,40 @@
 			alert(`Error cancelling invitation: ${error}`);
 		}
 	};
+
+	const removeMember = async (email: string) => {
+		const member = members.find((m: Member) => m.email === email);
+		if (!member) return;
+		if (member.email === user.email) {
+			alert("You cannot remove yourself.");
+			return;
+		}
+
+		if (!confirm(`Remove ${member.first_name} ${member.last_name} (${email})?`)) {
+			return;
+		}
+
+		try {
+			const response = await api.DELETE('/auth/admin/remove-member', {
+				body: { email }
+			});
+
+			if (response.error) {
+				alert(`Failed to remove member: ${response.data || 'Unknown error'}`);
+				return;
+			}
+
+			members.splice(
+				members.findIndex((m: Member) => m.email === email),
+				1
+			);
+			if (selectedUser?.email === email) {
+				selectedUser = null;
+			}
+		} catch (error) {
+			alert(`Error removing member: ${error}`);
+		}
+	};
 </script>
 
 <svelte:head>
@@ -69,7 +104,7 @@
 						<InviteRow {invite} onCancel={cancelInvitation} />
 					{/each}
 					{#each members as item (item.email)}
-						<UserRow {item} {setSelectedUser} />
+						<UserRow {item} {setSelectedUser} onRemove={removeMember} />
 					{/each}
 					<div class="add-button-container mr-5 flex flex-col place-items-end self-end text-4xl">
 						<button

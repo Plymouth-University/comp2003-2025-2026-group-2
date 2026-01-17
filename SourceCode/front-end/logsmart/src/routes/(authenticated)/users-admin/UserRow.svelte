@@ -1,5 +1,5 @@
 <script lang="ts">
-	const { item, setSelectedUser } = $props<{
+	const { item, setSelectedUser, onRemove } = $props<{
 		item: {
 			email: string;
 			first_name: string;
@@ -7,15 +7,19 @@
 			role: string;
 		};
 		setSelectedUser: (email: string) => void;
+		onRemove: (email: string) => Promise<void>;
 	}>();
 </script>
 
-<button
-	onclick={() => setSelectedUser(item.email)}
+<div
 	class="mb-3 flex flex-col gap-3 rounded-lg border-2 p-4 transition-all hover:opacity-80 md:flex-row md:items-center md:justify-between"
 	style="background-color: var(--bg-primary); border-color: var(--border-primary);"
 >
-	<div class="flex flex-1 flex-col gap-2">
+	<button
+		onclick={() => setSelectedUser(item.email)}
+		class="flex flex-1 flex-col gap-2 text-left"
+		type="button"
+	>
 		<div class="font-semibold" style="color: var(--text-primary);">
 			{item.first_name}
 			{item.last_name}
@@ -23,7 +27,7 @@
 		<div class="text-sm" style="color: var(--text-secondary);">
 			{item.email}
 		</div>
-	</div>
+	</button>
 
 	<div class="flex items-center gap-2">
 		<div
@@ -39,15 +43,16 @@
 	</div>
 
 	<div class="flex gap-2">
-		<a
-			href="#remove-user"
+		<button
+			type="button"
+			onclick={() => onRemove(item.email)}
 			class="rounded px-3 py-1 text-sm font-medium transition-colors hover:underline"
 			style="color: var(--text-secondary);"
 		>
 			Remove
-		</a>
+		</button>
 	</div>
-</button>
+</div>
 
 <style>
 </style>

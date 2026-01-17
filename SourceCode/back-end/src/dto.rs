@@ -21,6 +21,13 @@ pub struct CancelInvitationRequest {
     #[schema(example = "invitation-uuid-here")]
     pub invitation_id: String,
 }
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct RemoveMemberRequest {
+    #[schema(example = "user@example.com")]
+    pub email: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserDto {
     pub id: String,

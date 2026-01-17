@@ -132,4 +132,52 @@ impl UserService {
                 )
             })
     }
+
+    pub async fn admin_delete_member(
+        db_pool: &PgPool,
+        admin_user_id: &str,
+        target_email: &str,
+    ) -> Result<(), (StatusCode, serde_json::Value)> {
+        let admin = Self::get_user_by_id(db_pool, admin_user_id).await?;
+
+        if !admin.is_admin() {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "Only company admins can delete members" }),
+            ));
+        }
+
+        let target_user = Self::get_user_by_email(db_pool, target_email).await?;
+
+        if admin.company_id != target_user.company_id {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "Cannot delete users from other companies" }),
+            ));
+        }
+
+        if target_user.is_logsmart_admin() && !admin.is_logsmart_admin() {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "Cannot delete LogSmart internal admin users" }),
+            ));
+        }
+
+        if target_user.email == admin.email {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                json!({ "error": "Cannot delete your own account" }),
+            ));
+        }
+
+        db::delete_user_by_email(db_pool, target_email)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to delete member: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to delete member" }),
+                )
+            })
+    }
 }

@@ -1,6 +1,6 @@
 use crate::{
     AppState, db,
-    dto::{AdminUpdateMemberRequest, ErrorResponse, GetCompanyMembersResponse},
+    dto::{AdminUpdateMemberRequest, ErrorResponse, GetCompanyMembersResponse, RemoveMemberRequest},
     middleware::AuthToken,
     services::user_service::UserService,
     utils::AuditLogger,
@@ -107,4 +107,37 @@ pub async fn admin_update_member_profile(
     .await;
 
     Ok(Json(vec![updated_user].into()))
+}
+#[utoipa::path(
+    delete,
+    path = "/auth/admin/remove-member",
+    request_body = RemoveMemberRequest,
+    responses(
+        (status = 200, description = "Member deleted successfully"),
+        (status = 400, description = "Invalid request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - not an admin or different company", body = ErrorResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Company Management"
+)]
+pub async fn admin_delete_member(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    Json(payload): Json<RemoveMemberRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    UserService::admin_delete_member(&state.postgres, &claims.user_id, &payload.email)
+        .await
+        .map_err(|(status, error)| (status, Json(error)))?;
+
+    AuditLogger::log_admin_action(
+        &state.postgres,
+        claims.user_id,
+        format!("Deleted member: {}", payload.email),
+    )
+    .await;
+
+    Ok(Json(json!({ "message": "Member deleted successfully" })))
 }

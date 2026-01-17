@@ -105,6 +105,10 @@ async fn main() {
             "/auth/admin/update-member",
             put(handlers::admin_update_member_profile),
         )
+        .route(
+            "/auth/admin/remove-member",
+            delete(handlers::admin_delete_member),
+        )
         .route("/logs/templates", post(handlers::add_template))
         .route("/logs/templates", get(handlers::get_template))
         .route("/logs/templates/all", get(handlers::get_all_templates))

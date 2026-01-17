@@ -2,6 +2,52 @@
 	"openapi": "3.1.0",
 	"info": { "title": "back-end", "description": "", "license": { "name": "" }, "version": "1.0.0" },
 	"paths": {
+		"/auth/admin/remove-member": {
+			"delete": {
+				"tags": ["Company Management"],
+				"operationId": "admin_delete_member",
+				"requestBody": {
+					"content": {
+						"application/json": { "schema": { "$ref": "#/components/schemas/RemoveMemberRequest" } }
+					},
+					"required": true
+				},
+				"responses": {
+					"200": { "description": "Member deleted successfully" },
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden - not an admin or different company",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"404": {
+						"description": "User not found",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
 		"/auth/admin/update-member": {
 			"put": {
 				"tags": ["Company Management"],
@@ -1490,6 +1536,11 @@
 					"last_name": { "type": "string", "example": "Doe" },
 					"password": { "type": "string", "example": "SecurePass123!" }
 				}
+			},
+			"RemoveMemberRequest": {
+				"type": "object",
+				"required": ["email"],
+				"properties": { "email": { "type": "string", "example": "user@example.com" } }
 			},
 			"RenameTemplateRequest": {
 				"type": "object",
