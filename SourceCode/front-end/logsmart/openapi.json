@@ -1,7 +1,62 @@
 {
 	"openapi": "3.1.0",
-	"info": { "title": "back-end", "description": "", "license": { "name": "" }, "version": "0.1.0" },
+	"info": { "title": "back-end", "description": "", "license": { "name": "" }, "version": "1.0.0" },
 	"paths": {
+		"/auth/admin/update-member": {
+			"put": {
+				"tags": ["Company Management"],
+				"operationId": "admin_update_member_profile",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": { "$ref": "#/components/schemas/AdminUpdateMemberRequest" }
+						}
+					},
+					"required": true
+				},
+				"responses": {
+					"200": {
+						"description": "Member profile updated successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/GetCompanyMembersResponse" }
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden - not an admin or different company",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"404": {
+						"description": "User not found",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
 		"/auth/company/members": {
 			"get": {
 				"tags": ["Company Management"],
@@ -238,8 +293,8 @@
 							}
 						}
 					},
-					"404": {
-						"description": "User not found",
+					"400": {
+						"description": "Invalid email",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -398,6 +453,93 @@
 						}
 					}
 				}
+			}
+		},
+		"/health/database": {
+			"get": {
+				"tags": ["Health Monitoring"],
+				"operationId": "get_db_health",
+				"responses": {
+					"200": {
+						"description": "Database health metrics retrieved successfully",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/HealthResponse" } }
+						}
+					},
+					"401": { "description": "Unauthorized" },
+					"403": { "description": "Forbidden - LogSmart admin only" },
+					"500": { "description": "Server error" }
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/health/index-usage": {
+			"get": {
+				"tags": ["Health Monitoring"],
+				"operationId": "get_db_index_usage",
+				"responses": {
+					"200": {
+						"description": "Index usage statistics retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/IndexUsageResponse" }
+							}
+						}
+					},
+					"401": { "description": "Unauthorized" },
+					"403": { "description": "Forbidden - LogSmart admin only" },
+					"500": { "description": "Server error" }
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/health/slow-queries": {
+			"get": {
+				"tags": ["Health Monitoring"],
+				"operationId": "get_db_slow_queries",
+				"parameters": [
+					{
+						"name": "limit",
+						"in": "query",
+						"description": "Maximum number of slow queries to return (default: 20)",
+						"required": false,
+						"schema": { "type": "integer", "format": "int64" }
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Slow queries retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/SlowQueriesResponse" }
+							}
+						}
+					},
+					"401": { "description": "Unauthorized" },
+					"403": { "description": "Forbidden - LogSmart admin only" },
+					"500": { "description": "Server error" }
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/health/table-sizes": {
+			"get": {
+				"tags": ["Health Monitoring"],
+				"operationId": "get_db_table_sizes",
+				"responses": {
+					"200": {
+						"description": "Table sizes retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/TableSizesResponse" }
+							}
+						}
+					},
+					"401": { "description": "Unauthorized" },
+					"403": { "description": "Forbidden - LogSmart admin only" },
+					"500": { "description": "Server error" }
+				},
+				"security": [{ "bearer_auth": [] }]
 			}
 		},
 		"/llm/generate-layout": {
@@ -998,6 +1140,16 @@
 				"required": ["message"],
 				"properties": { "message": { "type": "string" } }
 			},
+			"AdminUpdateMemberRequest": {
+				"type": "object",
+				"required": ["email", "first_name", "last_name", "role"],
+				"properties": {
+					"email": { "type": "string", "example": "user@example.com" },
+					"first_name": { "type": "string", "example": "Jane" },
+					"last_name": { "type": "string", "example": "Smith" },
+					"role": { "type": "string", "example": "member" }
+				}
+			},
 			"AuthResponse": {
 				"type": "object",
 				"required": ["token", "user"],
@@ -1015,6 +1167,27 @@
 				"type": "object",
 				"required": ["id", "message"],
 				"properties": { "id": { "type": "string" }, "message": { "type": "string" } }
+			},
+			"DatabaseHealthMetrics": {
+				"type": "object",
+				"required": [
+					"total_connections",
+					"active_connections",
+					"idle_connections",
+					"max_connections",
+					"database_size_mb",
+					"table_count",
+					"index_count"
+				],
+				"properties": {
+					"active_connections": { "type": "integer", "format": "int64" },
+					"database_size_mb": { "type": "number", "format": "double" },
+					"idle_connections": { "type": "integer", "format": "int64" },
+					"index_count": { "type": "integer", "format": "int64" },
+					"max_connections": { "type": "integer", "format": "int32" },
+					"table_count": { "type": "integer", "format": "int64" },
+					"total_connections": { "type": "integer", "format": "int64" }
+				}
 			},
 			"DeleteTemplateRequest": {
 				"type": "object",
@@ -1072,7 +1245,10 @@
 			"GetInvitationDetailsResponse": {
 				"type": "object",
 				"required": ["company_name", "expires_at"],
-				"properties": { "company_name": { "type": "string" }, "expires_at": { "type": "string" } }
+				"properties": {
+					"company_name": { "type": "string" },
+					"expires_at": { "type": "string", "format": "date-time" }
+				}
 			},
 			"GetTemplateRequest": {
 				"type": "object",
@@ -1087,12 +1263,42 @@
 					"template_name": { "type": "string" }
 				}
 			},
+			"HealthResponse": {
+				"type": "object",
+				"required": ["status", "metrics"],
+				"properties": {
+					"metrics": { "$ref": "#/components/schemas/DatabaseHealthMetrics" },
+					"status": { "type": "string" }
+				}
+			},
+			"IndexUsageResponse": {
+				"type": "object",
+				"required": ["indexes", "unused_indexes"],
+				"properties": {
+					"indexes": {
+						"type": "array",
+						"items": { "$ref": "#/components/schemas/IndexUsageStats" }
+					},
+					"unused_indexes": { "type": "array", "items": { "type": "string" } }
+				}
+			},
+			"IndexUsageStats": {
+				"type": "object",
+				"required": ["table_name", "index_name", "index_scans", "rows_read", "rows_fetched"],
+				"properties": {
+					"index_name": { "type": "string" },
+					"index_scans": { "type": "integer", "format": "int64" },
+					"rows_fetched": { "type": "integer", "format": "int64" },
+					"rows_read": { "type": "integer", "format": "int64" },
+					"table_name": { "type": "string" }
+				}
+			},
 			"InvitationResponse": {
 				"type": "object",
 				"required": ["id", "email", "expires_at"],
 				"properties": {
 					"email": { "type": "string" },
-					"expires_at": { "type": "string" },
+					"expires_at": { "type": "string", "format": "date-time" },
 					"id": { "type": "string" }
 				}
 			},
@@ -1230,11 +1436,47 @@
 					"month_of_year": { "type": ["integer", "null"], "format": "int32", "minimum": 0 }
 				}
 			},
+			"SlowQueriesResponse": {
+				"type": "object",
+				"required": ["queries"],
+				"properties": {
+					"queries": { "type": "array", "items": { "$ref": "#/components/schemas/SlowQueryInfo" } }
+				}
+			},
+			"SlowQueryInfo": {
+				"type": "object",
+				"required": ["query", "calls", "total_time_ms", "mean_time_ms", "max_time_ms"],
+				"properties": {
+					"calls": { "type": "integer", "format": "int64" },
+					"max_time_ms": { "type": "number", "format": "double" },
+					"mean_time_ms": { "type": "number", "format": "double" },
+					"query": { "type": "string" },
+					"total_time_ms": { "type": "number", "format": "double" }
+				}
+			},
 			"SubmitLogEntryRequest": { "type": "object" },
 			"SubmitLogEntryResponse": {
 				"type": "object",
 				"required": ["message"],
 				"properties": { "message": { "type": "string" } }
+			},
+			"TableSizeInfo": {
+				"type": "object",
+				"required": ["table_name", "row_count", "total_size_mb", "table_size_mb", "index_size_mb"],
+				"properties": {
+					"index_size_mb": { "type": "number", "format": "double" },
+					"row_count": { "type": "integer", "format": "int64" },
+					"table_name": { "type": "string" },
+					"table_size_mb": { "type": "number", "format": "double" },
+					"total_size_mb": { "type": "number", "format": "double" }
+				}
+			},
+			"TableSizesResponse": {
+				"type": "object",
+				"required": ["tables"],
+				"properties": {
+					"tables": { "type": "array", "items": { "$ref": "#/components/schemas/TableSizeInfo" } }
+				}
 			},
 			"TemplateDocument": {
 				"type": "object",
@@ -1331,9 +1573,10 @@
 					"email": { "type": "string" },
 					"first_name": { "type": "string" },
 					"last_name": { "type": "string" },
-					"role": { "type": "string" }
+					"role": { "$ref": "#/components/schemas/UserRole" }
 				}
 			},
+			"UserRole": { "type": "string", "enum": ["admin", "member", "logsmart_admin"] },
 			"Vec": {
 				"type": "array",
 				"items": {
@@ -1359,6 +1602,10 @@
 		{ "name": "Invitations", "description": "Company member invitation management" },
 		{ "name": "Templates", "description": "Template management" },
 		{ "name": "Company Management", "description": "Company member management" },
-		{ "name": "Log Entries", "description": "Log entry management" }
+		{ "name": "Log Entries", "description": "Log entry management" },
+		{
+			"name": "Health Monitoring",
+			"description": "Database health and performance monitoring (LogSmart Admin only)"
+		}
 	]
 }

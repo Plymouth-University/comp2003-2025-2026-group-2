@@ -6,6 +6,22 @@ use sqlx::PgPool;
 pub struct UserService;
 
 impl UserService {
+    pub async fn get_user_by_email(
+        db_pool: &PgPool,
+        email: &str,
+    ) -> Result<db::UserRecord, (StatusCode, serde_json::Value)> {
+        db::get_user_by_email(db_pool, email)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error fetching user: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Database error" }),
+                )
+            })?
+            .ok_or((StatusCode::NOT_FOUND, json!({ "error": "User not found" })))
+    }
+
     pub async fn get_user_by_id(
         db_pool: &PgPool,
         user_id: &str,
@@ -71,5 +87,49 @@ impl UserService {
                 StatusCode::FORBIDDEN,
                 json!({ "error": "User is not associated with a company" }),
             ))
+    }
+
+    pub async fn admin_update_member_profile(
+        db_pool: &PgPool,
+        admin_user_id: &str,
+        target_email: &str,
+        first_name: String,
+        last_name: String,
+        role: db::UserRole,
+    ) -> Result<db::UserRecord, (StatusCode, serde_json::Value)> {
+        let admin = Self::get_user_by_id(db_pool, admin_user_id).await?;
+
+        if !admin.is_admin() {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "Only company admins can update member profiles" }),
+            ));
+        }
+
+        let target_user = Self::get_user_by_email(db_pool, target_email).await?;
+
+        if admin.company_id != target_user.company_id {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "Cannot update users from other companies" }),
+            ));
+        }
+
+        if target_user.is_logsmart_admin() && !admin.is_logsmart_admin() {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "Cannot modify LogSmart internal admin users" }),
+            ));
+        }
+
+        db::update_user_profile_full(db_pool, &target_user.id, first_name, last_name, role)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to update member profile: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to update member profile" }),
+                )
+            })
     }
 }

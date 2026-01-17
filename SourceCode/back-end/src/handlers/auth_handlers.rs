@@ -1,3 +1,4 @@
+use crate::services::UserService;
 use crate::utils::{extract_ip_from_headers_and_addr, extract_user_agent};
 use crate::{
     AppState,
@@ -322,7 +323,13 @@ pub async fn update_profile(
     State(state): State<AppState>,
     Json(payload): Json<UpdateProfileRequest>,
 ) -> Result<Json<UserResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::update_user_profile(
+    if payload.first_name.is_empty() || payload.last_name.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "First name and last name cannot be empty" })),
+        ));
+    }
+    let user = UserService::update_profile(
         &state.postgres,
         &claims.user_id,
         payload.first_name,
@@ -331,10 +338,7 @@ pub async fn update_profile(
     .await
     .map_err(|e| {
         tracing::error!("Failed to update profile: {:?}", e);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "error": "Failed to update profile" })),
-        )
+        (e.0, Json(e.1))
     })?;
 
     AuditLogger::log_profile_updated(&state.postgres, claims.user_id, user.email.clone()).await;

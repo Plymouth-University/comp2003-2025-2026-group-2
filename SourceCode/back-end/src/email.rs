@@ -41,12 +41,9 @@ impl SmtpConfig {
 }
 
 async fn send_email(to_email: &str, subject: &str, body: &str) -> Result<()> {
-    let config = match SmtpConfig::load() {
-        Ok(cfg) => cfg,
-        Err(_) => {
-            tracing::error!("SMTP not configured! {}", to_email);
-            panic!("SMTP not configured");
-        }
+    let config = if let Ok(cfg) = SmtpConfig::load() { cfg } else {
+        tracing::error!("SMTP not configured! {}", to_email);
+        panic!("SMTP not configured");
     };
 
     let sender = config.sender_address();
@@ -111,17 +108,16 @@ pub async fn send_invitation_email(
     invite_link: &str,
     company_name: &str,
 ) -> Result<()> {
-    let subject = format!("{} has invited you to join LogSmart", company_name);
+    let subject = format!("{company_name} has invited you to join LogSmart");
     let body = format!(
         "Hello,\n\n\
-        You have been invited to join the company '{}' on LogSmart.\n\n\
+        You have been invited to join the company '{company_name}' on LogSmart.\n\n\
         Please click the link below to accept the invitation:\n\n\
-        {}\n\n\
+        {invite_link}\n\n\
         This invitation link will expire in 7 days.\n\n\
         If you did not expect this invitation, you can safely ignore this email.\n\n\
         Best regards,\n\
-        The LogSmart Team",
-        company_name, invite_link
+        The LogSmart Team"
     );
 
     send_email(to_email, &subject, &body).await?;
@@ -135,12 +131,11 @@ pub async fn send_password_reset_email(to_email: &str, reset_link: &str) -> Resu
         "Hello,\n\n\
         We received a request to reset your LogSmart password.\n\n\
         Please click the link below to reset your password:\n\n\
-        {}\n\n\
+        {reset_link}\n\n\
         This link will expire in 24 hours.\n\n\
         If you did not request a password reset, please ignore this email.\n\n\
         Best regards,\n\
-        The LogSmart Team",
-        reset_link
+        The LogSmart Team"
     );
 
     send_email(to_email, subject, &body).await?;

@@ -43,7 +43,7 @@ impl AuditLogger {
             Some(email),
             ip_address,
             user_agent,
-            Some(format!("Company admin registered: {}", company_name)),
+            Some(format!("Company admin registered: {company_name}")),
             true,
         )
         .await;
@@ -105,7 +105,7 @@ impl AuditLogger {
             Some(recipient_email),
             ip_address,
             user_agent,
-            Some(format!("Invitation sent by {}", admin_email)),
+            Some(format!("Invitation sent by {admin_email}")),
             true,
         )
         .await;
@@ -126,7 +126,7 @@ impl AuditLogger {
             Some(email),
             ip_address,
             user_agent,
-            Some(format!("Member joined company {}", company_id)),
+            Some(format!("Member joined company {company_id}")),
             true,
         )
         .await;
@@ -141,6 +141,20 @@ impl AuditLogger {
             None,
             None,
             None,
+            true,
+        )
+        .await;
+    }
+
+    pub async fn log_admin_action(db: &PgPool, admin_user_id: String, action_description: String) {
+        Self::log(
+            db,
+            "admin_action",
+            Some(admin_user_id),
+            None,
+            None,
+            None,
+            Some(action_description),
             true,
         )
         .await;
@@ -162,7 +176,7 @@ impl AuditLogger {
             Some(email),
             ip_address,
             user_agent,
-            reason.map(|s| s.to_string()),
+            reason.map(std::string::ToString::to_string),
             is_success,
         )
         .await;
@@ -183,6 +197,7 @@ impl AuditLogger {
     }
 }
 
+#[must_use] 
 pub fn extract_ip_from_headers_and_addr(
     headers: &HeaderMap,
     addr: &std::net::SocketAddr,

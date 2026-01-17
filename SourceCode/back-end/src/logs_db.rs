@@ -328,7 +328,7 @@ pub async fn has_entry_for_current_period(
         }
         Frequency::Weekly => {
             let days_since_monday = now.weekday().num_days_from_monday();
-            let start = (now.date_naive() - chrono::Duration::days(days_since_monday as i64))
+            let start = (now.date_naive() - chrono::Duration::days(i64::from(days_since_monday)))
                 .and_hms_opt(0, 0, 0)
                 .unwrap()
                 .and_utc();
@@ -415,7 +415,7 @@ pub async fn has_submitted_entry_for_current_period(
         }
         Frequency::Weekly => {
             let days_since_monday = now.weekday().num_days_from_monday();
-            let start = (now.date_naive() - chrono::Duration::days(days_since_monday as i64))
+            let start = (now.date_naive() - chrono::Duration::days(i64::from(days_since_monday)))
                 .and_hms_opt(0, 0, 0)
                 .unwrap()
                 .and_utc();
@@ -504,7 +504,7 @@ pub async fn get_draft_entry_for_current_period(
         }
         Frequency::Weekly => {
             let days_since_monday = now.weekday().num_days_from_monday();
-            let start = (now.date_naive() - chrono::Duration::days(days_since_monday as i64))
+            let start = (now.date_naive() - chrono::Duration::days(i64::from(days_since_monday)))
                 .and_hms_opt(0, 0, 0)
                 .unwrap()
                 .and_utc();
@@ -650,6 +650,7 @@ pub async fn delete_log_entry(client: &mongodb::Client, entry_id: &str) -> Resul
     Ok(())
 }
 
+#[must_use] 
 pub fn is_form_due_today(schedule: &Schedule) -> bool {
     let today = chrono::Local::now();
     let weekday = today.weekday();
@@ -717,6 +718,7 @@ pub fn is_form_due_today(schedule: &Schedule) -> bool {
     }
 }
 
+#[must_use] 
 pub fn format_period_for_frequency(frequency: &Frequency) -> String {
     let now = chrono::Utc::now();
 
@@ -724,7 +726,7 @@ pub fn format_period_for_frequency(frequency: &Frequency) -> String {
         Frequency::Daily => now.format("%d/%m/%y").to_string(),
         Frequency::Weekly => {
             let days_since_monday = now.weekday().num_days_from_monday();
-            let week_start = (now.date_naive() - chrono::Duration::days(days_since_monday as i64))
+            let week_start = (now.date_naive() - chrono::Duration::days(i64::from(days_since_monday)))
                 .and_hms_opt(0, 0, 0)
                 .unwrap()
                 .and_utc();
@@ -746,6 +748,7 @@ pub fn format_period_for_frequency(frequency: &Frequency) -> String {
     }
 }
 
+#[must_use] 
 pub fn process_template_layout_with_period(
     layout: &TemplateLayout,
     frequency: &Frequency,
@@ -773,6 +776,7 @@ pub fn process_template_layout_with_period(
         .collect()
 }
 
+#[must_use] 
 pub fn process_template_layout_with_period_string(
     layout: &TemplateLayout,
     period: &str,

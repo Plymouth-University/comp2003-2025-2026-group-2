@@ -1,6 +1,21 @@
-use crate::{db, logs_db};
+use crate::{
+    db::{self, UserRole},
+    logs_db,
+};
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct AdminUpdateMemberRequest {
+    #[schema(example = "user@example.com")]
+    pub email: String,
+    #[schema(example = "Jane")]
+    pub first_name: String,
+    #[schema(example = "Smith")]
+    pub last_name: String,
+    #[schema(example = "member")]
+    pub role: String,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserDto {
@@ -9,7 +24,7 @@ pub struct UserDto {
     pub first_name: String,
     pub last_name: String,
     pub company_id: Option<String>,
-    pub role: String,
+    pub role: UserRole,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -223,7 +238,7 @@ pub struct UserResponse {
     pub first_name: String,
     pub last_name: String,
     pub company_name: Option<String>,
-    pub role: String,
+    pub role: UserRole,
 }
 
 impl From<db::UserRecord> for UserResponse {

@@ -1,6 +1,6 @@
 use crate::{
     auth::{generate_uuid6_token, hash_password, validate_password_policy, verify_password},
-    db,
+    db::{self, UserRole},
     jwt_manager::JwtManager,
     utils::AuditLogger,
 };
@@ -22,7 +22,7 @@ impl AuthService {
         company_address: &str,
         ip_address: Option<String>,
         user_agent: Option<String>,
-    ) -> Result<(String, String, String), (StatusCode, serde_json::Value)> {
+    ) -> Result<(String, String, UserRole), (StatusCode, serde_json::Value)> {
         let mut tx = db_pool.begin().await.map_err(|e| {
             tracing::error!("Failed to begin transaction: {:?}", e);
             (

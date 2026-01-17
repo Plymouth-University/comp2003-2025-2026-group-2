@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+	'/auth/admin/update-member': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put: operations['admin_update_member_profile'];
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	'/auth/company/members': {
 		parameters: {
 			query?: never;
@@ -174,6 +190,70 @@ export interface paths {
 		get?: never;
 		put?: never;
 		post: operations['verify_token'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/health/database': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: operations['get_db_health'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/health/index-usage': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: operations['get_db_index_usage'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/health/slow-queries': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: operations['get_db_slow_queries'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/health/table-sizes': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: operations['get_db_table_sizes'];
+		put?: never;
+		post?: never;
 		delete?: never;
 		options?: never;
 		head?: never;
@@ -366,6 +446,16 @@ export interface components {
 		AddTokenResponse: {
 			message: string;
 		};
+		AdminUpdateMemberRequest: {
+			/** @example user@example.com */
+			email: string;
+			/** @example Jane */
+			first_name: string;
+			/** @example Smith */
+			last_name: string;
+			/** @example member */
+			role: string;
+		};
 		AuthResponse: {
 			token: string;
 			user: components['schemas']['UserResponse'];
@@ -377,6 +467,22 @@ export interface components {
 		CreateLogEntryResponse: {
 			id: string;
 			message: string;
+		};
+		DatabaseHealthMetrics: {
+			/** Format: int64 */
+			active_connections: number;
+			/** Format: double */
+			database_size_mb: number;
+			/** Format: int64 */
+			idle_connections: number;
+			/** Format: int64 */
+			index_count: number;
+			/** Format: int32 */
+			max_connections: number;
+			/** Format: int64 */
+			table_count: number;
+			/** Format: int64 */
+			total_connections: number;
 		};
 		DeleteTemplateRequest: {
 			template_name: string;
@@ -411,6 +517,7 @@ export interface components {
 		};
 		GetInvitationDetailsResponse: {
 			company_name: string;
+			/** Format: date-time */
 			expires_at: string;
 		};
 		GetTemplateRequest: {
@@ -421,8 +528,27 @@ export interface components {
 			template_layout: components['schemas']['Vec'];
 			template_name: string;
 		};
+		HealthResponse: {
+			metrics: components['schemas']['DatabaseHealthMetrics'];
+			status: string;
+		};
+		IndexUsageResponse: {
+			indexes: components['schemas']['IndexUsageStats'][];
+			unused_indexes: string[];
+		};
+		IndexUsageStats: {
+			index_name: string;
+			/** Format: int64 */
+			index_scans: number;
+			/** Format: int64 */
+			rows_fetched: number;
+			/** Format: int64 */
+			rows_read: number;
+			table_name: string;
+		};
 		InvitationResponse: {
 			email: string;
+			/** Format: date-time */
 			expires_at: string;
 			id: string;
 		};
@@ -509,9 +635,37 @@ export interface components {
 			/** Format: int32 */
 			month_of_year?: number | null;
 		};
+		SlowQueriesResponse: {
+			queries: components['schemas']['SlowQueryInfo'][];
+		};
+		SlowQueryInfo: {
+			/** Format: int64 */
+			calls: number;
+			/** Format: double */
+			max_time_ms: number;
+			/** Format: double */
+			mean_time_ms: number;
+			query: string;
+			/** Format: double */
+			total_time_ms: number;
+		};
 		SubmitLogEntryRequest: Record<string, never>;
 		SubmitLogEntryResponse: {
 			message: string;
+		};
+		TableSizeInfo: {
+			/** Format: double */
+			index_size_mb: number;
+			/** Format: int64 */
+			row_count: number;
+			table_name: string;
+			/** Format: double */
+			table_size_mb: number;
+			/** Format: double */
+			total_size_mb: number;
+		};
+		TableSizesResponse: {
+			tables: components['schemas']['TableSizeInfo'][];
 		};
 		TemplateDocument: {
 			company_id: string;
@@ -574,8 +728,10 @@ export interface components {
 			email: string;
 			first_name: string;
 			last_name: string;
-			role: string;
+			role: components['schemas']['UserRole'];
 		};
+		/** @enum {string} */
+		UserRole: 'admin' | 'member' | 'logsmart_admin';
 		Vec: {
 			field_type: string;
 			position: components['schemas']['Position'];
@@ -594,6 +750,75 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+	admin_update_member_profile: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['AdminUpdateMemberRequest'];
+			};
+		};
+		responses: {
+			/** @description Member profile updated successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['GetCompanyMembersResponse'];
+				};
+			};
+			/** @description Invalid request */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden - not an admin or different company */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description User not found */
+			404: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
 	get_company_members: {
 		parameters: {
 			query?: never;
@@ -894,8 +1119,8 @@ export interface operations {
 					'application/json': components['schemas']['PasswordResetResponse'];
 				};
 			};
-			/** @description User not found */
-			404: {
+			/** @description Invalid email */
+			400: {
 				headers: {
 					[name: string]: unknown;
 				};
@@ -1097,6 +1322,173 @@ export interface operations {
 				content: {
 					'application/json': components['schemas']['ErrorResponse'];
 				};
+			};
+		};
+	};
+	get_db_health: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Database health metrics retrieved successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['HealthResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Forbidden - LogSmart admin only */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+		};
+	};
+	get_db_index_usage: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Index usage statistics retrieved successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['IndexUsageResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Forbidden - LogSmart admin only */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+		};
+	};
+	get_db_slow_queries: {
+		parameters: {
+			query?: {
+				/** @description Maximum number of slow queries to return (default: 20) */
+				limit?: number;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Slow queries retrieved successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['SlowQueriesResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Forbidden - LogSmart admin only */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+		};
+	};
+	get_db_table_sizes: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Table sizes retrieved successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['TableSizesResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Forbidden - LogSmart admin only */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
 			};
 		};
 	};

@@ -144,6 +144,63 @@ test.describe('User Administration - Admin Access', () => {
 			}
 		}
 	});
+
+	test('update_user_profile_via_sidebar', async ({ page }) => {
+		await page.getByRole('link', { name: 'Users' }).click();
+		await page.waitForURL('**/users-admin');
+
+		await page.locator(`button:has-text("${adminCreds.email}")`).click();
+
+		const sidebar = page.locator('#userSidebar');
+		await expect(sidebar).toBeVisible();
+
+		const newFirstName = 'UpdatedName';
+		await page.locator('#fname').fill(newFirstName);
+
+		await page.getByRole('button', { name: 'Save' }).click();
+
+		await page.reload();
+		await page.waitForSelector(`text=${newFirstName}`);
+		await expect(page.locator('body')).toContainText(newFirstName);
+	});
+
+	test('change_invited_user_role', async ({ page, browser }) => {
+		const timestamp = Date.now();
+		const invitedEmail = `changeroelUser${timestamp}@logsmart.app`;
+
+		const invitationToken = await sendInvitation(browser, adminCreds, invitedEmail);
+		expect(invitationToken).toBeTruthy();
+
+		const inviteePage = await browser.newPage();
+		await acceptInvitation(
+			inviteePage,
+			invitationToken!,
+			'InvitedFirst',
+			'InvitedLast',
+			'Invited123!'
+		);
+		await inviteePage.close();
+
+		await page.goto('http://localhost:5173/dashboard');
+
+		await page.getByRole('link', { name: 'Users' }).click();
+		await page.waitForURL('**/users-admin');
+
+		await page.locator(`button:has-text("${invitedEmail}")`).click();
+
+		const sidebar = page.locator('#userSidebar');
+		await expect(sidebar).toBeVisible();
+
+		const roleSelect = page.locator('#role');
+		await roleSelect.selectOption('admin');
+
+		await page.getByRole('button', { name: 'Save' }).click();
+
+		await page.reload();
+		await page.waitForURL('**/users-admin');
+		await page.locator(`button:has-text("${invitedEmail}")`).click();
+		await expect(page.locator('#role')).toHaveValue('admin');
+	});
 });
 
 test.describe('Templates Dashboard - Admin Access', () => {

@@ -45,20 +45,41 @@ pub async fn get_db_health(
 ) -> impl IntoResponse {
     let user = match db::get_user_by_id(&state.postgres, &claims.user_id).await {
         Ok(Some(u)) => u,
-        Ok(None) => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "User not found"}))).into_response(),
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("Database error: {e}")}))).into_response(),
+        Ok(None) => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({"error": "User not found"})),
+            )
+                .into_response();
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Database error: {e}")})),
+            )
+                .into_response();
+        }
     };
 
     if !user.is_logsmart_admin() {
-        return (StatusCode::FORBIDDEN, Json(json!({"error": "Only LogSmart admins can view database health"}))).into_response();
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({"error": "Only LogSmart admins can view database health"})),
+        )
+            .into_response();
     }
 
     match db::get_database_health(&state.postgres).await {
         Ok(metrics) => Json(HealthResponse {
             status: "healthy".to_string(),
             metrics,
-        }).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("Failed to get health metrics: {e}")}))).into_response(),
+        })
+        .into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("Failed to get health metrics: {e}")})),
+        )
+            .into_response(),
     }
 }
 
@@ -84,12 +105,28 @@ pub async fn get_db_slow_queries(
 ) -> impl IntoResponse {
     let user = match db::get_user_by_id(&state.postgres, &claims.user_id).await {
         Ok(Some(u)) => u,
-        Ok(None) => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "User not found"}))).into_response(),
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("Database error: {e}")}))).into_response(),
+        Ok(None) => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({"error": "User not found"})),
+            )
+                .into_response();
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Database error: {e}")})),
+            )
+                .into_response();
+        }
     };
 
     if !user.is_logsmart_admin() {
-        return (StatusCode::FORBIDDEN, Json(json!({"error": "Only LogSmart admins can view slow queries"}))).into_response();
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({"error": "Only LogSmart admins can view slow queries"})),
+        )
+            .into_response();
     }
 
     let limit = params
@@ -99,7 +136,11 @@ pub async fn get_db_slow_queries(
 
     match db::get_slow_queries(&state.postgres, limit).await {
         Ok(queries) => Json(SlowQueriesResponse { queries }).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("Failed to get slow queries: {e}")}))).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("Failed to get slow queries: {e}")})),
+        )
+            .into_response(),
     }
 }
 
@@ -121,28 +162,57 @@ pub async fn get_db_index_usage(
 ) -> impl IntoResponse {
     let user = match db::get_user_by_id(&state.postgres, &claims.user_id).await {
         Ok(Some(u)) => u,
-        Ok(None) => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "User not found"}))).into_response(),
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("Database error: {e}")}))).into_response(),
+        Ok(None) => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({"error": "User not found"})),
+            )
+                .into_response();
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Database error: {e}")})),
+            )
+                .into_response();
+        }
     };
 
     if !user.is_logsmart_admin() {
-        return (StatusCode::FORBIDDEN, Json(json!({"error": "Only LogSmart admins can view index usage"}))).into_response();
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({"error": "Only LogSmart admins can view index usage"})),
+        )
+            .into_response();
     }
 
     let indexes = match db::get_index_usage(&state.postgres).await {
         Ok(idx) => idx,
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("Failed to get index usage: {e}")}))).into_response(),
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Failed to get index usage: {e}")})),
+            )
+                .into_response();
+        }
     };
 
     let unused = match db::check_unused_indexes(&state.postgres).await {
         Ok(un) => un,
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("Failed to check unused indexes: {e}")}))).into_response(),
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Failed to check unused indexes: {e}")})),
+            )
+                .into_response();
+        }
     };
 
     Json(IndexUsageResponse {
         indexes,
         unused_indexes: unused,
-    }).into_response()
+    })
+    .into_response()
 }
 
 #[utoipa::path(
@@ -163,16 +233,36 @@ pub async fn get_db_table_sizes(
 ) -> impl IntoResponse {
     let user = match db::get_user_by_id(&state.postgres, &claims.user_id).await {
         Ok(Some(u)) => u,
-        Ok(None) => return (StatusCode::UNAUTHORIZED, Json(json!({"error": "User not found"}))).into_response(),
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("Database error: {e}")}))).into_response(),
+        Ok(None) => {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({"error": "User not found"})),
+            )
+                .into_response();
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("Database error: {e}")})),
+            )
+                .into_response();
+        }
     };
 
     if !user.is_logsmart_admin() {
-        return (StatusCode::FORBIDDEN, Json(json!({"error": "Only LogSmart admins can view table sizes"}))).into_response();
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({"error": "Only LogSmart admins can view table sizes"})),
+        )
+            .into_response();
     }
 
     match db::get_table_sizes(&state.postgres).await {
         Ok(tables) => Json(TableSizesResponse { tables }).into_response(),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": format!("Failed to get table sizes: {e}")}))).into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("Failed to get table sizes: {e}")})),
+        )
+            .into_response(),
     }
 }

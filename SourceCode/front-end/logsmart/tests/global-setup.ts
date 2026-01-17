@@ -76,6 +76,28 @@ async function checkMailhog(timeout = 5000): Promise<void> {
 	);
 }
 
+async function dropAllTables(timeout = 5000): Promise<void> {
+	try {
+		const { Client } = await import('pg');
+		const client = new Client({
+			host: '127.0.0.1',
+			port: 5432,
+			user: 'admin',
+			password: 'adminpassword',
+			database: 'logsmartdb'
+		});
+
+		await client.connect();
+		await client.query('DROP SCHEMA public CASCADE');
+		await client.query('CREATE SCHEMA public');
+		await client.query('GRANT ALL ON SCHEMA public TO public');
+		await client.end();
+		console.log('✓ All database tables dropped');
+	} catch (error) {
+		console.warn('⚠ Could not drop database tables:', error);
+	}
+}
+
 async function checkPostgres(timeout = 5000): Promise<void> {
 	const startTime = Date.now();
 	while (Date.now() - startTime < timeout) {
@@ -201,6 +223,9 @@ async function globalSetup() {
 
 	console.log('Checking PostgreSQL...');
 	await checkPostgres();
+
+	console.log('Dropping all database tables...');
+	await dropAllTables();
 
 	console.log('Starting backend and frontend servers...');
 

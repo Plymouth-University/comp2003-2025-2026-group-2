@@ -96,6 +96,10 @@ async fn main() {
         .route("/auth/profile", put(handlers::update_profile))
         .route("/auth/invitations/send", post(handlers::invite_user))
         .route("/auth/company/members", get(handlers::get_company_members))
+        .route(
+            "/auth/admin/update-member",
+            put(handlers::admin_update_member_profile),
+        )
         .route("/logs/templates", post(handlers::add_template))
         .route("/logs/templates", get(handlers::get_template))
         .route("/logs/templates/all", get(handlers::get_all_templates))

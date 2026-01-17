@@ -45,6 +45,8 @@
 	},
 	"dependencies": {
 		"@neodrag/svelte": "^2.3.3",
-		"openapi-fetch": "^0.15.0"
+		"@types/pg": "^8.16.0",
+		"openapi-fetch": "^0.15.0",
+		"pg": "^8.17.1"
 	}
 }

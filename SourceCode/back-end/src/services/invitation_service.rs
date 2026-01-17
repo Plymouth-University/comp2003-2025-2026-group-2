@@ -24,7 +24,7 @@ impl InvitationService {
             company_id,
             recipient_email.clone(),
             token,
-            expires_at.clone(),
+            expires_at,
         )
         .await
         .map_err(|e| {

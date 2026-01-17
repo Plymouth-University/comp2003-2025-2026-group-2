@@ -6,7 +6,7 @@ use axum::{
 use axum_extra::TypedHeader;
 use axum_extra::headers::{Authorization, authorization::Bearer};
 
-use crate::{AppState, auth::Claims, jwt_manager::JwtManager};
+use crate::{AppState, auth::Claims, db::UserRole, jwt_manager::JwtManager};
 
 #[derive(Debug)]
 pub enum RoleError {
@@ -30,7 +30,8 @@ impl IntoResponse for RoleError {
 }
 
 pub trait RoleValidator: Send + Sync {
-    fn validate(role: &str) -> bool;
+    fn validate(role: &UserRole) -> bool;
+    #[must_use] 
     fn get_error() -> RoleError {
         RoleError::InsufficientPermissions
     }
@@ -38,22 +39,22 @@ pub trait RoleValidator: Send + Sync {
 
 pub struct AdminValidator;
 impl RoleValidator for AdminValidator {
-    fn validate(role: &str) -> bool {
-        role == "admin"
+    fn validate(role: &UserRole) -> bool {
+        role == &UserRole::Admin || role == &UserRole::LogSmartAdmin
     }
 }
 
 pub struct MemberValidator;
 impl RoleValidator for MemberValidator {
-    fn validate(role: &str) -> bool {
-        role == "member" || role == "admin"
+    fn validate(role: &UserRole) -> bool {
+        role == &UserRole::Member || role == &UserRole::Admin || role == &UserRole::LogSmartAdmin
     }
 }
 
 pub struct LogSmartAdminValidator;
 impl RoleValidator for LogSmartAdminValidator {
-    fn validate(role: &str) -> bool {
-        role == "logsmart_admin"
+    fn validate(role: &UserRole) -> bool {
+        role == &UserRole::LogSmartAdmin
     }
 }
 

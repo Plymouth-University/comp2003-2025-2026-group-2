@@ -17,32 +17,30 @@ use std::num::NonZeroU32;
 use std::sync::Arc;
 use std::time::Instant;
 
-type IpLimiter = Arc<
+type IpLimiter =
     DashMap<
         IpAddr,
         (
             Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
             Instant,
         ),
-    >,
->;
-type StringLimiter = Arc<
+    >;
+type StringLimiter = 
     DashMap<
         String,
         (
             Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
             Instant,
         ),
-    >,
->;
+    >;
 
 #[derive(Clone)]
 pub struct RateLimitState {
-    pub ip_login_limiter: IpLimiter,
-    pub ip_register_limiter: IpLimiter,
-    pub ip_general_limiter: IpLimiter,
-    pub email_login_limiter: StringLimiter,
-    pub email_register_limiter: StringLimiter,
+    pub ip_login_limiter: Arc<IpLimiter>,
+    pub ip_register_limiter: Arc<IpLimiter>,
+    pub ip_general_limiter: Arc<IpLimiter>,
+    pub email_login_limiter: Arc<StringLimiter>,
+    pub email_register_limiter: Arc<StringLimiter>,
     pub disabled: bool,
 }
 
@@ -67,13 +65,7 @@ impl RateLimitState {
     }
 
     fn get_or_create_ip_limiter(
-        map: &DashMap<
-            IpAddr,
-            (
-                Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
-                Instant,
-            ),
-        >,
+        map: &IpLimiter,
         ip: IpAddr,
         quota: Quota,
     ) -> Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>> {
@@ -85,13 +77,7 @@ impl RateLimitState {
     }
 
     fn get_or_create_string_limiter(
-        map: &DashMap<
-            String,
-            (
-                Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
-                Instant,
-            ),
-        >,
+        map: &StringLimiter,
         key: String,
         quota: Quota,
     ) -> Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>> {

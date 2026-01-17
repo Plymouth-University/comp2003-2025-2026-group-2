@@ -1,15 +1,19 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, sqlx::Type, ToSchema)]
+#[sqlx(type_name = "user_role")]
+#[sqlx(rename_all = "lowercase")]
 pub enum UserRole {
     #[serde(rename = "admin")]
     Admin,
     #[serde(rename = "member")]
     Member,
     #[serde(rename = "logsmart_admin")]
+    #[sqlx(rename = "logsmart_admin")]
     LogSmartAdmin,
 }
 
@@ -54,14 +58,14 @@ pub struct UserRecord {
     pub password_hash: String,
     pub company_id: Option<String>,
     pub company_name: Option<String>,
-    pub role: String,
+    pub role: UserRole,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl UserRecord {
     #[must_use]
     pub fn get_role(&self) -> UserRole {
-        self.role.parse().unwrap_or(UserRole::Member)
+        self.role.clone()
     }
 
     #[must_use]
@@ -350,13 +354,12 @@ where
 {
     let id = Uuid::new_v4().to_string();
     let now = chrono::Utc::now();
-    let role_str = role.to_string();
 
     sqlx::query(
-        r#"
+        r"
         INSERT INTO users (id, email, first_name, last_name, password_hash, company_id, role, created_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        "#
+        "
     )
     .bind(&id)
     .bind(&email)
@@ -364,7 +367,7 @@ where
     .bind(&last_name)
     .bind(&password_hash)
     .bind(&company_id)
-    .bind(&role_str)
+    .bind(&role)
     .bind(now)
     .execute(executor)
     .await?;
@@ -377,7 +380,7 @@ where
         password_hash,
         company_id,
         company_name: None,
-        role: role_str,
+        role,
         created_at: now,
     })
 }
@@ -389,11 +392,11 @@ pub async fn get_user_company_id(pool: &PgPool, user_id: &str) -> Result<Option<
     }
 
     let record = sqlx::query_as::<_, CompanyIdRow>(
-        r#"
+        r"
         SELECT company_id
         FROM users
         WHERE id = $1
-        "#,
+        ",
     )
     .bind(user_id)
     .fetch_optional(pool)
@@ -404,13 +407,13 @@ pub async fn get_user_company_id(pool: &PgPool, user_id: &str) -> Result<Option<
 
 pub async fn get_user_by_email(pool: &PgPool, email: &str) -> Result<Option<UserRecord>> {
     let user = sqlx::query_as::<_, UserRecord>(
-        r#"
+        r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
                users.password_hash, users.company_id, users.role, users.created_at, companies.name as company_name
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.email = $1
-        "#
+        "
     )
     .bind(email)
     .fetch_optional(pool)
@@ -421,13 +424,13 @@ pub async fn get_user_by_email(pool: &PgPool, email: &str) -> Result<Option<User
 
 pub async fn get_user_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRecord>> {
     let user = sqlx::query_as::<_, UserRecord>(
-        r#"
+        r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
             users.password_hash, users.company_id, users.role, users.created_at, companies.name as company_name
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.id = $1
-        "#
+        "
     )
     .bind(id)
     .fetch_optional(pool)
@@ -444,10 +447,10 @@ where
     let now = chrono::Utc::now();
 
     sqlx::query(
-        r#"
+        r"
         INSERT INTO companies (id, name, address, created_at)
         VALUES ($1, $2, $3, $4)
-        "#,
+        ",
     )
     .bind(&id)
     .bind(&name)
@@ -466,11 +469,11 @@ where
 
 pub async fn get_company_by_id(pool: &PgPool, id: &str) -> Result<Option<Company>> {
     let company = sqlx::query_as::<_, Company>(
-        r#"
+        r"
         SELECT id, name, address, created_at
         FROM companies
         WHERE id = $1
-        "#,
+        ",
     )
     .bind(id)
     .fetch_optional(pool)
@@ -490,10 +493,10 @@ pub async fn create_invitation(
     let now = chrono::Utc::now();
 
     sqlx::query(
-        r#"
+        r"
         INSERT INTO invitations (id, company_id, email, token, created_at, expires_at)
         VALUES ($1, $2, $3, $4, $5, $6)
-        "#,
+        ",
     )
     .bind(&id)
     .bind(&company_id)
@@ -517,11 +520,11 @@ pub async fn create_invitation(
 
 pub async fn get_invitation_by_token(pool: &PgPool, token: &str) -> Result<Option<Invitation>> {
     let invitation = sqlx::query_as::<_, Invitation>(
-        r#"
+        r"
         SELECT id, company_id, email, token, created_at, expires_at, accepted_at
         FROM invitations
         WHERE token = $1 AND accepted_at IS NULL
-        "#,
+        ",
     )
     .bind(token)
     .fetch_optional(pool)
@@ -534,11 +537,11 @@ pub async fn accept_invitation(pool: &PgPool, invitation_id: &str) -> Result<()>
     let now = chrono::Utc::now();
 
     sqlx::query(
-        r#"
+        r"
         UPDATE invitations
         SET accepted_at = $1
         WHERE id = $2
-        "#,
+        ",
     )
     .bind(now)
     .bind(invitation_id)
@@ -562,10 +565,10 @@ pub async fn log_security_event(
     let now = chrono::Utc::now();
 
     sqlx::query(
-        r#"
+        r"
         INSERT INTO security_logs (id, event_type, user_id, email, ip_address, user_agent, details, success, created_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        "#
+        "
     )
     .bind(&id)
     .bind(&event_type)
@@ -657,14 +660,42 @@ pub async fn update_user_profile(
     last_name: String,
 ) -> Result<UserRecord> {
     sqlx::query(
-        r#"
+        r"
         UPDATE users
         SET first_name = $1, last_name = $2
         WHERE id = $3
-        "#,
+        ",
     )
     .bind(&first_name)
     .bind(&last_name)
+    .bind(user_id)
+    .execute(pool)
+    .await?;
+
+    let user = get_user_by_id(pool, user_id)
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("User not found"))?;
+
+    Ok(user)
+}
+
+pub async fn update_user_profile_full(
+    pool: &PgPool,
+    user_id: &str,
+    first_name: String,
+    last_name: String,
+    role: UserRole,
+) -> Result<UserRecord> {
+    sqlx::query(
+        r"
+        UPDATE users
+        SET first_name = $1, last_name = $2, role = $3
+        WHERE id = $4
+        ",
+    )
+    .bind(&first_name)
+    .bind(&last_name)
+    .bind(&role)
     .bind(user_id)
     .execute(pool)
     .await?;
@@ -682,11 +713,11 @@ pub async fn update_user_password(
     password_hash: String,
 ) -> Result<()> {
     sqlx::query(
-        r#"
+        r"
         UPDATE users
         SET password_hash = $1
         WHERE id = $2
-        "#,
+        ",
     )
     .bind(&password_hash)
     .bind(user_id)
@@ -706,10 +737,10 @@ pub async fn create_password_reset_token(
     let now = chrono::Utc::now();
 
     sqlx::query(
-        r#"
+        r"
         INSERT INTO password_resets (id, user_id, token, created_at, expires_at)
         VALUES ($1, $2, $3, $4, $5)
-        "#,
+        ",
     )
     .bind(&id)
     .bind(&user_id)
@@ -744,11 +775,11 @@ pub async fn mark_password_reset_used(pool: &PgPool, reset_id: &str) -> Result<(
     let now = chrono::Utc::now();
 
     sqlx::query(
-        r#"
+        r"
         UPDATE password_resets
         SET used_at = $1
         WHERE id = $2
-        "#,
+        ",
     )
     .bind(now)
     .bind(reset_id)
@@ -760,13 +791,13 @@ pub async fn mark_password_reset_used(pool: &PgPool, reset_id: &str) -> Result<(
 
 pub async fn get_users_by_company_id(pool: &PgPool, company_id: &str) -> Result<Vec<UserRecord>> {
     let users = sqlx::query_as::<_, UserRecord>(
-        r#"
+        r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
                users.password_hash, users.company_id, users.role, users.created_at, companies.name as company_name
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.company_id = $1
-        "#
+        "
     )
     .bind(company_id)
     .fetch_all(pool)
@@ -780,11 +811,11 @@ where
     E: sqlx::Executor<'a, Database = sqlx::Postgres>,
 {
     sqlx::query(
-        r#"
+        r"
         UPDATE users
         SET company_id = $1
         WHERE id = $2
-        "#,
+        ",
     )
     .bind(company_id)
     .bind(user_id)
@@ -807,13 +838,12 @@ pub async fn accept_invitation_with_user_creation(
 
     let user_id = Uuid::new_v4().to_string();
     let now = chrono::Utc::now();
-    let role_str = UserRole::Member.to_string();
 
     sqlx::query(
-        r#"
+        r"
         INSERT INTO users (id, email, first_name, last_name, password_hash, company_id, role, created_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        "#
+        "
     )
     .bind(&user_id)
     .bind(email)
@@ -821,17 +851,17 @@ pub async fn accept_invitation_with_user_creation(
     .bind(&last_name)
     .bind(&password_hash)
     .bind(company_id)
-    .bind(&role_str)
+    .bind(UserRole::Member)
     .bind(now)
     .execute(&mut *tx)
     .await?;
 
     sqlx::query(
-        r#"
+        r"
         UPDATE invitations
         SET accepted_at = $1
         WHERE id = $2
-        "#,
+        ",
     )
     .bind(now)
     .bind(invitation_id)
@@ -848,7 +878,7 @@ pub async fn accept_invitation_with_user_creation(
         password_hash,
         company_id: Some(company_id.to_string()),
         company_name: None,
-        role: role_str,
+        role: UserRole::Member,
         created_at: now,
     })
 }
@@ -924,7 +954,7 @@ pub async fn get_database_health(pool: &PgPool) -> Result<DatabaseHealthMetrics>
             (SELECT setting::int FROM pg_settings WHERE name = 'max_connections') as max_conn
         FROM pg_stat_activity
         WHERE datname = current_database()
-        "
+        ",
     )
     .fetch_one(pool)
     .await?;
@@ -932,7 +962,7 @@ pub async fn get_database_health(pool: &PgPool) -> Result<DatabaseHealthMetrics>
     let db_size = sqlx::query_as::<_, DbSize>(
         r"
         SELECT pg_database_size(current_database()) / (1024.0 * 1024.0) as size_mb
-        "
+        ",
     )
     .fetch_one(pool)
     .await?;
@@ -942,7 +972,7 @@ pub async fn get_database_health(pool: &PgPool) -> Result<DatabaseHealthMetrics>
         SELECT COUNT(*) as count
         FROM information_schema.tables
         WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
-        "
+        ",
     )
     .fetch_one(pool)
     .await?;
@@ -952,7 +982,7 @@ pub async fn get_database_health(pool: &PgPool) -> Result<DatabaseHealthMetrics>
         SELECT COUNT(*) as count
         FROM pg_indexes
         WHERE schemaname = 'public'
-        "
+        ",
     )
     .fetch_one(pool)
     .await?;
@@ -981,7 +1011,7 @@ pub async fn get_slow_queries(pool: &PgPool, limit: i64) -> Result<Vec<SlowQuery
         WHERE query NOT LIKE '%pg_stat_statements%'
         ORDER BY mean_exec_time DESC
         LIMIT $1
-        "
+        ",
     )
     .bind(limit)
     .fetch_all(pool)
@@ -1003,7 +1033,7 @@ pub async fn get_index_usage(pool: &PgPool) -> Result<Vec<IndexUsageStats>> {
         FROM pg_stat_user_indexes
         WHERE schemaname = 'public'
         ORDER BY idx_scan DESC
-        "
+        ",
     )
     .fetch_all(pool)
     .await?;
@@ -1037,13 +1067,16 @@ pub async fn get_table_sizes(pool: &PgPool) -> Result<Vec<TableSizeInfo>> {
     .fetch_all(pool)
     .await?;
 
-    Ok(sizes.into_iter().map(|s| TableSizeInfo {
-        table_name: s.table_name,
-        row_count: s.row_count,
-        total_size_mb: s.total_size_mb,
-        table_size_mb: s.table_size_mb,
-        index_size_mb: s.index_size_mb,
-    }).collect())
+    Ok(sizes
+        .into_iter()
+        .map(|s| TableSizeInfo {
+            table_name: s.table_name,
+            row_count: s.row_count,
+            total_size_mb: s.total_size_mb,
+            table_size_mb: s.table_size_mb,
+            index_size_mb: s.index_size_mb,
+        })
+        .collect())
 }
 
 pub async fn check_unused_indexes(pool: &PgPool) -> Result<Vec<String>> {
@@ -1060,7 +1093,7 @@ pub async fn check_unused_indexes(pool: &PgPool) -> Result<Vec<String>> {
         AND idx_scan = 0
         AND indexname NOT LIKE '%_pkey'
         ORDER BY indexname
-        "
+        ",
     )
     .fetch_all(pool)
     .await?;
