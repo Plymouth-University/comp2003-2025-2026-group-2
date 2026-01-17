@@ -31,10 +31,6 @@
 </script>
 
 <svelte:head>
-	<meta
-		name="description"
-		content="LogSmart - Digital logging system for the food service industry. Secure, eco-friendly, and audit-ready."
-	/>
 	<meta name="robots" content="index,follow" />
 	<meta name="theme-color" content="#0b172a" />
 	<meta property="og:site_name" content="LogSmart" />
