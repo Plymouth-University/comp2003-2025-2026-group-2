@@ -97,7 +97,7 @@
 </svelte:head>
 <main class="flex min-h-full bg-bg-secondary">
 	<div class="flex grow overflow-hidden">
-		<div class="mx-auto md:w-full">
+		<div class="mx-auto md:w-4/5">
 			<div class="flex-1 gap-1 overflow-auto p-6">
 				<div id="eventHide" class="flex flex-auto flex-col">
 					{#each invitations as invite (invite.email)}
