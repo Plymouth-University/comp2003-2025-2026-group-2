@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="theme-color" content="#0b172a">
+	<title>Offline - LogSmart</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+			background: linear-gradient(135deg, #0b172a 0%, #1a2332 100%);
+			color: #ffffff;
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 20px;
+		}
+
+		.container {
+			text-align: center;
+			max-width: 500px;
+		}
+
+		.icon {
+			width: 120px;
+			height: 120px;
+			margin: 0 auto 30px;
+			background: rgba(255, 255, 255, 0.1);
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.icon svg {
+			width: 60px;
+			height: 60px;
+			opacity: 0.7;
+		}
+
+		h1 {
+			font-size: 2rem;
+			margin-bottom: 15px;
+			font-weight: 600;
+		}
+
+		p {
+			font-size: 1.1rem;
+			opacity: 0.8;
+			margin-bottom: 30px;
+			line-height: 1.6;
+		}
+
+		.button {
+			display: inline-block;
+			background: #3b82f6;
+			color: white;
+			padding: 12px 30px;
+			border-radius: 8px;
+			text-decoration: none;
+			font-weight: 500;
+			transition: background 0.2s;
+		}
+
+		.button:hover {
+			background: #2563eb;
+		}
+
+		.status {
+			margin-top: 20px;
+			padding: 15px;
+			background: rgba(255, 255, 255, 0.05);
+			border-radius: 8px;
+			font-size: 0.9rem;
+			opacity: 0.7;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="icon">
+			<svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414"></path>
+			</svg>
+		</div>
+
+		<h1>You're Offline</h1>
+		<p>
+			It looks like you've lost your internet connection. Don't worry, you can still access previously loaded pages.
+		</p>
+
+		<a href="/" class="button" onclick="window.location.reload(); return false;">
+			Try Again
+		</a>
+
+		<div class="status" id="status">
+			Checking connection...
+		</div>
+	</div>
+
+	<script>
+		function updateStatus() {
+			const statusEl = document.getElementById('status');
+			if (navigator.onLine) {
+				statusEl.textContent = '✓ Connection restored! Reloading...';
+				setTimeout(() => window.location.reload(), 1000);
+			} else {
+				statusEl.textContent = '✗ Still offline. We\'ll keep checking...';
+			}
+		}
+
+		window.addEventListener('online', updateStatus);
+		window.addEventListener('offline', updateStatus);
+
+		setInterval(updateStatus, 5000);
+		updateStatus();
+	</script>
+</body>
+</html>

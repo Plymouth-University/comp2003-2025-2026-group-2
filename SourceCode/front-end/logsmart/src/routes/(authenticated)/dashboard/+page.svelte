@@ -93,10 +93,7 @@
 				>
 					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Today's Logs</h2>
 				</div>
-				<div
-					class="min-h-[280px] min-w-[380px] px-6 py-6"
-					style="background-color: var(--bg-primary);"
-				>
+				<div class="min-h-70 min-w-95 px-6 py-6" style="background-color: var(--bg-primary);">
 					{#if todaysLogs.length === 0}
 						<div style="color: var(--text-secondary);">No logs due today</div>
 					{:else}
@@ -122,7 +119,7 @@
 				>
 					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Quick Actions</h2>
 				</div>
-				<div class="min-w-[380px] px-6 py-6" style="background-color: var(--bg-primary);">
+				<div class="min-w-95 px-6 py-6" style="background-color: var(--bg-primary);">
 					<div class="flex flex-col items-start gap-4">
 						<button
 							class="border-2 px-6 py-2 font-medium hover:opacity-80"

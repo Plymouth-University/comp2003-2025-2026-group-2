@@ -5,6 +5,7 @@
 	import '../app.css';
 	import Icon from '$lib/assets/icon.svelte';
 	import { isDarkMode } from '$lib/stores/theme';
+	import PwaInstallPrompt from '$lib/components/pwa_install_prompt.svelte';
 
 	let { children, data } = $props<{ children: any; data: LayoutData }>();
 
@@ -150,4 +151,6 @@
 	<main class="flex w-full flex-1">
 		{@render children()}
 	</main>
+
+	<PwaInstallPrompt />
 </div>

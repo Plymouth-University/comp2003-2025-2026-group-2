@@ -61,7 +61,7 @@
 		const member = members.find((m: Member) => m.email === email);
 		if (!member) return;
 		if (member.email === user.email) {
-			alert("You cannot remove yourself.");
+			alert('You cannot remove yourself.');
 			return;
 		}
 
