@@ -64,6 +64,7 @@ use utoipa::OpenApi;
             dto::GetCompanyMembersResponse,
             dto::GetInvitationDetailsRequest,
             dto::GetInvitationDetailsResponse,
+            dto::GetPendingInvitationsResponse,
             dto::GetAllTemplatesResponse,
             dto::TemplateInfo,
             dto::UpdateTemplateRequest,

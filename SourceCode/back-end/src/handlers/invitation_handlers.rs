@@ -1,3 +1,4 @@
+use crate::dto::GetPendingInvitationsResponse;
 use crate::utils::{extract_ip_from_headers_and_addr, extract_user_agent};
 use crate::{
     AppState,
@@ -377,7 +378,7 @@ pub async fn get_invitation_details(
 pub async fn get_pending_invitations(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
-) -> Result<Json<Vec<InvitationResponse>>, (StatusCode, Json<serde_json::Value>)> {
+) -> Result<Json<GetPendingInvitationsResponse>, (StatusCode, Json<serde_json::Value>)> {
     let user = db::get_user_by_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
@@ -430,7 +431,7 @@ pub async fn get_pending_invitations(
     })
     .map_err(|(status, err)| (status, Json(err)))?;
 
-    Ok(Json(invitations))
+    Ok(Json(GetPendingInvitationsResponse { invitations }))
 }
 #[utoipa::path(
     put,

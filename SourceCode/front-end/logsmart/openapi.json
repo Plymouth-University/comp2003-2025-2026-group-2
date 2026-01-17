@@ -1335,6 +1335,16 @@
 					"expires_at": { "type": "string", "format": "date-time" }
 				}
 			},
+			"GetPendingInvitationsResponse": {
+				"type": "object",
+				"required": ["invitations"],
+				"properties": {
+					"invitations": {
+						"type": "array",
+						"items": { "$ref": "#/components/schemas/InvitationResponse" }
+					}
+				}
+			},
 			"GetTemplateRequest": {
 				"type": "object",
 				"required": ["template_name"],

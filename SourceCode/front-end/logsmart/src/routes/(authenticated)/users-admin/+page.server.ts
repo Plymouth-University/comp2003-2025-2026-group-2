@@ -34,7 +34,7 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 		}
 		return {
 			...(await members_resp.json()),
-			invitations: await invitations_resp.json()
+			...(await invitations_resp.json())
 		};
 	} catch (error) {
 		console.error('Error fetching user data:', error);

@@ -30,7 +30,7 @@
 	};
 
 	const cancelInvitation = async (invitationId: string) => {
-		const invitation = invitations.find((inv) => inv.id === invitationId);
+		const invitation = invitations.find((inv: Invitation) => inv.id === invitationId);
 		if (!invitation) return;
 
 		if (!confirm(`Cancel invitation for ${invitation.email}?`)) {
@@ -43,12 +43,12 @@
 			});
 
 			if (response.error) {
-				alert(`Failed to cancel invitation: ${response.error.message || 'Unknown error'}`);
+				alert(`Failed to cancel invitation: ${response.error || 'Unknown error'}`);
 				return;
 			}
 
 			invitations.splice(
-				invitations.findIndex((inv) => inv.id === invitationId),
+				invitations.findIndex((inv: Invitation) => inv.id === invitationId),
 				1
 			);
 		} catch (error) {

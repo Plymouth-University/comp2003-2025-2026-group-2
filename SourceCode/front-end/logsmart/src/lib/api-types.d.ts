@@ -556,6 +556,9 @@ export interface components {
 			/** Format: date-time */
 			expires_at: string;
 		};
+		GetPendingInvitationsResponse: {
+			invitations: components['schemas']['InvitationResponse'][];
+		};
 		GetTemplateRequest: {
 			/** @example Kitchen Daily Log */
 			template_name: string;

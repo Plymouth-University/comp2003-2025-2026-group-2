@@ -65,7 +65,7 @@ impl From<crate::db::Company> for CompanyDto {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct InvitationDto {
     pub id: String,
     pub company_id: String,
@@ -74,6 +74,11 @@ pub struct InvitationDto {
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub expires_at: chrono::DateTime<chrono::Utc>,
     pub accepted_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct GetPendingInvitationsResponse {
+    pub invitations: Vec<InvitationResponse>,
 }
 
 impl From<crate::db::Invitation> for InvitationDto {
