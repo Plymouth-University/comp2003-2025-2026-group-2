@@ -16,7 +16,11 @@ pub struct AdminUpdateMemberRequest {
     #[schema(example = "member")]
     pub role: String,
 }
-
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct CancelInvitationRequest {
+    #[schema(example = "invitation-uuid-here")]
+    pub invitation_id: String,
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserDto {
     pub id: String,

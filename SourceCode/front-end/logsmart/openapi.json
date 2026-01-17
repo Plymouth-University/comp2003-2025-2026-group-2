@@ -129,6 +129,54 @@
 				}
 			}
 		},
+		"/auth/invitations/cancel": {
+			"put": {
+				"tags": ["Invitations"],
+				"operationId": "cancel_invitation",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": { "$ref": "#/components/schemas/CancelInvitationRequest" }
+						}
+					},
+					"required": true
+				},
+				"responses": {
+					"200": { "description": "Invitation cancelled successfully" },
+					"400": {
+						"description": "Invalid request or invitation already accepted/cancelled",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden - not an admin or different company",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"404": {
+						"description": "Invitation not found",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
 		"/auth/invitations/details": {
 			"get": {
 				"tags": ["Invitations"],
@@ -1189,6 +1237,11 @@
 					"token": { "type": "string" },
 					"user": { "$ref": "#/components/schemas/UserResponse" }
 				}
+			},
+			"CancelInvitationRequest": {
+				"type": "object",
+				"required": ["invitation_id"],
+				"properties": { "invitation_id": { "type": "string", "example": "invitation-uuid-here" } }
 			},
 			"CreateLogEntryRequest": {
 				"type": "object",

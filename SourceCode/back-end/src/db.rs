@@ -111,6 +111,7 @@ pub struct Invitation {
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub expires_at: chrono::DateTime<chrono::Utc>,
     pub accepted_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub cancelled_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -181,11 +182,21 @@ pub async fn init_db(pool: &PgPool) -> Result<()> {
             created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
             expires_at TIMESTAMPTZ NOT NULL,
             accepted_at TIMESTAMPTZ,
+            cancelled_at TIMESTAMPTZ,
             FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
-            UNIQUE(company_id, email),
             CONSTRAINT valid_invitation_email CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
             CONSTRAINT valid_expiry CHECK (expires_at > created_at)
         )
+        ",
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r"
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_active_invitations_company_email
+        ON invitations (company_id, email)
+        WHERE cancelled_at IS NULL AND accepted_at IS NULL
         ",
     )
     .execute(pool)
@@ -515,15 +526,16 @@ pub async fn create_invitation(
         created_at: now,
         expires_at,
         accepted_at: None,
+        cancelled_at: None,
     })
 }
 
 pub async fn get_invitation_by_token(pool: &PgPool, token: &str) -> Result<Option<Invitation>> {
     let invitation = sqlx::query_as::<_, Invitation>(
         r"
-        SELECT id, company_id, email, token, created_at, expires_at, accepted_at
+        SELECT id, company_id, email, token, created_at, expires_at, accepted_at, cancelled_at
         FROM invitations
-        WHERE token = $1 AND accepted_at IS NULL
+        WHERE token = $1 AND accepted_at IS NULL AND cancelled_at IS NULL
         ",
     )
     .bind(token)
@@ -549,6 +561,40 @@ pub async fn accept_invitation(pool: &PgPool, invitation_id: &str) -> Result<()>
     .await?;
 
     Ok(())
+}
+
+pub async fn cancel_invitation(pool: &PgPool, invitation_id: &str) -> Result<Invitation> {
+    let now = chrono::Utc::now();
+
+    let invitation = sqlx::query_as::<_, Invitation>(
+        r"
+        UPDATE invitations
+        SET cancelled_at = $1
+        WHERE id = $2 AND accepted_at IS NULL AND cancelled_at IS NULL
+        RETURNING id, company_id, email, token, created_at, expires_at, accepted_at, cancelled_at
+        ",
+    )
+    .bind(now)
+    .bind(invitation_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(invitation)
+}
+
+pub async fn get_invitation_by_id(pool: &PgPool, invitation_id: &str) -> Result<Option<Invitation>> {
+    let invitation = sqlx::query_as::<_, Invitation>(
+        r"
+        SELECT id, company_id, email, token, created_at, expires_at, accepted_at, cancelled_at
+        FROM invitations
+        WHERE id = $1
+        ",
+    )
+    .bind(invitation_id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(invitation)
 }
 
 pub async fn log_security_event(
@@ -1107,9 +1153,9 @@ pub async fn get_pending_invitations_by_company_id(
 ) -> Result<Vec<Invitation>> {
     let invitations = sqlx::query_as::<_, Invitation>(
         r"
-        SELECT id, company_id, email, token, created_at, expires_at, accepted_at
+        SELECT id, company_id, email, token, created_at, expires_at, accepted_at, cancelled_at
         FROM invitations
-        WHERE company_id = $1 AND accepted_at IS NULL AND expires_at > now()
+        WHERE company_id = $1 AND accepted_at IS NULL AND cancelled_at IS NULL AND expires_at > now()
         ",
     )
     .bind(company_id)

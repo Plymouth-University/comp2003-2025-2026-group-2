@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { api } from '$lib/api';
 	import type { components } from '$lib/api-types';
 	import type { PageData } from './$types';
 	import InviteModal from './InviteModal.svelte';
@@ -7,6 +8,7 @@
 	import UserRow from './UserRow.svelte';
 
 	export type Member = components['schemas']['GetCompanyMembersResponse']['members'][0];
+	export type Invitation = components['schemas']['GetPendingInvitationsResponse']['invitations'][0];
 
 	const data = $props<{ data: PageData }>();
 	const members = $state(data.data.members);
@@ -26,6 +28,33 @@
 	const setShowingCreateModel = (show: boolean) => {
 		showingCreateModel = show;
 	};
+
+	const cancelInvitation = async (invitationId: string) => {
+		const invitation = invitations.find((inv) => inv.id === invitationId);
+		if (!invitation) return;
+
+		if (!confirm(`Cancel invitation for ${invitation.email}?`)) {
+			return;
+		}
+
+		try {
+			const response = await api.PUT('/auth/invitations/cancel', {
+				body: { invitation_id: invitationId }
+			});
+
+			if (response.error) {
+				alert(`Failed to cancel invitation: ${response.error.message || 'Unknown error'}`);
+				return;
+			}
+
+			invitations.splice(
+				invitations.findIndex((inv) => inv.id === invitationId),
+				1
+			);
+		} catch (error) {
+			alert(`Error cancelling invitation: ${error}`);
+		}
+	};
 </script>
 
 <svelte:head>
@@ -37,7 +66,7 @@
 			<div class="flex-1 gap-1 overflow-auto p-6">
 				<div id="eventHide" class="flex flex-auto flex-col">
 					{#each invitations as invite (invite.email)}
-						<InviteRow {invite} />
+						<InviteRow {invite} onCancel={cancelInvitation} />
 					{/each}
 					{#each members as item (item.email)}
 						<UserRow {item} {setSelectedUser} />

@@ -16,6 +16,22 @@ impl InvitationService {
         ip_address: Option<String>,
         user_agent: Option<String>,
     ) -> Result<(String, chrono::DateTime<chrono::Utc>), (StatusCode, serde_json::Value)> {
+        if let Some(_existing_user) = db::get_user_by_email(db_pool, &recipient_email)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to check existing user: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Database error" }),
+                )
+            })?
+        {
+            return Err((
+                StatusCode::CONFLICT,
+                json!({ "error": "User already registered" }),
+            ));
+        }
+
         let token = generate_uuid6_token();
         let expires_at = chrono::Utc::now() + Duration::days(7);
 
@@ -183,5 +199,93 @@ impl InvitationService {
                     json!({ "error": "Database error" }),
                 )
             })
+    }
+
+    pub async fn cancel_invitation(
+        db_pool: &PgPool,
+        admin_user_id: &str,
+        invitation_id: &str,
+    ) -> Result<(), (StatusCode, serde_json::Value)> {
+        let admin = db::get_user_by_id(db_pool, admin_user_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error fetching admin user: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Database error" }),
+                )
+            })?
+            .ok_or((
+                StatusCode::NOT_FOUND,
+                json!({ "error": "Admin user not found" }),
+            ))?;
+
+        if !admin.is_admin() {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "Only company admins can cancel invitations" }),
+            ));
+        }
+
+        let invitation = db::get_invitation_by_id(db_pool, invitation_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error fetching invitation: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Database error" }),
+                )
+            })?
+            .ok_or((
+                StatusCode::NOT_FOUND,
+                json!({ "error": "Invitation not found" }),
+            ))?;
+
+        if admin.company_id != Some(invitation.company_id.clone()) {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "Cannot cancel invitations from other companies" }),
+            ));
+        }
+
+        if invitation.accepted_at.is_some() {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                json!({ "error": "Cannot cancel an accepted invitation" }),
+            ));
+        }
+
+        if invitation.cancelled_at.is_some() {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                json!({ "error": "Invitation already cancelled" }),
+            ));
+        }
+
+        let cancelled_invitation = db::cancel_invitation(db_pool, invitation_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to cancel invitation: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to cancel invitation" }),
+                )
+            })?;
+
+        email::send_invitation_cancelled_email(&cancelled_invitation.email)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to send cancellation email: {:?}", e);
+            })
+            .ok();
+
+        AuditLogger::log_admin_action(
+            db_pool,
+            admin_user_id.to_string(),
+            format!("Cancelled invitation for: {}", cancelled_invitation.email),
+        )
+        .await;
+
+        Ok(())
     }
 }

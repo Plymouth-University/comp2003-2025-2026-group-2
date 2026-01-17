@@ -52,6 +52,22 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/auth/invitations/cancel': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put: operations['cancel_invitation'];
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	'/auth/invitations/details': {
 		parameters: {
 			query?: never;
@@ -475,6 +491,10 @@ export interface components {
 		AuthResponse: {
 			token: string;
 			user: components['schemas']['UserResponse'];
+		};
+		CancelInvitationRequest: {
+			/** @example invitation-uuid-here */
+			invitation_id: string;
 		};
 		CreateLogEntryRequest: {
 			/** @example Kitchen Daily Log */
@@ -915,6 +935,73 @@ export interface operations {
 			};
 			/** @description Rate limit exceeded */
 			429: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	cancel_invitation: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['CancelInvitationRequest'];
+			};
+		};
+		responses: {
+			/** @description Invitation cancelled successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Invalid request or invitation already accepted/cancelled */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden - not an admin or different company */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Invitation not found */
+			404: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
 				headers: {
 					[name: string]: unknown;
 				};

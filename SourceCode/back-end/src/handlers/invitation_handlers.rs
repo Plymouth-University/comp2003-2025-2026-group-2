@@ -4,8 +4,9 @@ use crate::{
     auth::{hash_password, validate_email, validate_password_policy},
     db,
     dto::{
-        AcceptInvitationRequest, AuthResponse, ErrorResponse, GetInvitationDetailsRequest,
-        GetInvitationDetailsResponse, InvitationResponse, InviteUserRequest, UserResponse,
+        AcceptInvitationRequest, AuthResponse, CancelInvitationRequest, ErrorResponse,
+        GetInvitationDetailsRequest, GetInvitationDetailsResponse, InvitationResponse,
+        InviteUserRequest, UserResponse,
     },
     jwt_manager::JwtManager,
     middleware::AuthToken,
@@ -430,4 +431,34 @@ pub async fn get_pending_invitations(
     .map_err(|(status, err)| (status, Json(err)))?;
 
     Ok(Json(invitations))
+}
+#[utoipa::path(
+    put,
+    path = "/auth/invitations/cancel",
+    request_body = CancelInvitationRequest,
+    responses(
+        (status = 200, description = "Invitation cancelled successfully"),
+        (status = 400, description = "Invalid request or invitation already accepted/cancelled", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - not an admin or different company", body = ErrorResponse),
+        (status = 404, description = "Invitation not found", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Invitations"
+)]
+pub async fn cancel_invitation(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    Json(payload): Json<crate::dto::CancelInvitationRequest>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    services::InvitationService::cancel_invitation(
+        &state.postgres,
+        &claims.user_id,
+        &payload.invitation_id,
+    )
+    .await
+    .map_err(|(status, err)| (status, Json(err)))?;
+
+    Ok(Json(json!({ "message": "Invitation cancelled successfully" })))
 }

@@ -84,6 +84,10 @@ async fn main() {
             post(handlers::accept_invitation),
         )
         .route(
+            "/auth/invitations/cancel",
+            put(handlers::cancel_invitation),
+        )
+        .route(
             "/auth/invitations/details",
             get(handlers::get_invitation_details),
         )

@@ -1,14 +1,15 @@
 <script lang="ts">
-	const { invite } = $props<{
+	const { invite, onCancel } = $props<{
 		invite: {
 			email: string;
 			id: string;
 			expires_at: string;
 		};
+		onCancel: (invitationId: string) => Promise<void>;
 	}>();
 </script>
 
-<button
+<div
 	class="mb-3 flex flex-col gap-3 rounded-lg border-2 border-dashed p-4 transition-all hover:opacity-80 md:flex-row md:items-center md:justify-between"
 	style="background-color: #FFF9E6; border-color: #FFD700;"
 >
@@ -34,15 +35,16 @@
 	</div>
 
 	<div class="flex gap-2">
-		<a
-			href="#remove-user"
+		<button
+			type="button"
+			onclick={() => onCancel(invite.id)}
 			class="rounded px-3 py-1 text-sm font-medium transition-colors hover:underline"
 			style="color: var(--text-secondary);"
 		>
-			Remove
-		</a>
+			Cancel
+		</button>
 	</div>
-</button>
+</div>
 
 <style>
 </style>
