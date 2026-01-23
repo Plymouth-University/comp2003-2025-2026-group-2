@@ -21,7 +21,7 @@ test.describe('Integration Flow: Complete Company Onboarding to First Log', () =
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await expect(page.locator('body')).toContainText(adminCreds.email);
 		await expect(page.locator('body')).toContainText(adminCreds.companyName);
@@ -75,7 +75,7 @@ test.describe('Integration Flow: Admin Invites Member to Complete Log', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 
 		const inviteToken = await sendInvitation(browser, adminCreds, memberEmail);
@@ -134,7 +134,7 @@ test.describe('Integration Flow: Admin Reviews and Unsubmits Log', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 
 		await page.getByRole('link', { name: 'Logs', exact: true }).click();
@@ -181,7 +181,7 @@ test.describe('Integration Flow: Admin Reviews and Unsubmits Log', () => {
 
 		await page.getByRole('textbox', { name: 'Email' }).fill(memberEmail);
 		await page.getByRole('textbox', { name: 'Password' }).fill(memberPass);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/logs-list');
 
 		const editButton = page.getByRole('button', { name: 'Edit' }).first();
@@ -206,7 +206,7 @@ test.describe('Integration Flow: Template Lifecycle', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 
 		await page.getByRole('link', { name: 'Templates' }).click();
@@ -290,7 +290,7 @@ test.describe('Integration Flow: Multi-User Collaboration', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 
 		await page.getByRole('link', { name: 'Logs', exact: true }).click();
@@ -360,7 +360,7 @@ test.describe('Integration Flow: Settings and Profile Management', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 
 		await page.getByRole('link', { name: 'Settings' }).click();
@@ -398,7 +398,7 @@ test.describe('Integration Flow: Error Recovery', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 
 		await page.getByRole('link', { name: 'Templates' }).click();
@@ -415,7 +415,7 @@ test.describe('Integration Flow: Error Recovery', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 
 		await page.context().clearCookies();

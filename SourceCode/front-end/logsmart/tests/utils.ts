@@ -184,7 +184,7 @@ const sendInvitation = async (
 	await page.waitForURL('**/login');
 	await page.getByRole('textbox', { name: 'Email' }).fill(admin.email);
 	await page.getByRole('textbox', { name: 'Password' }).fill(admin.password);
-	await page.getByRole('button', { name: 'Sign in' }).click();
+	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 	await page.waitForURL('**/dashboard');
 	await page.getByRole('link', { name: 'Users' }).click();
 	await page.getByRole('button', { name: '➕' }).click();
