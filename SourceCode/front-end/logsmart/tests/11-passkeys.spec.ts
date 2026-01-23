@@ -199,4 +199,55 @@ test.describe('Passkey Management', () => {
 		await client.send('WebAuthn.disable');
 		await page.close();
 	});
+
+	test('should login with one-click passkey (discoverable)', async ({ browser }) => {
+		const page = await browser.newPage();
+		const client = await page.context().newCDPSession(page);
+		await client.send('WebAuthn.enable');
+		const result = await client.send('WebAuthn.addVirtualAuthenticator', {
+			options: {
+				protocol: 'ctap2',
+				transport: 'internal',
+				hasResidentKey: true,
+				hasUserVerification: true,
+				isUserVerified: true,
+				automaticPresenceSimulation: true
+			}
+		});
+		const authenticatorId = result.authenticatorId;
+
+		// Login to register passkey
+		await page.goto('http://localhost:5173/login');
+		await page.getByRole('textbox', { name: 'Email' }).fill(userData.email);
+		await page.getByRole('textbox', { name: 'Password' }).fill(userData.password);
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+		await page.waitForURL('**/dashboard');
+
+		// Go to Settings
+		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.waitForURL('**/settings');
+
+		// Register Passkey
+		await page.getByRole('textbox', { name: 'Passkey Name' }).fill('One-Click Key');
+		await page.getByRole('button', { name: 'Add Passkey' }).click();
+		await expect(page.locator('text=Changes saved successfully!')).toBeVisible();
+
+		// Logout
+		await page.getByRole('button', { name: 'Logout' }).click();
+		await page.waitForURL('**/login');
+
+		// ONE-CLICK LOGIN: Click "Sign in with Passkey" WITHOUT entering email
+		await page.getByRole('button', { name: 'Sign in with Passkey' }).click();
+
+		// WebAuthn interaction is simulated automatically
+
+		// Should go directly to dashboard
+		await page.waitForURL('**/dashboard');
+		await expect(page.getByRole('link', { name: 'Dashboard', exact: true })).toBeVisible();
+
+		// Cleanup
+		await client.send('WebAuthn.removeVirtualAuthenticator', { authenticatorId });
+		await client.send('WebAuthn.disable');
+		await page.close();
+	});
 });

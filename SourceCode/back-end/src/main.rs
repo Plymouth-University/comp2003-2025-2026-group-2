@@ -44,7 +44,7 @@ async fn main() {
         .password(
             &std::env::var("POSTGRES_PASSWORD").unwrap_or_else(|_| "adminpassword".to_string()),
         )
-        .database(&std::env::var("POSTGRES_DB").unwrap_or_else(|_| "mydatabase".to_string()));
+        .database(&std::env::var("POSTGRES_DB").unwrap_or_else(|_| "logsmartdb".to_string()));
 
     let auth_db_postgres_pool = PgPoolOptions::new()
         .max_connections(20)
@@ -80,11 +80,13 @@ async fn main() {
                 &Url::parse("http://localhost:5173").expect("Invalid RP origin"),
             )
             .expect("Invalid configuration")
+            .rp_name("LogSmart")
             .build()
             .expect("Invalid configuration"),
         ),
         passkey_reg_state: std::sync::Arc::new(dashmap::DashMap::new()),
         passkey_auth_state: std::sync::Arc::new(dashmap::DashMap::new()),
+        passkey_discoverable_auth_state: std::sync::Arc::new(dashmap::DashMap::new()),
     };
 
     let api_routes = Router::new()
@@ -117,6 +119,14 @@ async fn main() {
         .route(
             "/auth/passkey/login/start",
             post(handlers::start_passkey_login),
+        )
+        .route(
+            "/auth/passkey/login/discoverable/start",
+            post(handlers::start_discoverable_passkey_login),
+        )
+        .route(
+            "/auth/passkey/login/discoverable/finish",
+            post(handlers::finish_discoverable_passkey_login),
         )
         .route(
             "/auth/passkey/login/finish",

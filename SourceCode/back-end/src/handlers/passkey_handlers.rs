@@ -52,7 +52,17 @@ pub async fn start_passkey_registration(
             Json(json!({ "error": "User not found" })),
         ))?;
 
-    let user_unique_id = Uuid::parse_str(&user.id).unwrap_or_else(|_| Uuid::new_v4());
+    let user_unique_id = Uuid::parse_str(&user.id).map_err(|e| {
+        tracing::error!(
+            "Invalid user UUID in database: {:?}, error: {:?}",
+            user.id,
+            e
+        );
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Invalid user ID format" })),
+        )
+    })?;
 
     let existing_passkeys = db::get_passkeys_by_user(&state.postgres, &user.id)
         .await
@@ -88,15 +98,33 @@ pub async fn start_passkey_registration(
             )
         })?;
 
+    let mut options = serde_json::to_value(&ccr.public_key).unwrap();
+
+    if let Some(obj) = options.as_object_mut() {
+        if let Some(auth_sel) = obj.get_mut("authenticatorSelection") {
+            if let Some(auth_sel_obj) = auth_sel.as_object_mut() {
+                auth_sel_obj.insert("residentKey".to_string(), json!("required"));
+                auth_sel_obj.insert("requireResidentKey".to_string(), json!(true));
+                auth_sel_obj.insert("userVerification".to_string(), json!("required"));
+            }
+        } else {
+            obj.insert(
+                "authenticatorSelection".to_string(),
+                json!({
+                    "residentKey": "required",
+                    "requireResidentKey": true,
+                    "userVerification": "required"
+                }),
+            );
+        }
+    }
+
     let auth_id = Uuid::new_v4().to_string();
     state
         .passkey_reg_state
         .insert(auth_id.clone(), (reg_state, payload.name));
 
-    Ok(Json(PasskeyRegistrationStartResponse {
-        options: serde_json::to_value(&ccr.public_key).unwrap(),
-        auth_id,
-    }))
+    Ok(Json(PasskeyRegistrationStartResponse { options, auth_id }))
 }
 
 #[utoipa::path(
@@ -152,6 +180,11 @@ pub async fn finish_passkey_registration(
         })?;
 
     let credential_id_str = BASE64_URL_SAFE_NO_PAD.encode(passkey.cred_id());
+    tracing::info!(
+        "Registering passkey with credential_id: {}",
+        credential_id_str
+    );
+
     let public_key_json = serde_json::to_string(&passkey).map_err(|e| {
         tracing::error!("Serialization error: {:?}", e);
         (
@@ -163,7 +196,7 @@ pub async fn finish_passkey_registration(
     db::create_passkey(
         &state.postgres,
         &claims.user_id,
-        credential_id_str,
+        credential_id_str.clone(),
         public_key_json,
         passkey_name,
     )
@@ -252,6 +285,41 @@ pub async fn start_passkey_login(
     state
         .passkey_auth_state
         .insert(auth_id.clone(), (user.id, auth_state));
+
+    Ok(Json(PasskeyAuthenticationStartResponse {
+        options: serde_json::to_value(&rcr.public_key).unwrap(),
+        auth_id,
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/auth/passkey/login/discoverable/start",
+    responses(
+        (status = 200, description = "Discoverable passkey authentication started", body = PasskeyAuthenticationStartResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    tag = "Authentication"
+)]
+pub async fn start_discoverable_passkey_login(
+    State(state): State<AppState>,
+) -> Result<Json<PasskeyAuthenticationStartResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let (rcr, auth_state) = state
+        .webauthn
+        .start_discoverable_authentication()
+        .map_err(|e| {
+            tracing::error!("WebAuthn discoverable auth error: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to start discoverable authentication" })),
+            )
+        })?;
+
+    let auth_id = Uuid::new_v4().to_string();
+    // Store empty user_id - will be extracted from credential during finish
+    state
+        .passkey_discoverable_auth_state
+        .insert(auth_id.clone(), auth_state);
 
     Ok(Json(PasskeyAuthenticationStartResponse {
         options: serde_json::to_value(&rcr.public_key).unwrap(),
@@ -376,6 +444,176 @@ pub async fn finish_passkey_login(
         Some(ip_address),
         user_agent,
         Some("Passkey login successful".to_string()),
+        true,
+    )
+    .await;
+
+    Ok(response)
+}
+
+#[utoipa::path(
+    post,
+    path = "/auth/passkey/login/discoverable/finish",
+    request_body = PasskeyAuthenticationFinishRequest,
+    responses(
+        (status = 200, description = "Login successful", body = AuthResponse),
+        (status = 400, description = "Invalid authentication data", body = ErrorResponse),
+        (status = 404, description = "Authentication session not found", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    tag = "Authentication"
+)]
+pub async fn finish_discoverable_passkey_login(
+    State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
+    headers: HeaderMap,
+    Json(payload): Json<PasskeyAuthenticationFinishRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let (_, auth_state) = state
+        .passkey_discoverable_auth_state
+        .remove(&payload.auth_id)
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Authentication session expired or invalid" })),
+        ))?;
+
+    let req: PublicKeyCredential = serde_json::from_value(payload.credential).map_err(|e| {
+        tracing::error!("Invalid credential format: {:?}", e);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Invalid credential format" })),
+        )
+    })?;
+
+    // First identify the user from the credential
+    let (user_unique_id, cred_id) = state
+        .webauthn
+        .identify_discoverable_authentication(&req)
+        .map_err(|e| {
+            tracing::error!("WebAuthn identify error: {:?}", e);
+            (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "error": "Failed to identify credential" })),
+            )
+        })?;
+
+    // Convert user_unique_id (which is Uuid) to string
+    let user_id = user_unique_id.to_string();
+
+    // Get the credential ID string for looking up the passkey
+    let cred_id_str = BASE64_URL_SAFE_NO_PAD.encode(&cred_id);
+    tracing::info!("Discoverable login found credential_id: {}", cred_id_str);
+    tracing::info!("Discoverable login found user_id: {}", user_id);
+
+    // Look up the passkey from database
+    let passkey_record = db::get_passkey_by_credential_id(&state.postgres, &cred_id_str)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Passkey not found" })),
+        ))?;
+
+    // Deserialize the stored passkey
+    let passkey: Passkey = serde_json::from_str(&passkey_record.public_key).map_err(|e| {
+        tracing::error!("Failed to deserialize passkey: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to load passkey" })),
+        )
+    })?;
+
+    // Complete authentication
+    let auth_result = state
+        .webauthn
+        .finish_discoverable_authentication(&req, auth_state, &[passkey.into()])
+        .map_err(|e| {
+            tracing::error!("WebAuthn auth finish error: {:?}", e);
+            (
+                StatusCode::BAD_REQUEST,
+                Json(json!({ "error": "Failed to verify credential" })),
+            )
+        })?;
+
+    // Update passkey usage
+    let _ = db::update_passkey_usage(
+        &state.postgres,
+        &passkey_record.id,
+        auth_result.counter() as i64,
+    )
+    .await;
+
+    // Get user from database
+    let user = db::get_user_by_id(&state.postgres, &user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "User associated with passkey not found" })),
+        ))?;
+
+    let ip_address = extract_ip_from_headers_and_addr(&headers, &addr);
+    let user_agent = extract_user_agent(&headers);
+
+    let token = JwtManager::get_config()
+        .generate_token(user.id.clone(), 24)
+        .map_err(|e| {
+            tracing::error!("Token creation error: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to create token" })),
+            )
+        })?;
+
+    let cookie = format!(
+        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age={}",
+        token,
+        60 * 60 * 24 * 7
+    );
+
+    let mut response = Json(AuthResponse {
+        token: token.clone(),
+        user: UserResponse {
+            email: user.email.clone(),
+            first_name: user.first_name,
+            last_name: user.last_name,
+            company_name: user.company_name,
+            role: user.role,
+        },
+    })
+    .into_response();
+
+    response.headers_mut().insert(
+        SET_COOKIE,
+        axum::http::HeaderValue::from_str(&cookie).map_err(|e| {
+            tracing::error!("Failed to set login cookie: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to set authentication cookie" })),
+            )
+        })?,
+    );
+
+    let _ = db::log_security_event(
+        &state.postgres,
+        "login_passkey_discoverable".to_string(),
+        Some(user.id),
+        Some(user.email.clone()),
+        Some(ip_address),
+        user_agent,
+        Some("Discoverable passkey login successful".to_string()),
         true,
     )
     .await;

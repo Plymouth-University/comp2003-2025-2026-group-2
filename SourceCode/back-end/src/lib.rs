@@ -30,4 +30,6 @@ pub struct AppState {
     pub passkey_auth_state: std::sync::Arc<
         dashmap::DashMap<String, (String, webauthn_rs::prelude::PasskeyAuthentication)>,
     >,
+    pub passkey_discoverable_auth_state:
+        std::sync::Arc<dashmap::DashMap<String, webauthn_rs::prelude::DiscoverableAuthentication>>,
 }

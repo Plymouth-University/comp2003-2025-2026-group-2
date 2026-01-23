@@ -37,31 +37,42 @@
 	}
 
 	async function handlePasskeyLogin() {
-		if (!emailValid) {
-			error = 'Please enter a valid email address first';
-			touched.email = true;
-			return;
-		}
-
 		loading = true;
 		error = '';
 
 		try {
-			const startResp = await fetch('/api/auth/passkey/login/start', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ email })
-			});
+			let startResp;
+			let isDiscoverable = !emailValid;
+
+			if (isDiscoverable) {
+				// One-click discoverable flow - no email required
+				startResp = await fetch('/api/auth/passkey/login/discoverable/start', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({})
+				});
+			} else {
+				// Email-first flow (backward compatibility)
+				startResp = await fetch('/api/auth/passkey/login/start', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ email })
+				});
+			}
 
 			if (!startResp.ok) {
 				const err = await startResp.json();
-				throw new Error(err.error || 'User not found or no passkeys');
+				throw new Error(err.error || 'Failed to start passkey login');
 			}
 			const startData = await startResp.json();
 
 			const authResp = await startAuthentication(startData.options);
 
-			const finishResp = await fetch('/api/auth/passkey/login/finish', {
+			const finishEndpoint = isDiscoverable
+				? '/api/auth/passkey/login/discoverable/finish'
+				: '/api/auth/passkey/login/finish';
+
+			const finishResp = await fetch(finishEndpoint, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
