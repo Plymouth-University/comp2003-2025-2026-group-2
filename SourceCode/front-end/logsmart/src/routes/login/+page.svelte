@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
+	import { startAuthentication } from '@simplewebauthn/browser';
 	import { api } from '$lib/api';
 
 	let email = $state('');
@@ -30,6 +31,55 @@
 		} catch (err) {
 			console.error('Login error:', err);
 			error = 'Network error';
+		} finally {
+			loading = false;
+		}
+	}
+
+	async function handlePasskeyLogin() {
+		if (!emailValid) {
+			error = 'Please enter a valid email address first';
+			touched.email = true;
+			return;
+		}
+
+		loading = true;
+		error = '';
+
+		try {
+			const startResp = await fetch('/api/auth/passkey/login/start', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ email })
+			});
+
+			if (!startResp.ok) {
+				const err = await startResp.json();
+				throw new Error(err.error || 'User not found or no passkeys');
+			}
+			const startData = await startResp.json();
+
+			const authResp = await startAuthentication(startData.options);
+
+			const finishResp = await fetch('/api/auth/passkey/login/finish', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					credential: authResp,
+					auth_id: startData.auth_id
+				})
+			});
+
+			if (!finishResp.ok) {
+				const err = await finishResp.json();
+				throw new Error(err.error || 'Authentication failed');
+			}
+
+			await invalidateAll();
+			await goto('/dashboard');
+		} catch (e: any) {
+			console.error(e);
+			error = e.message || 'Passkey login failed';
 		} finally {
 			loading = false;
 		}
@@ -82,6 +132,26 @@
 				Signing in...
 			{:else}
 				Sign in
+			{/if}
+		</button>
+
+		<div class="mt-4 flex items-center justify-between">
+			<hr class="w-full border-gray-300" />
+			<span class="px-2 text-sm text-gray-500">OR</span>
+			<hr class="w-full border-gray-300" />
+		</div>
+
+		<button
+			type="button"
+			class="btn mt-4"
+			style="background-color: #4285F4;"
+			onclick={handlePasskeyLogin}
+			disabled={loading}
+		>
+			{#if loading}
+				Signing in...
+			{:else}
+				Sign in with Passkey
 			{/if}
 		</button>
 		<a href="/reset-password" class="mt-4 inline-block text-sm text-indigo-600 hover:underline"

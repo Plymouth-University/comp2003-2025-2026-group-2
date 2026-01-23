@@ -23,4 +23,11 @@ pub struct AppState {
     pub rate_limit: RateLimitState,
     pub metrics: metrics::Metrics,
     pub mongodb: mongodb::Client,
+    pub webauthn: std::sync::Arc<webauthn_rs::Webauthn>,
+    pub passkey_reg_state: std::sync::Arc<
+        dashmap::DashMap<String, (webauthn_rs::prelude::PasskeyRegistration, String)>,
+    >,
+    pub passkey_auth_state: std::sync::Arc<
+        dashmap::DashMap<String, (String, webauthn_rs::prelude::PasskeyAuthentication)>,
+    >,
 }

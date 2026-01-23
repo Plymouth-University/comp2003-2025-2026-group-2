@@ -4,6 +4,7 @@ use axum::{Router, middleware};
 use back_end::logs_db;
 use back_end::{AppState, api_docs::ApiDoc, db, handlers, rate_limit};
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
+use url::Url;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -73,6 +74,17 @@ async fn main() {
         mongodb: logs_db::init_mongodb()
             .await
             .expect("Failed to initialize MongoDB"),
+        webauthn: std::sync::Arc::new(
+            webauthn_rs::WebauthnBuilder::new(
+                "localhost",
+                &Url::parse("http://localhost:5173").expect("Invalid RP origin"),
+            )
+            .expect("Invalid configuration")
+            .build()
+            .expect("Invalid configuration"),
+        ),
+        passkey_reg_state: std::sync::Arc::new(dashmap::DashMap::new()),
+        passkey_auth_state: std::sync::Arc::new(dashmap::DashMap::new()),
     };
 
     let api_routes = Router::new()
@@ -83,10 +95,7 @@ async fn main() {
             "/auth/invitations/accept",
             post(handlers::accept_invitation),
         )
-        .route(
-            "/auth/invitations/cancel",
-            put(handlers::cancel_invitation),
-        )
+        .route("/auth/invitations/cancel", put(handlers::cancel_invitation))
         .route(
             "/auth/invitations/details",
             get(handlers::get_invitation_details),
@@ -97,9 +106,33 @@ async fn main() {
         )
         .route("/auth/password/reset", post(handlers::reset_password))
         .route("/auth/me", get(handlers::get_current_user))
+        .route(
+            "/auth/passkey/register/start",
+            post(handlers::start_passkey_registration),
+        )
+        .route(
+            "/auth/passkey/register/finish",
+            post(handlers::finish_passkey_registration),
+        )
+        .route(
+            "/auth/passkey/login/start",
+            post(handlers::start_passkey_login),
+        )
+        .route(
+            "/auth/passkey/login/finish",
+            post(handlers::finish_passkey_login),
+        )
+        .route("/auth/passkeys", get(handlers::list_passkeys))
+        .route(
+            "/auth/passkeys/{passkey_id}",
+            delete(handlers::delete_passkey),
+        )
         .route("/auth/profile", put(handlers::update_profile))
         .route("/auth/invitations/send", post(handlers::invite_user))
-        .route("/auth/invitations/pending", get(handlers::get_pending_invitations))
+        .route(
+            "/auth/invitations/pending",
+            get(handlers::get_pending_invitations),
+        )
         .route("/auth/company/members", get(handlers::get_company_members))
         .route(
             "/auth/admin/update-member",

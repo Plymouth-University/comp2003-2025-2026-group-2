@@ -15,6 +15,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1.0"
 axum = { version = "0.8.7", features = ["macros"] }
+base64 = "0.22"
 axum-extra = { version = "0.12.2", features = ["typed-header"] }
 async-trait = "0.1"
 sqlx = { version = "0.8", features = ["postgres", "runtime-tokio-native-tls", "macros", "chrono"] }
@@ -41,7 +42,9 @@ mongodb = "3.4.1"
 futures-util = "0.3.31"
 ollama-rs = { version = "0.3", features = ["stream"] }
 schemars = "1.1.0"
+webauthn-rs = { version = "0.5", features = ["danger-allow-state-serialisation"] }
 url = "2.5.7"
+webauthn-rs-proto = "0.5.4"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

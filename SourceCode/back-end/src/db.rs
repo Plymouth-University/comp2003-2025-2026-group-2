@@ -128,6 +128,18 @@ pub struct SecurityLog {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Passkey {
+    pub id: String,
+    pub user_id: String,
+    pub credential_id: String, // Base64URL encoded
+    pub public_key: String,    // Json serialized
+    pub counter: i64,
+    pub name: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub last_used_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
 pub async fn init_db(pool: &PgPool) -> Result<()> {
     sqlx::query(
         r"
@@ -353,6 +365,32 @@ pub async fn init_db(pool: &PgPool) -> Result<()> {
         CREATE INDEX IF NOT EXISTS idx_password_resets_active 
         ON password_resets(token, expires_at) 
         WHERE used_at IS NULL
+        ",
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r"
+        CREATE TABLE IF NOT EXISTS passkeys (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            credential_id TEXT NOT NULL UNIQUE,
+            public_key TEXT NOT NULL,
+            counter BIGINT NOT NULL DEFAULT 0,
+            name TEXT NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+            last_used_at TIMESTAMPTZ,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+        ",
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r"
+        CREATE INDEX IF NOT EXISTS idx_passkeys_user_id ON passkeys(user_id)
         ",
     )
     .execute(pool)
@@ -793,6 +831,110 @@ pub async fn update_user_password(
         ",
     )
     .bind(&password_hash)
+    .bind(user_id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn create_passkey(
+    pool: &PgPool,
+    user_id: &str,
+    credential_id: String,
+    public_key: String,
+    name: String,
+) -> Result<Passkey> {
+    let id = Uuid::new_v4().to_string();
+    let now = chrono::Utc::now();
+
+    sqlx::query(
+        r"
+        INSERT INTO passkeys (id, user_id, credential_id, public_key, counter, name, created_at)
+        VALUES ($1, $2, $3, $4, 0, $5, $6)
+        ",
+    )
+    .bind(&id)
+    .bind(user_id)
+    .bind(&credential_id)
+    .bind(&public_key)
+    .bind(&name)
+    .bind(now)
+    .execute(pool)
+    .await?;
+
+    Ok(Passkey {
+        id,
+        user_id: user_id.to_string(),
+        credential_id,
+        public_key,
+        counter: 0,
+        name,
+        created_at: now,
+        last_used_at: None,
+    })
+}
+
+pub async fn get_passkeys_by_user(pool: &PgPool, user_id: &str) -> Result<Vec<Passkey>> {
+    let passkeys = sqlx::query_as::<_, Passkey>(
+        r"
+        SELECT id, user_id, credential_id, public_key, counter, name, created_at, last_used_at
+        FROM passkeys
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+        ",
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(passkeys)
+}
+
+pub async fn get_passkey_by_credential_id(pool: &PgPool, credential_id: &str) -> Result<Option<Passkey>> {
+    let passkey = sqlx::query_as::<_, Passkey>(
+        r"
+        SELECT id, user_id, credential_id, public_key, counter, name, created_at, last_used_at
+        FROM passkeys
+        WHERE credential_id = $1
+        ",
+    )
+    .bind(credential_id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(passkey)
+}
+
+pub async fn update_passkey_usage(
+    pool: &PgPool,
+    id: &str,
+    counter: i64,
+) -> Result<()> {
+    sqlx::query(
+        r"
+        UPDATE passkeys
+        SET counter = $1, last_used_at = $2
+        WHERE id = $3
+        ",
+    )
+    .bind(counter)
+    .bind(chrono::Utc::now())
+    .bind(id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn delete_passkey(pool: &PgPool, id: &str, user_id: &str) -> Result<()> {
+    sqlx::query(
+        r"
+        DELETE FROM passkeys
+        WHERE id = $1 AND user_id = $2
+        ",
+    )
+    .bind(id)
     .bind(user_id)
     .execute(pool)
     .await?;

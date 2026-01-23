@@ -46,6 +46,7 @@
 	},
 	"dependencies": {
 		"@neodrag/svelte": "^2.3.3",
+		"@simplewebauthn/browser": "^13.2.2",
 		"@types/pg": "^8.16.0",
 		"openapi-fetch": "^0.15.0",
 		"pg": "^8.17.1"
