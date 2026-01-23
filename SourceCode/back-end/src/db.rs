@@ -140,6 +140,17 @@ pub struct Passkey {
     pub last_used_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct PasskeySession {
+    pub id: String,
+    pub session_type: String,
+    pub user_id: Option<String>,
+    pub challenge: String,
+    pub meta: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub expires_at: chrono::DateTime<chrono::Utc>,
+}
+
 pub async fn init_db(pool: &PgPool) -> Result<()> {
     sqlx::query(
         r"
@@ -396,6 +407,22 @@ pub async fn init_db(pool: &PgPool) -> Result<()> {
     .execute(pool)
     .await?;
 
+    sqlx::query(
+        r"
+        CREATE TABLE IF NOT EXISTS passkey_sessions (
+            id TEXT PRIMARY KEY,
+            session_type TEXT NOT NULL,
+            user_id TEXT,
+            challenge TEXT NOT NULL,
+            meta TEXT,
+            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMPTZ NOT NULL
+        )
+        ",
+    )
+    .execute(pool)
+    .await?;
+
     Ok(())
 }
 
@@ -647,7 +674,10 @@ pub async fn cancel_invitation(pool: &PgPool, invitation_id: &str) -> Result<Inv
     Ok(invitation)
 }
 
-pub async fn get_invitation_by_id(pool: &PgPool, invitation_id: &str) -> Result<Option<Invitation>> {
+pub async fn get_invitation_by_id(
+    pool: &PgPool,
+    invitation_id: &str,
+) -> Result<Option<Invitation>> {
     let invitation = sqlx::query_as::<_, Invitation>(
         r"
         SELECT id, company_id, email, token, created_at, expires_at, accepted_at, cancelled_at
@@ -891,7 +921,10 @@ pub async fn get_passkeys_by_user(pool: &PgPool, user_id: &str) -> Result<Vec<Pa
     Ok(passkeys)
 }
 
-pub async fn get_passkey_by_credential_id(pool: &PgPool, credential_id: &str) -> Result<Option<Passkey>> {
+pub async fn get_passkey_by_credential_id(
+    pool: &PgPool,
+    credential_id: &str,
+) -> Result<Option<Passkey>> {
     let passkey = sqlx::query_as::<_, Passkey>(
         r"
         SELECT id, user_id, credential_id, public_key, counter, name, created_at, last_used_at
@@ -906,11 +939,7 @@ pub async fn get_passkey_by_credential_id(pool: &PgPool, credential_id: &str) ->
     Ok(passkey)
 }
 
-pub async fn update_passkey_usage(
-    pool: &PgPool,
-    id: &str,
-    counter: i64,
-) -> Result<()> {
+pub async fn update_passkey_usage(pool: &PgPool, id: &str, counter: i64) -> Result<()> {
     sqlx::query(
         r"
         UPDATE passkeys
@@ -1333,4 +1362,62 @@ pub async fn get_pending_invitations_by_company_id(
     .await?;
 
     Ok(invitations)
+}
+
+pub async fn create_passkey_session(
+    pool: &PgPool,
+    id: &str,
+    session_type: &str,
+    user_id: Option<String>,
+    challenge: String,
+    meta: Option<String>,
+) -> Result<()> {
+    // 5 minutes expiry
+    let expires_at = chrono::Utc::now() + chrono::Duration::minutes(5);
+    
+    sqlx::query(
+        r"
+        INSERT INTO passkey_sessions (id, session_type, user_id, challenge, meta, expires_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        "
+    )
+    .bind(id)
+    .bind(session_type)
+    .bind(user_id)
+    .bind(challenge)
+    .bind(meta)
+    .bind(expires_at)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn get_passkey_session(pool: &PgPool, id: &str) -> Result<Option<PasskeySession>> {
+    let session = sqlx::query_as::<_, PasskeySession>(
+        r"
+        SELECT id, session_type, user_id, challenge, meta, created_at, expires_at
+        FROM passkey_sessions
+        WHERE id = $1 AND expires_at > NOW()
+        "
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(session)
+}
+
+pub async fn delete_passkey_session(pool: &PgPool, id: &str) -> Result<()> {
+    sqlx::query(
+        r"
+        DELETE FROM passkey_sessions
+        WHERE id = $1
+        "
+    )
+    .bind(id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
 }

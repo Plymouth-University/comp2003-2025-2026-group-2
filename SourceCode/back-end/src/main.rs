@@ -76,17 +76,18 @@ async fn main() {
             .expect("Failed to initialize MongoDB"),
         webauthn: std::sync::Arc::new(
             webauthn_rs::WebauthnBuilder::new(
-                "localhost",
-                &Url::parse("http://localhost:5173").expect("Invalid RP origin"),
+                &std::env::var("RP_ID").unwrap_or_else(|_| "localhost".to_string()),
+                &Url::parse(
+                    &std::env::var("RP_ORIGIN")
+                        .unwrap_or_else(|_| "http://localhost:5173".to_string()),
+                )
+                .expect("Invalid RP origin"),
             )
             .expect("Invalid configuration")
             .rp_name("LogSmart")
             .build()
             .expect("Invalid configuration"),
         ),
-        passkey_reg_state: std::sync::Arc::new(dashmap::DashMap::new()),
-        passkey_auth_state: std::sync::Arc::new(dashmap::DashMap::new()),
-        passkey_discoverable_auth_state: std::sync::Arc::new(dashmap::DashMap::new()),
     };
 
     let api_routes = Router::new()

@@ -120,9 +120,30 @@ pub async fn start_passkey_registration(
     }
 
     let auth_id = Uuid::new_v4().to_string();
-    state
-        .passkey_reg_state
-        .insert(auth_id.clone(), (reg_state, payload.name));
+    let challenge_json = serde_json::to_string(&reg_state).map_err(|e| {
+        tracing::error!("Serialization error: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to serialize challenge" })),
+        )
+    })?;
+
+    db::create_passkey_session(
+        &state.postgres,
+        &auth_id,
+        "reg",
+        Some(user.id.clone()),
+        challenge_json,
+        Some(payload.name),
+    )
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to store registration session" })),
+        )
+    })?;
 
     Ok(Json(PasskeyRegistrationStartResponse { options, auth_id }))
 }
@@ -148,10 +169,41 @@ pub async fn finish_passkey_registration(
     let split_auth_id: Vec<&str> = payload.auth_id.split('|').collect();
     let auth_id_key = split_auth_id[0];
 
-    let (_, (reg_state, stored_name)) = state.passkey_reg_state.remove(auth_id_key).ok_or((
-        StatusCode::NOT_FOUND,
-        Json(json!({ "error": "Registration session expired or invalid" })),
-    ))?;
+    // Retrieve and then delete the session from DB (one-time use)
+    let session = db::get_passkey_session(&state.postgres, auth_id_key)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Registration session expired or invalid" })),
+        ))?;
+
+    // Ensure it's the right type
+    if session.session_type != "reg" {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Invalid session type" })),
+        ));
+    }
+
+    // Delete session immediately to prevent replay
+    let _ = db::delete_passkey_session(&state.postgres, auth_id_key).await;
+
+    let reg_state: PasskeyRegistration = serde_json::from_str(&session.challenge).map_err(|e| {
+        tracing::error!("Deserialization error: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to restore registration state" })),
+        )
+    })?;
+
+    let stored_name = session.meta.unwrap_or_default();
 
     let passkey_name = if !stored_name.is_empty() {
         stored_name
@@ -282,9 +334,30 @@ pub async fn start_passkey_login(
         })?;
 
     let auth_id = Uuid::new_v4().to_string();
-    state
-        .passkey_auth_state
-        .insert(auth_id.clone(), (user.id, auth_state));
+    let challenge_json = serde_json::to_string(&auth_state).map_err(|e| {
+        tracing::error!("Serialization error: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to serialize challenge" })),
+        )
+    })?;
+
+    db::create_passkey_session(
+        &state.postgres,
+        &auth_id,
+        "auth",
+        Some(user.id.clone()),
+        challenge_json,
+        None,
+    )
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to store authentication session" })),
+        )
+    })?;
 
     Ok(Json(PasskeyAuthenticationStartResponse {
         options: serde_json::to_value(&rcr.public_key).unwrap(),
@@ -316,10 +389,31 @@ pub async fn start_discoverable_passkey_login(
         })?;
 
     let auth_id = Uuid::new_v4().to_string();
-    // Store empty user_id - will be extracted from credential during finish
-    state
-        .passkey_discoverable_auth_state
-        .insert(auth_id.clone(), auth_state);
+    // Store with empty user_id or None - will be extracted from credential during finish
+    let challenge_json = serde_json::to_string(&auth_state).map_err(|e| {
+        tracing::error!("Serialization error: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to serialize challenge" })),
+        )
+    })?;
+
+    db::create_passkey_session(
+        &state.postgres,
+        &auth_id,
+        "disc_auth",
+        None,
+        challenge_json,
+        None,
+    )
+    .await
+    .map_err(|e| {
+        tracing::error!("Database error: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to store discoverable authentication session" })),
+        )
+    })?;
 
     Ok(Json(PasskeyAuthenticationStartResponse {
         options: serde_json::to_value(&rcr.public_key).unwrap(),
@@ -345,10 +439,43 @@ pub async fn finish_passkey_login(
     headers: HeaderMap,
     Json(payload): Json<PasskeyAuthenticationFinishRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let (_, (user_id, auth_state)) = state.passkey_auth_state.remove(&payload.auth_id).ok_or((
-        StatusCode::NOT_FOUND,
-        Json(json!({ "error": "Authentication session expired or invalid" })),
+    // Retrieve and delete session
+    let session = db::get_passkey_session(&state.postgres, &payload.auth_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Authentication session expired or invalid" })),
+        ))?;
+
+    if session.session_type != "auth" {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Invalid session type" })),
+        ));
+    }
+
+    let _ = db::delete_passkey_session(&state.postgres, &payload.auth_id).await;
+
+    let user_id = session.user_id.ok_or((
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(json!({ "error": "User ID missing from session" })),
     ))?;
+
+    let auth_state: PasskeyAuthentication =
+        serde_json::from_str(&session.challenge).map_err(|e| {
+            tracing::error!("Deserialization error: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to restore authentication state" })),
+            )
+        })?;
 
     let req: PublicKeyCredential = serde_json::from_value(payload.credential).map_err(|e| {
         tracing::error!("Invalid credential format: {:?}", e);
@@ -469,13 +596,38 @@ pub async fn finish_discoverable_passkey_login(
     headers: HeaderMap,
     Json(payload): Json<PasskeyAuthenticationFinishRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let (_, auth_state) = state
-        .passkey_discoverable_auth_state
-        .remove(&payload.auth_id)
+    // Retrieve and delete session
+    let session = db::get_passkey_session(&state.postgres, &payload.auth_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
         .ok_or((
             StatusCode::NOT_FOUND,
             Json(json!({ "error": "Authentication session expired or invalid" })),
         ))?;
+
+    if session.session_type != "disc_auth" {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Invalid session type" })),
+        ));
+    }
+
+    let _ = db::delete_passkey_session(&state.postgres, &payload.auth_id).await;
+
+    let auth_state: DiscoverableAuthentication =
+        serde_json::from_str(&session.challenge).map_err(|e| {
+            tracing::error!("Deserialization error: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to restore authentication state" })),
+            )
+        })?;
 
     let req: PublicKeyCredential = serde_json::from_value(payload.credential).map_err(|e| {
         tracing::error!("Invalid credential format: {:?}", e);
