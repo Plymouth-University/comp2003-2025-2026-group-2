@@ -21,7 +21,7 @@ test.describe('Logs Management - Admin', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 	});
 
@@ -102,7 +102,7 @@ test.describe('Logs Management - Member', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(memberCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(memberCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/logs-list');
 	});
 
@@ -167,7 +167,7 @@ test.describe('Log Form Components', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 	});
 
@@ -204,7 +204,7 @@ test.describe('Log Entry Validation', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 	});
 

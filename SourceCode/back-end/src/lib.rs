@@ -23,4 +23,5 @@ pub struct AppState {
     pub rate_limit: RateLimitState,
     pub metrics: metrics::Metrics,
     pub mongodb: mongodb::Client,
+    pub webauthn: std::sync::Arc<webauthn_rs::Webauthn>,
 }

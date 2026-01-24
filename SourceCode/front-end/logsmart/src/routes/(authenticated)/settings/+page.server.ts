@@ -26,8 +26,26 @@ export const load: PageServerLoad = async ({ fetch, cookies }) => {
 
 		const userData = await response.json();
 
+		// Fetch Passkeys
+		let passkeys = [];
+		try {
+			const passkeysResponse = await fetch('/api/auth/passkeys', {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${token}`
+				}
+			});
+			if (passkeysResponse.ok) {
+				const passkeysData = await passkeysResponse.json();
+				passkeys = passkeysData.passkeys;
+			}
+		} catch (e) {
+			console.error('Failed to fetch passkeys:', e);
+		}
+
 		return {
-			user: userData
+			user: userData,
+			passkeys
 		};
 	} catch (error) {
 		console.error('Error fetching user data:', error);

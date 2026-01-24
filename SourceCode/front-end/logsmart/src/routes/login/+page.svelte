@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
+	import { startAuthentication } from '@simplewebauthn/browser';
 	import { api } from '$lib/api';
+
+	import { onMount } from 'svelte';
+	import { browser } from '$app/environment';
 
 	let email = $state('');
 	let password = $state('');
@@ -10,6 +14,52 @@
 	const emailValid = $derived(/^\S+@\S+\.\S+$/.test(email));
 	const passwordValid = $derived(password.length >= 6);
 	const formValid = $derived(emailValid && passwordValid);
+
+	onMount(async () => {
+		if (
+			browser &&
+			window.PublicKeyCredential &&
+			window.PublicKeyCredential.isConditionalMediationAvailable &&
+			(await window.PublicKeyCredential.isConditionalMediationAvailable())
+		) {
+			try {
+				const startResp = await fetch('/api/auth/passkey/login/discoverable/start', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({})
+				});
+
+				if (startResp.ok) {
+					const startData = await startResp.json();
+					// Enable conditional UI
+					// @ts-ignore - SimpleWebAuthn v10+ supports 2nd arg for conditional UI
+					const authResp = await startAuthentication(startData.options, true);
+
+					// If we get here, the user selected a credential from the autofill
+					loading = true;
+					const finishResp = await fetch('/api/auth/passkey/login/discoverable/finish', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({
+							credential: authResp,
+							auth_id: startData.auth_id
+						})
+					});
+
+					if (!finishResp.ok) {
+						throw new Error('Authentication failed');
+					}
+
+					await invalidateAll();
+					await goto('/dashboard');
+				}
+			} catch (e: any) {
+				// Ignore errors from conditional UI (timeout, cancellation, etc)
+				console.debug('Conditional UI:', e);
+			}
+		}
+	});
+
 	async function submit(e: Event) {
 		e.preventDefault();
 		error = '';
@@ -34,6 +84,66 @@
 			loading = false;
 		}
 	}
+
+	async function handlePasskeyLogin() {
+		loading = true;
+		error = '';
+
+		try {
+			let startResp;
+			let isDiscoverable = !emailValid;
+
+			if (isDiscoverable) {
+				// One-click discoverable flow - no email required
+				startResp = await fetch('/api/auth/passkey/login/discoverable/start', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({})
+				});
+			} else {
+				// Email-first flow (backward compatibility)
+				startResp = await fetch('/api/auth/passkey/login/start', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ email })
+				});
+			}
+
+			if (!startResp.ok) {
+				const err = await startResp.json();
+				throw new Error(err.error || 'Failed to start passkey login');
+			}
+			const startData = await startResp.json();
+
+			const authResp = await startAuthentication(startData.options);
+
+			const finishEndpoint = isDiscoverable
+				? '/api/auth/passkey/login/discoverable/finish'
+				: '/api/auth/passkey/login/finish';
+
+			const finishResp = await fetch(finishEndpoint, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					credential: authResp,
+					auth_id: startData.auth_id
+				})
+			});
+
+			if (!finishResp.ok) {
+				const err = await finishResp.json();
+				throw new Error(err.error || 'Authentication failed');
+			}
+
+			await invalidateAll();
+			await goto('/dashboard');
+		} catch (e: any) {
+			console.error(e);
+			error = e.message || 'Passkey login failed';
+		} finally {
+			loading = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -54,6 +164,7 @@
 				onblur={() => (touched.email = true)}
 				aria-invalid={!emailValid}
 				aria-describedby="email-help"
+				autocomplete="username webauthn"
 				required
 			/>
 			{#if touched.email && !emailValid}
@@ -82,6 +193,26 @@
 				Signing in...
 			{:else}
 				Sign in
+			{/if}
+		</button>
+
+		<div class="mt-4 flex items-center justify-between">
+			<hr class="w-full border-gray-300" />
+			<span class="px-2 text-sm text-gray-500">OR</span>
+			<hr class="w-full border-gray-300" />
+		</div>
+
+		<button
+			type="button"
+			class="btn mt-4"
+			style="background-color: #4285F4;"
+			onclick={handlePasskeyLogin}
+			disabled={loading}
+		>
+			{#if loading}
+				Signing in...
+			{:else}
+				Sign in with Passkey
 			{/if}
 		</button>
 		<a href="/reset-password" class="mt-4 inline-block text-sm text-indigo-600 hover:underline"

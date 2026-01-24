@@ -4,6 +4,7 @@ use axum::{Router, middleware};
 use back_end::logs_db;
 use back_end::{AppState, api_docs::ApiDoc, db, handlers, rate_limit};
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
+use url::Url;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -43,7 +44,7 @@ async fn main() {
         .password(
             &std::env::var("POSTGRES_PASSWORD").unwrap_or_else(|_| "adminpassword".to_string()),
         )
-        .database(&std::env::var("POSTGRES_DB").unwrap_or_else(|_| "mydatabase".to_string()));
+        .database(&std::env::var("POSTGRES_DB").unwrap_or_else(|_| "logsmartdb".to_string()));
 
     let auth_db_postgres_pool = PgPoolOptions::new()
         .max_connections(20)
@@ -73,6 +74,20 @@ async fn main() {
         mongodb: logs_db::init_mongodb()
             .await
             .expect("Failed to initialize MongoDB"),
+        webauthn: std::sync::Arc::new(
+            webauthn_rs::WebauthnBuilder::new(
+                &std::env::var("RP_ID").unwrap_or_else(|_| "localhost".to_string()),
+                &Url::parse(
+                    &std::env::var("RP_ORIGIN")
+                        .unwrap_or_else(|_| "http://localhost:5173".to_string()),
+                )
+                .expect("Invalid RP origin"),
+            )
+            .expect("Invalid configuration")
+            .rp_name("LogSmart")
+            .build()
+            .expect("Invalid configuration"),
+        ),
     };
 
     let api_routes = Router::new()
@@ -83,10 +98,7 @@ async fn main() {
             "/auth/invitations/accept",
             post(handlers::accept_invitation),
         )
-        .route(
-            "/auth/invitations/cancel",
-            put(handlers::cancel_invitation),
-        )
+        .route("/auth/invitations/cancel", put(handlers::cancel_invitation))
         .route(
             "/auth/invitations/details",
             get(handlers::get_invitation_details),
@@ -97,9 +109,41 @@ async fn main() {
         )
         .route("/auth/password/reset", post(handlers::reset_password))
         .route("/auth/me", get(handlers::get_current_user))
+        .route(
+            "/auth/passkey/register/start",
+            post(handlers::start_passkey_registration),
+        )
+        .route(
+            "/auth/passkey/register/finish",
+            post(handlers::finish_passkey_registration),
+        )
+        .route(
+            "/auth/passkey/login/start",
+            post(handlers::start_passkey_login),
+        )
+        .route(
+            "/auth/passkey/login/discoverable/start",
+            post(handlers::start_discoverable_passkey_login),
+        )
+        .route(
+            "/auth/passkey/login/discoverable/finish",
+            post(handlers::finish_discoverable_passkey_login),
+        )
+        .route(
+            "/auth/passkey/login/finish",
+            post(handlers::finish_passkey_login),
+        )
+        .route("/auth/passkeys", get(handlers::list_passkeys))
+        .route(
+            "/auth/passkeys/{passkey_id}",
+            delete(handlers::delete_passkey),
+        )
         .route("/auth/profile", put(handlers::update_profile))
         .route("/auth/invitations/send", post(handlers::invite_user))
-        .route("/auth/invitations/pending", get(handlers::get_pending_invitations))
+        .route(
+            "/auth/invitations/pending",
+            get(handlers::get_pending_invitations),
+        )
         .route("/auth/company/members", get(handlers::get_company_members))
         .route(
             "/auth/admin/update-member",

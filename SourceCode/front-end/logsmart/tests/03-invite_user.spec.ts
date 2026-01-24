@@ -23,7 +23,7 @@ test('invite_user', async ({ page }) => {
 	await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 	await page.getByRole('textbox', { name: 'Email' }).press('Tab');
 	await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-	await page.getByRole('button', { name: 'Sign in' }).click();
+	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 	await page.waitForURL('**/dashboard');
 	await page.getByRole('link', { name: 'Users' }).click();
 	await expect(page.locator('#eventHide')).toContainText(adminCreds.email);
