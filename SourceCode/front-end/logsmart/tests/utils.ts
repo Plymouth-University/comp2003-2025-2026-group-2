@@ -47,7 +47,7 @@ const getEmailByRecipient = async (email: string): Promise<MailhogEmail | null> 
 	}
 };
 
-const getInvitationToken = async (email: string, maxAttempts = 20): Promise<string | null> => {
+const getInvitationToken = async (email: string, maxAttempts = 30): Promise<string | null> => {
 	for (let i = 0; i < maxAttempts; i++) {
 		const mailhogEmail = await getEmailByRecipient(email);
 
@@ -76,7 +76,7 @@ const decodeMailBody = (email: MailhogEmail): string => {
 	if (encoding === 'base64') {
 		try {
 			body = Buffer.from(body, 'base64').toString('utf-8');
-		} catch (e) {}
+		} catch (e) { }
 	}
 
 	body = body.replace(/=\r?\n/g, '');
@@ -85,7 +85,7 @@ const decodeMailBody = (email: MailhogEmail): string => {
 	return body;
 };
 
-const getPasswordResetToken = async (email: string, maxAttempts = 10): Promise<string | null> => {
+const getPasswordResetToken = async (email: string, maxAttempts = 30): Promise<string | null> => {
 	for (let i = 0; i < maxAttempts; i++) {
 		const mailhogEmail = await getEmailByRecipient(email);
 

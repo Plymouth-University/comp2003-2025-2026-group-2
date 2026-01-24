@@ -52,7 +52,12 @@ test.describe('Passkey Management', () => {
 
 		// Login with Passkey
 		await page.getByRole('textbox', { name: 'Email' }).fill(userData.email);
-		await page.getByRole('button', { name: 'Sign in with Passkey' }).click();
+
+		const passkeyBtn = page.getByRole('button', { name: 'Sign in with Passkey' });
+		await passkeyBtn.waitFor({ state: 'visible' });
+		// Wait a small amount to ensure any animations/re-renders are finished
+		await page.waitForTimeout(500);
+		await passkeyBtn.click();
 
 		// WebAuthn interaction is simulated automatically by 'automaticPresenceSimulation: true'
 		// or effectively by the virtual authenticator interception.
