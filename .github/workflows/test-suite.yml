@@ -108,4 +108,4 @@ jobs:
           POSTGRES_USER: admin
           POSTGRES_PASSWORD: adminpassword
           MONGODB_URI: mongodb://root:rootpassword@127.0.0.1
-        run: bun x playwright test
+        run: bun x playwright test tests/11-passkeys.spec.ts

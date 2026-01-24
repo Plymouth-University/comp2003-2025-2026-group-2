@@ -55,6 +55,7 @@ test.describe('Passkey Management', () => {
 
 		const passkeyBtn = page.getByRole('button', { name: 'Sign in with Passkey' });
 		await passkeyBtn.waitFor({ state: 'visible' });
+		await expect(passkeyBtn).toBeEnabled();
 		// Wait a small amount to ensure any animations/re-renders are finished
 		await page.waitForTimeout(500);
 		await passkeyBtn.click();
@@ -179,7 +180,11 @@ test.describe('Passkey Management', () => {
 		await page.waitForURL('**/login');
 
 		await page.getByRole('textbox', { name: 'Email' }).fill(userData.email);
-		await page.getByRole('button', { name: 'Sign in with Passkey' }).click();
+		const passkeyBtn = page.getByRole('button', { name: 'Sign in with Passkey' });
+		await passkeyBtn.waitFor({ state: 'visible' });
+		await expect(passkeyBtn).toBeEnabled();
+		await page.waitForTimeout(500);
+		await passkeyBtn.click();
 		// The first authenticator (internal) should be used automatically
 		await page.waitForURL('**/dashboard');
 
@@ -242,7 +247,11 @@ test.describe('Passkey Management', () => {
 		await page.waitForURL('**/login');
 
 		// ONE-CLICK LOGIN: Click "Sign in with Passkey" WITHOUT entering email
-		await page.getByRole('button', { name: 'Sign in with Passkey' }).click();
+		const passkeyBtn = page.getByRole('button', { name: 'Sign in with Passkey' });
+		await passkeyBtn.waitFor({ state: 'visible' });
+		await expect(passkeyBtn).toBeEnabled();
+		await page.waitForTimeout(500);
+		await passkeyBtn.click();
 
 		// WebAuthn interaction is simulated automatically
 
