@@ -15,7 +15,7 @@ jobs:
     
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
@@ -40,7 +40,7 @@ jobs:
           cp result/bin/logsmart-srv ./logsmart-srv
 
       - name: Stop service before deployment
-        uses: appleboy/ssh-action@v1.2.3
+        uses: appleboy/ssh-action@v1.2.4
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
@@ -60,7 +60,7 @@ jobs:
           remote_path: "${{ vars.DEPLOY_PATH }}/"
 
       - name: Patch interpreter path
-        uses: appleboy/ssh-action@v1.2.3
+        uses: appleboy/ssh-action@v1.2.4
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
@@ -70,7 +70,7 @@ jobs:
             patchelf --set-interpreter /lib/ld-linux-aarch64.so.1 ${{ vars.DEPLOY_PATH }}/logsmart-srv
 
       - name: Start Service
-        uses: appleboy/ssh-action@v1.2.3
+        uses: appleboy/ssh-action@v1.2.4
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
