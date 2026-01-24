@@ -16,7 +16,7 @@ test.describe('Settings - Profile Updates', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 	});
 
@@ -131,7 +131,7 @@ test.describe('Settings - Password Reset', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 	});
 
@@ -167,7 +167,7 @@ test.describe('Settings - Dark Mode', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 	});
 
@@ -231,7 +231,7 @@ test.describe('Settings - Dark Mode', () => {
 			await page.waitForURL('**/login');
 			await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 			await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-			await page.getByRole('button', { name: 'Sign in' }).click();
+			await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 			await page.waitForURL('**/dashboard');
 			await page.getByRole('link', { name: 'Settings' }).click();
 			await page.waitForURL('**/settings');
@@ -248,7 +248,7 @@ test.describe('Settings - Member Access', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.goto('http://localhost:5173/template-designer');
 		await page.waitForLoadState('networkidle');
@@ -271,7 +271,7 @@ test.describe('Settings - Member Access', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(memberCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(memberCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/logs-list');
 	});
 	test('member_can_access_settings', async ({ page }) => {

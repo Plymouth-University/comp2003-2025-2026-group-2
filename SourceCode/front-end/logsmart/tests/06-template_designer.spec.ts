@@ -21,7 +21,7 @@ test.describe('Template Designer - CRUD Operations', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 	});
 
@@ -114,7 +114,7 @@ test.describe('Template Designer - Component Management', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.goto('http://localhost:5173/template-designer');
 		await page.waitForLoadState('networkidle');
@@ -234,7 +234,7 @@ test.describe('Template Designer - Layout Tools', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.goto('http://localhost:5173/template-designer');
 		await page.waitForLoadState('networkidle');
@@ -299,7 +299,7 @@ test.describe('Template Designer - AI Generation', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.goto('http://localhost:5173/template-designer');
 		await page.waitForLoadState('networkidle');
@@ -371,7 +371,7 @@ test.describe('Template Designer - Validation', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.goto('http://localhost:5173/template-designer');
 		await page.waitForLoadState('networkidle');
@@ -446,7 +446,7 @@ test.describe('Template Designer - Member Access Control', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.goto('http://localhost:5173/template-designer');
 		await page.waitForLoadState('networkidle');
@@ -469,7 +469,7 @@ test.describe('Template Designer - Member Access Control', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(memberCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(memberCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/logs-list');
 		await page.goto('http://localhost:5173/template-designer');
 		await page.waitForURL('**/logs-list');

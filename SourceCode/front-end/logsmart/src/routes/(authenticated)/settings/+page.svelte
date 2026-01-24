@@ -2,6 +2,8 @@
 	import type { PageData, ActionData } from './$types';
 	import { enhance } from '$app/forms';
 	import { isDarkMode } from '$lib/stores/theme';
+	import { startRegistration } from '@simplewebauthn/browser';
+	import { invalidateAll } from '$app/navigation';
 
 	let { data, form } = $props<{ data: PageData; form: ActionData }>();
 
@@ -11,6 +13,61 @@
 	let isSubmitting = $state(false);
 	let showSuccessMessage = $state(false);
 	let errorMessage = $state('');
+	let passkeyName = $state('');
+	let isRegisteringPasskey = $state(false);
+
+	async function handleRegisterPasskey() {
+		try {
+			isRegisteringPasskey = true;
+			const startResp = await fetch('/api/auth/passkey/register/start', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ name: passkeyName || `${firstName}'s Passkey` })
+			});
+
+			if (!startResp.ok) throw new Error('Failed to start registration');
+			const startData = await startResp.json();
+
+			const attResp = await startRegistration(startData.options);
+
+			const finishResp = await fetch('/api/auth/passkey/register/finish', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					credential: attResp,
+					auth_id: `${startData.auth_id}|${passkeyName || firstName + "'s Passkey"}`
+				})
+			});
+
+			if (!finishResp.ok) {
+				const err = await finishResp.json();
+				throw new Error(err.message || err.error || 'Failed to finish registration');
+			}
+
+			showSuccessMessage = true;
+			passkeyName = '';
+			await invalidateAll(); // Reloads data including passkeys
+		} catch (e: any) {
+			console.error(e);
+			errorMessage = e.message || 'Failed to register passkey';
+		} finally {
+			isRegisteringPasskey = false;
+		}
+	}
+
+	async function deletePasskey(id: string) {
+		if (!confirm('Are you sure you want to remove this passkey?')) return;
+		try {
+			const resp = await fetch(`/api/auth/passkeys/${id}`, { method: 'DELETE' });
+			if (resp.ok) {
+				await invalidateAll();
+			} else {
+				errorMessage = 'Failed to delete passkey';
+			}
+		} catch (e) {
+			errorMessage = 'Failed to delete passkey';
+		}
+	}
 
 	$effect(() => {
 		firstName = data.user?.first_name || '';
@@ -206,6 +263,78 @@
 								{isSubmitting ? 'Sending...' : 'Send Password Reset Email'}
 							</button>
 						</form>
+					</div>
+				</div>
+			</div>
+
+			<!-- Passkeys Section -->
+			<div
+				class="border-2"
+				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+			>
+				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
+					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Passkeys</h2>
+				</div>
+				<div class="px-6 py-6" style="background-color: var(--bg-primary);">
+					<div class="max-w-2xl">
+						<p class="mb-4" style="color: var(--text-secondary);">
+							Passkeys allow you to sign in safely without a password using your fingerprint, face,
+							or hardware key.
+						</p>
+
+						<!-- List Existing Passkeys -->
+						{#if data.passkeys && data.passkeys.length > 0}
+							<div class="mb-6 space-y-3">
+								{#each data.passkeys as pk}
+									<div
+										class="flex items-center justify-between rounded border-2 p-3"
+										style="border-color: var(--border-secondary);"
+									>
+										<div>
+											<p class="font-medium" style="color: var(--text-primary);">{pk.name}</p>
+											<p class="text-xs" style="color: var(--text-secondary);">
+												Added on {new Date(pk.created_at).toLocaleDateString()}
+											</p>
+										</div>
+										<button
+											onclick={() => deletePasskey(pk.id)}
+											class="text-red-500 hover:text-red-700"
+											aria-label="Delete passkey"
+										>
+											Delete
+										</button>
+									</div>
+								{/each}
+							</div>
+						{/if}
+
+						<div class="flex items-end gap-4">
+							<div class="flex-grow">
+								<label
+									for="passkeyName"
+									class="mb-2 block text-sm font-medium"
+									style="color: var(--text-primary);"
+								>
+									Passkey Name (Optional)
+								</label>
+								<input
+									id="passkeyName"
+									type="text"
+									bind:value={passkeyName}
+									class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
+									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+									placeholder="e.g. My MacBook"
+								/>
+							</div>
+							<button
+								onclick={handleRegisterPasskey}
+								disabled={isRegisteringPasskey}
+								class="border-2 px-6 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+							>
+								{isRegisteringPasskey ? 'Registering...' : 'Add Passkey'}
+							</button>
+						</div>
 					</div>
 				</div>
 			</div>

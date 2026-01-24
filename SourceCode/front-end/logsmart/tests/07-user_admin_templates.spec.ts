@@ -21,7 +21,7 @@ test.describe('User Administration - Admin Access', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 	});
 
@@ -156,7 +156,7 @@ test.describe('User Administration - Admin Access', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(creds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(creds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 
 		await page.getByRole('link', { name: 'Users' }).click();
@@ -247,7 +247,7 @@ test.describe('Templates Dashboard - Admin Access', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 	});
 
@@ -388,7 +388,7 @@ test.describe('Templates Dashboard - Member Access Control', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.goto('http://localhost:5173/template-designer');
 		await page.waitForLoadState('networkidle');
@@ -411,7 +411,7 @@ test.describe('Templates Dashboard - Member Access Control', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(memberCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(memberCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/logs-list');
 		await page.goto('http://localhost:5173/templates-dashboard');
 		await page.waitForURL('**/logs-list');
@@ -422,7 +422,7 @@ test.describe('Templates Dashboard - Member Access Control', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(memberCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(memberCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/logs-list');
 		await page.goto('http://localhost:5173/users-admin');
 		await page.waitForURL('**/logs-list');
@@ -434,7 +434,7 @@ test.describe('Templates Dashboard - Member Access Control', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(memberCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(memberCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/logs-list');
 		const usersLink = page.getByRole('link', { name: 'Users' });
 		await expect(usersLink).not.toBeVisible();

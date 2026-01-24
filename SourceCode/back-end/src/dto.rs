@@ -423,3 +423,63 @@ pub struct LayoutGenerationRequest {
 pub struct LayoutGenerationResponse {
     pub layout: serde_json::Value,
 }
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct PasskeyRegistrationStartRequest {
+    #[schema(example = "My MacBook Pro")]
+    pub name: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PasskeyRegistrationStartResponse {
+    pub options: serde_json::Value,
+    pub auth_id: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct PasskeyRegistrationFinishRequest {
+    pub credential: serde_json::Value,
+    pub auth_id: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct PasskeyAuthenticationStartRequest {
+    #[schema(example = "user@example.com")]
+    pub email: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PasskeyAuthenticationStartResponse {
+    pub options: serde_json::Value,
+    pub auth_id: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct PasskeyAuthenticationFinishRequest {
+    pub credential: serde_json::Value,
+    pub auth_id: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ListPasskeysResponse {
+    pub passkeys: Vec<PasskeyDto>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PasskeyDto {
+    pub id: String,
+    pub name: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub last_used_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+impl From<db::Passkey> for PasskeyDto {
+    fn from(passkey: db::Passkey) -> Self {
+        Self {
+            id: passkey.id,
+            name: passkey.name,
+            created_at: passkey.created_at,
+            last_used_at: passkey.last_used_at,
+        }
+    }
+}

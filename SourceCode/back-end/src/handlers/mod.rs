@@ -12,4 +12,6 @@ pub use invitation_handlers::*;
 pub use llm_handlers::*;
 pub use log_entry_handlers::*;
 pub use template_handlers::*;
+pub mod passkey_handlers;
+pub use passkey_handlers::*;
 pub use user_handlers::*;

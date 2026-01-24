@@ -47,7 +47,7 @@ const getEmailByRecipient = async (email: string): Promise<MailhogEmail | null> 
 	}
 };
 
-const getInvitationToken = async (email: string, maxAttempts = 20): Promise<string | null> => {
+const getInvitationToken = async (email: string, maxAttempts = 30): Promise<string | null> => {
 	for (let i = 0; i < maxAttempts; i++) {
 		const mailhogEmail = await getEmailByRecipient(email);
 
@@ -76,7 +76,7 @@ const decodeMailBody = (email: MailhogEmail): string => {
 	if (encoding === 'base64') {
 		try {
 			body = Buffer.from(body, 'base64').toString('utf-8');
-		} catch (e) {}
+		} catch (e) { }
 	}
 
 	body = body.replace(/=\r?\n/g, '');
@@ -85,7 +85,7 @@ const decodeMailBody = (email: MailhogEmail): string => {
 	return body;
 };
 
-const getPasswordResetToken = async (email: string, maxAttempts = 10): Promise<string | null> => {
+const getPasswordResetToken = async (email: string, maxAttempts = 30): Promise<string | null> => {
 	for (let i = 0; i < maxAttempts; i++) {
 		const mailhogEmail = await getEmailByRecipient(email);
 
@@ -184,7 +184,7 @@ const sendInvitation = async (
 	await page.waitForURL('**/login');
 	await page.getByRole('textbox', { name: 'Email' }).fill(admin.email);
 	await page.getByRole('textbox', { name: 'Password' }).fill(admin.password);
-	await page.getByRole('button', { name: 'Sign in' }).click();
+	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 	await page.waitForURL('**/dashboard');
 	await page.getByRole('link', { name: 'Users' }).click();
 	await page.getByRole('button', { name: '➕' }).click();

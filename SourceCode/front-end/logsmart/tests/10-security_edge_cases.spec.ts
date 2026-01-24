@@ -21,7 +21,7 @@ test.describe('Security: SQL Injection Prevention', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill("admin@ex.com'--");
 		await page.getByRole('textbox', { name: 'Password' }).fill('anything');
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForTimeout(1000);
 		await expect(page).toHaveURL('/login');
 	});
@@ -31,7 +31,7 @@ test.describe('Security: SQL Injection Prevention', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill('testuser@logsmart.app');
 		await page.getByRole('textbox', { name: 'Password' }).fill("' OR '1'='1");
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForTimeout(1000);
 		await expect(page).toHaveURL('/login');
 	});
@@ -59,7 +59,7 @@ test.describe('Security: SQL Injection Prevention', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.getByRole('link', { name: 'Templates' }).click();
 		await page.waitForURL('**/templates-dashboard');
@@ -94,7 +94,7 @@ test.describe('Security: XSS Prevention', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.getByRole('link', { name: 'Settings' }).click();
 		await page.waitForURL('**/settings');
@@ -116,7 +116,7 @@ test.describe('Security: XSS Prevention', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.goto('http://localhost:5173/template-designer');
 		await page.waitForLoadState('networkidle');
@@ -133,7 +133,7 @@ test.describe('Security: XSS Prevention', () => {
 		await page.getByRole('textbox', { name: 'Email' }).fill('javascript:alert("XSS")');
 		await page.getByRole('textbox', { name: 'Password' }).fill('Test123!');
 		await page.waitForTimeout(500);
-		const signInButton = page.getByRole('button', { name: 'Sign in' });
+		const signInButton = page.getByRole('button', { name: 'Sign in', exact: true });
 		await expect(signInButton).toBeDisabled();
 	});
 });
@@ -144,7 +144,7 @@ test.describe('Security: Authorization Boundary Tests', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 
 		await page.goto('http://localhost:5173/log-template?entry=1');
@@ -157,7 +157,7 @@ test.describe('Security: Authorization Boundary Tests', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 
 		await page.goto('http://localhost:5173/dashboard');
@@ -182,7 +182,7 @@ test.describe('Security: Authorization Boundary Tests', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 
 		await page.goto('http://localhost:5173/log-template?entry=999999999');
@@ -221,7 +221,7 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill('testuser@logsmart.app');
 		await page.getByRole('textbox', { name: 'Password' }).fill(longPassword);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForTimeout(1000);
 	});
 
@@ -230,7 +230,7 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.getByRole('link', { name: 'Settings' }).click();
 		await page.waitForURL('**/settings');
@@ -254,7 +254,7 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.goto('http://localhost:5173/template-designer');
 		await page.waitForLoadState('networkidle');
@@ -278,7 +278,7 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.goto('http://localhost:5173/template-designer');
 		await page.waitForLoadState('networkidle');
@@ -301,7 +301,7 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.goto('http://localhost:5173/template-designer');
 		await page.waitForLoadState('networkidle');
@@ -324,7 +324,7 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.goto('http://localhost:5173/template-designer');
 		await page.waitForLoadState('networkidle');
@@ -350,7 +350,7 @@ test.describe('Edge Cases: Concurrent Operations', () => {
 		await page.getByRole('textbox', { name: 'Email' }).fill('testuser@logsmart.app');
 		await page.getByRole('textbox', { name: 'Password' }).fill('Test123!');
 		for (let i = 0; i < 5; i++) {
-			await page.getByRole('button', { name: 'Sign in' }).click({ force: true });
+			await page.getByRole('button', { name: 'Sign in', exact: true }).click({ force: true });
 			await page.waitForTimeout(100);
 		}
 		await page.waitForTimeout(1000);
@@ -361,7 +361,7 @@ test.describe('Edge Cases: Concurrent Operations', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.waitForLoadState('networkidle');
 
@@ -380,7 +380,7 @@ test.describe('Edge Cases: Concurrent Operations', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.getByRole('link', { name: 'Settings' }).click();
 		await page.waitForURL('**/settings');
@@ -414,7 +414,7 @@ test.describe('Edge Cases: Network and Performance', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.waitForLoadState('networkidle');
 
@@ -435,7 +435,7 @@ test.describe('Edge Cases: Network and Performance', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in' }).click();
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 
 		const newTab = await context.newPage();
