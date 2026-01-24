@@ -11,6 +11,12 @@ test.describe('Passkey Management', () => {
 
 	test('should register a passkey and login with it', async ({ browser }) => {
 		const page = await browser.newPage();
+		// Disable Conditional UI (autofill) to prevent it from interfering with explicit button click
+		await page.addInitScript(() => {
+			if (window.PublicKeyCredential) {
+				window.PublicKeyCredential.isConditionalMediationAvailable = async () => false;
+			}
+		});
 
 		// 1. Enable Virtual Authenticator
 		const client = await page.context().newCDPSession(page);
@@ -120,6 +126,12 @@ test.describe('Passkey Management', () => {
 
 	test('should register multiple passkeys', async ({ browser }) => {
 		const page = await browser.newPage();
+		// Disable Conditional UI to prevent interference
+		await page.addInitScript(() => {
+			if (window.PublicKeyCredential) {
+				window.PublicKeyCredential.isConditionalMediationAvailable = async () => false;
+			}
+		});
 		const client = await page.context().newCDPSession(page);
 		await client.send('WebAuthn.enable');
 
@@ -212,6 +224,12 @@ test.describe('Passkey Management', () => {
 
 	test('should login with one-click passkey (discoverable)', async ({ browser }) => {
 		const page = await browser.newPage();
+		// Disable Conditional UI to prevent interference with manual button click
+		await page.addInitScript(() => {
+			if (window.PublicKeyCredential) {
+				window.PublicKeyCredential.isConditionalMediationAvailable = async () => false;
+			}
+		});
 		const client = await page.context().newCDPSession(page);
 		await client.send('WebAuthn.enable');
 		const result = await client.send('WebAuthn.addVirtualAuthenticator', {
