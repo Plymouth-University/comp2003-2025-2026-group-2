@@ -47,11 +47,6 @@ jobs:
           SERVER_PORT: 8080
           LOG_LEVEL: INFO
           JSON_CONFIG: '{"interactiveLogin":true,"httpServer":"NettyWrapper","tokenCallbacks":[{"issuerId":"google","tokenExpiry":3600,"requestMappings":[{"requestParam":"scope","match":".*","claims":{"sub":"mock-google-user-123","email":"testuser@gmail.com","email_verified":true,"given_name":"Test","family_name":"User","picture":"https://example.com/avatar.jpg"}}]}]}'
-        options: >-
-          --health-cmd "curl -f http://localhost:8080/google/.well-known/openid-configuration || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
 
 
     steps:
