@@ -77,7 +77,7 @@ async function checkMailhog(timeout = 5000): Promise<void> {
 	);
 }
 
-async function checkMockOAuth(timeout = 5000): Promise<void> {
+async function checkMockOAuth(timeout = 30000): Promise<void> {
 	const startTime = Date.now();
 	while (Date.now() - startTime < timeout) {
 		try {
