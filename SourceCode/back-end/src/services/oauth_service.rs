@@ -16,6 +16,7 @@ pub struct GoogleOAuthClient {
     client_secret: ClientSecret,
     redirect_uri: RedirectUrl,
     provider_metadata: CoreProviderMetadata,
+    allowed_redirect_uris: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -43,15 +44,33 @@ impl GoogleOAuthClient {
                 .await
                 .map_err(|e| anyhow::anyhow!("Failed to discover Google metadata: {}", e))?;
 
-        let redirect_uri = RedirectUrl::new(redirect_uri)
+        let redirect_uri_validated = RedirectUrl::new(redirect_uri.clone())
             .map_err(|e| anyhow::anyhow!("Invalid redirect URI: {}", e))?;
+
+        let allowed_redirect_uris = std::env::var("ALLOWED_OAUTH_REDIRECT_URIS")
+            .unwrap_or_else(|_| redirect_uri.clone())
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .collect();
 
         Ok(Self {
             client_id: ClientId::new(client_id),
             client_secret: ClientSecret::new(client_secret),
-            redirect_uri,
+            redirect_uri: redirect_uri_validated,
             provider_metadata,
+            allowed_redirect_uris,
         })
+    }
+
+    fn validate_redirect_uri(&self, uri: &str) -> Result<(), (StatusCode, serde_json::Value)> {
+        if !self.allowed_redirect_uris.iter().any(|allowed| allowed == uri) {
+            tracing::error!("Redirect URI not in allowlist: {}", uri);
+            return Err((
+                StatusCode::BAD_REQUEST,
+                json!({ "error": "Invalid redirect URI" }),
+            ));
+        }
+        Ok(())
     }
 
     pub fn initiate_login(&self) -> (String, String, String) {

@@ -175,6 +175,16 @@ impl RateLimitState {
         let limiter = Self::get_or_create_ip_limiter(&self.ip_general_limiter, ip, quota);
         limiter.check().is_ok()
     }
+
+    #[must_use]
+    pub fn check_oauth(&self, ip: IpAddr) -> bool {
+        if self.disabled {
+            return true;
+        }
+        let quota = Quota::per_minute(NonZeroU32::new(10).unwrap());
+        let limiter = Self::get_or_create_ip_limiter(&self.ip_general_limiter, ip, quota);
+        limiter.check().is_ok()
+    }
 }
 
 impl Default for RateLimitState {
@@ -224,6 +234,8 @@ pub async fn rate_limit_middleware(
         app_state.rate_limit.check_login(ip)
     } else if path.contains("/auth/register") {
         app_state.rate_limit.check_register(ip)
+    } else if path.contains("/auth/google/") || path.contains("/auth/oauth/") {
+        app_state.rate_limit.check_oauth(ip)
     } else {
         app_state.rate_limit.check_general(ip)
     };

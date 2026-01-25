@@ -19,12 +19,14 @@ use utoipa::ToSchema;
 
 pub struct OAuthStateStore {
     states: Arc<DashMap<String, (String, bool, chrono::DateTime<chrono::Utc>)>>,
+    link_tokens: Arc<DashMap<String, (OAuthUserInfo, chrono::DateTime<chrono::Utc>)>>,
 }
 
 impl OAuthStateStore {
     pub fn new() -> Self {
         Self {
             states: Arc::new(DashMap::new()),
+            link_tokens: Arc::new(DashMap::new()),
         }
     }
 
@@ -44,9 +46,33 @@ impl OAuthStateStore {
         })
     }
 
+    pub fn store_link_token(&self, user_info: OAuthUserInfo) -> String {
+        use rand::Rng;
+        let token: String = rand::thread_rng()
+            .sample_iter(&rand::distributions::Alphanumeric)
+            .take(64)
+            .map(char::from)
+            .collect();
+        let expires_at = chrono::Utc::now() + chrono::Duration::minutes(5);
+        self.link_tokens.insert(token.clone(), (user_info, expires_at));
+        self.cleanup_expired();
+        token
+    }
+
+    pub fn verify_and_remove_link_token(&self, token: &str) -> Option<OAuthUserInfo> {
+        self.link_tokens.remove(token).and_then(|(_, (user_info, expires_at))| {
+            if chrono::Utc::now() < expires_at {
+                Some(user_info)
+            } else {
+                None
+            }
+        })
+    }
+
     fn cleanup_expired(&self) {
         let now = chrono::Utc::now();
         self.states.retain(|_, (_, _, expires_at)| *expires_at > now);
+        self.link_tokens.retain(|_, (_, expires_at)| *expires_at > now);
     }
 }
 
@@ -148,22 +174,11 @@ pub async fn google_callback(
         .map_err(|(status, value)| (status, Json(value)))?;
 
     if is_link {
+        let link_token = state.oauth_state_store.store_link_token(user_info);
         let frontend_url = std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
-        let email_encoded: String = user_info.email.chars()
-            .map(|c| match c {
-                'A'..='Z' | 'a'..='z' | '0'..='9' | '-' | '_' | '.' | '~' => c.to_string(),
-                _ => format!("%{:02X}", c as u8)
-            })
-            .collect();
-        let sub_encoded: String = user_info.sub.chars()
-            .map(|c| match c {
-                'A'..='Z' | 'a'..='z' | '0'..='9' | '-' | '_' | '.' | '~' => c.to_string(),
-                _ => format!("%{:02X}", c as u8)
-            })
-            .collect();
         let redirect_url = format!(
-            "{}/settings?oauth_link_provider=google&oauth_link_email={}&oauth_link_sub={}", 
-            frontend_url, email_encoded, sub_encoded
+            "{}/settings?oauth_link_token={}", 
+            frontend_url, link_token
         );
         
         return Ok(Redirect::to(&redirect_url).into_response());
@@ -198,8 +213,7 @@ pub async fn google_callback(
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct OAuthLinkConfirmRequest {
-    pub email: String,
-    pub provider_user_id: String,
+    pub link_token: String,
 }
 
 #[utoipa::path(
@@ -228,13 +242,16 @@ pub async fn confirm_google_link(
         )
     })?;
 
-    let user_info = OAuthUserInfo {
-        sub: payload.provider_user_id,
-        email: payload.email,
-        given_name: String::new(),
-        family_name: String::new(),
-        picture: None,
-    };
+    let user_info = state
+        .oauth_state_store
+        .verify_and_remove_link_token(&payload.link_token)
+        .ok_or_else(|| {
+            tracing::error!("Invalid or expired OAuth link token");
+            (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({ "error": "Invalid or expired link token" })),
+            )
+        })?;
 
     oauth_client
         .link_google_account(&state.postgres, &claims.user_id, user_info)

@@ -25,29 +25,24 @@
 
 	onMount(() => {
 		const urlParams = new URLSearchParams(window.location.search);
-		const oauthEmail = urlParams.get('oauth_link_email');
-		const oauthProvider = urlParams.get('oauth_link_provider');
-		const oauthSub = urlParams.get('oauth_link_sub');
+		const oauthLinkToken = urlParams.get('oauth_link_token');
 
-		if (oauthEmail && oauthProvider && oauthSub) {
-			confirmGoogleLink(oauthEmail, oauthSub).then(() => {
+		if (oauthLinkToken) {
+			confirmGoogleLink(oauthLinkToken).then(() => {
 				const url = new URL(window.location.href);
-				url.searchParams.delete('oauth_link_email');
-				url.searchParams.delete('oauth_link_provider');
-				url.searchParams.delete('oauth_link_sub');
+				url.searchParams.delete('oauth_link_token');
 				window.history.replaceState({}, '', url);
 			});
 		}
 	});
 
-	async function confirmGoogleLink(email: string, sub: string) {
+	async function confirmGoogleLink(linkToken: string) {
 		try {
 			const resp = await fetch('/api/auth/google/link/confirm', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					email: email,
-					provider_user_id: sub
+					link_token: linkToken
 				})
 			});
 
@@ -97,13 +92,18 @@
 
 			showSuccessMessage = true;
 			passkeyName = '';
-			await invalidateAll(); // Reloads data including passkeys
+			await invalidateAll();
 		} catch (e: any) {
 			console.error(e);
 			errorMessage = e.message || 'Failed to register passkey';
 		} finally {
 			isRegisteringPasskey = false;
 		}
+	}
+
+	async function handleLinkGoogle() {
+		isLinkingGoogle = true;
+		window.location.href = 'http://localhost:6767/auth/google/initiate?mode=link';
 	}
 
 	async function deletePasskey(id: string) {
@@ -424,7 +424,7 @@
 
 						{#if !hasGoogleLinked}
 							<button
-								onclick={() => (window.location.href = '/api/auth/google/initiate?mode=link')}
+								onclick={handleLinkGoogle}
 								disabled={isLinkingGoogle}
 								class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"

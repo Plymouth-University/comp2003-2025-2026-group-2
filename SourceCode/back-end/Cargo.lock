@@ -313,6 +313,7 @@ dependencies = [
  "mongodb",
  "ollama-rs",
  "openidconnect",
+ "rand 0.8.5",
  "regex",
  "reqwest 0.13.1",
  "schemars 1.2.0",
