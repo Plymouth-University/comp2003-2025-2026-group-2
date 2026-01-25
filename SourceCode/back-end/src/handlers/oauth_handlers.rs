@@ -215,7 +215,7 @@ pub async fn google_callback(
     let frontend_url =
         std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
     let cookie = format!(
-        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age={}",
+        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={}",
         token,
         60 * 60 * 24 * 7
     );

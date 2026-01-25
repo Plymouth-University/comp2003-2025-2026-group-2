@@ -535,7 +535,7 @@ pub async fn finish_passkey_login(
         })?;
 
     let cookie = format!(
-        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age={}",
+        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={}",
         token,
         60 * 60 * 24 * 7
     );
@@ -731,7 +731,7 @@ pub async fn finish_discoverable_passkey_login(
         })?;
 
     let cookie = format!(
-        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age={}",
+        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={}",
         token,
         60 * 60 * 24 * 7
     );

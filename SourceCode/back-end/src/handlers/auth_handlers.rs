@@ -156,7 +156,7 @@ pub async fn register_company_admin(
     tracing::info!("Registration successful for user: {}", user_id);
 
     let cookie = format!(
-        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age={}",
+        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={}",
         token,
         60 * 60 * 24 * 7
     );
@@ -242,7 +242,7 @@ pub async fn login(
     tracing::info!("Login successful for user: {}", user.id);
 
     let cookie = format!(
-        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age={}",
+        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={}",
         token,
         60 * 60 * 24 * 7
     );

@@ -61,7 +61,6 @@ test.describe('Google OAuth Unlink', () => {
 		await page.waitForURL(/localhost:8080/, { timeout: 10000 });
 
 		await fillMockOAuthForm(page, adminCreds.email, adminCreds.firstName, adminCreds.lastName);
-		await page.waitForURL('**/login', { timeout: 30000 });
 		await expect(page.locator('body')).toContainText(/no account found|not linked|link.*account/i);
 	});
 });

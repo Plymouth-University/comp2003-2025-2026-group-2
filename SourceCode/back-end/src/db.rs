@@ -1197,7 +1197,8 @@ pub async fn get_users_by_company_id(pool: &PgPool, company_id: &str) -> Result<
     let users = sqlx::query_as::<_, UserRecord>(
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
-               users.password_hash, users.company_id, users.role, users.created_at, users.deleted_at, companies.name as company_name
+               users.password_hash, users.company_id, users.role, users.created_at, users.deleted_at, 
+               companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.company_id = $1 AND users.deleted_at IS NULL

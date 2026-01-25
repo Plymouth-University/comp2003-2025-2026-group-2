@@ -273,7 +273,7 @@ pub async fn accept_invitation(
     tracing::info!("Invitation accepted by user: {}", user_id);
 
     let cookie = format!(
-        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age={}",
+        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={}",
         token,
         60 * 60 * 24 * 7
     );
