@@ -41,7 +41,9 @@ impl SmtpConfig {
 }
 
 async fn send_email(to_email: &str, subject: &str, body: &str) -> Result<()> {
-    let config = if let Ok(cfg) = SmtpConfig::load() { cfg } else {
+    let config = if let Ok(cfg) = SmtpConfig::load() {
+        cfg
+    } else {
         tracing::error!("SMTP not configured! {}", to_email);
         panic!("SMTP not configured");
     };
@@ -145,13 +147,11 @@ pub async fn send_password_reset_email(to_email: &str, reset_link: &str) -> Resu
 
 pub async fn send_invitation_cancelled_email(to_email: &str) -> Result<()> {
     let subject = "Your LogSmart Invitation Has Been Cancelled";
-    let body = format!(
-        "Hello,\n\n\
+    let body = "Hello,\n\n\
         We want to inform you that your invitation to join LogSmart has been cancelled by the company administrator.\n\n\
         If you believe this was done in error, please contact the company administrator directly.\n\n\
         Best regards,\n\
-        The LogSmart Team"
-    );
+        The LogSmart Team".to_string();
 
     send_email(to_email, subject, &body).await?;
     tracing::info!("Invitation cancellation email sent to {}", to_email);

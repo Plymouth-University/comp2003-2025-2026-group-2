@@ -236,9 +236,32 @@ impl AuditLogger {
         )
         .await;
     }
+
+    pub async fn log_oauth_account_unlinked(
+        db: &PgPool,
+        event_type: String,
+        user_id: Option<String>,
+        email: Option<String>,
+        ip_address: Option<String>,
+        user_agent: Option<String>,
+        details: Option<String>,
+        success: bool,
+    ) {
+        Self::log(
+            db,
+            &event_type,
+            user_id,
+            email,
+            ip_address,
+            user_agent,
+            details,
+            success,
+        )
+        .await;
+    }
 }
 
-#[must_use] 
+#[must_use]
 pub fn extract_ip_from_headers_and_addr(
     headers: &HeaderMap,
     addr: &std::net::SocketAddr,

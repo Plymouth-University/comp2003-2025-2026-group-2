@@ -2,9 +2,9 @@ use crate::{db, jwt_manager::JwtManager, utils::AuditLogger};
 use anyhow::Result;
 use axum::http::StatusCode;
 use openidconnect::{
+    AuthenticationFlow, AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce,
+    RedirectUrl, Scope, TokenResponse,
     core::{CoreClient, CoreIdTokenClaims, CoreProviderMetadata, CoreResponseType},
-    AuthenticationFlow, AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl,
-    Nonce, RedirectUrl, Scope, TokenResponse,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -16,7 +16,6 @@ pub struct GoogleOAuthClient {
     client_secret: ClientSecret,
     redirect_uri: RedirectUrl,
     provider_metadata: CoreProviderMetadata,
-    allowed_redirect_uris: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -36,41 +35,22 @@ impl GoogleOAuthClient {
         issuer_url: String,
     ) -> Result<Self> {
         let issuer_url = IssuerUrl::new(issuer_url)
-            .map_err(|e| anyhow::anyhow!("Failed to create issuer URL: {}", e))?;
+            .map_err(|e| anyhow::anyhow!("Failed to create issuer URL: {e}"))?;
 
         let http_client = openidconnect::reqwest::Client::new();
-        let provider_metadata =
-            CoreProviderMetadata::discover_async(issuer_url, &http_client)
-                .await
-                .map_err(|e| anyhow::anyhow!("Failed to discover Google metadata: {}", e))?;
+        let provider_metadata = CoreProviderMetadata::discover_async(issuer_url, &http_client)
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to discover Google metadata: {e}"))?;
 
         let redirect_uri_validated = RedirectUrl::new(redirect_uri.clone())
-            .map_err(|e| anyhow::anyhow!("Invalid redirect URI: {}", e))?;
-
-        let allowed_redirect_uris = std::env::var("ALLOWED_OAUTH_REDIRECT_URIS")
-            .unwrap_or_else(|_| redirect_uri.clone())
-            .split(',')
-            .map(|s| s.trim().to_string())
-            .collect();
+            .map_err(|e| anyhow::anyhow!("Invalid redirect URI: {e}"))?;
 
         Ok(Self {
             client_id: ClientId::new(client_id),
             client_secret: ClientSecret::new(client_secret),
             redirect_uri: redirect_uri_validated,
             provider_metadata,
-            allowed_redirect_uris,
         })
-    }
-
-    fn validate_redirect_uri(&self, uri: &str) -> Result<(), (StatusCode, serde_json::Value)> {
-        if !self.allowed_redirect_uris.iter().any(|allowed| allowed == uri) {
-            tracing::error!("Redirect URI not in allowlist: {}", uri);
-            return Err((
-                StatusCode::BAD_REQUEST,
-                json!({ "error": "Invalid redirect URI" }),
-            ));
-        }
-        Ok(())
     }
 
     pub fn initiate_login(&self) -> (String, String, String) {
@@ -170,7 +150,7 @@ impl GoogleOAuthClient {
         let family_name = claims
             .family_name()
             .and_then(|names| names.get(None).map(|name| name.as_str().to_string()))
-            .unwrap_or_else(|| String::new());
+            .unwrap_or_else(String::new);
 
         let picture = claims
             .picture()
@@ -290,7 +270,7 @@ impl GoogleOAuthClient {
         user_id: &str,
         user_info: OAuthUserInfo,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
-        if let Some(_) = db::get_user_by_oauth(pool, "google", &user_info.sub)
+        if db::get_user_by_oauth(pool, "google", &user_info.sub)
             .await
             .map_err(|e| {
                 tracing::error!("Database error: {:?}", e);
@@ -299,6 +279,7 @@ impl GoogleOAuthClient {
                     json!({ "error": "Database error" }),
                 )
             })?
+            .is_some()
         {
             return Err((
                 StatusCode::CONFLICT,

@@ -74,8 +74,19 @@ async function proxyRequest(event: RequestEvent) {
 					path: '/',
 					httpOnly: true,
 					secure: true,
-					sameSite: 'strict',
+					sameSite: 'lax',
 					maxAge: 60 * 60 * 24 * 7
+				});
+			}
+			const linkPendingMatch = setCookieHeader.match(/oauth_link_pending=([^;]+)/);
+			if (linkPendingMatch) {
+				const linkToken = linkPendingMatch[1];
+				cookies.set('oauth_link_pending', linkToken, {
+					path: '/',
+					httpOnly: false,
+					secure: true,
+					sameSite: 'lax',
+					maxAge: 300
 				});
 			}
 		}

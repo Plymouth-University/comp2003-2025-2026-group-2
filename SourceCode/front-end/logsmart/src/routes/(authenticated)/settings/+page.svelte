@@ -103,7 +103,26 @@
 
 	async function handleLinkGoogle() {
 		isLinkingGoogle = true;
-		window.location.href = 'http://localhost:6767/auth/google/initiate?mode=link';
+		window.location.href = '/api/auth/google/initiate?mode=link';
+	}
+
+	async function handleUnlinkGoogle() {
+		if (!confirm('Are you sure you want to unlink your Google account?')) return;
+		try {
+			const resp = await fetch('/api/auth/google/unlink', { method: 'DELETE' });
+			if (resp.ok) {
+				await invalidateAll();
+				showSuccessMessage = true;
+				setTimeout(() => {
+					showSuccessMessage = false;
+				}, 3000);
+			} else {
+				const err = await resp.json();
+				errorMessage = err.error || 'Failed to unlink Google account';
+			}
+		} catch (e) {
+			errorMessage = 'Failed to unlink Google account';
+		}
 	}
 
 	async function deletePasskey(id: string) {
@@ -412,6 +431,13 @@
 									✓ Google account is linked
 								</p>
 							</div>
+							<button
+								onclick={handleUnlinkGoogle}
+								class="border-2 px-8 py-2 font-medium hover:opacity-80"
+								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+							>
+								Unlink Google Account
+							</button>
 						{:else if showLinkSuccessMessage}
 							<div
 								class="mb-4 rounded border-2 border-green-500 bg-green-50 px-4 py-3 dark:bg-green-900"

@@ -17,22 +17,20 @@ use std::num::NonZeroU32;
 use std::sync::Arc;
 use std::time::Instant;
 
-type IpLimiter =
-    DashMap<
-        IpAddr,
-        (
-            Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
-            Instant,
-        ),
-    >;
-type StringLimiter = 
-    DashMap<
-        String,
-        (
-            Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
-            Instant,
-        ),
-    >;
+type IpLimiter = DashMap<
+    IpAddr,
+    (
+        Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
+        Instant,
+    ),
+>;
+type StringLimiter = DashMap<
+    String,
+    (
+        Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
+        Instant,
+    ),
+>;
 
 #[derive(Clone)]
 pub struct RateLimitState {

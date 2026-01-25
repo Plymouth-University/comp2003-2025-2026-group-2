@@ -671,6 +671,21 @@ pub async fn link_oauth_to_user(
     Ok(())
 }
 
+pub async fn unlink_oauth_from_user(pool: &PgPool, user_id: &str) -> Result<()> {
+    sqlx::query(
+        r"
+        UPDATE users
+        SET oauth_provider = NULL, oauth_subject = NULL, oauth_picture = NULL
+        WHERE id = $1
+        ",
+    )
+    .bind(user_id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
 pub async fn delete_user_by_email(pool: &PgPool, email: &str) -> Result<()> {
     sqlx::query(
         r"
@@ -1522,12 +1537,12 @@ pub async fn create_passkey_session(
 ) -> Result<()> {
     // 5 minutes expiry
     let expires_at = chrono::Utc::now() + chrono::Duration::minutes(5);
-    
+
     sqlx::query(
         r"
         INSERT INTO passkey_sessions (id, session_type, user_id, challenge, meta, expires_at)
         VALUES ($1, $2, $3, $4, $5, $6)
-        "
+        ",
     )
     .bind(id)
     .bind(session_type)
@@ -1547,7 +1562,7 @@ pub async fn get_passkey_session(pool: &PgPool, id: &str) -> Result<Option<Passk
         SELECT id, session_type, user_id, challenge, meta, created_at, expires_at
         FROM passkey_sessions
         WHERE id = $1 AND expires_at > NOW()
-        "
+        ",
     )
     .bind(id)
     .fetch_optional(pool)
@@ -1561,7 +1576,7 @@ pub async fn delete_passkey_session(pool: &PgPool, id: &str) -> Result<()> {
         r"
         DELETE FROM passkey_sessions
         WHERE id = $1
-        "
+        ",
     )
     .bind(id)
     .execute(pool)

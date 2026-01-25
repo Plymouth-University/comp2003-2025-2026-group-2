@@ -128,25 +128,54 @@ impl AuthService {
             )
         })?;
 
-        if user.is_none() {
-            AuditLogger::log_login_failed(
-                db_pool,
-                None,
-                email.to_string(),
-                ip_address,
-                user_agent,
-                "User not found",
-            )
-            .await;
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                json!({ "error": "Invalid email or password" }),
-            ));
-        }
+        if let Some(user) = user {
+            if let Some(password_hash) = user.password_hash.as_ref() {
+                let password_valid = verify_password(password, password_hash).map_err(|e| {
+                    tracing::error!("Password verification error: {:?}", e);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        json!({ "error": "Authentication failed" }),
+                    )
+                })?;
 
-        let user = user.unwrap();
-        
-        if user.password_hash.is_none() {
+                if !password_valid {
+                    AuditLogger::log_login_failed(
+                        db_pool,
+                        Some(user.id.clone()),
+                        email.to_string(),
+                        ip_address,
+                        user_agent,
+                        "Invalid password",
+                    )
+                    .await;
+                    return Err((
+                        StatusCode::UNAUTHORIZED,
+                        json!({ "error": "Invalid email or password" }),
+                    ));
+                }
+
+                let token = JwtManager::get_config()
+                    .generate_token(user.id.clone(), 24)
+                    .map_err(|e| {
+                        tracing::error!("Failed to generate login JWT token: {:?}", e);
+                        (
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            json!({ "error": "Failed to generate token" }),
+                        )
+                    })?;
+
+                AuditLogger::log_login_success(
+                    db_pool,
+                    user.id.clone(),
+                    email.to_string(),
+                    ip_address,
+                    user_agent,
+                )
+                .await;
+
+                return Ok((token, user));
+            }
+
             AuditLogger::log_login_failed(
                 db_pool,
                 Some(user.id.clone()),
@@ -156,57 +185,25 @@ impl AuthService {
                 "OAuth-only account - password login not available",
             )
             .await;
-            return Err((
+            Err((
                 StatusCode::UNAUTHORIZED,
                 json!({ "error": "This account uses OAuth login. Please sign in with Google." }),
-            ));
-        }
-        
-        let password_valid = verify_password(password, user.password_hash.as_ref().unwrap()).map_err(|e| {
-            tracing::error!("Password verification error: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                json!({ "error": "Authentication failed" }),
-            )
-        })?;
-
-        if !password_valid {
+            ))
+        } else {
             AuditLogger::log_login_failed(
                 db_pool,
-                Some(user.id.clone()),
+                None,
                 email.to_string(),
                 ip_address,
                 user_agent,
-                "Invalid password",
+                "User not found",
             )
             .await;
-            return Err((
+            Err((
                 StatusCode::UNAUTHORIZED,
                 json!({ "error": "Invalid email or password" }),
-            ));
+            ))
         }
-
-        let jwt_config = JwtManager::get_config();
-        let token = jwt_config
-            .generate_token(user.id.clone(), 24)
-            .map_err(|e| {
-                tracing::error!("Failed to generate login JWT token: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Failed to generate token" }),
-                )
-            })?;
-
-        AuditLogger::log_login_success(
-            db_pool,
-            user.id.clone(),
-            email.to_string(),
-            ip_address,
-            user_agent,
-        )
-        .await;
-
-        Ok((token, user))
     }
 
     pub async fn reset_password(

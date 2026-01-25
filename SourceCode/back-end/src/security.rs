@@ -31,7 +31,7 @@ impl IntoResponse for RoleError {
 
 pub trait RoleValidator: Send + Sync {
     fn validate(role: &UserRole) -> bool;
-    #[must_use] 
+    #[must_use]
     fn get_error() -> RoleError {
         RoleError::InsufficientPermissions
     }

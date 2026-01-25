@@ -73,7 +73,14 @@ async fn main() {
         std::env::var("GOOGLE_REDIRECT_URI"),
         std::env::var("GOOGLE_ISSUER_URL"),
     ) {
-        match back_end::services::GoogleOAuthClient::new(client_id, client_secret, redirect_uri, issuer_url).await {
+        match back_end::services::GoogleOAuthClient::new(
+            client_id,
+            client_secret,
+            redirect_uri,
+            issuer_url,
+        )
+        .await
+        {
             Ok(client) => {
                 tracing::info!("Google OAuth client initialized successfully");
                 Some(client)
@@ -117,10 +124,20 @@ async fn main() {
         .route("/auth/register", post(handlers::register_company_admin))
         .route("/auth/login", post(handlers::login))
         .route("/auth/verify", post(handlers::verify_token))
-        .route("/auth/google/initiate", get(handlers::initiate_google_login))
+        .route(
+            "/auth/google/initiate",
+            get(handlers::initiate_google_login),
+        )
         .route("/auth/google/callback", get(handlers::google_callback))
         .route("/auth/google/link", post(handlers::link_google_account))
-        .route("/auth/google/link/confirm", post(handlers::confirm_google_link))
+        .route(
+            "/auth/google/link/confirm",
+            post(handlers::confirm_google_link),
+        )
+        .route(
+            "/auth/google/unlink",
+            delete(handlers::unlink_google_account),
+        )
         .route(
             "/auth/invitations/accept",
             post(handlers::accept_invitation),

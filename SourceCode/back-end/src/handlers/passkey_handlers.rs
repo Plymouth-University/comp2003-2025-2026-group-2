@@ -205,10 +205,10 @@ pub async fn finish_passkey_registration(
 
     let stored_name = session.meta.unwrap_or_default();
 
-    let passkey_name = if !stored_name.is_empty() {
-        stored_name
-    } else {
+    let passkey_name = if stored_name.is_empty() {
         "Passkey".to_string()
+    } else {
+        stored_name
     };
 
     let req: RegisterPublicKeyCredential =
@@ -503,8 +503,8 @@ pub async fn finish_passkey_login(
         .unwrap_or(None);
 
     if let Some(pk) = passkey_record {
-        let _ =
-            db::update_passkey_usage(&state.postgres, &pk.id, auth_result.counter() as i64).await;
+        let _ = db::update_passkey_usage(&state.postgres, &pk.id, i64::from(auth_result.counter()))
+            .await;
     }
 
     let user = db::get_user_by_id(&state.postgres, &user_id)
@@ -654,7 +654,7 @@ pub async fn finish_discoverable_passkey_login(
     let user_id = user_unique_id.to_string();
 
     // Get the credential ID string for looking up the passkey
-    let cred_id_str = BASE64_URL_SAFE_NO_PAD.encode(&cred_id);
+    let cred_id_str = BASE64_URL_SAFE_NO_PAD.encode(cred_id);
     tracing::info!("Discoverable login found credential_id: {}", cred_id_str);
     tracing::info!("Discoverable login found user_id: {}", user_id);
 
@@ -698,7 +698,7 @@ pub async fn finish_discoverable_passkey_login(
     let _ = db::update_passkey_usage(
         &state.postgres,
         &passkey_record.id,
-        auth_result.counter() as i64,
+        i64::from(auth_result.counter()),
     )
     .await;
 

@@ -322,19 +322,27 @@ pub async fn has_entry_for_current_period(
     let now = chrono::Utc::now();
     let (period_start, period_end) = match frequency {
         Frequency::Daily => {
-            let start = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc();
-            let end = now.date_naive().and_hms_opt(23, 59, 59).unwrap().and_utc();
+            let start = now
+                .date_naive()
+                .and_hms_opt(0, 0, 0)
+                .unwrap_or_else(|| panic!("Error finding day start: {now}"))
+                .and_utc();
+            let end = now
+                .date_naive()
+                .and_hms_opt(23, 59, 59)
+                .unwrap_or_else(|| panic!("Error finding day end: {now}"))
+                .and_utc();
             (start, end)
         }
         Frequency::Weekly => {
             let days_since_monday = now.weekday().num_days_from_monday();
             let start = (now.date_naive() - chrono::Duration::days(i64::from(days_since_monday)))
                 .and_hms_opt(0, 0, 0)
-                .unwrap()
+                .unwrap_or_else(|| panic!("Error finding week start date: {now}"))
                 .and_utc();
             let end = (start.date_naive() + chrono::Duration::days(6))
                 .and_hms_opt(23, 59, 59)
-                .unwrap()
+                .unwrap_or_else(|| panic!("Error finding week end date: {now}"))
                 .and_utc();
             (start, end)
         }
@@ -409,8 +417,16 @@ pub async fn has_submitted_entry_for_current_period(
     let now = chrono::Utc::now();
     let (period_start, period_end) = match frequency {
         Frequency::Daily => {
-            let start = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc();
-            let end = now.date_naive().and_hms_opt(23, 59, 59).unwrap().and_utc();
+            let start = now
+                .date_naive()
+                .and_hms_opt(0, 0, 0)
+                .unwrap_or_else(|| panic!("Error finding day start: {now}"))
+                .and_utc();
+            let end = now
+                .date_naive()
+                .and_hms_opt(23, 59, 59)
+                .unwrap_or_else(|| panic!("Error finding day end: {now}"))
+                .and_utc();
             (start, end)
         }
         Frequency::Weekly => {
@@ -498,8 +514,16 @@ pub async fn get_draft_entry_for_current_period(
     let now = chrono::Utc::now();
     let (period_start, period_end) = match frequency {
         Frequency::Daily => {
-            let start = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc();
-            let end = now.date_naive().and_hms_opt(23, 59, 59).unwrap().and_utc();
+            let start = now
+                .date_naive()
+                .and_hms_opt(0, 0, 0)
+                .unwrap_or_else(|| panic!("Error finding day start: {now}"))
+                .and_utc();
+            let end = now
+                .date_naive()
+                .and_hms_opt(23, 59, 59)
+                .unwrap_or_else(|| panic!("Error finding day end: {now}"))
+                .and_utc();
             (start, end)
         }
         Frequency::Weekly => {
@@ -650,7 +674,7 @@ pub async fn delete_log_entry(client: &mongodb::Client, entry_id: &str) -> Resul
     Ok(())
 }
 
-#[must_use] 
+#[must_use]
 pub fn is_form_due_today(schedule: &Schedule) -> bool {
     let today = chrono::Local::now();
     let weekday = today.weekday();
@@ -701,12 +725,10 @@ pub fn is_form_due_today(schedule: &Schedule) -> bool {
                     let target_month = u32::from(month);
                     let target_day = u32::from(day);
 
-                    if today.month() > target_month {
-                        true
-                    } else if today.month() == target_month {
-                        today.day() >= target_day
-                    } else {
-                        false
+                    match today.month().cmp(&target_month) {
+                        std::cmp::Ordering::Greater => true,
+                        std::cmp::Ordering::Less => false,
+                        std::cmp::Ordering::Equal => today.day() >= target_day,
                     }
                 } else {
                     false
@@ -718,7 +740,7 @@ pub fn is_form_due_today(schedule: &Schedule) -> bool {
     }
 }
 
-#[must_use] 
+#[must_use]
 pub fn format_period_for_frequency(frequency: &Frequency) -> String {
     let now = chrono::Utc::now();
 
@@ -726,13 +748,14 @@ pub fn format_period_for_frequency(frequency: &Frequency) -> String {
         Frequency::Daily => now.format("%d/%m/%y").to_string(),
         Frequency::Weekly => {
             let days_since_monday = now.weekday().num_days_from_monday();
-            let week_start = (now.date_naive() - chrono::Duration::days(i64::from(days_since_monday)))
-                .and_hms_opt(0, 0, 0)
-                .unwrap()
-                .and_utc();
+            let week_start = (now.date_naive()
+                - chrono::Duration::days(i64::from(days_since_monday)))
+            .and_hms_opt(0, 0, 0)
+            .unwrap_or_else(|| panic!("Error finding week start date: {now}"))
+            .and_utc();
             let week_end = (week_start.date_naive() + chrono::Duration::days(6))
                 .and_hms_opt(23, 59, 59)
-                .unwrap()
+                .unwrap_or_else(|| panic!("Error finding week end date: {now}"))
                 .and_utc();
 
             format!(
@@ -748,7 +771,7 @@ pub fn format_period_for_frequency(frequency: &Frequency) -> String {
     }
 }
 
-#[must_use] 
+#[must_use]
 pub fn process_template_layout_with_period(
     layout: &TemplateLayout,
     frequency: &Frequency,
@@ -776,7 +799,7 @@ pub fn process_template_layout_with_period(
         .collect()
 }
 
-#[must_use] 
+#[must_use]
 pub fn process_template_layout_with_period_string(
     layout: &TemplateLayout,
     period: &str,

@@ -42,6 +42,7 @@ use utoipa::OpenApi;
         handlers::google_callback,
         handlers::link_google_account,
         handlers::confirm_google_link,
+        handlers::unlink_google_account,
     ),
     components(
         schemas(
