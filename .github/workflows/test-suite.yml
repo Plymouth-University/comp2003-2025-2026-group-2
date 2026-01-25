@@ -97,16 +97,7 @@ jobs:
       - name: Install Playwright Browsers
         working-directory: SourceCode/front-end/logsmart
         run: bun x playwright install --with-deps
-
-      - name: Check Mock OAuth Container Logs
-        run: |
-          echo "=== Mock OAuth Container Logs ==="
-          docker logs $(docker ps -q --filter ancestor=ghcr.io/navikt/mock-oauth2-server:2.1.10) || echo "Could not fetch logs"
-          echo "=== Container Status ==="
-          docker ps -a --filter ancestor=ghcr.io/navikt/mock-oauth2-server:2.1.10
-          echo "=== Testing endpoint ==="
-          curl -v http://localhost:8080/google/.well-known/openid-configuration || echo "Endpoint not reachable"
-
+        
       - name: Run Playwright Tests
         working-directory: SourceCode/front-end/logsmart
         env:
