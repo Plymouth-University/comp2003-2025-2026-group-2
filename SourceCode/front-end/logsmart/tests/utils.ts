@@ -76,7 +76,7 @@ const decodeMailBody = (email: MailhogEmail): string => {
 	if (encoding === 'base64') {
 		try {
 			body = Buffer.from(body, 'base64').toString('utf-8');
-		} catch (e) { }
+		} catch (e) {}
 	}
 
 	body = body.replace(/=\r?\n/g, '');

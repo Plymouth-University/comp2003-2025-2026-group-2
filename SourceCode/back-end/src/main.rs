@@ -67,6 +67,27 @@ async fn main() {
     let metrics = back_end::metrics::Metrics::new();
     metrics.clone().spawn_logging_task();
 
+    let google_oauth = if let (Ok(client_id), Ok(client_secret), Ok(redirect_uri), Ok(issuer_url)) = (
+        std::env::var("GOOGLE_CLIENT_ID"),
+        std::env::var("GOOGLE_CLIENT_SECRET"),
+        std::env::var("GOOGLE_REDIRECT_URI"),
+        std::env::var("GOOGLE_ISSUER_URL"),
+    ) {
+        match back_end::services::GoogleOAuthClient::new(client_id, client_secret, redirect_uri, issuer_url).await {
+            Ok(client) => {
+                tracing::info!("Google OAuth client initialized successfully");
+                Some(client)
+            }
+            Err(e) => {
+                tracing::warn!("Failed to initialize Google OAuth client: {:?}", e);
+                None
+            }
+        }
+    } else {
+        tracing::info!("Google OAuth not configured - skipping");
+        None
+    };
+
     let state = AppState {
         postgres: auth_db_postgres_pool,
         rate_limit: rate_limit_state.clone(),
@@ -88,12 +109,18 @@ async fn main() {
             .build()
             .expect("Invalid configuration"),
         ),
+        google_oauth,
+        oauth_state_store: std::sync::Arc::new(handlers::OAuthStateStore::new()),
     };
 
     let api_routes = Router::new()
         .route("/auth/register", post(handlers::register_company_admin))
         .route("/auth/login", post(handlers::login))
         .route("/auth/verify", post(handlers::verify_token))
+        .route("/auth/google/initiate", get(handlers::initiate_google_login))
+        .route("/auth/google/callback", get(handlers::google_callback))
+        .route("/auth/google/link", post(handlers::link_google_account))
+        .route("/auth/google/link/confirm", post(handlers::confirm_google_link))
         .route(
             "/auth/invitations/accept",
             post(handlers::accept_invitation),

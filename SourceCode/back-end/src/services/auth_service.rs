@@ -44,7 +44,7 @@ impl AuthService {
             email.to_string(),
             first_name.to_string(),
             last_name.to_string(),
-            password_hash,
+            Some(password_hash),
             None,
             db::UserRole::Admin,
         )
@@ -145,7 +145,24 @@ impl AuthService {
         }
 
         let user = user.unwrap();
-        let password_valid = verify_password(password, &user.password_hash).map_err(|e| {
+        
+        if user.password_hash.is_none() {
+            AuditLogger::log_login_failed(
+                db_pool,
+                Some(user.id.clone()),
+                email.to_string(),
+                ip_address,
+                user_agent,
+                "OAuth-only account - password login not available",
+            )
+            .await;
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                json!({ "error": "This account uses OAuth login. Please sign in with Google." }),
+            ));
+        }
+        
+        let password_valid = verify_password(password, user.password_hash.as_ref().unwrap()).map_err(|e| {
             tracing::error!("Password verification error: {:?}", e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,

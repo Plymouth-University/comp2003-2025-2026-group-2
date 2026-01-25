@@ -548,6 +548,7 @@ pub async fn finish_passkey_login(
             last_name: user.last_name,
             company_name: user.company_name,
             role: user.role,
+            oauth_provider: user.oauth_provider,
         },
     })
     .into_response();
@@ -743,6 +744,7 @@ pub async fn finish_discoverable_passkey_login(
             last_name: user.last_name,
             company_name: user.company_name,
             role: user.role,
+            oauth_provider: user.oauth_provider,
         },
     })
     .into_response();

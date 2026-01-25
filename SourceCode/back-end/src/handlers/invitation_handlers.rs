@@ -288,6 +288,7 @@ pub async fn accept_invitation(
                 last_name: payload.last_name,
                 company_name: None,
                 role: _created_user.role,
+                oauth_provider: None
             },
         }),
     )

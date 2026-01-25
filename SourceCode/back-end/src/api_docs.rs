@@ -38,6 +38,10 @@ use utoipa::OpenApi;
         handlers::get_db_index_usage,
         handlers::get_db_table_sizes,
         handlers::get_pending_invitations,
+        handlers::initiate_google_login,
+        handlers::google_callback,
+        handlers::link_google_account,
+        handlers::confirm_google_link,
     ),
     components(
         schemas(
@@ -101,6 +105,9 @@ use utoipa::OpenApi;
             logs_db::Frequency,
             logs_db::TemplateLayout,
             logs_db::TemplateFieldProps,
+            dto::OAuthCallbackRequest,
+            dto::OAuthInitiateResponse,
+            handlers::OAuthLinkConfirmRequest,
         )
     ),
     tags(

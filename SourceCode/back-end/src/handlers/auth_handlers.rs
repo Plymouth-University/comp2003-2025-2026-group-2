@@ -171,6 +171,7 @@ pub async fn register_company_admin(
                 last_name: payload.last_name,
                 company_name: Some(payload.company_name),
                 role: role_str,
+                oauth_provider: None,
             },
         }),
     )
@@ -254,6 +255,7 @@ pub async fn login(
             last_name: user.last_name,
             company_name: user.company_name,
             role: user.role,
+            oauth_provider: user.oauth_provider,
         },
     })
     .into_response();

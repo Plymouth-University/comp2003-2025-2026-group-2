@@ -1,4 +1,4 @@
-import { json, type RequestEvent } from '@sveltejs/kit';
+import { json, redirect, type RequestEvent } from '@sveltejs/kit';
 import { PUBLIC_API_URL } from '$env/static/public';
 
 const API_URL = PUBLIC_API_URL || 'https://api.logsmart.app';
@@ -44,8 +44,26 @@ async function proxyRequest(event: RequestEvent) {
 		const response = await fetch(url, {
 			method: request.method,
 			headers,
-			body
+			body,
+			redirect: 'manual'
 		});
+
+		if (
+			response.status === 301 ||
+			response.status === 302 ||
+			response.status === 303 ||
+			response.status === 307 ||
+			response.status === 308
+		) {
+			const location = response.headers.get('location');
+			console.log('Redirect detected:', response.status, 'Location:', location);
+			if (location) {
+				throw redirect(303, location);
+			} else {
+				console.error('Redirect without location header:', response.status);
+				return json({ error: 'Invalid redirect response' }, { status: 500 });
+			}
+		}
 
 		const setCookieHeader = response.headers.get('set-cookie');
 		if (setCookieHeader) {
@@ -73,7 +91,10 @@ async function proxyRequest(event: RequestEvent) {
 				headers: { 'content-type': contentType || 'text/plain' }
 			});
 		}
-	} catch (error) {
+	} catch (error: any) {
+		if (error?.status && error?.location) {
+			throw error;
+		}
 		console.error('Proxy error:', error);
 		return json({ error: 'Network error' }, { status: 500 });
 	}

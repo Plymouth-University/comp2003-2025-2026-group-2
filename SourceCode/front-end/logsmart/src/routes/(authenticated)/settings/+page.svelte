@@ -4,17 +4,68 @@
 	import { isDarkMode } from '$lib/stores/theme';
 	import { startRegistration } from '@simplewebauthn/browser';
 	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 
 	let { data, form } = $props<{ data: PageData; form: ActionData }>();
 
 	let firstName = $derived(data.user?.first_name || '');
 	let lastName = $derived(data.user?.last_name || '');
 	let email = $derived(data.user?.email || '');
+	let hasGoogleLinked = $derived(data.user?.oauth_provider === 'google');
+
 	let isSubmitting = $state(false);
 	let showSuccessMessage = $state(false);
 	let errorMessage = $state('');
 	let passkeyName = $state('');
 	let isRegisteringPasskey = $state(false);
+	let isLinkingGoogle = $state(false);
+	let showLinkSuccessMessage = $state(false);
+
+	onMount(() => {
+		const urlParams = new URLSearchParams(window.location.search);
+		const oauthEmail = urlParams.get('oauth_link_email');
+		const oauthProvider = urlParams.get('oauth_link_provider');
+		const oauthSub = urlParams.get('oauth_link_sub');
+
+		if (oauthEmail && oauthProvider && oauthSub) {
+			confirmGoogleLink(oauthEmail, oauthSub).then(() => {
+				const url = new URL(window.location.href);
+				url.searchParams.delete('oauth_link_email');
+				url.searchParams.delete('oauth_link_provider');
+				url.searchParams.delete('oauth_link_sub');
+				window.history.replaceState({}, '', url);
+			});
+		}
+	});
+
+	async function confirmGoogleLink(email: string, sub: string) {
+		try {
+			const resp = await fetch('/api/auth/google/link/confirm', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					email: email,
+					provider_user_id: sub
+				})
+			});
+
+			if (!resp.ok) {
+				const err = await resp.json();
+				throw new Error(err.error || 'Failed to link Google account');
+			}
+
+			showLinkSuccessMessage = true;
+			await invalidateAll();
+			setTimeout(() => {
+				showLinkSuccessMessage = false;
+			}, 3000);
+		} catch (e: any) {
+			console.error(e);
+			errorMessage = e.message || 'Failed to link Google account';
+		}
+	}
 
 	async function handleRegisterPasskey() {
 		try {
@@ -309,7 +360,7 @@
 						{/if}
 
 						<div class="flex items-end gap-4">
-							<div class="flex-grow">
+							<div class="grow">
 								<label
 									for="passkeyName"
 									class="mb-2 block text-sm font-medium"
@@ -335,6 +386,52 @@
 								{isRegisteringPasskey ? 'Registering...' : 'Add Passkey'}
 							</button>
 						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Google Account Linking Section -->
+			<div
+				class="border-2"
+				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+			>
+				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
+					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Linked Accounts</h2>
+				</div>
+				<div class="px-6 py-6" style="background-color: var(--bg-primary);">
+					<div class="max-w-2xl">
+						<p class="mb-4" style="color: var(--text-secondary);">
+							Link your Google account to sign in with one click.
+						</p>
+
+						{#if hasGoogleLinked}
+							<div
+								class="mb-4 rounded border-2 border-green-500 bg-green-50 px-4 py-3 dark:bg-green-900"
+							>
+								<p class="font-medium text-green-700 dark:text-green-200">
+									✓ Google account is linked
+								</p>
+							</div>
+						{:else if showLinkSuccessMessage}
+							<div
+								class="mb-4 rounded border-2 border-green-500 bg-green-50 px-4 py-3 dark:bg-green-900"
+							>
+								<p class="font-medium text-green-700 dark:text-green-200">
+									✓ Google account linked successfully!
+								</p>
+							</div>
+						{/if}
+
+						{#if !hasGoogleLinked}
+							<button
+								onclick={() => (window.location.href = '/api/auth/google/initiate?mode=link')}
+								disabled={isLinkingGoogle}
+								class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+							>
+								{isLinkingGoogle ? 'Linking...' : 'Link Google Account'}
+							</button>
+						{/if}
 					</div>
 				</div>
 			</div>

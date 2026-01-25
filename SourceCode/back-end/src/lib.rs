@@ -24,4 +24,6 @@ pub struct AppState {
     pub metrics: metrics::Metrics,
     pub mongodb: mongodb::Client,
     pub webauthn: std::sync::Arc<webauthn_rs::Webauthn>,
+    pub google_oauth: Option<services::GoogleOAuthClient>,
+    pub oauth_state_store: std::sync::Arc<handlers::OAuthStateStore>,
 }

@@ -255,6 +255,7 @@ pub struct UserResponse {
     pub last_name: String,
     pub company_name: Option<String>,
     pub role: UserRole,
+    pub oauth_provider: Option<String>,
 }
 
 impl From<db::UserRecord> for UserResponse {
@@ -265,6 +266,7 @@ impl From<db::UserRecord> for UserResponse {
             last_name: user.last_name,
             company_name: user.company_name,
             role: user.role,
+            oauth_provider: user.oauth_provider,
         }
     }
 }
@@ -334,6 +336,19 @@ pub struct ResetPasswordRequest {
     pub token: String,
     #[schema(example = "NewPassword123!")]
     pub new_password: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct OAuthInitiateResponse {
+    pub authorization_url: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct OAuthCallbackRequest {
+    #[schema(example = "authorization-code-from-google")]
+    pub code: String,
+    #[schema(example = "csrf-state-token")]
+    pub state: String,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
