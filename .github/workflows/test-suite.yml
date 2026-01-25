@@ -42,7 +42,7 @@ jobs:
       mockoidc:
         image: ghcr.io/navikt/mock-oauth2-server:2.1.10
         ports:
-          - "8080:8080"
+          - 8080:8080
         env:
           SERVER_PORT: 8080
           LOG_LEVEL: INFO
