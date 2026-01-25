@@ -1,6 +1,8 @@
 use crate::{
     AppState, db,
-    dto::{AdminUpdateMemberRequest, ErrorResponse, GetCompanyMembersResponse, RemoveMemberRequest},
+    dto::{
+        AdminUpdateMemberRequest, ErrorResponse, GetCompanyMembersResponse, RemoveMemberRequest,
+    },
     middleware::AuthToken,
     services::user_service::UserService,
     utils::AuditLogger,

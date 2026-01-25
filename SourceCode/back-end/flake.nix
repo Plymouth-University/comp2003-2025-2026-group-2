@@ -155,6 +155,10 @@
           };
         logSmartBackendAarch64 = pkgsCross.callPackage crateExpressionCross { };
 
+        devAliases = pkgs.writeShellScriptBin "build" ''
+          exec ${pkgs.cachix}/bin/cachix watch-exec logsmart-cache -- nix build .#aarch64-linux
+        '';
+
         packages = {
           aarch64-linux = logSmartBackendAarch64;
           x86_64-linux = logSmartBackend;
@@ -174,6 +178,8 @@
             mongodb-compass
             mold
             clang
+            cachix
+            devAliases
           ];
           env = {
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";

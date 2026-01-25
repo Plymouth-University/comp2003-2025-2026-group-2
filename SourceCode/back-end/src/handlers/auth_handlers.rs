@@ -156,7 +156,7 @@ pub async fn register_company_admin(
     tracing::info!("Registration successful for user: {}", user_id);
 
     let cookie = format!(
-        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age={}",
+        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={}",
         token,
         60 * 60 * 24 * 7
     );
@@ -171,6 +171,7 @@ pub async fn register_company_admin(
                 last_name: payload.last_name,
                 company_name: Some(payload.company_name),
                 role: role_str,
+                oauth_provider: None,
             },
         }),
     )
@@ -241,7 +242,7 @@ pub async fn login(
     tracing::info!("Login successful for user: {}", user.id);
 
     let cookie = format!(
-        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age={}",
+        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={}",
         token,
         60 * 60 * 24 * 7
     );
@@ -254,6 +255,7 @@ pub async fn login(
             last_name: user.last_name,
             company_name: user.company_name,
             role: user.role,
+            oauth_provider: user.oauth_provider,
         },
     })
     .into_response();

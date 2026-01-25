@@ -1,10 +1,6 @@
 name: Test Suite
 
 on:
-  push:
-    branches:
-      - main
-      - auth-overhaul
   pull_request:
   workflow_dispatch:
 
@@ -23,7 +19,6 @@ jobs:
           POSTGRES_DB: logsmartdb
         ports:
           - 5432:5432
-        # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -43,6 +38,16 @@ jobs:
         ports:
           - 1025:1025
           - 8025:8025
+      
+      mockoidc:
+        image: ghcr.io/navikt/mock-oauth2-server:2.1.10
+        ports:
+          - 8080:8080
+        env:
+          SERVER_PORT: 8080
+          LOG_LEVEL: INFO
+          JSON_CONFIG: '{"interactiveLogin":true,"httpServer":"NettyWrapper","tokenCallbacks":[{"issuerId":"google","tokenExpiry":3600,"requestMappings":[{"requestParam":"scope","match":".*","claims":{"sub":"mock-google-user-123","email":"testuser@gmail.com","email_verified":true,"given_name":"Test","family_name":"User","picture":"https://example.com/avatar.jpg"}}]}]}'
+
 
     steps:
       - name: Checkout Code
@@ -92,7 +97,7 @@ jobs:
       - name: Install Playwright Browsers
         working-directory: SourceCode/front-end/logsmart
         run: bun x playwright install --with-deps
-
+        
       - name: Run Playwright Tests
         working-directory: SourceCode/front-end/logsmart
         env:
