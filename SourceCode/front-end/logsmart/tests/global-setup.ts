@@ -86,7 +86,10 @@ async function checkMockOAuth(timeout = 30000): Promise<void> {
 				console.log('✓ Mock OAuth server is running');
 				return;
 			}
-		} catch (e) {}
+			console.log(`Mock OAuth check: HTTP ${response.status}`);
+		} catch (e: any) {
+			console.log(`Mock OAuth check error: ${e.message}`);
+		}
 		await new Promise((resolve) => setTimeout(resolve, 500));
 	}
 	throw new Error(
