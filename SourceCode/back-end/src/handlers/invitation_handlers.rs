@@ -272,10 +272,18 @@ pub async fn accept_invitation(
     state.metrics.increment_successful_requests();
     tracing::info!("Invitation accepted by user: {}", user_id);
 
+    let cookie_domain = std::env::var("COOKIE_DOMAIN").unwrap_or_default();
+    let domain_attr = if cookie_domain.is_empty() {
+        String::new()
+    } else {
+        format!("; Domain={cookie_domain}")
+    };
+
     let cookie = format!(
-        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={}",
+        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={}{}",
         token,
-        60 * 60 * 24 * 7
+        60 * 60 * 24 * 7,
+        domain_attr
     );
 
     let mut response = (
