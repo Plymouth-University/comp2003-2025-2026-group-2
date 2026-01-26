@@ -4,9 +4,7 @@
 	import { isDarkMode } from '$lib/stores/theme';
 	import { startRegistration } from '@simplewebauthn/browser';
 	import { invalidateAll } from '$app/navigation';
-	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
 
 	let { data, form } = $props<{ data: PageData; form: ActionData }>();
 

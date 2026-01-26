@@ -75,7 +75,8 @@ async function proxyRequest(event: RequestEvent) {
 					httpOnly: true,
 					secure: true,
 					sameSite: 'lax',
-					maxAge: 60 * 60 * 24 * 7
+					maxAge: 60 * 60 * 24 * 7,
+					domain: originalUrl.hostname
 				});
 			}
 			const linkPendingMatch = setCookieHeader.match(/oauth_link_pending=([^;]+)/);
@@ -86,7 +87,8 @@ async function proxyRequest(event: RequestEvent) {
 					httpOnly: false,
 					secure: true,
 					sameSite: 'lax',
-					maxAge: 300
+					maxAge: 300,
+					domain: originalUrl.hostname
 				});
 			}
 		}

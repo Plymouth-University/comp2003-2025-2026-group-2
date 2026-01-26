@@ -178,6 +178,12 @@ impl GoogleOAuthClient {
         user_agent: Option<String>,
         allow_new_account: bool,
     ) -> Result<db::UserRecord, (StatusCode, serde_json::Value)> {
+        tracing::info!(
+            "OAuth get_or_create_user: looking for oauth_subject={}, google_email={}",
+            user_info.sub,
+            user_info.email
+        );
+
         if let Some(existing_user) = db::get_user_by_oauth(pool, "google", &user_info.sub)
             .await
             .map_err(|e| {
@@ -188,6 +194,12 @@ impl GoogleOAuthClient {
                 )
             })?
         {
+            tracing::info!(
+                "OAuth login: found linked user {} (email: {}) for oauth_subject={}",
+                existing_user.id,
+                existing_user.email,
+                user_info.sub
+            );
             AuditLogger::log_oauth_login(
                 pool,
                 existing_user.id.clone(),
@@ -200,6 +212,12 @@ impl GoogleOAuthClient {
             .await;
             return Ok(existing_user);
         }
+
+        tracing::info!(
+            "OAuth login: no linked user found for oauth_subject={}, checking email={}",
+            user_info.sub,
+            user_info.email
+        );
 
         if let Some(_existing_user) = db::get_user_by_email(pool, &user_info.email)
             .await
@@ -270,6 +288,13 @@ impl GoogleOAuthClient {
         user_id: &str,
         user_info: OAuthUserInfo,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
+        tracing::info!(
+            "OAuth linking: user_id={}, oauth_subject={}, google_email={}",
+            user_id,
+            user_info.sub,
+            user_info.email
+        );
+
         if db::get_user_by_oauth(pool, "google", &user_info.sub)
             .await
             .map_err(|e| {
@@ -291,7 +316,7 @@ impl GoogleOAuthClient {
             pool,
             user_id,
             "google".to_string(),
-            user_info.sub,
+            user_info.sub.clone(),
             user_info.picture,
         )
         .await
@@ -302,6 +327,11 @@ impl GoogleOAuthClient {
                 json!({ "error": "Failed to link account" }),
             )
         })?;
+
+        tracing::info!(
+            "OAuth successfully linked: user_id={} now has Google OAuth",
+            user_id
+        );
 
         Ok(())
     }
