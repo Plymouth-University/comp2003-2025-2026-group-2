@@ -16,4 +16,6 @@ pub use log_entry_handlers::*;
 pub use oauth_handlers::*;
 pub use passkey_handlers::*;
 pub use template_handlers::*;
+pub mod passkey_handlers;
+pub use passkey_handlers::*;
 pub use user_handlers::*;
