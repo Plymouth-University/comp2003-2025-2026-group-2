@@ -114,8 +114,10 @@ pub async fn initiate_google_login(
     State(state): State<AppState>,
     Query(query): Query<OAuthInitiateQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    tracing::info!("OAuth initiate called with mode: {:?}", query.mode);
+
     let oauth_client = state.google_oauth.as_ref().ok_or_else(|| {
-        tracing::error!("Google OAuth client not configured");
+        tracing::error!("Google OAuth client not configured - google_oauth is None");
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({ "error": "OAuth not configured" })),
@@ -124,6 +126,8 @@ pub async fn initiate_google_login(
 
     let (auth_url, csrf_state, nonce) = oauth_client.initiate_login();
     let is_link = query.mode.as_deref() == Some("link");
+
+    tracing::info!("OAuth redirecting to: {}", auth_url);
 
     state
         .oauth_state_store
@@ -158,8 +162,10 @@ pub async fn google_callback(
     headers: HeaderMap,
     Query(params): Query<GoogleCallbackParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    tracing::info!("OAuth callback received with state: {}", &params.state[..8.min(params.state.len())]);
+    
     let oauth_client = state.google_oauth.as_ref().ok_or_else(|| {
-        tracing::error!("Google OAuth client not configured");
+        tracing::error!("Google OAuth client not configured in callback");
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({ "error": "OAuth not configured" })),
@@ -170,12 +176,14 @@ pub async fn google_callback(
         .oauth_state_store
         .verify_and_remove(&params.state)
         .ok_or_else(|| {
-            tracing::error!("Invalid or expired OAuth state");
+            tracing::error!("Invalid or expired OAuth state: {}", &params.state[..8.min(params.state.len())]);
             (
                 StatusCode::UNAUTHORIZED,
                 Json(json!({ "error": "Invalid or expired state parameter" })),
             )
         })?;
+    
+    tracing::info!("OAuth state verified, is_link={}", is_link);
 
     let ip_address = Some(extract_ip_from_headers_and_addr(&headers, &addr));
     let user_agent = extract_user_agent(&headers);
@@ -183,20 +191,33 @@ pub async fn google_callback(
     let (user_info, _claims) = oauth_client
         .exchange_code(params.code, nonce)
         .await
-        .map_err(|(status, value)| (status, Json(value)))?;
+        .map_err(|(status, value)| {
+            tracing::error!("OAuth code exchange failed: {:?}", value);
+            (status, Json(value))
+        })?;
+    
+    tracing::info!("OAuth code exchanged successfully for email: {}", user_info.email);
 
     if is_link {
         let link_token = state.oauth_state_store.store_link_token(user_info);
         let frontend_url =
             std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
         let redirect_url = format!("{frontend_url}/settings?oauth_link_token={link_token}");
+        tracing::info!("OAuth link flow, redirecting to: {}", redirect_url);
+
+        let cookie_domain = std::env::var("COOKIE_DOMAIN").unwrap_or_default();
+        let domain_attr = if cookie_domain.is_empty() {
+            String::new()
+        } else {
+            format!("; Domain={cookie_domain}")
+        };
 
         let mut response = Redirect::to(&redirect_url).into_response();
         response.headers_mut().insert(
             HeaderName::from_static("set-cookie"),
             HeaderValue::from_str(&format!(
-                "oauth_link_pending={}; Path=/; SameSite=Lax; Max-Age=300",
-                link_token
+                "oauth_link_pending={}; Path=/; SameSite=Lax; Max-Age=300{}",
+                link_token, domain_attr
             )).unwrap(),
         );
 
@@ -214,10 +235,19 @@ pub async fn google_callback(
 
     let frontend_url =
         std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
+    
+    let cookie_domain = std::env::var("COOKIE_DOMAIN").unwrap_or_default();
+    let domain_attr = if cookie_domain.is_empty() {
+        String::new()
+    } else {
+        format!("; Domain={cookie_domain}")
+    };
+
     let cookie = format!(
-        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={}",
+        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={}{}",
         token,
-        60 * 60 * 24 * 7
+        60 * 60 * 24 * 7,
+        domain_attr
     );
 
     let redirect_url = format!("{frontend_url}/dashboard");

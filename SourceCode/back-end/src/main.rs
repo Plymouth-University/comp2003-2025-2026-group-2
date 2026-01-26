@@ -67,32 +67,41 @@ async fn main() {
     let metrics = back_end::metrics::Metrics::new();
     metrics.clone().spawn_logging_task();
 
-    let google_oauth = if let (Ok(client_id), Ok(client_secret), Ok(redirect_uri), Ok(issuer_url)) = (
-        std::env::var("GOOGLE_CLIENT_ID"),
-        std::env::var("GOOGLE_CLIENT_SECRET"),
-        std::env::var("GOOGLE_REDIRECT_URI"),
-        std::env::var("GOOGLE_ISSUER_URL"),
-    ) {
-        match back_end::services::GoogleOAuthClient::new(
-            client_id,
-            client_secret,
-            redirect_uri,
-            issuer_url,
-        )
-        .await
+    let google_oauth = {
+        let client_id = std::env::var("GOOGLE_CLIENT_ID");
+        let client_secret = std::env::var("GOOGLE_CLIENT_SECRET");
+        let redirect_uri = std::env::var("GOOGLE_REDIRECT_URI");
+        let issuer_url = std::env::var("GOOGLE_ISSUER_URL");
+
+        tracing::info!(
+            "OAuth config check: client_id={}, client_secret={}, redirect_uri={}, issuer_url={}",
+            client_id.is_ok(),
+            client_secret.is_ok(),
+            redirect_uri.as_ref().map(|s| s.as_str()).unwrap_or("NOT SET"),
+            issuer_url.as_ref().map(|s| s.as_str()).unwrap_or("NOT SET")
+        );
+
+        if let (Ok(id), Ok(secret), Ok(uri), Ok(issuer)) =
+            (client_id, client_secret, redirect_uri, issuer_url)
         {
-            Ok(client) => {
-                tracing::info!("Google OAuth client initialized successfully");
-                Some(client)
+            match back_end::services::GoogleOAuthClient::new(id, secret, uri.clone(), issuer).await
+            {
+                Ok(client) => {
+                    tracing::info!(
+                        "Google OAuth client initialized successfully with redirect_uri: {}",
+                        uri
+                    );
+                    Some(client)
+                }
+                Err(e) => {
+                    tracing::error!("Failed to initialize Google OAuth client: {:?}", e);
+                    None
+                }
             }
-            Err(e) => {
-                tracing::warn!("Failed to initialize Google OAuth client: {:?}", e);
-                None
-            }
+        } else {
+            tracing::warn!("Google OAuth not configured - missing environment variables");
+            None
         }
-    } else {
-        tracing::info!("Google OAuth not configured - skipping");
-        None
     };
 
     let state = AppState {
