@@ -273,7 +273,7 @@ pub async fn accept_invitation(
     tracing::info!("Invitation accepted by user: {}", user_id);
 
     let cookie = format!(
-        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age={}",
+        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={}",
         token,
         60 * 60 * 24 * 7
     );
@@ -288,6 +288,7 @@ pub async fn accept_invitation(
                 last_name: payload.last_name,
                 company_name: None,
                 role: _created_user.role,
+                oauth_provider: None,
             },
         }),
     )
@@ -414,22 +415,20 @@ pub async fn get_pending_invitations(
             Json(json!({ "error": "User is not associated with a company" })),
         ))?;
 
-    let invitations = services::InvitationService::get_pending_invitations(
-        &state.postgres,
-        &company_id,
-    )
-    .await
-    .map(|inv_list| {
-        inv_list
-            .into_iter()
-            .map(|inv| InvitationResponse {
-                id: inv.id,
-                email: inv.email,
-                expires_at: inv.expires_at,
+    let invitations =
+        services::InvitationService::get_pending_invitations(&state.postgres, &company_id)
+            .await
+            .map(|inv_list| {
+                inv_list
+                    .into_iter()
+                    .map(|inv| InvitationResponse {
+                        id: inv.id,
+                        email: inv.email,
+                        expires_at: inv.expires_at,
+                    })
+                    .collect()
             })
-            .collect()
-    })
-    .map_err(|(status, err)| (status, Json(err)))?;
+            .map_err(|(status, err)| (status, Json(err)))?;
 
     Ok(Json(GetPendingInvitationsResponse { invitations }))
 }
@@ -461,5 +460,7 @@ pub async fn cancel_invitation(
     .await
     .map_err(|(status, err)| (status, Json(err)))?;
 
-    Ok(Json(json!({ "message": "Invitation cancelled successfully" })))
+    Ok(Json(
+        json!({ "message": "Invitation cancelled successfully" }),
+    ))
 }

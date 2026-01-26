@@ -55,12 +55,15 @@ pub struct UserRecord {
     pub email: String,
     pub first_name: String,
     pub last_name: String,
-    pub password_hash: String,
+    pub password_hash: Option<String>,
     pub company_id: Option<String>,
     pub company_name: Option<String>,
     pub role: UserRole,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub oauth_provider: Option<String>,
+    pub oauth_subject: Option<String>,
+    pub oauth_picture: Option<String>,
 }
 
 impl UserRecord {
@@ -184,13 +187,18 @@ pub async fn init_db(pool: &PgPool) -> Result<()> {
             email TEXT NOT NULL UNIQUE,
             first_name TEXT NOT NULL,
             last_name TEXT NOT NULL,
-            password_hash TEXT NOT NULL,
+            password_hash TEXT,
             company_id TEXT,
             role user_role NOT NULL DEFAULT 'member',
             created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
             deleted_at TIMESTAMPTZ,
+            oauth_provider TEXT,
+            oauth_subject TEXT,
+            oauth_picture TEXT,
             FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL,
-            CONSTRAINT valid_email CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+            CONSTRAINT valid_email CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+            CONSTRAINT password_or_oauth CHECK (password_hash IS NOT NULL OR oauth_provider IS NOT NULL),
+            CONSTRAINT unique_oauth UNIQUE (oauth_provider, oauth_subject)
         )
         ",
     )
@@ -200,6 +208,38 @@ pub async fn init_db(pool: &PgPool) -> Result<()> {
     sqlx::query(
         r"
         ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ
+        ",
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r"
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider TEXT
+        ",
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r"
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_subject TEXT
+        ",
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r"
+        ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_picture TEXT
+        ",
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r"
+        ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL
         ",
     )
     .execute(pool)
@@ -431,7 +471,7 @@ pub async fn create_user<'a, E>(
     email: String,
     first_name: String,
     last_name: String,
-    password_hash: String,
+    password_hash: Option<String>,
     company_id: Option<String>,
     role: UserRole,
 ) -> Result<UserRecord>
@@ -469,6 +509,9 @@ where
         role,
         created_at: now,
         deleted_at: None,
+        oauth_provider: None,
+        oauth_subject: None,
+        oauth_picture: None,
     })
 }
 
@@ -496,7 +539,8 @@ pub async fn get_user_by_email(pool: &PgPool, email: &str) -> Result<Option<User
     let user = sqlx::query_as::<_, UserRecord>(
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
-               users.password_hash, users.company_id, users.role, users.created_at, users.deleted_at, companies.name as company_name
+               users.password_hash, users.company_id, users.role, users.created_at, users.deleted_at, 
+               companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.email = $1 AND users.deleted_at IS NULL
@@ -513,7 +557,8 @@ pub async fn get_user_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRecord
     let user = sqlx::query_as::<_, UserRecord>(
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
-            users.password_hash, users.company_id, users.role, users.created_at, users.deleted_at, companies.name as company_name
+            users.password_hash, users.company_id, users.role, users.created_at, users.deleted_at, 
+            companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.id = $1 AND users.deleted_at IS NULL
@@ -524,6 +569,121 @@ pub async fn get_user_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRecord
     .await?;
 
     Ok(user)
+}
+
+pub async fn get_user_by_oauth(
+    pool: &PgPool,
+    provider: &str,
+    subject: &str,
+) -> Result<Option<UserRecord>> {
+    let user = sqlx::query_as::<_, UserRecord>(
+        r"
+        SELECT users.id, users.email, users.first_name, users.last_name, 
+            users.password_hash, users.company_id, users.role, users.created_at, users.deleted_at, 
+            companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture
+        FROM users
+        LEFT JOIN companies ON users.company_id = companies.id
+        WHERE users.oauth_provider = $1 AND users.oauth_subject = $2 AND users.deleted_at IS NULL
+        "
+    )
+    .bind(provider)
+    .bind(subject)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(user)
+}
+
+pub async fn create_oauth_user<'a, E>(
+    executor: E,
+    email: String,
+    first_name: String,
+    last_name: String,
+    oauth_provider: String,
+    oauth_subject: String,
+    oauth_picture: Option<String>,
+    company_id: Option<String>,
+    role: UserRole,
+) -> Result<UserRecord>
+where
+    E: sqlx::Executor<'a, Database = sqlx::Postgres>,
+{
+    let id = Uuid::new_v4().to_string();
+    let now = chrono::Utc::now();
+
+    sqlx::query(
+        r"
+        INSERT INTO users (id, email, first_name, last_name, password_hash, company_id, role, created_at, oauth_provider, oauth_subject, oauth_picture)
+        VALUES ($1, $2, $3, $4, NULL, $5, $6, $7, $8, $9, $10)
+        "
+    )
+    .bind(&id)
+    .bind(&email)
+    .bind(&first_name)
+    .bind(&last_name)
+    .bind(&company_id)
+    .bind(&role)
+    .bind(now)
+    .bind(&oauth_provider)
+    .bind(&oauth_subject)
+    .bind(&oauth_picture)
+    .execute(executor)
+    .await?;
+
+    Ok(UserRecord {
+        id,
+        email,
+        first_name,
+        last_name,
+        password_hash: None,
+        company_id,
+        company_name: None,
+        role,
+        created_at: now,
+        deleted_at: None,
+        oauth_provider: Some(oauth_provider),
+        oauth_subject: Some(oauth_subject),
+        oauth_picture,
+    })
+}
+
+pub async fn link_oauth_to_user(
+    pool: &PgPool,
+    user_id: &str,
+    oauth_provider: String,
+    oauth_subject: String,
+    oauth_picture: Option<String>,
+) -> Result<()> {
+    sqlx::query(
+        r"
+        UPDATE users
+        SET oauth_provider = $1, oauth_subject = $2, oauth_picture = $3
+        WHERE id = $4
+        ",
+    )
+    .bind(&oauth_provider)
+    .bind(&oauth_subject)
+    .bind(&oauth_picture)
+    .bind(user_id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn unlink_oauth_from_user(pool: &PgPool, user_id: &str) -> Result<()> {
+    sqlx::query(
+        r"
+        UPDATE users
+        SET oauth_provider = NULL, oauth_subject = NULL, oauth_picture = NULL
+        WHERE id = $1
+        ",
+    )
+    .bind(user_id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
 }
 
 pub async fn delete_user_by_email(pool: &PgPool, email: &str) -> Result<()> {
@@ -1037,7 +1197,8 @@ pub async fn get_users_by_company_id(pool: &PgPool, company_id: &str) -> Result<
     let users = sqlx::query_as::<_, UserRecord>(
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
-               users.password_hash, users.company_id, users.role, users.created_at, users.deleted_at, companies.name as company_name
+               users.password_hash, users.company_id, users.role, users.created_at, users.deleted_at, 
+               companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.company_id = $1 AND users.deleted_at IS NULL
@@ -1119,12 +1280,15 @@ pub async fn accept_invitation_with_user_creation(
         email: email.to_string(),
         first_name,
         last_name,
-        password_hash,
+        password_hash: Some(password_hash),
         company_id: Some(company_id.to_string()),
         company_name: None,
         role: UserRole::Member,
         created_at: now,
         deleted_at: None,
+        oauth_provider: None,
+        oauth_subject: None,
+        oauth_picture: None,
     })
 }
 
@@ -1374,12 +1538,12 @@ pub async fn create_passkey_session(
 ) -> Result<()> {
     // 5 minutes expiry
     let expires_at = chrono::Utc::now() + chrono::Duration::minutes(5);
-    
+
     sqlx::query(
         r"
         INSERT INTO passkey_sessions (id, session_type, user_id, challenge, meta, expires_at)
         VALUES ($1, $2, $3, $4, $5, $6)
-        "
+        ",
     )
     .bind(id)
     .bind(session_type)
@@ -1399,7 +1563,7 @@ pub async fn get_passkey_session(pool: &PgPool, id: &str) -> Result<Option<Passk
         SELECT id, session_type, user_id, challenge, meta, created_at, expires_at
         FROM passkey_sessions
         WHERE id = $1 AND expires_at > NOW()
-        "
+        ",
     )
     .bind(id)
     .fetch_optional(pool)
@@ -1413,7 +1577,7 @@ pub async fn delete_passkey_session(pool: &PgPool, id: &str) -> Result<()> {
         r"
         DELETE FROM passkey_sessions
         WHERE id = $1
-        "
+        ",
     )
     .bind(id)
     .execute(pool)

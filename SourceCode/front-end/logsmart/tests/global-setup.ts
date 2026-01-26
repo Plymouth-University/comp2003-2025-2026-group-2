@@ -10,6 +10,7 @@ const BACKEND_PORT = process.env.BACKEND_PORT || 6767;
 const BACKEND_URL = `http://localhost:${BACKEND_PORT}`;
 const FRONTEND_PORT = process.env.FRONTEND_PORT || 5173;
 const FRONTEND_URL = `http://localhost:${FRONTEND_PORT}`;
+const GOOGLE_ISSUER_URL = 'http://localhost:8080/google';
 const MAILHOG_API_URL = process.env.MAILHOG_API_URL || 'http://localhost:8025/api';
 const PID_FILE = path.join(os.tmpdir(), 'logsmart-test-pids.json');
 let backendProcess: any = null;
@@ -73,6 +74,26 @@ async function checkMailhog(timeout = 5000): Promise<void> {
 	}
 	throw new Error(
 		'MailHog is not running at http://localhost:8025. Please start MailHog before running tests.'
+	);
+}
+
+async function checkMockOAuth(timeout = 30000): Promise<void> {
+	const startTime = Date.now();
+	while (Date.now() - startTime < timeout) {
+		try {
+			const response = await fetch(`${GOOGLE_ISSUER_URL}/.well-known/openid-configuration`);
+			if (response.ok) {
+				console.log('✓ Mock OAuth server is running');
+				return;
+			}
+			console.log(`Mock OAuth check: HTTP ${response.status}`);
+		} catch (e: any) {
+			console.log(`Mock OAuth check error: ${e.message}`);
+		}
+		await new Promise((resolve) => setTimeout(resolve, 500));
+	}
+	throw new Error(
+		'Mock OAuth server is not running at http://localhost:8080. Please start it with docker-compose.'
 	);
 }
 
@@ -154,7 +175,11 @@ async function startBackendProcess(): Promise<void> {
 		POSTGRES_DB: 'logsmartdb',
 		POSTGRES_USER: 'admin',
 		POSTGRES_PASSWORD: 'adminpassword',
-		MONGODB_URI: 'mongodb://root:rootpassword@127.0.0.1'
+		MONGODB_URI: 'mongodb://root:rootpassword@127.0.0.1',
+		GOOGLE_CLIENT_ID: 'test-google-client-id',
+		GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
+		GOOGLE_REDIRECT_URI: `http://localhost:${BACKEND_PORT}/auth/google/callback`,
+		GOOGLE_ISSUER_URL: GOOGLE_ISSUER_URL
 	};
 
 	if (isWindows) {
@@ -220,6 +245,9 @@ async function globalSetup() {
 
 	console.log('Checking MailHog...');
 	await checkMailhog();
+
+	console.log('Checking Mock OAuth server...');
+	await checkMockOAuth();
 
 	console.log('Checking PostgreSQL...');
 	await checkPostgres();
