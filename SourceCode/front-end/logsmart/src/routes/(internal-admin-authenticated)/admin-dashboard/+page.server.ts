@@ -6,22 +6,67 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 		return {
 			user,
 			companies: [],
+			dbHealth: null,
+			tableSizes: null,
+			slowQueries: null,
+			indexUsage: null,
 			error: 'No authentication token'
 		};
 	}
 
+	const headers = {
+		Authorization: `Bearer ${token}`,
+		'Cache-Control': 'no-cache'
+	};
+
 	try {
-		// Fetch all companies (this endpoint needs to be created on the backend)
-		const companiesResponse = await fetch('/api/admin/companies', {
-			headers: {
-				Authorization: `Bearer ${token}`,
-				'Cache-Control': 'no-cache'
-			}
-		});
+		// Fetch all health monitoring data in parallel
+		const [
+			companiesResponse,
+			dbHealthResponse,
+			tableSizesResponse,
+			slowQueriesResponse,
+			indexUsageResponse
+		] = await Promise.all([
+			fetch('/api/admin/companies', { headers }),
+			fetch('/api/health/database', { headers }),
+			fetch('/api/health/table-sizes', { headers }),
+			fetch('/api/health/slow-queries?limit=20', { headers }),
+			fetch('/api/health/index-usage', { headers })
+		]);
+
+		// Debug logging for health endpoints
+		console.log('DB Health Response:', dbHealthResponse.status, dbHealthResponse.statusText);
+		console.log('Table Sizes Response:', tableSizesResponse.status, tableSizesResponse.statusText);
+		console.log(
+			'Slow Queries Response:',
+			slowQueriesResponse.status,
+			slowQueriesResponse.statusText
+		);
+		console.log('Index Usage Response:', indexUsageResponse.status, indexUsageResponse.statusText);
 
 		const companies = companiesResponse.ok ? await companiesResponse.json() : { companies: [] };
 
-		// Temporary mock company for testing
+		let dbHealth = null;
+		if (dbHealthResponse.ok) {
+			dbHealth = await dbHealthResponse.json();
+		} else {
+			const errorText = await dbHealthResponse.text();
+			console.log('DB Health Error Body:', errorText);
+		}
+
+		let tableSizes = null;
+		if (tableSizesResponse.ok) {
+			tableSizes = await tableSizesResponse.json();
+		} else {
+			const errorText = await tableSizesResponse.text();
+			console.log('Table Sizes Error Body:', errorText);
+		}
+
+		const slowQueries = slowQueriesResponse.ok ? await slowQueriesResponse.json() : null;
+		const indexUsage = indexUsageResponse.ok ? await indexUsageResponse.json() : null;
+
+		// Temporary mock company for testing if no companies exist
 		const mockCompanies = [
 			{
 				id: 'temp-company-001',
@@ -35,48 +80,14 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 			}
 		];
 
-		// Fetch metrics (recent logins/signups) - endpoint to be created
-		const metricsResponse = await fetch('/api/admin/metrics', {
-			headers: {
-				Authorization: `Bearer ${token}`,
-				'Cache-Control': 'no-cache'
-			}
-		});
-
-		const metrics = metricsResponse.ok
-			? await metricsResponse.json()
-			: { recent_logins: [], recent_signups: [] };
-
-		// Temporary mock data for testing
-		const mockMetrics = {
-			total_accounts: 45,
-			logins_24h: 23,
-			recent_logs: [
-				{
-					id: '1',
-					template_name: 'Daily Safety Inspection',
-					company_name: 'Tech Solutions Ltd',
-					created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString()
-				},
-				{
-					id: '2',
-					template_name: 'Maintenance Log',
-					company_name: 'Global Industries Inc',
-					created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString()
-				},
-				{
-					id: '3',
-					template_name: 'Temperature Check',
-					company_name: 'Smart Logistics Co',
-					created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString()
-				}
-			]
-		};
-
 		return {
 			user,
-			companies: companies.companies && companies.companies.length > 0 ? companies.companies : mockCompanies,
-			metrics: metrics.total_accounts ? metrics : mockMetrics,
+			companies:
+				companies.companies && companies.companies.length > 0 ? companies.companies : mockCompanies,
+			dbHealth,
+			tableSizes,
+			slowQueries,
+			indexUsage,
 			error: null
 		};
 	} catch (error) {
@@ -84,7 +95,10 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 		return {
 			user,
 			companies: [],
-			metrics: { total_accounts: 0, logins_24h: 0, recent_logs: [] },
+			dbHealth: null,
+			tableSizes: null,
+			slowQueries: null,
+			indexUsage: null,
 			error: 'Failed to fetch admin data'
 		};
 	}
