@@ -29,10 +29,10 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 			indexUsageResponse
 		] = await Promise.all([
 			fetch('/api/admin/companies', { headers }),
-			fetch('/api/health/database', { headers }),
-			fetch('/api/health/table-sizes', { headers }),
-			fetch('/api/health/slow-queries?limit=20', { headers }),
-			fetch('/api/health/index-usage', { headers })
+			fetch('/health/database', { headers }),
+			fetch('/health/table-sizes', { headers }),
+			fetch('/health/slow-queries?limit=20', { headers }),
+			fetch('/health/index-usage', { headers })
 		]);
 
 		// Debug logging for health endpoints

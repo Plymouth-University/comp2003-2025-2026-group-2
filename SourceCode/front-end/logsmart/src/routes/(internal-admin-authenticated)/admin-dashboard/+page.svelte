@@ -669,10 +669,7 @@
 								Users - {selectedCompany.name}
 							</h2>
 						</div>
-						<div
-							class="min-h-[200px] min-w-[800px] px-6 py-6"
-							style="background-color: var(--bg-primary);"
-						>
+						<div class="min-h-50 min-w-200 px-6 py-6" style="background-color: var(--bg-primary);">
 							{#if error}
 								<div style="color: #c00;">{error}</div>
 							{:else if loadingUsers}
@@ -721,10 +718,7 @@
 								Logs - {selectedCompany.name}
 							</h2>
 						</div>
-						<div
-							class="min-h-[300px] min-w-[800px] px-6 py-6"
-							style="background-color: var(--bg-primary);"
-						>
+						<div class="min-h-75 min-w-200 px-6 py-6" style="background-color: var(--bg-primary);">
 							{#if loadingLogs}
 								<p style="color: var(--text-secondary);">Loading logs...</p>
 							{:else}
