@@ -1370,7 +1370,7 @@ pub async fn get_database_health(pool: &PgPool) -> Result<DatabaseHealthMetrics>
 
     let db_size = sqlx::query_as::<_, DbSize>(
         r"
-        SELECT pg_database_size(current_database()) / (1024.0 * 1024.0) as size_mb
+        SELECT (pg_database_size(current_database())::float8 / (1024.0 * 1024.0)) as size_mb
         ",
     )
     .fetch_one(pool)
@@ -1434,7 +1434,7 @@ pub async fn get_index_usage(pool: &PgPool) -> Result<Vec<IndexUsageStats>> {
     let stats = sqlx::query_as::<_, IndexUsageStats>(
         r"
         SELECT 
-            schemaname || '.' || tablename as table_name,
+            schemaname || '.' || relname as table_name,
             indexname as index_name,
             idx_scan as index_scans,
             idx_tup_read as rows_read,
@@ -1463,14 +1463,14 @@ pub async fn get_table_sizes(pool: &PgPool) -> Result<Vec<TableSizeInfo>> {
     let sizes = sqlx::query_as::<_, TableSizeRow>(
         r"
         SELECT 
-            tablename as table_name,
+            relname as table_name,
             n_live_tup as row_count,
-            pg_total_relation_size(schemaname||'.'||tablename)::numeric / (1024*1024) as total_size_mb,
-            pg_relation_size(schemaname||'.'||tablename)::numeric / (1024*1024) as table_size_mb,
-            pg_indexes_size(schemaname||'.'||tablename)::numeric / (1024*1024) as index_size_mb
+            (pg_total_relation_size(schemaname||'.'||relname)::float8 / (1024*1024)) as total_size_mb,
+            (pg_relation_size(schemaname||'.'||relname)::float8 / (1024*1024)) as table_size_mb,
+            (pg_indexes_size(schemaname||'.'||relname)::float8 / (1024*1024)) as index_size_mb
         FROM pg_stat_user_tables
         WHERE schemaname = 'public'
-        ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+        ORDER BY pg_total_relation_size(schemaname||'.'||relname) DESC
         "
     )
     .fetch_all(pool)
