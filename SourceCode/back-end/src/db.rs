@@ -1434,14 +1434,15 @@ pub async fn get_index_usage(pool: &PgPool) -> Result<Vec<IndexUsageStats>> {
     let stats = sqlx::query_as::<_, IndexUsageStats>(
         r"
         SELECT 
-            schemaname || '.' || relname as table_name,
-            indexname as index_name,
-            idx_scan as index_scans,
-            idx_tup_read as rows_read,
-            idx_tup_fetch as rows_fetched
-        FROM pg_stat_user_indexes
-        WHERE schemaname = 'public'
-        ORDER BY idx_scan DESC
+            t.relname as table_name,
+            i.relname as index_name,
+            x.idx_scan as index_scans,
+            x.idx_tup_read as rows_read,
+            x.idx_tup_fetch as rows_fetched
+        FROM pg_stat_user_indexes x
+        JOIN pg_class i ON i.oid = x.indexrelid
+        JOIN pg_class t ON t.oid = x.indrelid
+        ORDER BY x.idx_scan DESC
         ",
     )
     .fetch_all(pool)
