@@ -2,8 +2,10 @@ use crate::dto::{LayoutGenerationRequest, LayoutGenerationResponse};
 use crate::logs_db::TemplateLayout;
 use anyhow::Result;
 use ollama_rs::Ollama;
-use ollama_rs::generation::completion::request::GenerationRequest;
+use ollama_rs::generation::chat::{ChatMessage, MessageRole};
+use ollama_rs::generation::chat::request::ChatMessageRequest;
 use ollama_rs::generation::parameters::{FormatType, JsonStructure};
+use ollama_rs::models::ModelOptions;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -14,76 +16,63 @@ pub struct LayoutOutput {
     pub template_layout: TemplateLayout,
 }
 
-const MODEL: &str = "gemma3:4b";
+const MODEL: &str = "qwen3:4b-instruct";
 
-const SYSTEM_PROMPT: &str = r#"IMPORTANT: You MUST respond with ONLY valid JSON. No text, no explanations, no markdown.
+const SYSTEM_PROMPT: &str = r#"You are a UI Layout Engine. Your goal is to generate a JSON layout for a dashboard based on the user's request and the provided context.
 
-You are generating a template layout in JSON format with REAL VALUES, not placeholders.
+### CONTEXT AWARENESS:
+The user will provide:
+1. **Canvas Dimensions**: The maximum width/height available.
+2. **Component Sizes**: The specific Width x Height for each field type (e.g., temperature is 80px tall).
 
-Field type requirements:
-- text_input: text, size, weight, value, min, max, unit, editable (others: null)
-- checkbox: text, size, weight, selected, editable (others: null)
-- temperature: value, min, max, unit (all others: null)
-- dropdown: text, size, weight, selected, options, editable (others: null)
-- label: text, size, weight, editable (others: null)
+### LAYOUT RULES:
+1. **Vertical Flow**: Arrange items in a single vertical column unless asked for a grid.
+2. **Positioning Logic**:
+   - Start the first item at `{"x": 20, "y": 20}`.
+   - **Calculate Y**: For the next item, take the previous item's `y` + previous item's `height` + 20px gap.
+   - *Example*: If Item 1 is at y=20 and is 80px tall, Item 2 starts at y=120 (20+80+20).
+   - Keep `x: 20` aligned left.
 
-EXAMPLE with REAL VALUES (not a template):
-{
-  "template_layout": [
-    {
-      "field_type": "text_input",
-      "position": { "x": 10, "y": 10 },
-      "props": {
-        "text": "Name",
-        "size": "16px",
-        "weight": "bold",
-        "value": "",
-        "min": null,
-        "max": null,
-        "unit": null,
-        "selected": null,
-        "options": null,
-        "editable": true
-      }
-    },
-    {
-      "field_type": "temperature",
-      "position": { "x": 10, "y": 50 },
-      "props": {
-        "text": null,
-        "size": null,
-        "weight": null,
-        "value": "20",
-        "min": -50,
-        "max": 50,
-        "unit": "°C",
-        "selected": null,
-        "options": null,
-        "editable": null
-      }
-    }
-  ]
-}
+3. **Strict Field Types** (Use ONLY these):
+   - `text_input`: Standard text field.
+   - `checkbox`: Boolean toggle.
+   - `temperature`: Temperature picker (Unit defaults to "°C").
+   - `dropdown`: Selection list (Must provide `options` array).
+   - `label`: Static text.
 
-Generate a template layout based on the user's request using REAL VALUES. Return ONLY the JSON object."#;
+4. **Props Handling**:
+   - `min`/`max` must be numbers (e.g., `min: -10.0`).
+   - `editable`: usually `true` for inputs, `false` for labels.
+   - `value`: Default value if specified.
+
+### OUTPUT FORMAT:
+Return ONLY the raw JSON object matching the `template_layout` schema. Do not include markdown formatting."#;
 
 pub async fn generate_layout(request: LayoutGenerationRequest) -> Result<LayoutGenerationResponse> {
     let ollama = Ollama::from_url(
-        Url::parse(&std::env::var("OLLAMA_URL").unwrap_or("http://127.0.0.1:11434".to_string()))
-            .unwrap(),
+        Url::parse(&std::env::var("OLLAMA_URL").unwrap_or("http://127.0.0.1:11434".to_string()))?
     );
-    let prompt = format!("{}\n\nUser request: {}", SYSTEM_PROMPT, request.user_prompt);
+
+    let messages = vec![
+        ChatMessage::new(MessageRole::System, SYSTEM_PROMPT.to_string()),
+        ChatMessage::new(MessageRole::User, request.user_prompt),
+    ];
 
     let format = FormatType::StructuredJson(Box::new(JsonStructure::new::<LayoutOutput>()));
 
-    let res = ollama
-        .generate(GenerationRequest::new(MODEL.to_string(), prompt).format(format))
-        .await?;
+    let options = ModelOptions::default()
+        .temperature(0.2)
+        .top_p(0.8)
+        .top_k(20);
 
-    let layout: serde_json::Value = serde_json::from_str(&res.response).unwrap_or_else(|_| {
-        serde_json::json!({
-            "template_layout": []
-        })
+    let req = ChatMessageRequest::new(MODEL.to_string(), messages)
+        .format(format)
+        .options(options);
+
+    let res = ollama.send_chat_messages(req).await?;
+
+    let layout: serde_json::Value = serde_json::from_str(&res.message.content).unwrap_or_else(|_| {
+        serde_json::json!({ "template_layout": [] })
     });
 
     Ok(LayoutGenerationResponse { layout })
