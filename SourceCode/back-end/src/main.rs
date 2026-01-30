@@ -8,9 +8,26 @@ use url::Url;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
+const VARS: [&str; 8] = [
+    "JWT_SECRET",
+    "SMTP_USERNAME",
+    "SMTP_PASSWORD",
+    "GOOGLE_CLIENT_SECRET",
+    "GOOGLE_CLIENT_ID",
+    "POSTGRES_PASSWORD",
+    "POSTGRES_USER",
+    "MONGODB_URI"
+];
+
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
+
+    for var in VARS.iter() {
+        unsafe {
+            load_secret(var);
+        }
+    }
 
     let log_format = std::env::var("LOG_FORMAT").unwrap_or_else(|_| "text".to_string());
 
@@ -279,4 +296,23 @@ async fn main() {
     )
     .await
     .expect("Server error");
+}
+
+unsafe fn load_secret(key: &str) {
+    let file_env_key = format!("{}_FILE", key);
+
+    if let Ok(path) = std::env::var(&file_env_key) {
+        match std::fs::read_to_string(&path) {
+            Ok(secret) => {
+                let value = secret.trim().to_string();
+                unsafe {
+                    std::env::set_var(key, value);
+                }
+                println!("Loaded secret for {} from file: {}", key, path);
+            }
+            Err(e) => {
+                eprintln!("Warning: Could not read secret file {}: {}", path, e);
+            }
+        }
+    }
 }

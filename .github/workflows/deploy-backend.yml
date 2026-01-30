@@ -9,13 +9,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    name: Build and Deploy Backend
+    name: Build Docker Image and Deploy
     
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
@@ -32,14 +32,32 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nixpkgs, nix-community, arm, rust
 
-      - name: Build for ARM64
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker Image
         working-directory: ./SourceCode/back-end
         run: |
-          nix build .#aarch64-linux
-          ls -la result/bin
-          cp result/bin/logsmart-srv ./logsmart-srv
+          echo "🔨 Building Docker Image from Nix..."
+          # Builds the image defined in flake.nix (which cross-compiles to ARM64)
+          nix build .#docker-image
+          
+          echo "📥 Loading Image into Docker..."
+          # 'result' is a tarball containing the image. We load it into the runner's Docker.
+          docker load < result
+          
+          echo "JX Retagging and Pushing..."
+          # The nix build creates an image named 'logsmart-backend:latest' (from flake.nix)
+          # We retag it to your Docker Hub repo
+          docker tag logsmart-backend:latest nullstring1/logsmart-srv:latest
+          
+          # Push to Docker Hub
+          docker push nullstring1/logsmart-srv:latest
 
-      - name: Stop service before deployment
+      - name: Deploy to Swarm
         uses: appleboy/ssh-action@v1.2.4
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -47,35 +65,9 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
           script: |
-            sudo systemctl stop logsmart.service
-
-      - name: Deploy to Server
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.6
-        with:
-          server: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          ssh_private_key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_PORT }}
-          local_path: "SourceCode/back-end/logsmart-srv"
-          remote_path: "${{ vars.DEPLOY_PATH }}/"
-
-      - name: Patch interpreter path
-        uses: appleboy/ssh-action@v1.2.4
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_PORT }}
-          script: |
-            patchelf --set-interpreter /lib/ld-linux-aarch64.so.1 ${{ vars.DEPLOY_PATH }}/logsmart-srv
-
-      - name: Start Service
-        uses: appleboy/ssh-action@v1.2.4
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_PORT }}
-          script: |
-            chmod +x ${{ vars.DEPLOY_PATH }}/logsmart-srv
-            sudo systemctl start logsmart.service
+            # 1. Pull the new image explicitly
+            docker pull nullstring1/logsmart-srv:latest
+            
+            # 2. Update the service in the swarm
+            # Note: 'logsmart_stack' is the stack name, 'backend' is the service name in compose
+            docker service update --image nullstring1/logsmart-srv:latest logsmart_stack_backend --with-registry-auth

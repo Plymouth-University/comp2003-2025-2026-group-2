@@ -138,9 +138,6 @@
               cp ${swaggerUiZip} /tmp/swagger-ui/v5.17.14.zip
               chmod 644 /tmp/swagger-ui/v5.17.14.zip
             '';
-            postInstall = ''
-              patchelf --set-rpath "$ORIGIN/../lib:$ORIGIN/lib:/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu:/usr/lib:/lib" --set-interpreter "/lib/ld-linux-aarch64.so.1" $out/bin/logsmart-srv
-            '';
             SWAGGER_UI_DOWNLOAD_URL = "file:///tmp/swagger-ui/v5.17.14.zip";
             HOST_CC = "${pkgs.stdenv.cc}/bin/cc";
             OPENSSL_DIR = "${pkgs.openssl.out}";
@@ -159,10 +156,29 @@
           exec ${pkgs.cachix}/bin/cachix watch-exec logsmart-cache -- nix build .#aarch64-linux
         '';
 
+        dockerImage = pkgs.dockerTools.buildLayeredImage {
+          name = "logsmart-backend";
+          tag = "latest";
+          contents = [
+            logSmartBackendAarch64
+            pkgsCross.openssl
+          ];
+          
+          architecture = "arm64"; 
+          
+          config = {
+            Cmd = [ "${logSmartBackendAarch64}/bin/logsmart-srv" ];
+            ExposedPorts = {
+              "6767/tcp" = {};
+            };
+          };
+        };
+
         packages = {
           aarch64-linux = logSmartBackendAarch64;
           x86_64-linux = logSmartBackend;
           default = logSmartBackend;
+          docker-image = dockerImage;
         };
       in
       {
