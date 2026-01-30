@@ -156,7 +156,7 @@
           exec ${pkgs.cachix}/bin/cachix watch-exec logsmart-cache -- nix build .#aarch64-linux
         '';
 
-        dockerImage = pkgs.dockerTools.buildLayeredImage {
+        dockerImageAarch64 = pkgs.dockerTools.buildLayeredImage {
           name = "logsmart-backend";
           tag = "latest";
           contents = [
@@ -174,11 +174,30 @@
           };
         };
 
+        dockerImagex86_64 = pkgs.dockerTools.buildLayeredImage {
+          name = "logsmart-backend";
+          tag = "latest";
+          contents = [
+            logSmartBackend
+            pkgs.openssl
+          ];
+          
+          architecture = "amd64"; 
+          
+          config = {
+            Cmd = [ "${logSmartBackend}/bin/logsmart-srv" ];
+            ExposedPorts = {
+              "6767/tcp" = {};
+            };
+          };
+        };
+
         packages = {
           aarch64-linux = logSmartBackendAarch64;
           x86_64-linux = logSmartBackend;
           default = logSmartBackend;
-          docker-image = dockerImage;
+          docker-image = dockerImageAarch64;
+          docker-image-x86_64 = dockerImagex86_64;
         };
       in
       {
