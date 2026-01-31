@@ -8,6 +8,8 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD_FILE=
       - MONGO_INITDB_ROOT_USERNAME_FILE=
     secrets: []
+    networks:
+      - logsmart-net
   postgres:
     ports:
       - "5432:5432"
@@ -18,6 +20,8 @@ services:
       - POSTGRES_PASSWORD_FILE=
       - POSTGRES_USER_FILE=
     secrets: []
+    networks:
+      - logsmart-net
   mailhog:
     image: mailhog/mailhog:latest
     container_name: mailhog
@@ -39,6 +43,8 @@ services:
       - LOG_LEVEL=INFO
       - JSON_CONFIG={"interactiveLogin":true,"httpServer":"NettyWrapper","tokenCallbacks":[{"issuerId":"google","tokenExpiry":3600,"requestMappings":[{"requestParam":"scope","match":".*","claims":{"sub":"mock-google-user-123","email":"testuser@gmail.com","email_verified":true,"given_name":"Test","family_name":"User","picture":"https://example.com/avatar.jpg"}}]}]}
   backend:
+    networks:
+      - logsmart-net
     image: nullstring1/logsmart-srv:latest-x86-64
     environment:
       - JWT_SECRET=jwt_secret_dev
@@ -49,8 +55,8 @@ services:
       - DATABASE_URL=postgres://admin:adminpassword@postgres:5432/logsmartdb
       - DISABLE_RATE_LIMIT=1
       - SMTP_SERVER=mailhog:1025
-      - SMTP_USERNAME=""
-      - SMTP_PASSWORD=""
+      - SMTP_USERNAME=
+      - SMTP_PASSWORD=
       - SMTP_FROM_EMAIL=noreply@logsmart.app
       - SMTP_FROM_NAME="LogSmart Dev"
       - GOOGLE_CLIENT_ID=mock-google-client-id
@@ -58,9 +64,9 @@ services:
       - GOOGLE_ISSUER_URL=http://mockoidc:8080/google
       - GOOGLE_REDIRECT_URI=http://localhost:6767/auth/google/callback
       - RP_ID=localhost
-      - RP_ORIGIN=http://localhost:3000
+      - RP_ORIGIN=http://localhost:5173
       - COOKIE_DOMAIN=localhost
-      - FRONTEND_URL=http://localhost:3000
+      - FRONTEND_URL=http://localhost:5173
       - POSTGRES_PASSWORD_FILE=
       - POSTGRES_USER_FILE=
       - MONGODB_URI_FILE=

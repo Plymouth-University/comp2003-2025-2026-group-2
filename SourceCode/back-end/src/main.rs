@@ -90,14 +90,6 @@ async fn main() {
         let redirect_uri = std::env::var("GOOGLE_REDIRECT_URI");
         let issuer_url = std::env::var("GOOGLE_ISSUER_URL");
 
-        tracing::info!(
-            "OAuth config check: client_id={}, client_secret={}, redirect_uri={}, issuer_url={}",
-            client_id.is_ok(),
-            client_secret.is_ok(),
-            redirect_uri.as_ref().map(|s| s.as_str()).unwrap_or("NOT SET"),
-            issuer_url.as_ref().map(|s| s.as_str()).unwrap_or("NOT SET")
-        );
-
         if let (Ok(id), Ok(secret), Ok(uri), Ok(issuer)) =
             (client_id, client_secret, redirect_uri, issuer_url)
         {
