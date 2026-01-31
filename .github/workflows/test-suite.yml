@@ -33,6 +33,13 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Build Backend Docker Image
+        working-directory: ./SourceCode/back-end
+        run: |
+          echo "🔨 Building Backend Docker Image from Nix..."
+          nix build .#docker-image-x86_64
+          docker load < result
 
       - name: Set up Docker Compose
         working-directory: ./SourceCode/back-end
@@ -73,12 +80,10 @@ jobs:
       - name: Run Playwright Tests
         working-directory: SourceCode/front-end/logsmart
         env:
-          # Frontend/Backend connection details
           PUBLIC_API_URL: http://localhost:6767
           BACKEND_PORT: 6767
           FRONTEND_PORT: 5173
           MAILHOG_API_URL: http://localhost:8025/api
-          # DB & MailHog are running as services, mapped to localhost ports
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
           POSTGRES_DB: logsmartdb
@@ -86,3 +91,22 @@ jobs:
           POSTGRES_PASSWORD: adminpassword
           MONGODB_URI: mongodb://root:rootpassword@127.0.0.1
         run: bun x playwright test
+
+      - name: Tear Down Docker Compose
+        working-directory: ./SourceCode/back-end
+        if: always()
+        run: |
+          echo "Tearing down Docker Compose services..."
+          docker compose -f docker-compose.yml -f docker-compose.override.yml down -v
+      
+      - name: Build and push aarch64 Docker Image
+        if: github.event_name != 'pull_request'
+        working-directory: ./SourceCode/back-end
+        run: |
+          echo "📥 Pushing x86_64 Docker Image to Docker Hub..."
+          docker push nullstring1/logsmart-srv:latest-x86-64
+          echo "🔨 Building ARM64 Docker Image from Nix..."
+          nix build .#docker-image-aarch64
+          docker load < result
+          echo "📥 Pushing ARM64 Image to Docker Hub..."
+          docker push nullstring1/logsmart-srv:latest-aarch64
