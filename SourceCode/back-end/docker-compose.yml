@@ -1,6 +1,6 @@
 services:
   backend:
-    image: nullstring1/logsmart-srv:latest
+    image: nullstring1/logsmart-srv:latest-aarch64
     hostname: backend
     dns_search: .
     networks:

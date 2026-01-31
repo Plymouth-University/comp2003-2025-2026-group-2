@@ -39,7 +39,7 @@ services:
       - LOG_LEVEL=INFO
       - JSON_CONFIG={"interactiveLogin":true,"httpServer":"NettyWrapper","tokenCallbacks":[{"issuerId":"google","tokenExpiry":3600,"requestMappings":[{"requestParam":"scope","match":".*","claims":{"sub":"mock-google-user-123","email":"testuser@gmail.com","email_verified":true,"given_name":"Test","family_name":"User","picture":"https://example.com/avatar.jpg"}}]}]}
   backend:
-    image: nullstring1/logsmart-srv:x86-64
+    image: nullstring1/logsmart-srv:latest-x86-64
     environment:
       - JWT_SECRET=jwt_secret_dev
       - POSTGRES_HOST=postgres
