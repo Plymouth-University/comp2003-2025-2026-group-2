@@ -29,7 +29,7 @@
             allowUnfree = true;
           };
         };
-        pkgsCross = import nixpkgs {
+        pkgsCrossAarch64 = import nixpkgs {
           inherit system;
           crossSystem = {
             config = "aarch64-unknown-linux-gnu";
@@ -38,7 +38,7 @@
           overlays = [ (import rust-overlay) ];
         };
 
-        rust = (
+        rustNative = (
           pkgs.rust-bin.stable.latest.default.override {
             extensions = [
               "rust-src"
@@ -47,13 +47,13 @@
             targets = [ "aarch64-unknown-linux-gnu" ];
           }
         );
-        craneLib = (crane.mkLib pkgs).overrideToolchain rust;
+        craneLibNative = (crane.mkLib pkgs).overrideToolchain rustNative;
         swaggerUiZip = pkgs.fetchurl {
           url = "https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.17.14.zip";
           hash = "sha256-SBJE0IEgl7Efuu73n3HZQrFxYX+cn5UU5jrL4T5xzNw=";
         };
         commonArgs = {
-          src = craneLib.cleanCargoSource ./.;
+          src = craneLibNative.cleanCargoSource ./.;
           strictDeps = true;
           doCheck = false;
           buildInputs = with pkgs; [ openssl ];
@@ -74,8 +74,8 @@
           PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
           LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [ pkgs.openssl ]}";
         };
-        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
-        logSmartBackend = craneLib.buildPackage (
+        cargoArtifacts = craneLibNative.buildDepsOnly commonArgs;
+        logSmartBackendNative = craneLibNative.buildPackage (
           commonArgs
           // {
             inherit cargoArtifacts;
@@ -86,16 +86,16 @@
           }
         );
 
-        craneLibCross = (crane.mkLib pkgsCross).overrideToolchain (p: p.rust-bin.stable.latest.default);
-        crateExpressionCross =
+        craneLibCrossAarch64 = (crane.mkLib pkgsCrossAarch64).overrideToolchain (p: p.rust-bin.stable.latest.default);
+        crateExpressionCrossAarch64 =
           {
             openssl,
             pkg-config,
             stdenv,
           }:
           let
-            cargoArtifactsCross = craneLibCross.buildDepsOnly {
-              src = craneLibCross.cleanCargoSource ./.;
+            cargoArtifactsCross = craneLibCrossAarch64.buildDepsOnly {
+              src = craneLibCrossAarch64.cleanCargoSource ./.;
               strictDeps = true;
               doCheck = false;
               buildInputs = [ openssl ];
@@ -121,9 +121,9 @@
               PKG_CONFIG_SYSROOT_DIR = "${stdenv.cc.libc}";
             };
           in
-          craneLibCross.buildPackage {
+          craneLibCrossAarch64.buildPackage {
             inherit cargoArtifactsCross;
-            src = craneLibCross.cleanCargoSource ./.;
+            src = craneLibCrossAarch64.cleanCargoSource ./.;
             strictDeps = true;
             doCheck = false;
             nativeBuildInputs = [
@@ -138,9 +138,6 @@
               cp ${swaggerUiZip} /tmp/swagger-ui/v5.17.14.zip
               chmod 644 /tmp/swagger-ui/v5.17.14.zip
             '';
-            postInstall = ''
-              patchelf --set-rpath "$ORIGIN/../lib:$ORIGIN/lib:/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu:/usr/lib:/lib" --set-interpreter "/lib/ld-linux-aarch64.so.1" $out/bin/logsmart-srv
-            '';
             SWAGGER_UI_DOWNLOAD_URL = "file:///tmp/swagger-ui/v5.17.14.zip";
             HOST_CC = "${pkgs.stdenv.cc}/bin/cc";
             OPENSSL_DIR = "${pkgs.openssl.out}";
@@ -153,25 +150,64 @@
             PKG_CONFIG_PATH_aarch64_unknown_linux_gnu = "${openssl.dev}/lib/pkgconfig";
             PKG_CONFIG_SYSROOT_DIR = "${stdenv.cc.libc}";
           };
-        logSmartBackendAarch64 = pkgsCross.callPackage crateExpressionCross { };
+        logSmartBackendCrossAarch64 = pkgsCrossAarch64.callPackage crateExpressionCrossAarch64 { };
 
-        devAliases = pkgs.writeShellScriptBin "build" ''
-          exec ${pkgs.cachix}/bin/cachix watch-exec logsmart-cache -- nix build .#aarch64-linux
+        deployAarch64Alias = pkgs.writeShellScriptBin "deploy-aarch64" ''
+          nix build .#docker-image-aarch64 && docker load < result && docker push nullstring1/logsmart-srv:latest-aarch64
         '';
 
+        dockerImageAarch64 = pkgs.dockerTools.buildLayeredImage {
+          name = "nullstring1/logsmart-srv";
+          tag = "latest-aarch64";
+          contents = [
+            logSmartBackendCrossAarch64
+            pkgsCrossAarch64.openssl
+          ];
+          
+          architecture = "arm64"; 
+          
+          config = {
+            Cmd = [ "${logSmartBackendCrossAarch64}/bin/logsmart-srv" ];
+            ExposedPorts = {
+              "6767/tcp" = {};
+            };
+          };
+        };
+
+        dockerImagex86_64 = pkgs.dockerTools.buildLayeredImage {
+          name = "nullstring1/logsmart-srv";
+          tag = "latest-x86-64";
+          contents = [
+            logSmartBackendNative
+            pkgs.openssl
+          ];
+          
+          architecture = "amd64"; 
+          
+          config = {
+            Cmd = [ "${logSmartBackendNative}/bin/logsmart-srv" ];
+            ExposedPorts = {
+              "6767/tcp" = {};
+            };
+          };
+        };
+
         packages = {
-          aarch64-linux = logSmartBackendAarch64;
-          x86_64-linux = logSmartBackend;
-          default = logSmartBackend;
+          aarch64-linux = logSmartBackendCrossAarch64;
+          x86_64-linux = logSmartBackendNative;
+          aarch64-darwin = logSmartBackendNative;
+          default = logSmartBackendNative;
+          docker-image-aarch64 = dockerImageAarch64;
+          docker-image-x86_64 = dockerImagex86_64;
         };
       in
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            rust
+            rustNative
             rust-analyzer
             openssl.dev
-            pkgsCross.openssl.dev
+            pkgsCrossAarch64.openssl.dev
             libz
             pkg-config
             sqlx-cli
@@ -179,31 +215,31 @@
             mold
             clang
             cachix
-            devAliases
+            deployAarch64Alias
           ];
           env = {
             PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-            PKG_CONFIG_PATH_aarch64_unknown_linux_gnu = "${pkgsCross.openssl.dev}/lib/pkgconfig";
+            PKG_CONFIG_PATH_aarch64_unknown_linux_gnu = "${pkgsCrossAarch64.openssl.dev}/lib/pkgconfig";
             PKG_CONFIG_ALLOW_CROSS = "1";
-            PKG_CONFIG_SYSROOT_DIR = "${pkgsCross.stdenv.cc.libc}";
-            AARCH64_UNKNOWN_LINUX_GNU_OPENSSL_INCLUDE_DIR = "${pkgsCross.openssl.dev}/include";
-            AARCH64_UNKNOWN_LINUX_GNU_OPENSSL_LIB_DIR = "${pkgsCross.openssl.out}/lib";
-            AARCH64_UNKNOWN_LINUX_GNU_OPENSSL_DIR = "${pkgsCross.openssl.out}";
-            CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "${pkgsCross.stdenv.cc}/bin/aarch64-unknown-linux-gnu-gcc";
-            CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS = "-C linker=${pkgsCross.stdenv.cc}/bin/aarch64-unknown-linux-gnu-gcc -L ${pkgsCross.xz.out}/lib -L ${pkgsCross.openssl.out}/lib -C link-args=-Wl,--enable-new-dtags,-rpath,$ORIGIN/../lib:$ORIGIN/lib:/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu:/usr/lib:/lib,--dynamic-linker=/lib/ld-linux-aarch64.so.1";
-            CC_aarch64_unknown_linux_gnu = "${pkgsCross.stdenv.cc}/bin/aarch64-unknown-linux-gnu-gcc";
-            CXX_aarch64_unknown_linux_gnu = "${pkgsCross.stdenv.cc}/bin/aarch64-unknown-linux-gnu-g++";
-            AR_aarch64_unknown_linux_gnu = "${pkgsCross.stdenv.cc}/bin/aarch64-unknown-linux-gnu-ar";
+            PKG_CONFIG_SYSROOT_DIR = "${pkgsCrossAarch64.stdenv.cc.libc}";
+            AARCH64_UNKNOWN_LINUX_GNU_OPENSSL_INCLUDE_DIR = "${pkgsCrossAarch64.openssl.dev}/include";
+            AARCH64_UNKNOWN_LINUX_GNU_OPENSSL_LIB_DIR = "${pkgsCrossAarch64.openssl.out}/lib";
+            AARCH64_UNKNOWN_LINUX_GNU_OPENSSL_DIR = "${pkgsCrossAarch64.openssl.out}";
+            CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "${pkgsCrossAarch64.stdenv.cc}/bin/aarch64-unknown-linux-gnu-gcc";
+            CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUSTFLAGS = "-C linker=${pkgsCrossAarch64.stdenv.cc}/bin/aarch64-unknown-linux-gnu-gcc -L ${pkgsCrossAarch64.xz.out}/lib -L ${pkgsCrossAarch64.openssl.out}/lib -C link-args=-Wl,--enable-new-dtags,-rpath,$ORIGIN/../lib:$ORIGIN/lib:/usr/lib/aarch64-linux-gnu:/lib/aarch64-linux-gnu:/usr/lib:/lib,--dynamic-linker=/lib/ld-linux-aarch64.so.1";
+            CC_aarch64_unknown_linux_gnu = "${pkgsCrossAarch64.stdenv.cc}/bin/aarch64-unknown-linux-gnu-gcc";
+            CXX_aarch64_unknown_linux_gnu = "${pkgsCrossAarch64.stdenv.cc}/bin/aarch64-unknown-linux-gnu-g++";
+            AR_aarch64_unknown_linux_gnu = "${pkgsCrossAarch64.stdenv.cc}/bin/aarch64-unknown-linux-gnu-ar";
           };
         };
         packages = packages;
         apps.default = {
           type = "app";
-          program = "${logSmartBackend}/bin/logsmart-srv";
+          program = "${logSmartBackendNative}/bin/logsmart-srv";
         };
         apps.aarch64-linux = {
           type = "app";
-          program = "${logSmartBackendAarch64}/bin/logsmart-srv";
+          program = "${logSmartBackendCrossAarch64}/bin/logsmart-srv";
         };
       }
     );

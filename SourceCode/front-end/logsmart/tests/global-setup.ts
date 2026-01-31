@@ -158,60 +158,8 @@ async function clearMailhogEmails(): Promise<void> {
 	}
 }
 
-async function startBackendProcess(): Promise<void> {
-	const isWindows = process.platform === 'win32';
-	const backendSourceDir = path.resolve(__dirname, '../../../back-end');
-
-	const backendEnv = {
-		...process.env,
-		DISABLE_RATE_LIMIT: '1',
-		SMTP_SERVER: '127.0.0.1:1025',
-		SMTP_USERNAME: '',
-		SMTP_PASSWORD: '',
-		SMTP_FROM_EMAIL: 'noreply@logsmart.app',
-		SMTP_FROM_NAME: 'LogSmart',
-		POSTGRES_HOST: 'localhost',
-		POSTGRES_PORT: '5432',
-		POSTGRES_DB: 'logsmartdb',
-		POSTGRES_USER: 'admin',
-		POSTGRES_PASSWORD: 'adminpassword',
-		MONGODB_URI: 'mongodb://root:rootpassword@127.0.0.1',
-		GOOGLE_CLIENT_ID: 'test-google-client-id',
-		GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
-		GOOGLE_REDIRECT_URI: `http://localhost:${BACKEND_PORT}/auth/google/callback`,
-		GOOGLE_ISSUER_URL: GOOGLE_ISSUER_URL
-	};
-
-	if (isWindows) {
-		backendProcess = spawn('cargo', ['run'], {
-			cwd: backendSourceDir,
-			shell: true,
-			env: backendEnv
-		});
-	} else {
-		backendProcess = spawn('nix', ['run', `${backendSourceDir}`], {
-			cwd: tempDir!,
-			shell: true,
-			env: backendEnv
-		});
-	}
-
-	backendProcess.stdout?.on('data', (data: Buffer) => {
-		console.log(`[Backend] ${data.toString().trim()}`);
-	});
-
-	backendProcess.stderr?.on('data', (data: Buffer) => {
-		console.log(`[Backend Error] ${data.toString().trim()}`);
-	});
-
-	backendProcess.on('error', (error: Error) => {
-		console.error(`Failed to start backend: ${error.message}`);
-	});
-
-	await waitForServer(BACKEND_URL);
-	process.env.BACKEND_URL = BACKEND_URL;
-	process.env.PUBLIC_API_URL = BACKEND_URL;
-}
+// Backend is expected to be started via docker-compose by the user.
+// The setup will wait for the backend health endpoint to become available.
 
 async function startFrontendProcess(): Promise<void> {
 	const frontendDir = path.resolve(__dirname, '..');
@@ -252,15 +200,25 @@ async function globalSetup() {
 	console.log('Checking PostgreSQL...');
 	await checkPostgres();
 
-	console.log('Dropping all database tables...');
-	await dropAllTables();
+	// console.log('Dropping all database tables...');
+	// await dropAllTables();
 
-	console.log('Starting backend and frontend servers...');
-
+	console.log('Checking backend service (ensure containers are started)...');
 	try {
-		await Promise.all([startBackendProcess(), startFrontendProcess()]);
+		await waitForServer(BACKEND_URL, 120000);
+		console.log(`✓ Backend reachable at ${BACKEND_URL}`);
+	} catch (err) {
+		console.error('Backend did not become ready:', err);
+		throw new Error(
+			'Backend service is not up. Please ensure containers are started (docker compose -d)'
+		);
+	}
+
+	console.log('Starting frontend server (local)...');
+	try {
+		await startFrontendProcess();
 	} catch (error) {
-		console.error('Failed to start servers:', error);
+		console.error('Failed to start frontend:', error);
 		throw error;
 	}
 

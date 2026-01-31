@@ -82,7 +82,7 @@ async fn send_email(to_email: &str, subject: &str, body: &str) -> Result<()> {
         (config.server.clone(), 587)
     };
 
-    let mailer = if host == "127.0.0.1" || host == "localhost" {
+    let mailer = if host == "127.0.0.1" || host == "localhost" || host == "mailhog" {
         SmtpTransport::builder_dangerous(&host)
             .credentials(creds)
             .port(port)

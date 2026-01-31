@@ -37,6 +37,7 @@ impl GoogleOAuthClient {
         let issuer_url = IssuerUrl::new(issuer_url)
             .map_err(|e| anyhow::anyhow!("Failed to create issuer URL: {e}"))?;
 
+
         let http_client = openidconnect::reqwest::Client::new();
         let provider_metadata = CoreProviderMetadata::discover_async(issuer_url, &http_client)
             .await

@@ -14,6 +14,7 @@ use axum::{
 use dashmap::DashMap;
 use serde::Deserialize;
 use serde_json::json;
+use url::Url;
 use std::sync::Arc;
 use utoipa::ToSchema;
 
@@ -125,6 +126,27 @@ pub async fn initiate_google_login(
     })?;
 
     let (auth_url, csrf_state, nonce) = oauth_client.initiate_login();
+
+    let mut url = Url::parse(&auth_url).map_err(|e| {
+        tracing::error!("Failed to parse OAuth authorization URL: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to initiate OAuth flow" })),
+        )
+    })?;
+
+    if url.host_str() == Some("mockoidc") {
+        tracing::info!("OAuth authorization URL uses mock OIDC host: {}", url);
+        url.set_host(Some("localhost")).map_err(|e| {
+            tracing::error!("Failed to set host on OAuth URL: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to initiate OAuth flow" })),
+            )
+        })?;
+    }
+    let auth_url = url.to_string();
+    
     let is_link = query.mode.as_deref() == Some("link");
 
     tracing::info!("OAuth redirecting to: {}", auth_url);
