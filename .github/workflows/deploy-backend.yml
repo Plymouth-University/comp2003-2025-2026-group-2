@@ -70,15 +70,20 @@ jobs:
 
       - name: Deploy to Swarm
         uses: appleboy/ssh-action@v1.2.5
+        env:
+          GITHUB_SHA: ${{ github.sha }}
         with:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_PORT }}
+          envs: 
+            GITHUB_SHA
           script: |
+            TAG=${GITHUB_SHA:0:8}
             # 1. Pull the new image explicitly
-            docker pull nullstring1/logsmart-srv:${GITHUB_SHA::8}-aarch64
+            docker pull nullstring1/logsmart-srv:${TAG}-aarch64
             
             # 2. Update the service in the swarm
             # Note: 'logsmart_stack' is the stack name, 'backend' is the service name in compose
-            docker service update --image nullstring1/logsmart-srv:${GITHUB_SHA::8}-aarch64 logsmart_stack_backend --with-registry-auth
+            docker service update --image nullstring1/logsmart-srv:${TAG}-aarch64 logsmart_stack_backend --with-registry-auth
