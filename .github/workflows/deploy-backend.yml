@@ -38,19 +38,35 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Check if image already exists
+        id: check-image
+        run: |
+          TAG=${GITHUB_SHA::8}
+          IMAGE_NAME="nullstring1/logsmart-srv"
+          # Check for manifest on Docker Hub
+          if docker manifest inspect $IMAGE_NAME:${TAG}-aarch64 > /dev/null 2>&1; then
+            echo "✅ Image ${TAG}-aarch64 already exists. Skipping build."
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Image not found. Proceeding with build."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build and Push Docker Image
+        if: steps.check-image.outputs.exists == 'false'
         working-directory: ./SourceCode/back-end
         run: |
+          TAG=${GITHUB_SHA::8}
           echo "🔨 Building Docker Image from Nix..."
-          # Builds the image defined in flake.nix (which cross-compiles to ARM64)
           nix build .#docker-image-aarch64
           
-          echo "📥 Loading Image into Docker..."
-          # 'result' is a tarball containing the image. We load it into the runner's Docker.
+          echo "📥 Loading and Tagging Image..."
           docker load < result
-          
-          # Push to Docker Hub
+          docker tag nullstring1/logsmart-srv:latest-aarch64 nullstring1/logsmart-srv:${TAG}-aarch64
+
+          echo "📤 Pushing..."
           docker push nullstring1/logsmart-srv:latest-aarch64
+          docker push nullstring1/logsmart-srv:${TAG}-aarch64
 
       - name: Deploy to Swarm
         uses: appleboy/ssh-action@v1.2.5
@@ -61,8 +77,8 @@ jobs:
           port: ${{ secrets.DEPLOY_PORT }}
           script: |
             # 1. Pull the new image explicitly
-            docker pull nullstring1/logsmart-srv:latest-aarch64
+            docker pull nullstring1/logsmart-srv:${GITHUB_SHA::8}-aarch64
             
             # 2. Update the service in the swarm
             # Note: 'logsmart_stack' is the stack name, 'backend' is the service name in compose
-            docker service update --image nullstring1/logsmart-srv:latest-aarch64 logsmart_stack_backend --with-registry-auth
+            docker service update --image nullstring1/logsmart-srv:${GITHUB_SHA::8}-aarch64 logsmart_stack_backend --with-registry-auth
