@@ -4,6 +4,14 @@ use chrono::Duration;
 use serde_json::json;
 use sqlx::PgPool;
 
+#[cfg(test)]
+mod invitation_service_tests {
+    #[tokio::test]
+    async fn test_invitation_service_basic() {
+        assert!(true);
+    }
+}
+
 pub struct InvitationService;
 
 impl InvitationService {

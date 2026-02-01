@@ -37,11 +37,15 @@ fn test_user_get_role_admin() {
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
-        password_hash: "hash".to_string(),
+        password_hash: Some("hash".to_string()),
         company_id: Some("company1".to_string()),
         company_name: None,
-        role: "admin".to_string(),
-        created_at: "2025-01-01T00:00:00Z".to_string(),
+        role: UserRole::Admin,
+        created_at: chrono::Utc::now(),
+        deleted_at: None,
+        oauth_provider: None,
+        oauth_subject: None,
+        oauth_picture: None,
     };
     assert_eq!(user.get_role(), UserRole::Admin);
 }
@@ -53,11 +57,15 @@ fn test_user_get_role_member() {
         email: "test@example.com".to_string(),
         first_name: "Jane".to_string(),
         last_name: "Smith".to_string(),
-        password_hash: "hash".to_string(),
+        password_hash: Some("hash".to_string()),
         company_id: Some("company1".to_string()),
         company_name: None,
-        role: "member".to_string(),
-        created_at: "2025-01-01T00:00:00Z".to_string(),
+        role: UserRole::Member,
+        created_at: chrono::Utc::now(),
+        deleted_at: None,
+        oauth_provider: None,
+        oauth_subject: None,
+        oauth_picture: None,
     };
     assert_eq!(user.get_role(), UserRole::Member);
 }
@@ -69,11 +77,15 @@ fn test_user_is_admin_true() {
         email: "admin@example.com".to_string(),
         first_name: "Admin".to_string(),
         last_name: "User".to_string(),
-        password_hash: "hash".to_string(),
+        password_hash: Some("hash".to_string()),
         company_id: Some("company1".to_string()),
         company_name: None,
-        role: "admin".to_string(),
-        created_at: "2025-01-01T00:00:00Z".to_string(),
+        role: UserRole::Admin,
+        created_at: chrono::Utc::now(),
+        deleted_at: None,
+        oauth_provider: None,
+        oauth_subject: None,
+        oauth_picture: None,
     };
     assert!(user.is_admin());
 }
@@ -82,14 +94,18 @@ fn test_user_is_admin_true() {
 fn test_user_is_admin_false() {
     let user = UserRecord {
         id: "user2".to_string(),
-        email: "member@example.com".to_string(),
-        first_name: "Member".to_string(),
+        email: "user@example.com".to_string(),
+        first_name: "Regular".to_string(),
         last_name: "User".to_string(),
-        password_hash: "hash".to_string(),
+        password_hash: Some("hash".to_string()),
         company_id: Some("company1".to_string()),
         company_name: None,
-        role: "member".to_string(),
-        created_at: "2025-01-01T00:00:00Z".to_string(),
+        role: UserRole::Member,
+        created_at: chrono::Utc::now(),
+        deleted_at: None,
+        oauth_provider: None,
+        oauth_subject: None,
+        oauth_picture: None,
     };
     assert!(!user.is_admin());
 }
@@ -97,24 +113,28 @@ fn test_user_is_admin_false() {
 #[test]
 fn test_user_creation() {
     let user = UserRecord {
-        id: "user1".to_string(),
-        email: "test@example.com".to_string(),
-        first_name: "John".to_string(),
-        last_name: "Doe".to_string(),
-        password_hash: "hash123".to_string(),
+        id: "user2".to_string(),
+        email: "user@example.com".to_string(),
+        first_name: "Regular".to_string(),
+        last_name: "User".to_string(),
+        password_hash: Some("hash".to_string()),
         company_id: Some("company1".to_string()),
-        company_name: Some("Test Company".to_string()),
-        role: "admin".to_string(),
-        created_at: "2025-01-01T00:00:00Z".to_string(),
+        company_name: None,
+        role: UserRole::Admin,
+        created_at: chrono::Utc::now(),
+        deleted_at: None,
+        oauth_provider: None,
+        oauth_subject: None,
+        oauth_picture: None,
     };
-    assert_eq!(user.id, "user1");
-    assert_eq!(user.email, "test@example.com");
-    assert_eq!(user.first_name, "John");
-    assert_eq!(user.last_name, "Doe");
-    assert_eq!(user.password_hash, "hash123");
+    assert_eq!(user.id, "user2");
+    assert_eq!(user.email, "user@example.com");
+    assert_eq!(user.first_name, "Regular");
+    assert_eq!(user.last_name, "User");
+    assert_eq!(user.password_hash, Some("hash".to_string()));
     assert_eq!(user.company_id, Some("company1".to_string()));
-    assert_eq!(user.company_name, Some("Test Company".to_string()));
-    assert_eq!(user.role, "admin");
+    assert_eq!(user.company_name, None);
+    assert_eq!(user.role, UserRole::Admin);
 }
 
 #[test]
@@ -123,7 +143,7 @@ fn test_company_creation() {
         id: "company1".to_string(),
         name: "Test Company".to_string(),
         address: "123 Main St".to_string(),
-        created_at: "2025-01-01T00:00:00Z".to_string(),
+        created_at: chrono::Utc::now(),
     };
     assert_eq!(company.id, "company1");
     assert_eq!(company.name, "Test Company");
@@ -137,9 +157,10 @@ fn test_invitation_creation() {
         company_id: "company1".to_string(),
         email: "newuser@example.com".to_string(),
         token: "token123".to_string(),
-        created_at: "2025-01-01T00:00:00Z".to_string(),
-        expires_at: "2025-01-08T00:00:00Z".to_string(),
+        created_at: chrono::Utc::now(),
+        expires_at: chrono::Utc::now() + chrono::Duration::days(7),
         accepted_at: None,
+        cancelled_at: None,
     };
     assert_eq!(invitation.id, "invite1");
     assert_eq!(invitation.company_id, "company1");
@@ -155,28 +176,30 @@ fn test_invitation_accepted() {
         company_id: "company1".to_string(),
         email: "newuser@example.com".to_string(),
         token: "token123".to_string(),
-        created_at: "2025-01-01T00:00:00Z".to_string(),
-        expires_at: "2025-01-08T00:00:00Z".to_string(),
-        accepted_at: Some("2025-01-02T10:00:00Z".to_string()),
+        created_at: chrono::Utc::now(),
+        expires_at: chrono::Utc::now() + chrono::Duration::days(7),
+        accepted_at: Some(chrono::Utc::now() + chrono::Duration::hours(1)),
+        cancelled_at: None,
     };
-    assert_eq!(
-        invitation.accepted_at,
-        Some("2025-01-02T10:00:00Z".to_string())
-    );
+    assert!(invitation.accepted_at.is_some());
 }
 
 #[test]
 fn test_user_without_company() {
     let user = UserRecord {
         id: "user1".to_string(),
-        email: "test@example.com".to_string(),
-        first_name: "John".to_string(),
-        last_name: "Doe".to_string(),
-        password_hash: "hash".to_string(),
+        email: "admin@logsmart.app".to_string(),
+        first_name: "Admin".to_string(),
+        last_name: "User".to_string(),
+        password_hash: Some("hash".to_string()),
         company_id: None,
         company_name: None,
-        role: "member".to_string(),
-        created_at: "2025-01-01T00:00:00Z".to_string(),
+        role: UserRole::LogSmartAdmin,
+        created_at: chrono::Utc::now(),
+        deleted_at: None,
+        oauth_provider: None,
+        oauth_subject: None,
+        oauth_picture: None,
     };
     assert_eq!(user.company_id, None);
 }

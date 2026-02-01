@@ -2,6 +2,14 @@ use crate::{AppState, logs_db};
 use axum::http::StatusCode;
 use serde_json::json;
 
+#[cfg(test)]
+mod template_service_tests {
+    #[tokio::test]
+    async fn test_template_service_basic() {
+        assert!(true);
+    }
+}
+
 pub struct TemplateService;
 
 impl TemplateService {

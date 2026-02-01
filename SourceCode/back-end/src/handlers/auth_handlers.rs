@@ -133,7 +133,7 @@ pub async fn register_company_admin(
         ));
     }
 
-    let (token, user_id, role_str) = services::AuthService::register_admin(
+    let (_json_response, token, role) = services::AuthService::register_admin(
         &state.postgres,
         &payload.email,
         &payload.first_name,
@@ -153,7 +153,7 @@ pub async fn register_company_admin(
 
     state.metrics.increment_registrations();
     state.metrics.increment_successful_requests();
-    tracing::info!("Registration successful for user: {}", user_id);
+    tracing::info!("Registration successful");
 
     let cookie_domain = std::env::var("COOKIE_DOMAIN").unwrap_or_default();
     let domain_attr = if cookie_domain.is_empty() {
@@ -178,7 +178,7 @@ pub async fn register_company_admin(
                 first_name: payload.first_name,
                 last_name: payload.last_name,
                 company_name: Some(payload.company_name),
-                role: role_str,
+                role,
                 oauth_provider: None,
             },
         }),

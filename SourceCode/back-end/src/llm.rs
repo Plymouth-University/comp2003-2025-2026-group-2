@@ -2,8 +2,8 @@ use crate::dto::{LayoutGenerationRequest, LayoutGenerationResponse};
 use crate::logs_db::TemplateLayout;
 use anyhow::Result;
 use ollama_rs::Ollama;
-use ollama_rs::generation::chat::{ChatMessage, MessageRole};
 use ollama_rs::generation::chat::request::ChatMessageRequest;
+use ollama_rs::generation::chat::{ChatMessage, MessageRole};
 use ollama_rs::generation::parameters::{FormatType, JsonStructure};
 use ollama_rs::models::ModelOptions;
 use schemars::JsonSchema;
@@ -49,9 +49,9 @@ The user will provide:
 Return ONLY the raw JSON object matching the `template_layout` schema. Do not include markdown formatting."#;
 
 pub async fn generate_layout(request: LayoutGenerationRequest) -> Result<LayoutGenerationResponse> {
-    let ollama = Ollama::from_url(
-        Url::parse(&std::env::var("OLLAMA_URL").unwrap_or("http://127.0.0.1:11434".to_string()))?
-    );
+    let ollama = Ollama::from_url(Url::parse(
+        &std::env::var("OLLAMA_URL").unwrap_or("http://127.0.0.1:11434".to_string()),
+    )?);
 
     let messages = vec![
         ChatMessage::new(MessageRole::System, SYSTEM_PROMPT.to_string()),
@@ -71,9 +71,8 @@ pub async fn generate_layout(request: LayoutGenerationRequest) -> Result<LayoutG
 
     let res = ollama.send_chat_messages(req).await?;
 
-    let layout: serde_json::Value = serde_json::from_str(&res.message.content).unwrap_or_else(|_| {
-        serde_json::json!({ "template_layout": [] })
-    });
+    let layout: serde_json::Value = serde_json::from_str(&res.message.content)
+        .unwrap_or_else(|_| serde_json::json!({ "template_layout": [] }));
 
     Ok(LayoutGenerationResponse { layout })
 }

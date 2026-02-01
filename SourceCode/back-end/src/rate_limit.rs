@@ -62,6 +62,17 @@ impl RateLimitState {
         }
     }
 
+    pub fn disabled() -> Self {
+        Self {
+            ip_login_limiter: Arc::new(DashMap::new()),
+            ip_register_limiter: Arc::new(DashMap::new()),
+            ip_general_limiter: Arc::new(DashMap::new()),
+            email_login_limiter: Arc::new(DashMap::new()),
+            email_register_limiter: Arc::new(DashMap::new()),
+            disabled: true,
+        }
+    }
+
     fn get_or_create_ip_limiter(
         map: &IpLimiter,
         ip: IpAddr,

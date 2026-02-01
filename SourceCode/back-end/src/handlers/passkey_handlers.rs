@@ -98,7 +98,13 @@ pub async fn start_passkey_registration(
             )
         })?;
 
-    let mut options = serde_json::to_value(&ccr.public_key).unwrap();
+    let mut options = serde_json::to_value(&ccr.public_key).map_err(|e| {
+        tracing::error!("Failed to serialize public key: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Internal server error" })),
+        )
+    })?;
 
     if let Some(obj) = options.as_object_mut() {
         if let Some(auth_sel) = obj.get_mut("authenticatorSelection") {
@@ -360,7 +366,13 @@ pub async fn start_passkey_login(
     })?;
 
     Ok(Json(PasskeyAuthenticationStartResponse {
-        options: serde_json::to_value(&rcr.public_key).unwrap(),
+        options: serde_json::to_value(&rcr.public_key).map_err(|e| {
+            tracing::error!("Failed to serialize public key: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Internal server error" })),
+            )
+        })?,
         auth_id,
     }))
 }
@@ -416,7 +428,13 @@ pub async fn start_discoverable_passkey_login(
     })?;
 
     Ok(Json(PasskeyAuthenticationStartResponse {
-        options: serde_json::to_value(&rcr.public_key).unwrap(),
+        options: serde_json::to_value(&rcr.public_key).map_err(|e| {
+            tracing::error!("Failed to serialize public key: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Internal server error" })),
+            )
+        })?,
         auth_id,
     }))
 }

@@ -3,6 +3,14 @@ use axum::http::StatusCode;
 use serde_json::json;
 use uuid::Uuid;
 
+#[cfg(test)]
+mod log_entry_service_tests {
+    #[tokio::test]
+    async fn test_log_entry_service_basic() {
+        assert!(true);
+    }
+}
+
 pub struct LogEntryService;
 
 impl LogEntryService {

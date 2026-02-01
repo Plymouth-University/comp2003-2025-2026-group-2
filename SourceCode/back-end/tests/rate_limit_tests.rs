@@ -6,6 +6,7 @@ use axum::{
     middleware,
     routing::post,
 };
+use back_end::handlers;
 use back_end::{
     AppState, db,
     handlers::login,
@@ -16,28 +17,41 @@ use sqlx::PgPool;
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     str::FromStr,
+    sync::Arc,
 };
-use tempfile::NamedTempFile;
 use tower::Service;
 use tower::ServiceExt;
+use url::Url;
+use webauthn_rs::WebauthnBuilder;
 
-async fn setup_test_app_with_rate_limit() -> (
-    IntoMakeServiceWithConnectInfo<Router, SocketAddr>,
-    NamedTempFile,
-) {
-    let temp_file = NamedTempFile::new().expect("Failed to create temp file");
-    let db_path = temp_file.path().to_str().expect("Failed to get temp path");
+async fn setup_test_app_with_rate_limit() -> IntoMakeServiceWithConnectInfo<Router, SocketAddr> {
+    let database_url = std::env::var("TEST_DATABASE_URL")
+        .unwrap_or_else(|_| "postgres://admin:adminpassword@localhost:5432/logsmartdb".to_string());
 
-    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = PgPool::connect(&connection_string)
+    let pool = PgPool::connect(&database_url)
         .await
         .expect("Failed to create test db");
 
-    db::init_db(&pool)
-        .await
-        .expect("Failed to initialize test db");
+    // Clean up test data
+    let _ = sqlx::query("DELETE FROM security_logs")
+        .execute(&pool)
+        .await;
+    let _ = sqlx::query("DELETE FROM passkey_sessions")
+        .execute(&pool)
+        .await;
+    let _ = sqlx::query("DELETE FROM passkeys").execute(&pool).await;
+    let _ = sqlx::query("DELETE FROM invitations").execute(&pool).await;
+    let _ = sqlx::query("DELETE FROM users").execute(&pool).await;
+    let _ = sqlx::query("DELETE FROM companies").execute(&pool).await;
 
-    let rate_limit_state = RateLimitState::disabled();
+    let rate_limit_state = RateLimitState::new();
+    // Note: rate limiting is ENABLED for these tests to test the middleware
+
+    let rp_id = "localhost";
+    let rp_origin = Url::parse("https://localhost").expect("Invalid URL");
+    let builder = WebauthnBuilder::new(rp_id, &rp_origin).expect("Invalid configuration");
+    let webauthn = Arc::new(builder.build().expect("Invalid configuration"));
+
     let state = AppState {
         postgres: pool,
         rate_limit: rate_limit_state.clone(),
@@ -45,6 +59,9 @@ async fn setup_test_app_with_rate_limit() -> (
         mongodb: back_end::logs_db::init_mongodb()
             .await
             .expect("Failed to initialize MongoDB"),
+        webauthn,
+        google_oauth: None,
+        oauth_state_store: Arc::new(handlers::OAuthStateStore::default()),
     };
 
     let app = Router::new()
@@ -56,7 +73,7 @@ async fn setup_test_app_with_rate_limit() -> (
         .with_state(state)
         .into_make_service_with_connect_info::<SocketAddr>();
 
-    (app, temp_file)
+    app
 }
 
 #[tokio::test]
@@ -171,7 +188,7 @@ async fn test_rate_limit_different_ips_independent() {
 
 #[tokio::test]
 async fn test_rate_limit_middleware_allows_first_request() {
-    let (mut app, _temp) = setup_test_app_with_rate_limit().await;
+    let mut app = setup_test_app_with_rate_limit().await;
 
     let sock_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)), 8080);
     let mut service = app.call(sock_addr).await.unwrap();
@@ -203,7 +220,7 @@ async fn test_rate_limit_middleware_allows_first_request() {
 
 #[tokio::test]
 async fn test_rate_limit_middleware_blocks_after_limit() {
-    let (mut app, _temp) = setup_test_app_with_rate_limit().await;
+    let mut app = setup_test_app_with_rate_limit().await;
 
     let sock_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)), 8080);
     let mut service = app.call(sock_addr).await.unwrap();
@@ -373,7 +390,7 @@ async fn test_rate_limit_concurrent_requests_same_ip() {
 
 #[tokio::test]
 async fn test_rate_limit_response_includes_retry_after() {
-    let (mut app, _temp) = setup_test_app_with_rate_limit().await;
+    let mut app = setup_test_app_with_rate_limit().await;
 
     let sock_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 20)), 8080);
     let mut service = app.call(sock_addr).await.unwrap();
@@ -576,7 +593,7 @@ async fn test_rate_limit_botnet_scenario() {
 
 #[tokio::test]
 async fn test_rate_limit_middleware_checks_email_from_body() {
-    let (mut app, _temp) = setup_test_app_with_rate_limit().await;
+    let mut app = setup_test_app_with_rate_limit().await;
 
     let email = "ratelimited@example.com";
 

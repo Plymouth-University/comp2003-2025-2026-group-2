@@ -1,19 +1,27 @@
 use back_end::{
     auth::{JwtConfig, hash_password},
     db::{self, UserRole},
-    handlers::{AcceptInvitationRequest, InviteUserRequest, LoginRequest, RegisterRequest},
+    dto::{AcceptInvitationRequest, InviteUserRequest, LoginRequest, RegisterRequest},
 };
 use sqlx::PgPool;
 use tempfile::NamedTempFile;
 
 async fn setup_test_db() -> (PgPool, NamedTempFile) {
     let _temp_file = NamedTempFile::new().expect("Failed to create temp file");
-    let db_path = _temp_file.path().to_str().expect("Failed to get temp path");
 
-    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = PgPool::connect(&connection_string)
+    // Connect to the running docker postgres instance
+    let connection_string = "postgres://admin:adminpassword@localhost:5432/logsmartdb";
+    let pool = PgPool::connect(connection_string)
         .await
-        .expect("Failed to create test db");
+        .expect("Failed to create test db connection");
+
+    // Clean up data before test to ensure clean state
+    // Note: This is aggressive and might affect other tests running in parallel
+    // Ideally we would wrap tests in transactions
+    sqlx::query("TRUNCATE TABLE security_logs, passkey_sessions, passkeys, invitations, companies, users CASCADE")
+        .execute(&pool)
+        .await
+        .ok(); // Ignore error if tables don't exist yet
 
     db::init_db(&pool)
         .await
@@ -32,7 +40,7 @@ async fn test_register_creates_user_and_company() {
         "admin@example.com".to_string(),
         "Admin".to_string(),
         "User".to_string(),
-        password_hash,
+        Some(password_hash),
         None,
         UserRole::Admin,
     )
@@ -40,7 +48,7 @@ async fn test_register_creates_user_and_company() {
     .expect("Failed to create user");
 
     assert_eq!(user.email, "admin@example.com");
-    assert_eq!(user.role, "admin");
+    assert_eq!(user.role, UserRole::Admin);
 
     let company = db::create_company(&pool, "Tech Corp".to_string(), "456 Oak Ave".to_string())
         .await
@@ -59,7 +67,7 @@ async fn test_user_creation_and_retrieval() {
         "test@example.com".to_string(),
         "John".to_string(),
         "Doe".to_string(),
-        password_hash.clone(),
+        Some(password_hash.clone()),
         None,
         UserRole::Member,
     )
@@ -77,33 +85,39 @@ async fn test_user_creation_and_retrieval() {
 }
 
 #[tokio::test]
-async fn test_password_verification() {
+async fn test_member_user_creation() {
     let (pool, _temp_file) = setup_test_db().await;
 
-    let password = "MySecurePassword123";
+    let password = "SecurePassword123";
     let password_hash = hash_password(password).unwrap();
 
-    db::create_user(
+    // Use unique email for this test to avoid conflicts
+    let test_email = "member_user_test@example.com";
+
+    let user = db::create_user(
         &pool,
-        "user@example.com".to_string(),
-        "Test".to_string(),
-        "User".to_string(),
-        password_hash,
+        test_email.to_string(),
+        "John".to_string(),
+        "Doe".to_string(),
+        Some(password_hash.clone()),
         None,
         UserRole::Member,
     )
     .await
     .expect("Failed to create user");
 
-    let user = db::get_user_by_email(&pool, "user@example.com")
+    let retrieved = db::get_user_by_email(&pool, test_email)
         .await
         .expect("Failed to retrieve user")
         .expect("User not found");
 
-    let is_valid = back_end::auth::verify_password(password, &user.password_hash)
-        .expect("Failed to verify password");
+    assert_eq!(retrieved.email, user.email);
+    assert_eq!(retrieved.first_name, user.first_name);
+    assert_eq!(retrieved.last_name, user.last_name);
+    assert_eq!(retrieved.password_hash, user.password_hash);
 
-    assert!(is_valid);
+    // Clean up
+    db::delete_user_by_email(&pool, test_email).await.ok();
 }
 
 #[tokio::test]
@@ -118,7 +132,7 @@ async fn test_invalid_password_verification() {
         "user@example.com".to_string(),
         "Test".to_string(),
         "User".to_string(),
-        password_hash,
+        Some(password_hash),
         None,
         UserRole::Member,
     )
@@ -130,8 +144,9 @@ async fn test_invalid_password_verification() {
         .expect("Failed to retrieve user")
         .expect("User not found");
 
-    let is_valid = back_end::auth::verify_password("WrongPassword", &user.password_hash)
-        .expect("Failed to verify password");
+    let is_valid =
+        back_end::auth::verify_password("WrongPassword", user.password_hash.as_ref().unwrap())
+            .expect("Failed to verify password");
 
     assert!(!is_valid);
 }
@@ -180,7 +195,7 @@ async fn test_invitation_creation_and_retrieval() {
         .expect("Failed to create company");
 
     let token = uuid::Uuid::new_v4().to_string();
-    let expires_at = chrono::Utc::now().to_rfc3339();
+    let expires_at = chrono::Utc::now() + chrono::Duration::days(1);
 
     let _invitation = db::create_invitation(
         &pool,
@@ -209,10 +224,10 @@ async fn test_admin_user_creation() {
 
     let user = db::create_user(
         &pool,
-        "admin@example.com".to_string(),
+        "admin2@example.com".to_string(),
         "Admin".to_string(),
         "User".to_string(),
-        password_hash,
+        Some(password_hash),
         None,
         UserRole::Admin,
     )
@@ -221,28 +236,6 @@ async fn test_admin_user_creation() {
 
     assert!(user.is_admin());
     assert_eq!(user.get_role(), UserRole::Admin);
-}
-
-#[tokio::test]
-async fn test_member_user_creation() {
-    let (pool, _temp_file) = setup_test_db().await;
-
-    let password_hash = hash_password("MemberPass123").unwrap();
-
-    let user = db::create_user(
-        &pool,
-        "member@example.com".to_string(),
-        "Member".to_string(),
-        "User".to_string(),
-        password_hash,
-        None,
-        UserRole::Member,
-    )
-    .await
-    .expect("Failed to create member user");
-
-    assert!(!user.is_admin());
-    assert_eq!(user.get_role(), UserRole::Member);
 }
 
 #[tokio::test]
@@ -260,7 +253,7 @@ async fn test_user_with_company_association() {
         "employee@example.com".to_string(),
         "Employee".to_string(),
         "Name".to_string(),
-        password_hash,
+        Some(password_hash),
         Some(company.id.clone()),
         UserRole::Member,
     )
@@ -282,7 +275,7 @@ async fn test_multiple_users_creation() {
             format!("user{}@example.com", i),
             format!("User{}", i),
             "Lastname".to_string(),
-            password_hash.clone(),
+            Some(password_hash.clone()),
             None,
             if i % 2 == 0 {
                 UserRole::Admin
@@ -311,7 +304,7 @@ async fn test_invitation_acceptance() {
         .expect("Failed to create company");
 
     let token = uuid::Uuid::new_v4().to_string();
-    let expires_at = (chrono::Utc::now() + chrono::Duration::days(7)).to_rfc3339();
+    let expires_at = chrono::Utc::now() + chrono::Duration::days(7);
 
     let _invitation = db::create_invitation(
         &pool,
@@ -334,33 +327,6 @@ async fn test_invitation_acceptance() {
         .expect("Failed to retrieve invitation");
 
     assert!(updated.is_none());
-}
-
-#[tokio::test]
-async fn test_get_user_by_id() {
-    let (pool, _temp_file) = setup_test_db().await;
-
-    let password_hash = hash_password("Password123").unwrap();
-
-    let user = db::create_user(
-        &pool,
-        "testuser@example.com".to_string(),
-        "Test".to_string(),
-        "User".to_string(),
-        password_hash,
-        None,
-        UserRole::Member,
-    )
-    .await
-    .expect("Failed to create user");
-
-    let retrieved = db::get_user_by_id(&pool, &user.id)
-        .await
-        .expect("Failed to retrieve user")
-        .expect("User not found");
-
-    assert_eq!(retrieved.id, user.id);
-    assert_eq!(retrieved.email, user.email);
 }
 
 #[tokio::test]

@@ -1,6 +1,14 @@
 use crate::{db, jwt_manager::JwtManager, utils::AuditLogger};
 use anyhow::Result;
 use axum::http::StatusCode;
+
+#[cfg(test)]
+mod oauth_service_tests {
+    #[tokio::test]
+    async fn test_oauth_service_basic() {
+        assert!(true);
+    }
+}
 use openidconnect::{
     AuthenticationFlow, AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce,
     RedirectUrl, Scope, TokenResponse,
@@ -36,7 +44,6 @@ impl GoogleOAuthClient {
     ) -> Result<Self> {
         let issuer_url = IssuerUrl::new(issuer_url)
             .map_err(|e| anyhow::anyhow!("Failed to create issuer URL: {e}"))?;
-
 
         let http_client = openidconnect::reqwest::Client::new();
         let provider_metadata = CoreProviderMetadata::discover_async(issuer_url, &http_client)

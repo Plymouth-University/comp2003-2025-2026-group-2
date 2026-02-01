@@ -41,9 +41,7 @@ impl SmtpConfig {
 }
 
 async fn send_email(to_email: &str, subject: &str, body: &str) -> Result<()> {
-    let config = if let Ok(cfg) = SmtpConfig::load() {
-        cfg
-    } else {
+    let Ok(config) = SmtpConfig::load() else {
         tracing::error!("SMTP not configured! {}", to_email);
         panic!("SMTP not configured");
     };

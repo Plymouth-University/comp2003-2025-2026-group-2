@@ -416,6 +416,7 @@ pub async fn delete_log_entry(
     security(("bearer_auth" = [])),
     tag = "Log Entries"
 )]
+#[allow(clippy::implicit_hasher)]
 pub async fn list_user_log_entries(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,

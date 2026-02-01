@@ -16,7 +16,7 @@ const VARS: [&str; 8] = [
     "GOOGLE_CLIENT_ID",
     "POSTGRES_PASSWORD",
     "POSTGRES_USER",
-    "MONGODB_URI"
+    "MONGODB_URI",
 ];
 
 #[tokio::main]

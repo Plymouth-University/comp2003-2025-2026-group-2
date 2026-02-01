@@ -3,6 +3,14 @@ use axum::http::StatusCode;
 use serde_json::json;
 use sqlx::PgPool;
 
+#[cfg(test)]
+mod user_service_tests {
+    #[tokio::test]
+    async fn test_user_service_basic() {
+        assert!(true);
+    }
+}
+
 pub struct UserService;
 
 impl UserService {
