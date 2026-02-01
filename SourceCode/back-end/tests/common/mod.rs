@@ -11,7 +11,10 @@ use sqlx::PgPool;
 
 pub use factories::*;
 
-/// Sets up a test database with test data
+/// Sets up a test database with test data.
+///
+/// # Panics
+/// Panics if the database connection fails or if cleanup queries fail.
 pub async fn setup_test_db() -> PgPool {
     // Use environment variable for database URL, with fallback to test database
     let database_url = std::env::var("TEST_DATABASE_URL")
@@ -49,13 +52,19 @@ pub use mocks::*;
 //     back_end::app::create_app(config).await
 // }
 
-/// Test helper for running database migrations
+/// Test helper for running database migrations.
+///
+/// # Errors
+/// Returns an error if migrations fail to run.
 pub async fn setup_test_database(pool: &PgPool) -> Result<(), sqlx::migrate::MigrateError> {
     // Run migrations on test database
     sqlx::migrate!("./migrations").run(pool).await
 }
 
-/// Test helper for cleaning up test database
+/// Test helper for cleaning up test database.
+///
+/// # Errors
+/// Returns an error if the truncate query fails.
 pub async fn cleanup_test_database(pool: &PgPool) -> Result<(), sqlx::Error> {
     // Clean up all tables in reverse order of dependencies
     sqlx::query("TRUNCATE TABLE security_logs, passkey_sessions, passkeys, invitations, companies, users CASCADE")
@@ -65,7 +74,10 @@ pub async fn cleanup_test_database(pool: &PgPool) -> Result<(), sqlx::Error> {
     Ok(())
 }
 
-/// Test helper to create isolated test database connection
+/// Test helper to create isolated test database connection.
+///
+/// # Panics
+/// Panics if the database connection fails.
 pub async fn create_test_pool() -> PgPool {
     let database_url = std::env::var("TEST_DATABASE_URL")
         .unwrap_or_else(|_| "postgres://test:test@localhost/logsmart_test".to_string());

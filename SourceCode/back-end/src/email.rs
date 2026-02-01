@@ -14,6 +14,10 @@ struct SmtpConfig {
 }
 
 impl SmtpConfig {
+    /// Loads SMTP configuration from environment variables.
+    ///
+    /// # Errors
+    /// Returns an error if required environment variables (`SMTP_USERNAME`, `SMTP_SERVER`, etc.) are not set.
     fn load() -> Result<Self> {
         let Ok(username) = std::env::var("SMTP_USERNAME") else {
             return Err(anyhow!("SMTP_USERNAME not configured"));
@@ -40,6 +44,13 @@ impl SmtpConfig {
     }
 }
 
+/// Sends a plain text email.
+///
+/// # Errors
+/// Returns an error if SMTP is not configured, email parsing fails, or sending fails.
+///
+/// # Panics
+/// Panics if SMTP configuration cannot be loaded.
 async fn send_email(to_email: &str, subject: &str, body: &str) -> Result<()> {
     let Ok(config) = SmtpConfig::load() else {
         tracing::error!("SMTP not configured! {}", to_email);
@@ -103,6 +114,10 @@ async fn send_email(to_email: &str, subject: &str, body: &str) -> Result<()> {
     Ok(())
 }
 
+/// Sends an invitation email to a new user.
+///
+/// # Errors
+/// Returns an error if the email fails to send.
 pub async fn send_invitation_email(
     to_email: &str,
     invite_link: &str,
@@ -125,6 +140,10 @@ pub async fn send_invitation_email(
     Ok(())
 }
 
+/// Sends a password reset link to a user.
+///
+/// # Errors
+/// Returns an error if the email fails to send.
 pub async fn send_password_reset_email(to_email: &str, reset_link: &str) -> Result<()> {
     let subject = "LogSmart Password Reset Request";
     let body = format!(
@@ -143,6 +162,10 @@ pub async fn send_password_reset_email(to_email: &str, reset_link: &str) -> Resu
     Ok(())
 }
 
+/// Sends a cancellation notice for a previously sent invitation.
+///
+/// # Errors
+/// Returns an error if the email fails to send.
 pub async fn send_invitation_cancelled_email(to_email: &str) -> Result<()> {
     let subject = "Your LogSmart Invitation Has Been Cancelled";
     let body = "Hello,\n\n\

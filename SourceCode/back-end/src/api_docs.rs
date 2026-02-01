@@ -1,6 +1,7 @@
 use crate::{dto, handlers, logs_db};
 use utoipa::OpenApi;
 
+#[allow(clippy::needless_for_each)]
 #[derive(OpenApi)]
 #[openapi(
     paths(

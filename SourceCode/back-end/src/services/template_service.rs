@@ -13,6 +13,10 @@ mod template_service_tests {
 pub struct TemplateService;
 
 impl TemplateService {
+    /// Creates a new log template.
+    ///
+    /// # Errors
+    /// Returns an error if a template with the same name already exists or if database operations fail.
     pub async fn create_template(
         state: &AppState,
         company_id: &str,
@@ -68,6 +72,10 @@ impl TemplateService {
         Ok(())
     }
 
+    /// Retrieves a specific log template by its name.
+    ///
+    /// # Errors
+    /// Returns an error if the template is not found or if database lookup fails.
     pub async fn get_template(
         state: &AppState,
         company_id: &str,
@@ -92,6 +100,10 @@ impl TemplateService {
         }
     }
 
+    /// Retrieves all log templates associated with a company.
+    ///
+    /// # Errors
+    /// Returns an error if the database query fails.
     pub async fn get_all_templates(
         state: &AppState,
         company_id: &str,
@@ -131,6 +143,10 @@ impl TemplateService {
         Ok(result)
     }
 
+    /// Updates an existing log template's layout or schedule.
+    ///
+    /// # Errors
+    /// Returns an error if the database update fails.
     pub async fn update_template(
         state: &AppState,
         company_id: &str,
@@ -156,6 +172,10 @@ impl TemplateService {
         Ok(())
     }
 
+    /// Renames a log template.
+    ///
+    /// # Errors
+    /// Returns an error if the database update fails.
     pub async fn rename_template(
         state: &AppState,
         company_id: &str,
@@ -174,6 +194,10 @@ impl TemplateService {
         Ok(())
     }
 
+    /// Deletes a log template.
+    ///
+    /// # Errors
+    /// Returns an error if the database deletion fails.
     pub async fn delete_template(
         state: &AppState,
         company_id: &str,

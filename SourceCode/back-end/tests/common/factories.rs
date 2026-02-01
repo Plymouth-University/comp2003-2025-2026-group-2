@@ -455,7 +455,10 @@ impl TestFactory<LogEntry> for LogEntryFactory {
 
 // Database creation helper functions for tests
 
-/// Creates a test user in the database
+/// Creates a test user in the database.
+///
+/// # Panics
+/// Panics if database operations fail.
 pub async fn create_test_user(
     pool: &sqlx::PgPool,
     email: &str,
@@ -502,7 +505,10 @@ pub async fn create_test_user(
     .unwrap()
 }
 
-/// Creates a test user with a specific role
+/// Creates a test user with a specific role.
+///
+/// # Panics
+/// Panics if database operations fail.
 pub async fn create_test_user_with_role(
     pool: &sqlx::PgPool,
     email: &str,
@@ -550,7 +556,10 @@ pub async fn create_test_user_with_role(
     .unwrap()
 }
 
-/// Creates a test company in the database
+/// Creates a test company in the database.
+///
+/// # Panics
+/// Panics if database operations fail.
 pub async fn create_test_company(pool: &sqlx::PgPool, name: &str, address: &str) -> Company {
     let mut company = CompanyFactory::create_basic();
     company.name = name.to_string();
@@ -573,7 +582,10 @@ pub async fn create_test_company(pool: &sqlx::PgPool, name: &str, address: &str)
     .unwrap()
 }
 
-/// Creates a test invitation in the database
+/// Creates a test invitation in the database.
+///
+/// # Panics
+/// Panics if database operations fail.
 pub async fn create_test_invitation(
     pool: &sqlx::PgPool,
     company_id: &str,
@@ -611,7 +623,10 @@ pub async fn create_test_invitation(
     .unwrap()
 }
 
-/// Creates a test invitation with specific expiry
+/// Creates a test invitation with specific expiry.
+///
+/// # Panics
+/// Panics if database operations fail.
 pub async fn create_test_invitation_with_expiry(
     pool: &sqlx::PgPool,
     company_id: &str,

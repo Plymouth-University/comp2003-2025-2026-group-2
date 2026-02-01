@@ -17,6 +17,10 @@ use serde_json::json;
     ),
     security(("bearer_token" = []))
 )]
+/// Generates a log layout using LLM based on user prompt.
+///
+/// # Errors
+/// Returns an error if the user prompt is empty or if LLM generation fails.
 pub async fn generate_layout(
     AuthToken(_claims): AuthToken,
     State(_state): State<AppState>,

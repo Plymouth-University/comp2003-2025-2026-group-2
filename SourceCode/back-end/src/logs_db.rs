@@ -62,6 +62,13 @@ pub struct TemplateDocument {
     pub created_by: Uuid,
 }
 
+/// Initializes the `MongoDB` client.
+///
+/// # Errors
+/// Returns an error if the connection fails.
+///
+/// # Panics
+/// Panics if `MONGODB_URI` environment variable is not set.
 pub async fn init_mongodb() -> Result<mongodb::Client> {
     let mongo_uri = std::env::var("MONGODB_URI").expect("MONGODB_URI not set in environment");
     mongodb::Client::with_uri_str(&mongo_uri)
@@ -69,6 +76,10 @@ pub async fn init_mongodb() -> Result<mongodb::Client> {
         .map_err(Into::into)
 }
 
+/// Adds a new log template to the database.
+///
+/// # Errors
+/// Returns an error if the database operation fails.
 pub async fn add_template(client: &mongodb::Client, template: &TemplateDocument) -> Result<()> {
     let db = client.database("logs_db");
     let collection: mongodb::Collection<TemplateDocument> = db.collection("templates");
@@ -77,6 +88,10 @@ pub async fn add_template(client: &mongodb::Client, template: &TemplateDocument)
     Ok(())
 }
 
+/// Retrieves a log template by its name and company ID.
+///
+/// # Errors
+/// Returns an error if the database query fails.
 pub async fn get_template_by_name(
     client: &mongodb::Client,
     template_name: &str,
@@ -94,6 +109,10 @@ pub async fn get_template_by_name(
     Ok(result)
 }
 
+/// Retrieves all log templates for a specific company.
+///
+/// # Errors
+/// Returns an error if the database query fails.
 pub async fn get_templates_by_company(
     client: &mongodb::Client,
     company_id: &str,
@@ -115,6 +134,10 @@ pub async fn get_templates_by_company(
     Ok(templates)
 }
 
+/// Updates an existing log template.
+///
+/// # Errors
+/// Returns an error if the database update fails.
 pub async fn update_template(
     client: &mongodb::Client,
     template_name: &str,
@@ -151,6 +174,10 @@ pub async fn update_template(
     Ok(())
 }
 
+/// Renames a log template.
+///
+/// # Errors
+/// Returns an error if a template with the new name already exists or if the database update fails.
 pub async fn rename_template(
     client: &mongodb::Client,
     old_name: &str,
@@ -188,6 +215,10 @@ pub async fn rename_template(
     Ok(())
 }
 
+/// Deletes a log template.
+///
+/// # Errors
+/// Returns an error if the database deletion fails.
 pub async fn delete_template(
     client: &mongodb::Client,
     template_name: &str,
@@ -219,6 +250,10 @@ pub struct LogEntry {
     pub period: String,
 }
 
+/// Creates a new log entry.
+///
+/// # Errors
+/// Returns an error if the database operation fails.
 pub async fn create_log_entry(client: &mongodb::Client, entry: &LogEntry) -> Result<()> {
     let db = client.database("logs_db");
     let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
@@ -227,6 +262,10 @@ pub async fn create_log_entry(client: &mongodb::Client, entry: &LogEntry) -> Res
     Ok(())
 }
 
+/// Retrieves a log entry by its ID.
+///
+/// # Errors
+/// Returns an error if the database query fails.
 pub async fn get_log_entry(client: &mongodb::Client, entry_id: &str) -> Result<Option<LogEntry>> {
     let db = client.database("logs_db");
     let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
@@ -239,6 +278,10 @@ pub async fn get_log_entry(client: &mongodb::Client, entry_id: &str) -> Result<O
     Ok(result)
 }
 
+/// Retrieves all log entries for a user in a company.
+///
+/// # Errors
+/// Returns an error if the database query fails.
 pub async fn get_user_log_entries(
     client: &mongodb::Client,
     user_id: &str,
@@ -262,6 +305,10 @@ pub async fn get_user_log_entries(
     Ok(entries)
 }
 
+/// Retrieves log entries for a user, filtered by template.
+///
+/// # Errors
+/// Returns an error if the database query fails.
 pub async fn get_user_log_entries_by_template(
     client: &mongodb::Client,
     user_id: &str,
@@ -287,6 +334,10 @@ pub async fn get_user_log_entries_by_template(
     Ok(entries)
 }
 
+/// Retrieves the most recently submitted log entry for a user and template.
+///
+/// # Errors
+/// Returns an error if the database query fails.
 pub async fn get_latest_submitted_entry(
     client: &mongodb::Client,
     user_id: &str,
@@ -310,6 +361,13 @@ pub async fn get_latest_submitted_entry(
     Ok(result)
 }
 
+/// Checks if a log entry exists for the current period and template.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+///
+/// # Panics
+/// Panics if period boundary calculations fail.
 pub async fn has_entry_for_current_period(
     client: &mongodb::Client,
     company_id: &str,
@@ -405,6 +463,13 @@ pub async fn has_entry_for_current_period(
     Ok(result.is_some())
 }
 
+/// Checks if a submitted log entry exists for the current period and template.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+///
+/// # Panics
+/// Panics if period boundary calculations fail.
 pub async fn has_submitted_entry_for_current_period(
     client: &mongodb::Client,
     company_id: &str,
@@ -501,6 +566,13 @@ pub async fn has_submitted_entry_for_current_period(
     Ok(result.is_some())
 }
 
+/// Retrieves a draft log entry for the current period and template.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+///
+/// # Panics
+/// Panics if period boundary calculations fail.
 pub async fn get_draft_entry_for_current_period(
     client: &mongodb::Client,
     user_id: &str,
@@ -599,6 +671,10 @@ pub async fn get_draft_entry_for_current_period(
     Ok(result)
 }
 
+/// Updates the data of an existing log entry.
+///
+/// # Errors
+/// Returns an error if the database update fails.
 pub async fn update_log_entry(
     client: &mongodb::Client,
     entry_id: &str,
@@ -622,6 +698,10 @@ pub async fn update_log_entry(
     Ok(())
 }
 
+/// Submits a log entry, marking it as final.
+///
+/// # Errors
+/// Returns an error if the database update fails.
 pub async fn submit_log_entry(client: &mongodb::Client, entry_id: &str) -> Result<()> {
     let db = client.database("logs_db");
     let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
@@ -642,6 +722,10 @@ pub async fn submit_log_entry(client: &mongodb::Client, entry_id: &str) -> Resul
     Ok(())
 }
 
+/// Returns a submitted log entry to draft status.
+///
+/// # Errors
+/// Returns an error if the database update fails.
 pub async fn unsubmit_log_entry(client: &mongodb::Client, entry_id: &str) -> Result<()> {
     let db = client.database("logs_db");
     let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
@@ -662,6 +746,10 @@ pub async fn unsubmit_log_entry(client: &mongodb::Client, entry_id: &str) -> Res
     Ok(())
 }
 
+/// Deletes a log entry.
+///
+/// # Errors
+/// Returns an error if the database deletion fails.
 pub async fn delete_log_entry(client: &mongodb::Client, entry_id: &str) -> Result<()> {
     let db = client.database("logs_db");
     let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
@@ -740,6 +828,10 @@ pub fn is_form_due_today(schedule: &Schedule) -> bool {
     }
 }
 
+/// Formats the period string for a given frequency.
+///
+/// # Panics
+/// Panics if week boundary calculations fail.
 #[must_use]
 pub fn format_period_for_frequency(frequency: &Frequency) -> String {
     let now = chrono::Utc::now();

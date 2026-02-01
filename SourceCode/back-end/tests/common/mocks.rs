@@ -89,6 +89,10 @@ impl MockEmailService {
         }
     }
 
+    /// Mocks sending an email.
+    ///
+    /// # Errors
+    /// Always returns `Ok` in this mock implementation.
     pub async fn send_email(&self, to: &str, subject: &str, body: &str) -> Result<()> {
         let email = EmailMessage {
             to: to.to_string(),
@@ -203,6 +207,10 @@ impl MockOAuthService {
         user_info_map.get(access_token).cloned()
     }
 
+    /// Mocks exchanging a code for an OAuth token.
+    ///
+    /// # Errors
+    /// Returns an error if the code is not found in the mock store.
     pub async fn exchange_code_for_token(&self, code: &str) -> Result<OAuthToken> {
         match self.get_token(code).await {
             Some(token) => Ok(token),
@@ -210,6 +218,10 @@ impl MockOAuthService {
         }
     }
 
+    /// Mocks retrieving user info from an OAuth token.
+    ///
+    /// # Errors
+    /// Returns an error if the token is not found in the mock store.
     pub async fn get_user_info_from_token(&self, access_token: &str) -> Result<OAuthUserInfo> {
         match self.get_user_info(access_token).await {
             Some(info) => Ok(info),
@@ -268,6 +280,7 @@ impl MockOAuthStateStore {
         states.retain(|_, state| state.expires_at > now);
     }
 
+    #[must_use] 
     pub fn generate_state_string(&self, length: usize) -> String {
         use rand::Rng;
         let charset: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\

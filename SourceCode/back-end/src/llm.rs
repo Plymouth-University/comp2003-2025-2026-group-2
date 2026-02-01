@@ -48,6 +48,10 @@ The user will provide:
 ### OUTPUT FORMAT:
 Return ONLY the raw JSON object matching the `template_layout` schema. Do not include markdown formatting."#;
 
+/// Generates a layout using the configured LLM.
+///
+/// # Errors
+/// Returns an error if the LLM request fails or if environment variables are missing.
 pub async fn generate_layout(request: LayoutGenerationRequest) -> Result<LayoutGenerationResponse> {
     let ollama = Ollama::from_url(Url::parse(
         &std::env::var("OLLAMA_URL").unwrap_or("http://127.0.0.1:11434".to_string()),

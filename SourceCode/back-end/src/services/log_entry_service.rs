@@ -14,6 +14,10 @@ mod log_entry_service_tests {
 pub struct LogEntryService;
 
 impl LogEntryService {
+    /// Creates a new log entry draft based on a template.
+    ///
+    /// # Errors
+    /// Returns an error if the user has no company, the template is not found, or an entry already exists for the period.
     pub async fn create_log_entry(
         state: &AppState,
         user_id: &str,
@@ -105,6 +109,10 @@ impl LogEntryService {
         Ok(entry_id)
     }
 
+    /// Retrieves a specific log entry.
+    ///
+    /// # Errors
+    /// Returns an error if the entry is not found or if the user doesn't own the entry.
     pub async fn get_log_entry(
         state: &AppState,
         user_id: &str,
@@ -131,6 +139,10 @@ impl LogEntryService {
         Ok(entry)
     }
 
+    /// Updates an existing log entry draft.
+    ///
+    /// # Errors
+    /// Returns an error if the entry is not found, user doesn't own it, or update fails.
     pub async fn update_log_entry(
         state: &AppState,
         user_id: &str,
@@ -179,6 +191,10 @@ impl LogEntryService {
         Ok(updated_entry)
     }
 
+    /// Submits a log entry, marking it as final.
+    ///
+    /// # Errors
+    /// Returns an error if the entry is not found, user doesn't own it, or submission fails.
     pub async fn submit_log_entry(
         state: &AppState,
         user_id: &str,
@@ -215,6 +231,10 @@ impl LogEntryService {
         Ok(())
     }
 
+    /// Returns a submitted log entry to draft status (admin only).
+    ///
+    /// # Errors
+    /// Returns an error if the user is not an admin, entry is not found, or operation fails.
     pub async fn unsubmit_log_entry(
         state: &AppState,
         user_id: &str,
@@ -291,6 +311,10 @@ impl LogEntryService {
         Ok(())
     }
 
+    /// Deletes a log entry.
+    ///
+    /// # Errors
+    /// Returns an error if the entry is not found, user is not authorized, or deletion fails.
     pub async fn delete_log_entry(
         state: &AppState,
         user_id: &str,
@@ -328,6 +352,10 @@ impl LogEntryService {
         Ok(())
     }
 
+    /// Lists all log templates for a company.
+    ///
+    /// # Errors
+    /// Returns an error if the database query fails.
     pub async fn list_due_forms(
         state: &AppState,
         company_id: &str,
@@ -343,6 +371,10 @@ impl LogEntryService {
             })
     }
 
+    /// Retrieves all log entries for a user in a company.
+    ///
+    /// # Errors
+    /// Returns an error if the database query fails.
     pub async fn get_user_log_entries(
         state: &AppState,
         user_id: &str,

@@ -158,6 +158,9 @@ pub struct PasskeySession {
 ///
 /// This function runs all pending migrations from the `migrations/` directory.
 /// Migrations are applied in order based on their timestamp prefix.
+///
+/// # Errors
+/// Returns an error if migrations fail to execute.
 pub async fn init_db(pool: &PgPool) -> Result<()> {
     sqlx::migrate!("./migrations")
         .run(pool)
@@ -167,6 +170,10 @@ pub async fn init_db(pool: &PgPool) -> Result<()> {
     Ok(())
 }
 
+/// Creates a new user in the database.
+///
+/// # Errors
+/// Returns an error if database insert fails.
 pub async fn create_user<'a, E>(
     executor: E,
     email: String,
@@ -216,6 +223,10 @@ where
     })
 }
 
+/// Retrieves a user's company ID by their user ID.
+///
+/// # Errors
+/// Returns an error if database query fails.
 pub async fn get_user_company_id(pool: &PgPool, user_id: &str) -> Result<Option<String>> {
     #[derive(sqlx::FromRow)]
     struct CompanyIdRow {
@@ -236,6 +247,10 @@ pub async fn get_user_company_id(pool: &PgPool, user_id: &str) -> Result<Option<
     Ok(record.and_then(|r| r.company_id))
 }
 
+/// Retrieves a user by their email address.
+///
+/// # Errors
+/// Returns an error if database query fails.
 pub async fn get_user_by_email(pool: &PgPool, email: &str) -> Result<Option<UserRecord>> {
     let user = sqlx::query_as::<_, UserRecord>(
         r"
@@ -254,6 +269,10 @@ pub async fn get_user_by_email(pool: &PgPool, email: &str) -> Result<Option<User
     Ok(user)
 }
 
+/// Retrieves a user by their ID.
+///
+/// # Errors
+/// Returns an error if database query fails.
 pub async fn get_user_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRecord>> {
     let user = sqlx::query_as::<_, UserRecord>(
         r"
@@ -272,6 +291,10 @@ pub async fn get_user_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRecord
     Ok(user)
 }
 
+/// Retrieves a user by OAuth provider and subject.
+///
+/// # Errors
+/// Returns an error if database query fails.
 pub async fn get_user_by_oauth(
     pool: &PgPool,
     provider: &str,
@@ -295,6 +318,10 @@ pub async fn get_user_by_oauth(
     Ok(user)
 }
 
+/// Creates a new user with OAuth authentication.
+///
+/// # Errors
+/// Returns an error if database insert fails.
 pub async fn create_oauth_user<'a, E>(
     executor: E,
     email: String,
@@ -348,6 +375,10 @@ where
     })
 }
 
+/// Links an OAuth account to an existing user.
+///
+/// # Errors
+/// Returns an error if database update fails.
 pub async fn link_oauth_to_user(
     pool: &PgPool,
     user_id: &str,
@@ -372,6 +403,10 @@ pub async fn link_oauth_to_user(
     Ok(())
 }
 
+/// Unlinks OAuth authentication from a user.
+///
+/// # Errors
+/// Returns an error if database update fails.
 pub async fn unlink_oauth_from_user(pool: &PgPool, user_id: &str) -> Result<()> {
     sqlx::query(
         r"
@@ -387,6 +422,10 @@ pub async fn unlink_oauth_from_user(pool: &PgPool, user_id: &str) -> Result<()> 
     Ok(())
 }
 
+/// Soft deletes a user by their email address.
+///
+/// # Errors
+/// Returns an error if database update fails.
 pub async fn delete_user_by_email(pool: &PgPool, email: &str) -> Result<()> {
     sqlx::query(
         r"
@@ -403,6 +442,10 @@ pub async fn delete_user_by_email(pool: &PgPool, email: &str) -> Result<()> {
     Ok(())
 }
 
+/// Creates a new company in the database.
+///
+/// # Errors
+/// Returns an error if database insert fails.
 pub async fn create_company<'a, E>(executor: E, name: String, address: String) -> Result<Company>
 where
     E: sqlx::Executor<'a, Database = sqlx::Postgres>,
@@ -431,6 +474,10 @@ where
     })
 }
 
+/// Retrieves a company by its ID.
+///
+/// # Errors
+/// Returns an error if database query fails.
 pub async fn get_company_by_id(pool: &PgPool, id: &str) -> Result<Option<Company>> {
     let company = sqlx::query_as::<_, Company>(
         r"
@@ -446,6 +493,10 @@ pub async fn get_company_by_id(pool: &PgPool, id: &str) -> Result<Option<Company
     Ok(company)
 }
 
+/// Creates a new invitation for a user to join a company.
+///
+/// # Errors
+/// Returns an error if database insert fails.
 pub async fn create_invitation(
     pool: &PgPool,
     company_id: String,
@@ -483,6 +534,10 @@ pub async fn create_invitation(
     })
 }
 
+/// Retrieves an invitation by its token.
+///
+/// # Errors
+/// Returns an error if database query fails.
 pub async fn get_invitation_by_token(pool: &PgPool, token: &str) -> Result<Option<Invitation>> {
     let invitation = sqlx::query_as::<_, Invitation>(
         r"
@@ -498,6 +553,10 @@ pub async fn get_invitation_by_token(pool: &PgPool, token: &str) -> Result<Optio
     Ok(invitation)
 }
 
+/// Marks an invitation as accepted.
+///
+/// # Errors
+/// Returns an error if database update fails.
 pub async fn accept_invitation(pool: &PgPool, invitation_id: &str) -> Result<()> {
     let now = chrono::Utc::now();
 
@@ -516,6 +575,10 @@ pub async fn accept_invitation(pool: &PgPool, invitation_id: &str) -> Result<()>
     Ok(())
 }
 
+/// Cancels a pending invitation.
+///
+/// # Errors
+/// Returns an error if database update fails or invitation not found.
 pub async fn cancel_invitation(pool: &PgPool, invitation_id: &str) -> Result<Invitation> {
     let now = chrono::Utc::now();
 
@@ -535,6 +598,10 @@ pub async fn cancel_invitation(pool: &PgPool, invitation_id: &str) -> Result<Inv
     Ok(invitation)
 }
 
+/// Retrieves an invitation by its ID.
+///
+/// # Errors
+/// Returns an error if database query fails.
 pub async fn get_invitation_by_id(
     pool: &PgPool,
     invitation_id: &str,
@@ -553,6 +620,10 @@ pub async fn get_invitation_by_id(
     Ok(invitation)
 }
 
+/// Logs a security event to the database.
+///
+/// # Errors
+/// Returns an error if database insert fails.
 pub async fn log_security_event(
     pool: &PgPool,
     event_type: String,
@@ -597,6 +668,10 @@ pub async fn log_security_event(
     })
 }
 
+/// Retrieves security logs for a specific user.
+///
+/// # Errors
+/// Returns an error if database query fails.
 pub async fn get_security_logs_by_user(
     pool: &PgPool,
     user_id: &str,
@@ -619,6 +694,10 @@ pub async fn get_security_logs_by_user(
     Ok(logs)
 }
 
+/// Retrieves recent security logs, optionally filtered by event type.
+///
+/// # Errors
+/// Returns an error if database query fails.
 pub async fn get_recent_security_logs(
     pool: &PgPool,
     event_type: Option<String>,
@@ -655,6 +734,10 @@ pub async fn get_recent_security_logs(
     Ok(logs)
 }
 
+/// Updates a user's profile information (name only).
+///
+/// # Errors
+/// Returns an error if database update fails or user not found.
 pub async fn update_user_profile(
     pool: &PgPool,
     user_id: &str,
@@ -681,6 +764,10 @@ pub async fn update_user_profile(
     Ok(user)
 }
 
+/// Updates a user's profile information including their role.
+///
+/// # Errors
+/// Returns an error if database update fails or user not found.
 pub async fn update_user_profile_full(
     pool: &PgPool,
     user_id: &str,
@@ -709,6 +796,10 @@ pub async fn update_user_profile_full(
     Ok(user)
 }
 
+/// Updates a user's password hash.
+///
+/// # Errors
+/// Returns an error if database update fails.
 pub async fn update_user_password(
     pool: &PgPool,
     user_id: &str,
@@ -729,6 +820,10 @@ pub async fn update_user_password(
     Ok(())
 }
 
+/// Creates a new passkey for a user.
+///
+/// # Errors
+/// Returns an error if database insert fails.
 pub async fn create_passkey(
     pool: &PgPool,
     user_id: &str,
@@ -766,6 +861,10 @@ pub async fn create_passkey(
     })
 }
 
+/// Retrieves all passkeys for a specific user.
+///
+/// # Errors
+/// Returns an error if database query fails.
 pub async fn get_passkeys_by_user(pool: &PgPool, user_id: &str) -> Result<Vec<Passkey>> {
     let passkeys = sqlx::query_as::<_, Passkey>(
         r"
@@ -782,6 +881,10 @@ pub async fn get_passkeys_by_user(pool: &PgPool, user_id: &str) -> Result<Vec<Pa
     Ok(passkeys)
 }
 
+/// Retrieves a passkey by its credential ID.
+///
+/// # Errors
+/// Returns an error if database query fails.
 pub async fn get_passkey_by_credential_id(
     pool: &PgPool,
     credential_id: &str,
@@ -800,6 +903,10 @@ pub async fn get_passkey_by_credential_id(
     Ok(passkey)
 }
 
+/// Updates a passkey's usage counter and last used timestamp.
+///
+/// # Errors
+/// Returns an error if database update fails.
 pub async fn update_passkey_usage(pool: &PgPool, id: &str, counter: i64) -> Result<()> {
     sqlx::query(
         r"
@@ -817,6 +924,10 @@ pub async fn update_passkey_usage(pool: &PgPool, id: &str, counter: i64) -> Resu
     Ok(())
 }
 
+/// Deletes a passkey for a specific user.
+///
+/// # Errors
+/// Returns an error if database deletion fails.
 pub async fn delete_passkey(pool: &PgPool, id: &str, user_id: &str) -> Result<()> {
     sqlx::query(
         r"
@@ -832,6 +943,10 @@ pub async fn delete_passkey(pool: &PgPool, id: &str, user_id: &str) -> Result<()
     Ok(())
 }
 
+/// Creates a password reset token for a user.
+///
+/// # Errors
+/// Returns an error if database insert fails.
 pub async fn create_password_reset_token(
     pool: &PgPool,
     user_id: String,
@@ -858,6 +973,10 @@ pub async fn create_password_reset_token(
     Ok(id)
 }
 
+/// Retrieves a password reset record by its token.
+///
+/// # Errors
+/// Returns an error if database query fails.
 pub async fn get_password_reset_by_token(
     pool: &PgPool,
     token: &str,
@@ -876,6 +995,10 @@ pub async fn get_password_reset_by_token(
     Ok(result)
 }
 
+/// Marks a password reset token as used.
+///
+/// # Errors
+/// Returns an error if database update fails.
 pub async fn mark_password_reset_used(pool: &PgPool, reset_id: &str) -> Result<()> {
     let now = chrono::Utc::now();
 
@@ -894,6 +1017,10 @@ pub async fn mark_password_reset_used(pool: &PgPool, reset_id: &str) -> Result<(
     Ok(())
 }
 
+/// Retrieves all users belonging to a specific company.
+///
+/// # Errors
+/// Returns an error if database query fails.
 pub async fn get_users_by_company_id(pool: &PgPool, company_id: &str) -> Result<Vec<UserRecord>> {
     let users = sqlx::query_as::<_, UserRecord>(
         r"
@@ -912,6 +1039,10 @@ pub async fn get_users_by_company_id(pool: &PgPool, company_id: &str) -> Result<
     Ok(users)
 }
 
+/// Updates the company association for a user.
+///
+/// # Errors
+/// Returns an error if database update fails.
 pub async fn update_user_company<'a, E>(executor: E, user_id: &str, company_id: &str) -> Result<()>
 where
     E: sqlx::Executor<'a, Database = sqlx::Postgres>,
@@ -931,6 +1062,10 @@ where
     Ok(())
 }
 
+/// Accepts an invitation and creates a new user in a single transaction.
+///
+/// # Errors
+/// Returns an error if the transaction fails, which can happen if database operations fail.
 pub async fn accept_invitation_with_user_creation(
     pool: &PgPool,
     invitation_id: &str,
@@ -1031,6 +1166,10 @@ pub struct TableSizeInfo {
     pub index_size_mb: f64,
 }
 
+/// Retrieves various health metrics for the database.
+///
+/// # Errors
+/// Returns an error if database queries for metrics fail.
 pub async fn get_database_health(pool: &PgPool) -> Result<DatabaseHealthMetrics> {
     #[derive(sqlx::FromRow)]
     struct ConnectionStats {
@@ -1108,6 +1247,10 @@ pub async fn get_database_health(pool: &PgPool) -> Result<DatabaseHealthMetrics>
     })
 }
 
+/// Retrieves slow query information from `pg_stat_statements`.
+///
+/// # Errors
+/// Returns an error if the database query fails.
 pub async fn get_slow_queries(pool: &PgPool, limit: i64) -> Result<Vec<SlowQueryInfo>> {
     let queries = sqlx::query_as::<_, SlowQueryInfo>(
         r"
@@ -1131,6 +1274,10 @@ pub async fn get_slow_queries(pool: &PgPool, limit: i64) -> Result<Vec<SlowQuery
     Ok(queries)
 }
 
+/// Retrieves index usage statistics for the database.
+///
+/// # Errors
+/// Returns an error if the database query fails.
 pub async fn get_index_usage(pool: &PgPool) -> Result<Vec<IndexUsageStats>> {
     let stats = sqlx::query_as::<_, IndexUsageStats>(
         r"
@@ -1151,6 +1298,10 @@ pub async fn get_index_usage(pool: &PgPool) -> Result<Vec<IndexUsageStats>> {
     Ok(stats)
 }
 
+/// Retrieves table and index sizes for the database.
+///
+/// # Errors
+/// Returns an error if the database query fails.
 pub async fn get_table_sizes(pool: &PgPool) -> Result<Vec<TableSizeInfo>> {
     #[derive(sqlx::FromRow)]
     struct TableSizeRow {
@@ -1189,6 +1340,10 @@ pub async fn get_table_sizes(pool: &PgPool) -> Result<Vec<TableSizeInfo>> {
         .collect())
 }
 
+/// Identifies indexes that have never been used.
+///
+/// # Errors
+/// Returns an error if the database query fails.
 pub async fn check_unused_indexes(pool: &PgPool) -> Result<Vec<String>> {
     #[derive(sqlx::FromRow)]
     struct UnusedIndex {
@@ -1211,6 +1366,10 @@ pub async fn check_unused_indexes(pool: &PgPool) -> Result<Vec<String>> {
     Ok(unused.into_iter().map(|u| u.index_name).collect())
 }
 
+/// Retrieves all pending invitations for a specific company.
+///
+/// # Errors
+/// Returns an error if the database query fails.
 pub async fn get_pending_invitations_by_company_id(
     pool: &PgPool,
     company_id: &str,
@@ -1229,6 +1388,10 @@ pub async fn get_pending_invitations_by_company_id(
     Ok(invitations)
 }
 
+/// Creates a new passkey session (challenge).
+///
+/// # Errors
+/// Returns an error if database insert fails.
 pub async fn create_passkey_session(
     pool: &PgPool,
     id: &str,
@@ -1258,6 +1421,10 @@ pub async fn create_passkey_session(
     Ok(())
 }
 
+/// Retrieves a passkey session by its ID if it hasn't expired.
+///
+/// # Errors
+/// Returns an error if the database query fails.
 pub async fn get_passkey_session(pool: &PgPool, id: &str) -> Result<Option<PasskeySession>> {
     let session = sqlx::query_as::<_, PasskeySession>(
         r"
@@ -1273,6 +1440,10 @@ pub async fn get_passkey_session(pool: &PgPool, id: &str) -> Result<Option<Passk
     Ok(session)
 }
 
+/// Deletes a passkey session.
+///
+/// # Errors
+/// Returns an error if database deletion fails.
 pub async fn delete_passkey_session(pool: &PgPool, id: &str) -> Result<()> {
     sqlx::query(
         r"

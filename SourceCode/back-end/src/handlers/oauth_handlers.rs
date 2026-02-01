@@ -114,6 +114,11 @@ pub struct OAuthInitiateQuery {
     ),
     tag = "Authentication"
 )]
+/// Initiates the Google OAuth login flow by redirecting the user to Google.
+///
+/// # Errors
+/// Returns an error if OAuth is not configured or if URL generation fails.
+#[allow(clippy::unused_async)]
 pub async fn initiate_google_login(
     State(state): State<AppState>,
     Query(query): Query<OAuthInitiateQuery>,
@@ -181,6 +186,10 @@ pub struct GoogleCallbackParams {
     ),
     tag = "Authentication"
 )]
+/// Handles the callback from Google after the user has authorized the application.
+///
+/// # Errors
+/// Returns an error if the state is invalid, code exchange fails, or user creation fails.
 pub async fn google_callback(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
@@ -323,6 +332,10 @@ pub struct OAuthLinkConfirmRequest {
     security(("bearer_auth" = [])),
     tag = "Authentication"
 )]
+/// Confirms linking a Google account to an existing user profile.
+///
+/// # Errors
+/// Returns an error if the link token is invalid/expired or if the linking operation fails.
 pub async fn confirm_google_link(
     State(state): State<AppState>,
     AuthToken(claims): AuthToken,
@@ -394,6 +407,10 @@ pub async fn confirm_google_link(
     security(("bearer_auth" = [])),
     tag = "Authentication"
 )]
+/// Directly links a Google account to an existing user profile using a callback code.
+///
+/// # Errors
+/// Returns an error if the state is invalid, code exchange fails, or linking fails.
 pub async fn link_google_account(
     State(state): State<AppState>,
     AuthToken(claims): AuthToken,
@@ -468,6 +485,10 @@ pub async fn link_google_account(
     security(("bearer_auth" = [])),
     tag = "Authentication"
 )]
+/// Unlinks a Google account from the user profile.
+///
+/// # Errors
+/// Returns an error if the user has no password set (cannot unlink last auth method) or if unlinking fails.
 pub async fn unlink_google_account(
     State(state): State<AppState>,
     AuthToken(claims): AuthToken,

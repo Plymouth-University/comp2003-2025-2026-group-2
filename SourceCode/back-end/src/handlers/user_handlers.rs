@@ -21,6 +21,10 @@ use serde_json::json;
     security(("bearer_auth" = [])),
     tag = "Company Management"
 )]
+/// Retrieves all members belonging to the current user's company.
+///
+/// # Errors
+/// Returns an error if the user is not associated with a company or if the database query fails.
 pub async fn get_company_members(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -67,6 +71,10 @@ pub async fn get_company_members(
     security(("bearer_auth" = [])),
     tag = "Company Management"
 )]
+/// Updates a company member's profile (admin only).
+///
+/// # Errors
+/// Returns an error if the user is not an admin, the request is invalid, or the update fails.
 pub async fn admin_update_member_profile(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -125,6 +133,10 @@ pub async fn admin_update_member_profile(
     security(("bearer_auth" = [])),
     tag = "Company Management"
 )]
+/// Deletes a company member (admin only).
+///
+/// # Errors
+/// Returns an error if the user is not an admin or if the deletion fails.
 pub async fn admin_delete_member(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,

@@ -31,7 +31,10 @@ pub async fn create_test_app_state() -> AppState {
     }
 }
 
-/// Creates a test `PostgreSQL` connection pool
+/// Creates a test `PostgreSQL` connection pool.
+///
+/// # Panics
+/// Panics if the database connection fails.
 pub async fn create_test_pool() -> PgPool {
     let database_url = std::env::var("TEST_DATABASE_URL")
         .unwrap_or_else(|_| "postgres://admin:adminpassword@localhost:5432/logsmartdb".to_string());
@@ -45,7 +48,10 @@ pub async fn create_test_pool() -> PgPool {
         .expect("Failed to create test database pool")
 }
 
-/// Creates a test `MongoDB` client
+/// Creates a test `MongoDB` client.
+///
+/// # Panics
+/// Panics if the `MongoDB` connection fails.
 pub async fn create_test_mongodb_client() -> MongoClient {
     let mongodb_url = std::env::var("TEST_MONGODB_URL")
         .unwrap_or_else(|_| "mongodb://localhost:27017".to_string());

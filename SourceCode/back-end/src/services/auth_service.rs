@@ -21,6 +21,13 @@ mod auth_service_tests {
 pub struct AuthService;
 
 impl AuthService {
+    /// Registers a new company admin and their company.
+    ///
+    /// # Errors
+    /// Returns an error if database operations, password hashing, or token generation fails.
+    ///
+    /// # Panics
+    /// Panics if JSON serialization of the internal response fails.
     pub async fn register_admin(
         db_pool: &PgPool,
         email: &str,
@@ -125,6 +132,13 @@ impl AuthService {
         ))
     }
 
+    /// Performs user login and returns a JWT token.
+    ///
+    /// # Errors
+    /// Returns an error if credentials are invalid, account is deactivated, or if processing fails.
+    ///
+    /// # Panics
+    /// Panics if JSON serialization of the internal response fails.
     pub async fn login(
         db_pool: &PgPool,
         email: &str,
@@ -223,6 +237,10 @@ impl AuthService {
         ))
     }
 
+    /// Requests a password reset for a user.
+    ///
+    /// # Errors
+    /// Returns an error if database operations or email sending fails.
     pub async fn request_password_reset(
         db_pool: &PgPool,
         email: &str,
@@ -295,6 +313,10 @@ impl AuthService {
         Ok(())
     }
 
+    /// Validates a password reset token.
+    ///
+    /// # Errors
+    /// Returns an error if the token is invalid, expired, or if database operations fail.
     pub async fn validate_reset_token(
         db_pool: &PgPool,
         token: &str,
@@ -332,6 +354,10 @@ impl AuthService {
         Ok(true)
     }
 
+    /// Resets a user's password using a reset token.
+    ///
+    /// # Errors
+    /// Returns an error if the token is invalid, policy validation fails, or database update fails.
     pub async fn reset_password(
         db_pool: &PgPool,
         reset_token: &str,
@@ -389,6 +415,10 @@ impl AuthService {
         Ok(())
     }
 
+    /// Changes a user's password.
+    ///
+    /// # Errors
+    /// Returns an error if current password is incorrect, policy validation fails, or database update fails.
     pub async fn change_password(
         db_pool: &PgPool,
         user_id: &str,
@@ -457,6 +487,13 @@ impl AuthService {
         Ok(())
     }
 
+    /// Verifies user credentials and returns a token and user record.
+    ///
+    /// # Errors
+    /// Returns an error if credentials are invalid or database lookup fails.
+    ///
+    /// # Panics
+    /// Panics if user lookup fails after confirming user existence.
     pub async fn verify_credentials(
         db_pool: &PgPool,
         email: &str,

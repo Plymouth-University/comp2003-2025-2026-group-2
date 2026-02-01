@@ -15,6 +15,10 @@ mod invitation_service_tests {
 pub struct InvitationService;
 
 impl InvitationService {
+    /// Sends a new invitation to join a company.
+    ///
+    /// # Errors
+    /// Returns an error if the user is already registered, already invited, or if email sending fails.
     pub async fn send_invitation(
         db_pool: &PgPool,
         admin_id: String,
@@ -98,6 +102,10 @@ impl InvitationService {
         Ok((invitation.id, invitation.expires_at))
     }
 
+    /// Validates an invitation token and returns the invitation details.
+    ///
+    /// # Errors
+    /// Returns an error if the token is invalid, expired, or if database lookup fails.
     pub async fn accept_invitation(
         db_pool: &PgPool,
         token: &str,
@@ -132,6 +140,10 @@ impl InvitationService {
         Ok((invitation, expires_at))
     }
 
+    /// Retrieves the details of an invitation by its token.
+    ///
+    /// # Errors
+    /// Returns an error if the invitation is not found or if database lookup fails.
     pub async fn get_invitation_details(
         db_pool: &PgPool,
         token: &str,
@@ -167,6 +179,10 @@ impl InvitationService {
         Ok((company.name, invitation.expires_at))
     }
 
+    /// Marks an invitation as accepted in the database.
+    ///
+    /// # Errors
+    /// Returns an error if the database update fails.
     pub async fn mark_invitation_accepted(
         db_pool: &PgPool,
         invitation_id: &str,
@@ -194,6 +210,10 @@ impl InvitationService {
         Ok(())
     }
 
+    /// Retrieves all pending invitations for a company.
+    ///
+    /// # Errors
+    /// Returns an error if the database query fails.
     pub async fn get_pending_invitations(
         db_pool: &PgPool,
         company_id: &str,
@@ -209,6 +229,10 @@ impl InvitationService {
             })
     }
 
+    /// Cancels a pending invitation (admin only).
+    ///
+    /// # Errors
+    /// Returns an error if the caller is not an admin, invitation is not found, or if the operation fails.
     pub async fn cancel_invitation(
         db_pool: &PgPool,
         admin_user_id: &str,

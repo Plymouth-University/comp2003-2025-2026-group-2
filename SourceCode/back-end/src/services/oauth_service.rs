@@ -36,6 +36,10 @@ pub struct OAuthUserInfo {
 }
 
 impl GoogleOAuthClient {
+    /// Creates a new Google OAuth client.
+    ///
+    /// # Errors
+    /// Returns an error if the issuer URL is invalid, metadata discovery fails, or redirect URI is invalid.
     pub async fn new(
         client_id: String,
         client_secret: String,
@@ -86,6 +90,10 @@ impl GoogleOAuthClient {
         )
     }
 
+    /// Exchanges an authorization code for an ID token and user info.
+    ///
+    /// # Errors
+    /// Returns an error if the code is invalid, exchange fails, or token verification fails.
     pub async fn exchange_code(
         &self,
         code: String,
@@ -178,6 +186,10 @@ impl GoogleOAuthClient {
         ))
     }
 
+    /// Retrieves an existing user or creates a new one using OAuth info.
+    ///
+    /// # Errors
+    /// Returns an error if the account already exists with a different auth method, or if creation fails.
     pub async fn get_or_create_user(
         &self,
         pool: &PgPool,
@@ -290,6 +302,10 @@ impl GoogleOAuthClient {
         Ok(new_user)
     }
 
+    /// Links a Google account to an existing user profile.
+    ///
+    /// # Errors
+    /// Returns an error if the Google account is already linked to another user or if the update fails.
     pub async fn link_google_account(
         &self,
         pool: &PgPool,
@@ -344,6 +360,10 @@ impl GoogleOAuthClient {
         Ok(())
     }
 
+    /// Generates a JWT token for a user after OAuth authentication.
+    ///
+    /// # Errors
+    /// Returns an error if token generation fails.
     pub fn generate_jwt_for_user(
         &self,
         user_id: String,
