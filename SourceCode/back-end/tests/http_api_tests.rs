@@ -92,13 +92,7 @@ async fn get_test_db_pool() -> PgPool {
 async fn setup_test_app() -> Router {
     let pool = get_test_db_pool().await;
 
-    // // Clean up test data before each test
-    // let _ = sqlx::query("DELETE FROM security_logs").execute(&pool).await;
-    // let _ = sqlx::query("DELETE FROM passkey_sessions").execute(&pool).await;
-    // let _ = sqlx::query("DELETE FROM passkeys").execute(&pool).await;
-    // let _ = sqlx::query("DELETE FROM invitations").execute(&pool).await;
-    // let _ = sqlx::query("DELETE FROM users").execute(&pool).await;
-    // let _ = sqlx::query("DELETE FROM companies").execute(&pool).await;
+    // No cleanup here - tests should use unique identifiers to avoid conflicts
 
     let rp_id = "localhost";
     let rp_origin = Url::parse("https://localhost").expect("Invalid URL");

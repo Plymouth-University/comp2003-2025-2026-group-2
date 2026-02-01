@@ -13,7 +13,14 @@ pub struct MockWebAuthnService {
     pub challenges: Arc<RwLock<HashMap<String, String>>>,
 }
 
+impl Default for MockWebAuthnService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MockWebAuthnService {
+    #[must_use] 
     pub fn new() -> Self {
         Self {
             credentials: Arc::new(RwLock::new(HashMap::new())),
@@ -68,7 +75,14 @@ pub struct EmailMessage {
     pub sent_at: chrono::DateTime<chrono::Utc>,
 }
 
+impl Default for MockEmailService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MockEmailService {
+    #[must_use] 
     pub fn new() -> Self {
         Self {
             sent_emails: Arc::new(RwLock::new(Vec::new())),
@@ -154,7 +168,14 @@ pub struct OAuthUserInfo {
     pub verified: bool,
 }
 
+impl Default for MockOAuthService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MockOAuthService {
+    #[must_use] 
     pub fn new() -> Self {
         Self {
             tokens: Arc::new(RwLock::new(HashMap::new())),
@@ -212,7 +233,14 @@ pub struct OAuthState {
     pub expires_at: chrono::DateTime<chrono::Utc>,
 }
 
+impl Default for MockOAuthStateStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MockOAuthStateStore {
+    #[must_use] 
     pub fn new() -> Self {
         Self {
             states: Arc::new(RwLock::new(HashMap::new())),
@@ -240,7 +268,7 @@ impl MockOAuthStateStore {
         states.retain(|_, state| state.expires_at > now);
     }
 
-    pub async fn generate_state_string(&self, length: usize) -> String {
+    pub fn generate_state_string(&self, length: usize) -> String {
         use rand::Rng;
         let charset: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                              abcdefghijklmnopqrstuvwxyz\
@@ -265,6 +293,7 @@ pub struct MockRateLimiter {
 }
 
 impl MockRateLimiter {
+    #[must_use] 
     pub fn new(max_requests: u32, window_seconds: u64) -> Self {
         Self {
             requests: Arc::new(RwLock::new(HashMap::new())),
@@ -276,7 +305,7 @@ impl MockRateLimiter {
     pub async fn check_rate_limit(&self, key: &str) -> bool {
         let mut requests = self.requests.write().await;
         let now = chrono::Utc::now();
-        let window_start = now - chrono::Duration::seconds(self.window_seconds as i64);
+        let window_start = now - chrono::Duration::seconds(self.window_seconds.cast_signed());
 
         let key_requests = requests.entry(key.to_string()).or_insert_with(Vec::new);
         key_requests.retain(|&timestamp| timestamp > window_start);
@@ -291,7 +320,7 @@ impl MockRateLimiter {
         key_requests.push(now);
 
         // Clean old requests
-        let window_start = now - chrono::Duration::seconds(self.window_seconds as i64);
+        let window_start = now - chrono::Duration::seconds(self.window_seconds.cast_signed());
         key_requests.retain(|&timestamp| timestamp > window_start);
     }
 
@@ -299,7 +328,7 @@ impl MockRateLimiter {
         let requests = self.requests.read().await;
         if let Some(key_requests) = requests.get(key) {
             let now = chrono::Utc::now();
-            let window_start = now - chrono::Duration::seconds(self.window_seconds as i64);
+            let window_start = now - chrono::Duration::seconds(self.window_seconds.cast_signed());
             key_requests
                 .iter()
                 .filter(|&&timestamp| timestamp > window_start)
@@ -316,18 +345,21 @@ impl MockRateLimiter {
 }
 
 // Helper functions for creating mock instances
+#[must_use] 
 pub fn create_mock_webauthn() -> webauthn_rs::Webauthn {
     // This will need to be implemented based on the actual WebAuthnState structure
     // For now, return a placeholder
     todo!("Implement mock WebAuthnState creation")
 }
 
+#[must_use] 
 pub fn create_mock_google_oauth() -> crate::services::GoogleOAuthClient {
     // This will need to be implemented based on the actual OAuthService structure
     // For now, return a placeholder
     todo!("Implement mock OAuthService creation")
 }
 
+#[must_use] 
 pub fn create_mock_oauth_state_store() -> crate::handlers::OAuthStateStore {
     // This will need to be implemented based on the actual OAuthStateStore structure
     // For now, return a placeholder

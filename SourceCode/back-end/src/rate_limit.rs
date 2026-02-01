@@ -62,6 +62,7 @@ impl RateLimitState {
         }
     }
 
+    #[must_use] 
     pub fn disabled() -> Self {
         Self {
             ip_login_limiter: Arc::new(DashMap::new()),

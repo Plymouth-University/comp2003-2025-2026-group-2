@@ -32,17 +32,7 @@ async fn setup_test_app_with_rate_limit() -> IntoMakeServiceWithConnectInfo<Rout
         .await
         .expect("Failed to create test db");
 
-    // Clean up test data
-    let _ = sqlx::query("DELETE FROM security_logs")
-        .execute(&pool)
-        .await;
-    let _ = sqlx::query("DELETE FROM passkey_sessions")
-        .execute(&pool)
-        .await;
-    let _ = sqlx::query("DELETE FROM passkeys").execute(&pool).await;
-    let _ = sqlx::query("DELETE FROM invitations").execute(&pool).await;
-    let _ = sqlx::query("DELETE FROM users").execute(&pool).await;
-    let _ = sqlx::query("DELETE FROM companies").execute(&pool).await;
+    // No cleanup here - rate limit tests use in-memory state
 
     let rate_limit_state = RateLimitState::new();
     // Note: rate limiting is ENABLED for these tests to test the middleware

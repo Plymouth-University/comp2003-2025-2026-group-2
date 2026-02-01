@@ -4,40 +4,32 @@ use back_end::{
     dto::{AcceptInvitationRequest, InviteUserRequest, LoginRequest, RegisterRequest},
 };
 use sqlx::PgPool;
-use tempfile::NamedTempFile;
 
-async fn setup_test_db() -> (PgPool, NamedTempFile) {
-    let _temp_file = NamedTempFile::new().expect("Failed to create temp file");
+/// Get a connection pool to the test database
+async fn get_test_pool() -> PgPool {
+    let connection_string = std::env::var("TEST_DATABASE_URL")
+        .unwrap_or_else(|_| "postgres://admin:adminpassword@localhost:5432/logsmartdb".to_string());
 
-    // Connect to the running docker postgres instance
-    let connection_string = "postgres://admin:adminpassword@localhost:5432/logsmartdb";
-    let pool = PgPool::connect(connection_string)
+    PgPool::connect(&connection_string)
         .await
-        .expect("Failed to create test db connection");
+        .expect("Failed to create test db connection")
+}
 
-    // Clean up data before test to ensure clean state
-    // Note: This is aggressive and might affect other tests running in parallel
-    // Ideally we would wrap tests in transactions
-    sqlx::query("TRUNCATE TABLE security_logs, passkey_sessions, passkeys, invitations, companies, users CASCADE")
-        .execute(&pool)
-        .await
-        .ok(); // Ignore error if tables don't exist yet
-
-    db::init_db(&pool)
-        .await
-        .expect("Failed to initialize test db");
-
-    (pool, _temp_file)
+/// Setup each test with a database pool
+/// Each test uses unique identifiers so they don't interfere with each other
+async fn setup_test_pool() -> PgPool {
+    get_test_pool().await
 }
 
 #[tokio::test]
 async fn test_register_creates_user_and_company() {
-    let (pool, _temp) = setup_test_db().await;
+    let pool = setup_test_pool().await;
 
+    let test_id = uuid::Uuid::new_v4().to_string().replace("-", "");
     let password_hash = hash_password("SecurePassword123").unwrap();
     let user = db::create_user(
         &pool,
-        "admin@example.com".to_string(),
+        format!("testregisteradmin{}@example.com", test_id),
         "Admin".to_string(),
         "User".to_string(),
         Some(password_hash),
@@ -47,24 +39,30 @@ async fn test_register_creates_user_and_company() {
     .await
     .expect("Failed to create user");
 
-    assert_eq!(user.email, "admin@example.com");
+    assert!(user.email.starts_with("testregisteradmin"));
     assert_eq!(user.role, UserRole::Admin);
 
-    let company = db::create_company(&pool, "Tech Corp".to_string(), "456 Oak Ave".to_string())
-        .await
-        .expect("Failed to create company");
+    let company = db::create_company(
+        &pool,
+        format!("Tech Corp Test {}", test_id),
+        "456 Oak Ave".to_string(),
+    )
+    .await
+    .expect("Failed to create company");
 
-    assert_eq!(company.name, "Tech Corp");
+    assert!(company.name.starts_with("Tech Corp Test"));
 }
 
 #[tokio::test]
 async fn test_user_creation_and_retrieval() {
-    let (pool, _temp_file) = setup_test_db().await;
+    let pool = setup_test_pool().await;
 
     let password_hash = hash_password("TestPassword123").unwrap();
+    let test_email = format!("test_user_{}@example.com", uuid::Uuid::new_v4());
+
     let user = db::create_user(
         &pool,
-        "test@example.com".to_string(),
+        test_email.clone(),
         "John".to_string(),
         "Doe".to_string(),
         Some(password_hash.clone()),
@@ -74,7 +72,7 @@ async fn test_user_creation_and_retrieval() {
     .await
     .expect("Failed to create user");
 
-    let retrieved = db::get_user_by_email(&pool, "test@example.com")
+    let retrieved = db::get_user_by_email(&pool, &test_email)
         .await
         .expect("Failed to retrieve user")
         .expect("User not found");
@@ -86,17 +84,15 @@ async fn test_user_creation_and_retrieval() {
 
 #[tokio::test]
 async fn test_member_user_creation() {
-    let (pool, _temp_file) = setup_test_db().await;
+    let pool = setup_test_pool().await;
 
     let password = "SecurePassword123";
     let password_hash = hash_password(password).unwrap();
-
-    // Use unique email for this test to avoid conflicts
-    let test_email = "member_user_test@example.com";
+    let test_email = format!("test_member_{}@example.com", uuid::Uuid::new_v4());
 
     let user = db::create_user(
         &pool,
-        test_email.to_string(),
+        test_email.clone(),
         "John".to_string(),
         "Doe".to_string(),
         Some(password_hash.clone()),
@@ -106,7 +102,7 @@ async fn test_member_user_creation() {
     .await
     .expect("Failed to create user");
 
-    let retrieved = db::get_user_by_email(&pool, test_email)
+    let retrieved = db::get_user_by_email(&pool, &test_email)
         .await
         .expect("Failed to retrieve user")
         .expect("User not found");
@@ -115,21 +111,19 @@ async fn test_member_user_creation() {
     assert_eq!(retrieved.first_name, user.first_name);
     assert_eq!(retrieved.last_name, user.last_name);
     assert_eq!(retrieved.password_hash, user.password_hash);
-
-    // Clean up
-    db::delete_user_by_email(&pool, test_email).await.ok();
 }
 
 #[tokio::test]
 async fn test_invalid_password_verification() {
-    let (pool, _temp_file) = setup_test_db().await;
+    let pool = setup_test_pool().await;
 
     let password = "CorrectPassword123";
     let password_hash = hash_password(password).unwrap();
+    let test_email = format!("test_password_{}@example.com", uuid::Uuid::new_v4());
 
     db::create_user(
         &pool,
-        "user@example.com".to_string(),
+        test_email.clone(),
         "Test".to_string(),
         "User".to_string(),
         Some(password_hash),
@@ -139,7 +133,7 @@ async fn test_invalid_password_verification() {
     .await
     .expect("Failed to create user");
 
-    let user = db::get_user_by_email(&pool, "user@example.com")
+    let user = db::get_user_by_email(&pool, &test_email)
         .await
         .expect("Failed to retrieve user")
         .expect("User not found");
@@ -170,9 +164,10 @@ async fn test_jwt_token_generation_and_validation() {
 
 #[tokio::test]
 async fn test_company_creation_and_retrieval() {
-    let (pool, _temp_file) = setup_test_db().await;
+    let pool = setup_test_pool().await;
 
-    let company = db::create_company(&pool, "Test Company".to_string(), "123 Main St".to_string())
+    let company_name = format!("Test Company {}", uuid::Uuid::new_v4());
+    let company = db::create_company(&pool, company_name.clone(), "123 Main St".to_string())
         .await
         .expect("Failed to create company");
 
@@ -182,25 +177,27 @@ async fn test_company_creation_and_retrieval() {
         .expect("Company not found");
 
     assert_eq!(retrieved.id, company.id);
-    assert_eq!(retrieved.name, "Test Company");
+    assert_eq!(retrieved.name, company_name);
     assert_eq!(retrieved.address, "123 Main St");
 }
 
 #[tokio::test]
 async fn test_invitation_creation_and_retrieval() {
-    let (pool, _temp_file) = setup_test_db().await;
+    let pool = setup_test_pool().await;
 
-    let company = db::create_company(&pool, "Test Co".to_string(), "123 Main St".to_string())
+    let company_name = format!("Test Co {}", uuid::Uuid::new_v4());
+    let company = db::create_company(&pool, company_name, "123 Main St".to_string())
         .await
         .expect("Failed to create company");
 
     let token = uuid::Uuid::new_v4().to_string();
+    let test_email = format!("newuser_{}@example.com", uuid::Uuid::new_v4());
     let expires_at = chrono::Utc::now() + chrono::Duration::days(1);
 
     let _invitation = db::create_invitation(
         &pool,
         company.id,
-        "newuser@example.com".to_string(),
+        test_email.clone(),
         token.clone(),
         expires_at,
     )
@@ -212,19 +209,20 @@ async fn test_invitation_creation_and_retrieval() {
         .expect("Failed to retrieve invitation")
         .expect("Invitation not found");
 
-    assert_eq!(retrieved.email, "newuser@example.com");
+    assert_eq!(retrieved.email, test_email);
     assert_eq!(retrieved.token, token);
 }
 
 #[tokio::test]
 async fn test_admin_user_creation() {
-    let (pool, _temp_file) = setup_test_db().await;
+    let pool = setup_test_pool().await;
 
     let password_hash = hash_password("AdminPass123").unwrap();
+    let test_email = format!("admin_{}@example.com", uuid::Uuid::new_v4());
 
     let user = db::create_user(
         &pool,
-        "admin2@example.com".to_string(),
+        test_email,
         "Admin".to_string(),
         "User".to_string(),
         Some(password_hash),
@@ -240,17 +238,19 @@ async fn test_admin_user_creation() {
 
 #[tokio::test]
 async fn test_user_with_company_association() {
-    let (pool, _temp_file) = setup_test_db().await;
+    let pool = setup_test_pool().await;
 
-    let company = db::create_company(&pool, "My Company".to_string(), "789 Elm St".to_string())
+    let company_name = format!("My Company {}", uuid::Uuid::new_v4());
+    let company = db::create_company(&pool, company_name, "789 Elm St".to_string())
         .await
         .expect("Failed to create company");
 
     let password_hash = hash_password("Password123").unwrap();
+    let test_email = format!("employee_{}@example.com", uuid::Uuid::new_v4());
 
     let user = db::create_user(
         &pool,
-        "employee@example.com".to_string(),
+        test_email,
         "Employee".to_string(),
         "Name".to_string(),
         Some(password_hash),
@@ -265,14 +265,16 @@ async fn test_user_with_company_association() {
 
 #[tokio::test]
 async fn test_multiple_users_creation() {
-    let (pool, _temp_file) = setup_test_db().await;
+    let pool = setup_test_pool().await;
 
     let password_hash = hash_password("Password123").unwrap();
+    let test_id = uuid::Uuid::new_v4().to_string().replace("-", "");
 
     for i in 0..5 {
+        let email = format!("multiuser{}_{}@example.com", test_id, i);
         let _user = db::create_user(
             &pool,
-            format!("user{}@example.com", i),
+            email,
             format!("User{}", i),
             "Lastname".to_string(),
             Some(password_hash.clone()),
@@ -287,34 +289,31 @@ async fn test_multiple_users_creation() {
         .expect("Failed to create user");
     }
 
-    let user = db::get_user_by_email(&pool, "user0@example.com")
+    let first_email = format!("multiuser{}_0@example.com", test_id);
+    let user = db::get_user_by_email(&pool, &first_email)
         .await
         .expect("Failed to retrieve user")
         .expect("User not found");
 
-    assert_eq!(user.email, "user0@example.com");
+    assert_eq!(user.email, first_email);
 }
 
 #[tokio::test]
 async fn test_invitation_acceptance() {
-    let (pool, _temp_file) = setup_test_db().await;
+    let pool = setup_test_pool().await;
 
-    let company = db::create_company(&pool, "Test Co".to_string(), "123 Main St".to_string())
+    let company_name = format!("Test Co {}", uuid::Uuid::new_v4());
+    let company = db::create_company(&pool, company_name, "123 Main St".to_string())
         .await
         .expect("Failed to create company");
 
     let token = uuid::Uuid::new_v4().to_string();
+    let test_email = format!("newmember_{}@example.com", uuid::Uuid::new_v4());
     let expires_at = chrono::Utc::now() + chrono::Duration::days(7);
 
-    let _invitation = db::create_invitation(
-        &pool,
-        company.id,
-        "newmember@example.com".to_string(),
-        token,
-        expires_at,
-    )
-    .await
-    .expect("Failed to create invitation");
+    let _invitation = db::create_invitation(&pool, company.id, test_email, token, expires_at)
+        .await
+        .expect("Failed to create invitation");
 
     assert_eq!(_invitation.accepted_at, None);
 
