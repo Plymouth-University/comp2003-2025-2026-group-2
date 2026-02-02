@@ -14,6 +14,9 @@ pub mod security;
 pub mod services;
 pub mod utils;
 
+#[path = "../tests/common/mod.rs"]
+pub mod common;
+
 use rate_limit::RateLimitState;
 use sqlx::PgPool;
 

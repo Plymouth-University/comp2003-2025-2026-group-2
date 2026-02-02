@@ -16,14 +16,14 @@ const VARS: [&str; 8] = [
     "GOOGLE_CLIENT_ID",
     "POSTGRES_PASSWORD",
     "POSTGRES_USER",
-    "MONGODB_URI"
+    "MONGODB_URI",
 ];
 
 #[tokio::main]
 async fn main() {
     dotenvy::dotenv().ok();
 
-    for var in VARS.iter() {
+    for var in &VARS {
         unsafe {
             load_secret(var);
         }
@@ -291,7 +291,7 @@ async fn main() {
 }
 
 unsafe fn load_secret(key: &str) {
-    let file_env_key = format!("{}_FILE", key);
+    let file_env_key = format!("{key}_FILE");
 
     if let Ok(path) = std::env::var(&file_env_key) {
         match std::fs::read_to_string(&path) {
@@ -300,10 +300,10 @@ unsafe fn load_secret(key: &str) {
                 unsafe {
                     std::env::set_var(key, value);
                 }
-                println!("Loaded secret for {} from file: {}", key, path);
+                println!("Loaded secret for {key} from file: {path}");
             }
             Err(e) => {
-                eprintln!("Warning: Could not read secret file {}: {}", path, e);
+                eprintln!("Warning: Could not read secret file {path}: {e}");
             }
         }
     }

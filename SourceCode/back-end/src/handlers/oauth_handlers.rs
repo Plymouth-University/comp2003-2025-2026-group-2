@@ -14,13 +14,16 @@ use axum::{
 use dashmap::DashMap;
 use serde::Deserialize;
 use serde_json::json;
-use url::Url;
 use std::sync::Arc;
+use url::Url;
 use utoipa::ToSchema;
 
+type OAuthState = (String, bool, chrono::DateTime<chrono::Utc>);
+type LinkTokenState = (OAuthUserInfo, chrono::DateTime<chrono::Utc>);
+
 pub struct OAuthStateStore {
-    states: Arc<DashMap<String, (String, bool, chrono::DateTime<chrono::Utc>)>>,
-    link_tokens: Arc<DashMap<String, (OAuthUserInfo, chrono::DateTime<chrono::Utc>)>>,
+    states: Arc<DashMap<String, OAuthState>>,
+    link_tokens: Arc<DashMap<String, LinkTokenState>>,
 }
 
 impl OAuthStateStore {
@@ -111,6 +114,11 @@ pub struct OAuthInitiateQuery {
     ),
     tag = "Authentication"
 )]
+/// Initiates the Google OAuth login flow by redirecting the user to Google.
+///
+/// # Errors
+/// Returns an error if OAuth is not configured or if URL generation fails.
+#[allow(clippy::unused_async)]
 pub async fn initiate_google_login(
     State(state): State<AppState>,
     Query(query): Query<OAuthInitiateQuery>,
@@ -146,7 +154,7 @@ pub async fn initiate_google_login(
         })?;
     }
     let auth_url = url.to_string();
-    
+
     let is_link = query.mode.as_deref() == Some("link");
 
     tracing::info!("OAuth redirecting to: {}", auth_url);
@@ -178,14 +186,21 @@ pub struct GoogleCallbackParams {
     ),
     tag = "Authentication"
 )]
+/// Handles the callback from Google after the user has authorized the application.
+///
+/// # Errors
+/// Returns an error if the state is invalid, code exchange fails, or user creation fails.
 pub async fn google_callback(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
     headers: HeaderMap,
     Query(params): Query<GoogleCallbackParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    tracing::info!("OAuth callback received with state: {}", &params.state[..8.min(params.state.len())]);
-    
+    tracing::info!(
+        "OAuth callback received with state: {}",
+        &params.state[..8.min(params.state.len())]
+    );
+
     let oauth_client = state.google_oauth.as_ref().ok_or_else(|| {
         tracing::error!("Google OAuth client not configured in callback");
         (
@@ -198,13 +213,16 @@ pub async fn google_callback(
         .oauth_state_store
         .verify_and_remove(&params.state)
         .ok_or_else(|| {
-            tracing::error!("Invalid or expired OAuth state: {}", &params.state[..8.min(params.state.len())]);
+            tracing::error!(
+                "Invalid or expired OAuth state: {}",
+                &params.state[..8.min(params.state.len())]
+            );
             (
                 StatusCode::UNAUTHORIZED,
                 Json(json!({ "error": "Invalid or expired state parameter" })),
             )
         })?;
-    
+
     tracing::info!("OAuth state verified, is_link={}", is_link);
 
     let ip_address = Some(extract_ip_from_headers_and_addr(&headers, &addr));
@@ -217,8 +235,11 @@ pub async fn google_callback(
             tracing::error!("OAuth code exchange failed: {:?}", value);
             (status, Json(value))
         })?;
-    
-    tracing::info!("OAuth code exchanged successfully for email: {}", user_info.email);
+
+    tracing::info!(
+        "OAuth code exchanged successfully for email: {}",
+        user_info.email
+    );
 
     if is_link {
         let link_token = state.oauth_state_store.store_link_token(user_info);
@@ -238,9 +259,15 @@ pub async fn google_callback(
         response.headers_mut().insert(
             HeaderName::from_static("set-cookie"),
             HeaderValue::from_str(&format!(
-                "oauth_link_pending={}; Path=/; SameSite=Lax; Max-Age=300{}",
-                link_token, domain_attr
-            )).unwrap(),
+                "oauth_link_pending={link_token}; Path=/; SameSite=Lax; Max-Age=300{domain_attr}",
+            ))
+            .map_err(|e| {
+                tracing::error!("Invalid header value: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({"error": "Internal server error"})),
+                )
+            })?,
         );
 
         return Ok(response);
@@ -257,7 +284,7 @@ pub async fn google_callback(
 
     let frontend_url =
         std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
-    
+
     let cookie_domain = std::env::var("COOKIE_DOMAIN").unwrap_or_default();
     let domain_attr = if cookie_domain.is_empty() {
         String::new()
@@ -265,11 +292,9 @@ pub async fn google_callback(
         format!("; Domain={cookie_domain}")
     };
 
+    let max_age = 60 * 60 * 24 * 7;
     let cookie = format!(
-        "ls-token={}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={}{}",
-        token,
-        60 * 60 * 24 * 7,
-        domain_attr
+        "ls-token={token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={max_age}{domain_attr}",
     );
 
     let redirect_url = format!("{frontend_url}/dashboard");
@@ -277,7 +302,13 @@ pub async fn google_callback(
     let mut response = Redirect::to(&redirect_url).into_response();
     response.headers_mut().insert(
         HeaderName::from_static("set-cookie"),
-        HeaderValue::from_str(&cookie).unwrap(),
+        HeaderValue::from_str(&cookie).map_err(|e| {
+            tracing::error!("Invalid cookie value: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "Internal server error"})),
+            )
+        })?,
     );
 
     Ok(response)
@@ -301,6 +332,10 @@ pub struct OAuthLinkConfirmRequest {
     security(("bearer_auth" = [])),
     tag = "Authentication"
 )]
+/// Confirms linking a Google account to an existing user profile.
+///
+/// # Errors
+/// Returns an error if the link token is invalid/expired or if the linking operation fails.
 pub async fn confirm_google_link(
     State(state): State<AppState>,
     AuthToken(claims): AuthToken,
@@ -372,6 +407,10 @@ pub async fn confirm_google_link(
     security(("bearer_auth" = [])),
     tag = "Authentication"
 )]
+/// Directly links a Google account to an existing user profile using a callback code.
+///
+/// # Errors
+/// Returns an error if the state is invalid, code exchange fails, or linking fails.
 pub async fn link_google_account(
     State(state): State<AppState>,
     AuthToken(claims): AuthToken,
@@ -446,6 +485,10 @@ pub async fn link_google_account(
     security(("bearer_auth" = [])),
     tag = "Authentication"
 )]
+/// Unlinks a Google account from the user profile.
+///
+/// # Errors
+/// Returns an error if the user has no password set (cannot unlink last auth method) or if unlinking fails.
 pub async fn unlink_google_account(
     State(state): State<AppState>,
     AuthToken(claims): AuthToken,

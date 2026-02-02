@@ -33,6 +33,10 @@ use webauthn_rs::prelude::*;
     security(("bearer_auth" = [])),
     tag = "Authentication"
 )]
+/// Starts the process of registering a new `WebAuthn` passkey.
+///
+/// # Errors
+/// Returns an error if the user is not found, or if WebAuthn/database operations fail.
 pub async fn start_passkey_registration(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -98,7 +102,13 @@ pub async fn start_passkey_registration(
             )
         })?;
 
-    let mut options = serde_json::to_value(&ccr.public_key).unwrap();
+    let mut options = serde_json::to_value(&ccr.public_key).map_err(|e| {
+        tracing::error!("Failed to serialize public key: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Internal server error" })),
+        )
+    })?;
 
     if let Some(obj) = options.as_object_mut() {
         if let Some(auth_sel) = obj.get_mut("authenticatorSelection") {
@@ -161,6 +171,10 @@ pub async fn start_passkey_registration(
     security(("bearer_auth" = [])),
     tag = "Authentication"
 )]
+/// Finalizes the `WebAuthn` passkey registration.
+///
+/// # Errors
+/// Returns an error if the session is invalid, `WebAuthn` verification fails, or database update fails.
 pub async fn finish_passkey_registration(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -277,6 +291,10 @@ pub async fn finish_passkey_registration(
     ),
     tag = "Authentication"
 )]
+/// Starts the passkey login process for a specific user.
+///
+/// # Errors
+/// Returns an error if the user/passkeys are not found, or if WebAuthn/database operations fail.
 pub async fn start_passkey_login(
     State(state): State<AppState>,
     Json(payload): Json<PasskeyAuthenticationStartRequest>,
@@ -360,7 +378,13 @@ pub async fn start_passkey_login(
     })?;
 
     Ok(Json(PasskeyAuthenticationStartResponse {
-        options: serde_json::to_value(&rcr.public_key).unwrap(),
+        options: serde_json::to_value(&rcr.public_key).map_err(|e| {
+            tracing::error!("Failed to serialize public key: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Internal server error" })),
+            )
+        })?,
         auth_id,
     }))
 }
@@ -374,6 +398,10 @@ pub async fn start_passkey_login(
     ),
     tag = "Authentication"
 )]
+/// Starts a discoverable passkey login (resident key) process.
+///
+/// # Errors
+/// Returns an error if `WebAuthn` or database operations fail.
 pub async fn start_discoverable_passkey_login(
     State(state): State<AppState>,
 ) -> Result<Json<PasskeyAuthenticationStartResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -416,7 +444,13 @@ pub async fn start_discoverable_passkey_login(
     })?;
 
     Ok(Json(PasskeyAuthenticationStartResponse {
-        options: serde_json::to_value(&rcr.public_key).unwrap(),
+        options: serde_json::to_value(&rcr.public_key).map_err(|e| {
+            tracing::error!("Failed to serialize public key: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Internal server error" })),
+            )
+        })?,
         auth_id,
     }))
 }
@@ -433,6 +467,10 @@ pub async fn start_discoverable_passkey_login(
     ),
     tag = "Authentication"
 )]
+/// Finalizes the passkey login for a specific user.
+///
+/// # Errors
+/// Returns an error if the session is invalid, `WebAuthn` verification fails, or authentication fails.
 pub async fn finish_passkey_login(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
@@ -599,6 +637,10 @@ pub async fn finish_passkey_login(
     ),
     tag = "Authentication"
 )]
+/// Finalizes a discoverable passkey login.
+///
+/// # Errors
+/// Returns an error if the session is invalid, user identification fails, or `WebAuthn` verification fails.
 pub async fn finish_discoverable_passkey_login(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
@@ -802,6 +844,10 @@ pub async fn finish_discoverable_passkey_login(
     security(("bearer_auth" = [])),
     tag = "Authentication"
 )]
+/// Lists all passkeys registered for the current user.
+///
+/// # Errors
+/// Returns an error if the database query fails.
 pub async fn list_passkeys(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -835,6 +881,10 @@ pub async fn list_passkeys(
     security(("bearer_auth" = [])),
     tag = "Authentication"
 )]
+/// Deletes a specific passkey for the current user.
+///
+/// # Errors
+/// Returns an error if the database deletion fails.
 pub async fn delete_passkey(
     Path(passkey_id): Path<String>,
     AuthToken(claims): AuthToken,

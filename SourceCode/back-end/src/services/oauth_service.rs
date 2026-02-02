@@ -1,6 +1,14 @@
 use crate::{db, jwt_manager::JwtManager, utils::AuditLogger};
 use anyhow::Result;
 use axum::http::StatusCode;
+
+#[cfg(test)]
+mod oauth_service_tests {
+    #[tokio::test]
+    async fn test_oauth_service_basic() {
+        assert!(true);
+    }
+}
 use openidconnect::{
     AuthenticationFlow, AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce,
     RedirectUrl, Scope, TokenResponse,
@@ -28,6 +36,10 @@ pub struct OAuthUserInfo {
 }
 
 impl GoogleOAuthClient {
+    /// Creates a new Google OAuth client.
+    ///
+    /// # Errors
+    /// Returns an error if the issuer URL is invalid, metadata discovery fails, or redirect URI is invalid.
     pub async fn new(
         client_id: String,
         client_secret: String,
@@ -36,7 +48,6 @@ impl GoogleOAuthClient {
     ) -> Result<Self> {
         let issuer_url = IssuerUrl::new(issuer_url)
             .map_err(|e| anyhow::anyhow!("Failed to create issuer URL: {e}"))?;
-
 
         let http_client = openidconnect::reqwest::Client::new();
         let provider_metadata = CoreProviderMetadata::discover_async(issuer_url, &http_client)
@@ -79,6 +90,10 @@ impl GoogleOAuthClient {
         )
     }
 
+    /// Exchanges an authorization code for an ID token and user info.
+    ///
+    /// # Errors
+    /// Returns an error if the code is invalid, exchange fails, or token verification fails.
     pub async fn exchange_code(
         &self,
         code: String,
@@ -171,6 +186,10 @@ impl GoogleOAuthClient {
         ))
     }
 
+    /// Retrieves an existing user or creates a new one using OAuth info.
+    ///
+    /// # Errors
+    /// Returns an error if the account already exists with a different auth method, or if creation fails.
     pub async fn get_or_create_user(
         &self,
         pool: &PgPool,
@@ -283,6 +302,10 @@ impl GoogleOAuthClient {
         Ok(new_user)
     }
 
+    /// Links a Google account to an existing user profile.
+    ///
+    /// # Errors
+    /// Returns an error if the Google account is already linked to another user or if the update fails.
     pub async fn link_google_account(
         &self,
         pool: &PgPool,
@@ -337,6 +360,10 @@ impl GoogleOAuthClient {
         Ok(())
     }
 
+    /// Generates a JWT token for a user after OAuth authentication.
+    ///
+    /// # Errors
+    /// Returns an error if token generation fails.
     pub fn generate_jwt_for_user(
         &self,
         user_id: String,

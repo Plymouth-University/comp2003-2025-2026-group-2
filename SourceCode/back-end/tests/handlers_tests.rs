@@ -1,7 +1,7 @@
-use back_end::handlers::{
-    AcceptInvitationRequest, AuthResponse, InvitationResponse, InviteUserRequest, LoginRequest,
-    RegisterRequest, UserResponse,
-};
+use back_end::dto::AuthResponse;
+use back_end::dto::InvitationResponse;
+use back_end::dto::UserResponse;
+use back_end::dto::{AcceptInvitationRequest, InviteUserRequest, LoginRequest, RegisterRequest};
 use back_end::jwt_manager::JwtManager;
 
 #[test]
@@ -125,6 +125,8 @@ fn test_accept_invitation_missing_fields() {
     assert!(req.first_name.is_empty());
 }
 
+use back_end::db::UserRole;
+
 #[test]
 fn test_user_response_structure() {
     let user_response = UserResponse {
@@ -132,10 +134,11 @@ fn test_user_response_structure() {
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         company_name: Some("Test Company".to_string()),
-        role: "admin".to_string(),
+        role: UserRole::Admin,
+        oauth_provider: None,
     };
     assert_eq!(user_response.email, "test@example.com");
-    assert_eq!(user_response.role, "admin");
+    assert_eq!(user_response.role, UserRole::Admin);
     assert_eq!(user_response.company_name, Some("Test Company".to_string()));
 }
 
@@ -146,7 +149,8 @@ fn test_user_response_without_company() {
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         company_name: None,
-        role: "member".to_string(),
+        role: UserRole::Member,
+        oauth_provider: None,
     };
     assert_eq!(user_response.company_name, None);
 }
@@ -156,7 +160,7 @@ fn test_invitation_response_structure() {
     let inv_response = InvitationResponse {
         id: "invite1".to_string(),
         email: "newuser@example.com".to_string(),
-        expires_at: "2025-01-10T00:00:00Z".to_string(),
+        expires_at: chrono::Utc::now(),
     };
     assert_eq!(inv_response.id, "invite1");
     assert_eq!(inv_response.email, "newuser@example.com");
@@ -169,7 +173,8 @@ fn test_auth_response_structure() {
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         company_name: Some("Test Company".to_string()),
-        role: "admin".to_string(),
+        role: UserRole::Admin,
+        oauth_provider: None,
     };
     let auth_response = AuthResponse {
         token: "jwt_token_here".to_string(),
@@ -225,7 +230,8 @@ fn test_user_response_serialization() {
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         company_name: Some("Test Company".to_string()),
-        role: "admin".to_string(),
+        role: UserRole::Admin,
+        oauth_provider: None,
     };
     let json = serde_json::to_string(&user_response).unwrap();
     assert!(json.contains("Test Company"));
@@ -237,7 +243,7 @@ fn test_invitation_response_serialization() {
     let inv_response = InvitationResponse {
         id: "invite1".to_string(),
         email: "newuser@example.com".to_string(),
-        expires_at: "2025-01-10T00:00:00Z".to_string(),
+        expires_at: chrono::Utc::now(),
     };
     let json = serde_json::to_string(&inv_response).unwrap();
     assert!(json.contains("invite1"));
@@ -272,7 +278,8 @@ fn test_response_contains_token() {
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         company_name: Some("Test Company".to_string()),
-        role: "admin".to_string(),
+        role: UserRole::Admin,
+        oauth_provider: None,
     };
     let auth_response = AuthResponse {
         token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9".to_string(),

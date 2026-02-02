@@ -27,6 +27,10 @@ use serde_json::json;
     security(("bearer_auth" = [])),
     tag = "Log Entries"
 )]
+/// Lists all log forms that are due today for the current user's company.
+///
+/// # Errors
+/// Returns an error if the user is not authorized or if the query fails.
 pub async fn list_due_forms_today(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -134,6 +138,10 @@ pub async fn list_due_forms_today(
     security(("bearer_auth" = [])),
     tag = "Log Entries"
 )]
+/// Creates a new log entry draft.
+///
+/// # Errors
+/// Returns an error if the template name is empty or if entry creation fails.
 pub async fn create_log_entry(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -176,6 +184,10 @@ pub async fn create_log_entry(
     security(("bearer_auth" = [])),
     tag = "Log Entries"
 )]
+/// Retrieves a specific log entry by its ID.
+///
+/// # Errors
+/// Returns an error if the entry is not found or if the user is not authorized.
 pub async fn get_log_entry(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -245,6 +257,10 @@ pub async fn get_log_entry(
     security(("bearer_auth" = [])),
     tag = "Log Entries"
 )]
+/// Updates the data of an existing log entry draft.
+///
+/// # Errors
+/// Returns an error if the entry is not found or if the update fails.
 pub async fn update_log_entry(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -320,6 +336,10 @@ pub async fn update_log_entry(
     security(("bearer_auth" = [])),
     tag = "Log Entries"
 )]
+/// Submits a log entry, marking it as final.
+///
+/// # Errors
+/// Returns an error if the entry is not found or if submission fails.
 pub async fn submit_log_entry(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -347,6 +367,10 @@ pub async fn submit_log_entry(
     security(("bearer_auth" = [])),
     tag = "Log Entries"
 )]
+/// Returns a submitted log entry to draft status (admin only).
+///
+/// # Errors
+/// Returns an error if the entry is not found or if the operation fails.
 pub async fn unsubmit_log_entry(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -374,6 +398,10 @@ pub async fn unsubmit_log_entry(
     security(("bearer_auth" = [])),
     tag = "Log Entries"
 )]
+/// Deletes a log entry.
+///
+/// # Errors
+/// Returns an error if the user is not authorized or if deletion fails.
 pub async fn delete_log_entry(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -416,6 +444,11 @@ pub async fn delete_log_entry(
     security(("bearer_auth" = [])),
     tag = "Log Entries"
 )]
+#[allow(clippy::implicit_hasher)]
+/// Lists all log entries for the current user, optionally filtered by template or status.
+///
+/// # Errors
+/// Returns an error if the user is not authorized or if the query fails.
 pub async fn list_user_log_entries(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,

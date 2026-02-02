@@ -1,0 +1,57 @@
+name: Rust Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+  SQLX_OFFLINE: true
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Install sqlx-cli
+      run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
+
+    - name: Setup Database
+      run: |
+        export DATABASE_URL=postgres://test_user:test_password@localhost:5432/test_db
+        sqlx database create
+        sqlx migrate run
+
+    - name: Run All Tests
+      run: |
+        export TEST_DATABASE_URL=postgres://test_user:test_password@localhost:5432/test_db
+        cargo test --all
+
+    - name: Run Performance Tests
+      run: |
+        export TEST_DATABASE_URL=postgres://test_user:test_password@localhost:5432/test_db
+        cargo test --all --tests performance_tests
+    

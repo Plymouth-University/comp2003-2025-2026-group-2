@@ -38,6 +38,10 @@ use serde_json::json;
     ),
     tag = "Invitations"
 )]
+/// Sends an invitation to a new user.
+///
+/// # Errors
+/// Returns an error if the user is not authorized, the email is invalid, or the invitation fails to send.
 pub async fn invite_user(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -140,6 +144,10 @@ pub async fn invite_user(
     ),
     tag = "Invitations"
 )]
+/// Accepts an invitation and creates a new user account.
+///
+/// # Errors
+/// Returns an error if the token is invalid/expired, validation fails, or account creation fails.
 pub async fn accept_invitation(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
@@ -224,7 +232,7 @@ pub async fn accept_invitation(
         )
     })?;
 
-    let _created_user = db::accept_invitation_with_user_creation(
+    let created_user = db::accept_invitation_with_user_creation(
         &state.postgres,
         &invitation.id,
         &invitation.email,
@@ -242,7 +250,7 @@ pub async fn accept_invitation(
         )
     })?;
 
-    let user_id = _created_user.id.clone();
+    let user_id = created_user.id.clone();
 
     let jwt_config = JwtManager::get_config();
     let token = jwt_config
@@ -295,7 +303,7 @@ pub async fn accept_invitation(
                 first_name: payload.first_name,
                 last_name: payload.last_name,
                 company_name: None,
-                role: _created_user.role,
+                role: created_user.role,
                 oauth_provider: None,
             },
         }),
@@ -332,6 +340,10 @@ pub async fn accept_invitation(
     ),
     tag = "Invitations"
 )]
+/// Retrieves details of an invitation using its token.
+///
+/// # Errors
+/// Returns an error if the invitation is not found or if there's a database error.
 pub async fn get_invitation_details(
     State(state): State<AppState>,
     Query(payload): Query<GetInvitationDetailsRequest>,
@@ -384,6 +396,10 @@ pub async fn get_invitation_details(
     ),
     tag = "Invitations"
 )]
+/// Retrieves all pending invitations for the current user's company.
+///
+/// # Errors
+/// Returns an error if the user is not authorized or if the query fails.
 pub async fn get_pending_invitations(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -455,6 +471,10 @@ pub async fn get_pending_invitations(
     security(("bearer_auth" = [])),
     tag = "Invitations"
 )]
+/// Cancels a pending invitation.
+///
+/// # Errors
+/// Returns an error if the user is not authorized or if the cancellation fails.
 pub async fn cancel_invitation(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,

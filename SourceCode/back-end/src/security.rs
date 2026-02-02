@@ -1,12 +1,9 @@
 use axum::{
-    extract::FromRequestParts,
-    http::{StatusCode, request::Parts},
+    http::StatusCode,
     response::{IntoResponse, Response},
 };
-use axum_extra::TypedHeader;
-use axum_extra::headers::{Authorization, authorization::Bearer};
 
-use crate::{AppState, auth::Claims, db::UserRole, jwt_manager::JwtManager};
+use crate::db::UserRole;
 
 #[derive(Debug)]
 pub enum RoleError {
@@ -30,69 +27,74 @@ impl IntoResponse for RoleError {
 }
 
 pub trait RoleValidator: Send + Sync {
-    fn validate(role: &UserRole) -> bool;
+    fn validate(&self, role: &UserRole) -> bool;
     #[must_use]
-    fn get_error() -> RoleError {
+    fn get_error(&self) -> RoleError {
         RoleError::InsufficientPermissions
     }
 }
 
+#[derive(Debug)]
 pub struct AdminValidator;
 impl RoleValidator for AdminValidator {
-    fn validate(role: &UserRole) -> bool {
+    fn validate(&self, role: &UserRole) -> bool {
         role == &UserRole::Admin || role == &UserRole::LogSmartAdmin
     }
 }
 
+#[derive(Debug)]
 pub struct MemberValidator;
 impl RoleValidator for MemberValidator {
-    fn validate(role: &UserRole) -> bool {
+    fn validate(&self, role: &UserRole) -> bool {
         role == &UserRole::Member || role == &UserRole::Admin || role == &UserRole::LogSmartAdmin
     }
 }
 
+#[derive(Debug)]
 pub struct LogSmartAdminValidator;
 impl RoleValidator for LogSmartAdminValidator {
-    fn validate(role: &UserRole) -> bool {
+    fn validate(&self, role: &UserRole) -> bool {
         role == &UserRole::LogSmartAdmin
     }
 }
 
-#[derive(Debug)]
-pub struct AuthorizedUser<T: RoleValidator>(pub Claims, std::marker::PhantomData<T>);
+#[cfg(test)]
+mod security_tests {
+    use super::*;
 
-impl<T: 'static + RoleValidator> FromRequestParts<AppState> for AuthorizedUser<T> {
-    type Rejection = RoleError;
+    #[test]
+    fn test_role_error_into_response_missing_token() {
+        let error = RoleError::MissingToken;
+        let response = error.into_response();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
 
-    async fn from_request_parts(
-        parts: &mut Parts,
-        state: &AppState,
-    ) -> Result<Self, Self::Rejection> {
-        let jwt_config = JwtManager::get_config();
+    #[test]
+    fn test_role_error_into_response_invalid_token() {
+        let error = RoleError::InvalidToken;
+        let response = error.into_response();
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+    }
 
-        let TypedHeader(Authorization::<Bearer>(bearer)) =
-            TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, &())
-                .await
-                .map_err(|_| RoleError::MissingToken)?;
+    #[test]
+    fn test_role_error_into_response_insufficient_permissions() {
+        let error = RoleError::InsufficientPermissions;
+        let response = error.into_response();
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
 
-        let token = bearer.token();
-        let claims = jwt_config
-            .validate_token(token)
-            .map_err(|_| RoleError::InvalidToken)?;
+    #[test]
+    fn test_validators_basic() {
+        let member_validator = MemberValidator;
+        let admin_validator = AdminValidator;
+        let logsmart_admin_validator = LogSmartAdminValidator;
 
-        let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
-            .await
-            .map_err(|_| RoleError::InvalidToken)?
-            .ok_or(RoleError::InvalidToken)?;
+        let member_role = UserRole::Member;
+        let admin_role = UserRole::Admin;
+        let logsmart_admin_role = UserRole::LogSmartAdmin;
 
-        if T::validate(&user.role) {
-            Ok(AuthorizedUser(claims, std::marker::PhantomData))
-        } else {
-            Err(T::get_error())
-        }
+        assert!(member_validator.validate(&member_role));
+        assert!(admin_validator.validate(&admin_role));
+        assert!(logsmart_admin_validator.validate(&logsmart_admin_role));
     }
 }
-
-pub type AdminUser<T = AdminValidator> = AuthorizedUser<T>;
-pub type MemberUser<T = MemberValidator> = AuthorizedUser<T>;
-pub type LogSmartAdminUser<T = LogSmartAdminValidator> = AuthorizedUser<T>;

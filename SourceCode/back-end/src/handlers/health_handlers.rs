@@ -98,6 +98,7 @@ pub async fn get_db_health(
     security(("bearer_auth" = [])),
     tag = "Health Monitoring"
 )]
+#[allow(clippy::implicit_hasher)]
 pub async fn get_db_slow_queries(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,

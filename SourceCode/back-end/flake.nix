@@ -48,12 +48,23 @@
           }
         );
         craneLibNative = (crane.mkLib pkgs).overrideToolchain rustNative;
+
+        unfilteredSrc = ./.;
+        filteredSrc = pkgs.lib.fileset.toSource {
+          root = unfilteredSrc;
+          fileset = pkgs.lib.fileset.unions [
+            (craneLibNative.fileset.commonCargoSources unfilteredSrc)
+            ./.sqlx
+            ./migrations
+          ];
+        };
+
         swaggerUiZip = pkgs.fetchurl {
           url = "https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.17.14.zip";
           hash = "sha256-SBJE0IEgl7Efuu73n3HZQrFxYX+cn5UU5jrL4T5xzNw=";
         };
         commonArgs = {
-          src = craneLibNative.cleanCargoSource ./.;
+          src = filteredSrc;
           strictDeps = true;
           doCheck = false;
           buildInputs = with pkgs; [ openssl ];
@@ -70,6 +81,7 @@
             chmod 644 /tmp/swagger-ui/v5.17.14.zip
           '';
           SWAGGER_UI_DOWNLOAD_URL = "file:///tmp/swagger-ui/v5.17.14.zip";
+          SQLX_OFFLINE = "true";
           RUSTFLAGS = "-C linker=clang -C link-arg=-fuse-ld=mold";
           PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
           LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath [ pkgs.openssl ]}";
@@ -87,6 +99,7 @@
         );
 
         craneLibCrossAarch64 = (crane.mkLib pkgsCrossAarch64).overrideToolchain (p: p.rust-bin.stable.latest.default);
+      
         crateExpressionCrossAarch64 =
           {
             openssl,
@@ -95,7 +108,7 @@
           }:
           let
             cargoArtifactsCross = craneLibCrossAarch64.buildDepsOnly {
-              src = craneLibCrossAarch64.cleanCargoSource ./.;
+              src = filteredSrc;
               strictDeps = true;
               doCheck = false;
               buildInputs = [ openssl ];
@@ -109,6 +122,7 @@
                 chmod 644 /tmp/swagger-ui/v5.17.14.zip
               '';
               SWAGGER_UI_DOWNLOAD_URL = "file:///tmp/swagger-ui/v5.17.14.zip";
+              SQLX_OFFLINE = "true";
               HOST_CC = "${pkgs.stdenv.cc}/bin/cc";
               OPENSSL_DIR = "${pkgs.openssl.out}";
               OPENSSL_LIB_DIR = "${pkgs.openssl.out}/lib";
@@ -123,7 +137,7 @@
           in
           craneLibCrossAarch64.buildPackage {
             inherit cargoArtifactsCross;
-            src = craneLibCrossAarch64.cleanCargoSource ./.;
+            src = filteredSrc;
             strictDeps = true;
             doCheck = false;
             nativeBuildInputs = [
@@ -139,6 +153,7 @@
               chmod 644 /tmp/swagger-ui/v5.17.14.zip
             '';
             SWAGGER_UI_DOWNLOAD_URL = "file:///tmp/swagger-ui/v5.17.14.zip";
+            SQLX_OFFLINE = "true";
             HOST_CC = "${pkgs.stdenv.cc}/bin/cc";
             OPENSSL_DIR = "${pkgs.openssl.out}";
             OPENSSL_LIB_DIR = "${pkgs.openssl.out}/lib";
@@ -162,6 +177,7 @@
           contents = [
             logSmartBackendCrossAarch64
             pkgsCrossAarch64.openssl
+            pkgsCrossAarch64.cacert
           ];
           
           architecture = "arm64"; 
@@ -180,6 +196,7 @@
           contents = [
             logSmartBackendNative
             pkgs.openssl
+            pkgs.cacert
           ];
           
           architecture = "amd64"; 

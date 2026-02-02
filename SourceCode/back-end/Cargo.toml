@@ -55,3 +55,4 @@ sqlx = { version = "0.8", features = ["postgres", "runtime-tokio-native-tls"] }
 tempfile = "3.8"
 tower = "0.5"
 hyper = { version = "1", features = ["full"] }
+proptest = "1.9.0"

@@ -6,16 +6,19 @@ use axum::{
     response::IntoResponse,
     routing::{get, post},
 };
-use back_end::{AppState, db, handlers, middleware::AuthToken};
+use back_end::{AppState, db, dto, handlers, middleware::AuthToken};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use std::net::SocketAddr;
-use tempfile::NamedTempFile;
+use std::sync::Arc;
+use tokio::time::sleep;
 use tower::ServiceExt;
+use url::Url;
+use webauthn_rs::WebauthnBuilder;
 
 async fn test_register_handler(
     State(state): State<AppState>,
-    Json(payload): Json<handlers::RegisterRequest>,
+    Json(payload): Json<dto::RegisterRequest>,
 ) -> axum::response::Response {
     let mock_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
     let headers = HeaderMap::new();
@@ -34,7 +37,7 @@ async fn test_register_handler(
 
 async fn test_login_handler(
     State(state): State<AppState>,
-    Json(payload): Json<handlers::LoginRequest>,
+    Json(payload): Json<dto::LoginRequest>,
 ) -> axum::response::Response {
     let mock_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
     let headers = HeaderMap::new();
@@ -49,8 +52,8 @@ async fn test_login_handler(
 async fn test_invite_handler(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
-    Json(payload): Json<handlers::InviteUserRequest>,
-) -> Result<(StatusCode, Json<handlers::InvitationResponse>), (StatusCode, Json<Value>)> {
+    Json(payload): Json<dto::InviteUserRequest>,
+) -> Result<(StatusCode, Json<dto::InvitationResponse>), (StatusCode, Json<Value>)> {
     let mock_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
     let headers = HeaderMap::new();
     handlers::invite_user(
@@ -65,7 +68,7 @@ async fn test_invite_handler(
 
 async fn test_accept_invitation_handler(
     State(state): State<AppState>,
-    Json(payload): Json<handlers::AcceptInvitationRequest>,
+    Json(payload): Json<dto::AcceptInvitationRequest>,
 ) -> axum::response::Response {
     let mock_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
     let headers = HeaderMap::new();
@@ -77,26 +80,38 @@ async fn test_accept_invitation_handler(
         Err(err) => err.into_response(),
     }
 }
-async fn setup_test_app() -> (Router, NamedTempFile) {
-    let temp_file = NamedTempFile::new().expect("Failed to create temp file");
-    let db_path = temp_file.path().to_str().expect("Failed to get temp path");
+async fn get_test_db_pool() -> PgPool {
+    let database_url = std::env::var("TEST_DATABASE_URL")
+        .unwrap_or_else(|_| "postgres://admin:adminpassword@localhost:5432/logsmartdb".to_string());
 
-    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = PgPool::connect(&connection_string)
+    PgPool::connect(&database_url)
         .await
-        .expect("Failed to create test db");
+        .expect("Failed to connect to test db")
+}
 
-    db::init_db(&pool)
-        .await
-        .expect("Failed to initialize test db");
+async fn setup_test_app() -> Router {
+    let pool = get_test_db_pool().await;
+
+    // No cleanup here - tests should use unique identifiers to avoid conflicts
+
+    let rp_id = "localhost";
+    let rp_origin = Url::parse("https://localhost").expect("Invalid URL");
+    let builder = WebauthnBuilder::new(rp_id, &rp_origin).expect("Invalid configuration");
+    let webauthn = Arc::new(builder.build().expect("Invalid configuration"));
+
+    let mut rate_limit = back_end::rate_limit::RateLimitState::new();
+    rate_limit.disabled = true;
 
     let state = AppState {
-        sqlite: pool,
-        rate_limit: back_end::rate_limit::RateLimitState::disabled(),
+        postgres: pool,
+        rate_limit,
         metrics: back_end::metrics::Metrics::new(),
         mongodb: back_end::logs_db::init_mongodb()
             .await
             .expect("Failed to initialize MongoDB"),
+        webauthn,
+        google_oauth: None,
+        oauth_state_store: Arc::new(handlers::OAuthStateStore::default()),
     };
 
     let app = Router::new()
@@ -110,7 +125,7 @@ async fn setup_test_app() -> (Router, NamedTempFile) {
         )
         .with_state(state);
 
-    (app, temp_file)
+    app
 }
 
 async fn make_request(
@@ -142,7 +157,12 @@ async fn make_request(
         .body(Body::from(body_bytes))
         .expect("Failed to build request");
 
-    let response = app.oneshot(request).await.expect("Failed to send request");
+    // Clone the app before using oneshot to avoid consuming it
+    let response = app
+        .clone()
+        .oneshot(request)
+        .await
+        .expect("Failed to send request");
     let status = response.status();
 
     let body_bytes = to_bytes(response.into_body(), usize::MAX)
@@ -160,14 +180,14 @@ async fn make_request(
 
 #[tokio::test]
 async fn test_register_user_success() {
-    let (mut app, _temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let (status, body) = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "admin@example.com",
+            "email": "adminuser1@example.com",
             "first_name": "Admin",
             "last_name": "User",
             "password": "SecurePassword123!",
@@ -180,13 +200,13 @@ async fn test_register_user_success() {
 
     assert_eq!(status, StatusCode::CREATED);
     assert!(body["token"].is_string());
-    assert_eq!(body["user"]["email"], "admin@example.com");
+    assert_eq!(body["user"]["email"], "adminuser1@example.com");
     assert_eq!(body["user"]["role"], "admin");
 }
 
 #[tokio::test]
 async fn test_register_user_short_password() {
-    let (mut app, _temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let (status, body) = make_request(
         &mut app,
@@ -210,7 +230,7 @@ async fn test_register_user_short_password() {
 
 #[tokio::test]
 async fn test_register_user_missing_fields() {
-    let (mut app, _temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let (status, _body) = make_request(
         &mut app,
@@ -233,14 +253,14 @@ async fn test_register_user_missing_fields() {
 
 #[tokio::test]
 async fn test_login_user_success() {
-    let (mut app, _temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let register_response = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "user@example.com",
+            "email": "user_login_success@example.com",
             "first_name": "Test",
             "last_name": "User",
             "password": "TestPassword123!",
@@ -258,7 +278,7 @@ async fn test_login_user_success() {
         "POST",
         "/auth/login",
         Some(json!({
-            "email": "user@example.com",
+            "email": "user_login_success@example.com",
             "password": "TestPassword123!"
         })),
         None,
@@ -267,12 +287,15 @@ async fn test_login_user_success() {
 
     assert_eq!(login_status, StatusCode::OK);
     assert!(login_body["token"].is_string());
-    assert_eq!(login_body["user"]["email"], "user@example.com");
+    assert_eq!(
+        login_body["user"]["email"],
+        "user_login_success@example.com"
+    );
 }
 
 #[tokio::test]
 async fn test_login_user_invalid_password() {
-    let (mut app, _temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let _register_response = make_request(
         &mut app,
@@ -307,7 +330,7 @@ async fn test_login_user_invalid_password() {
 
 #[tokio::test]
 async fn test_login_user_nonexistent() {
-    let (mut app, _temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let (status, _body) = make_request(
         &mut app,
@@ -326,7 +349,7 @@ async fn test_login_user_nonexistent() {
 
 #[tokio::test]
 async fn test_get_current_user_without_token() {
-    let (mut app, _temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let (status, _body) = make_request(&mut app, "GET", "/auth/me", None, None).await;
 
@@ -335,14 +358,14 @@ async fn test_get_current_user_without_token() {
 
 #[tokio::test]
 async fn test_get_current_user_with_valid_token() {
-    let (mut app, _temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let register_response = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "user@example.com",
+            "email": "user6@example.com",
             "first_name": "Test",
             "last_name": "User",
             "password": "TestPassword123!",
@@ -354,16 +377,15 @@ async fn test_get_current_user_with_valid_token() {
     .await;
 
     let token = register_response.1["token"].as_str().unwrap();
-
     let (status, body) = make_request(&mut app, "GET", "/auth/me", None, Some(token)).await;
 
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["email"], "user@example.com");
+    assert_eq!(body["email"], "user6@example.com");
 }
 
 #[tokio::test]
 async fn test_get_current_user_with_invalid_token() {
-    let (mut app, _temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let (status, _body) =
         make_request(&mut app, "GET", "/auth/me", None, Some("invalid_token")).await;
@@ -373,14 +395,14 @@ async fn test_get_current_user_with_invalid_token() {
 
 #[tokio::test]
 async fn test_invite_user_by_admin() {
-    let (mut app, _temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let register_response = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "admin@example.com",
+            "email": "admin5@example.com",
             "first_name": "Admin",
             "last_name": "User",
             "password": "AdminPassword123!",
@@ -398,27 +420,27 @@ async fn test_invite_user_by_admin() {
         "POST",
         "/auth/invitations/send",
         Some(json!({
-            "email": "newuser@example.com"
+            "email": "newuser2@example.com"
         })),
         Some(admin_token),
     )
     .await;
 
     assert_eq!(status, StatusCode::CREATED);
-    assert_eq!(body["email"], "newuser@example.com");
+    assert_eq!(body["email"], "newuser2@example.com");
     assert!(body["expires_at"].is_string());
 }
 
 #[tokio::test]
 async fn test_invite_user_missing_email() {
-    let (mut app, _temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let register_response = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "admin@example.com",
+            "email": "admin_invite_user_missing_email@example.com",
             "first_name": "Admin",
             "last_name": "User",
             "password": "AdminPassword123!",
@@ -447,14 +469,14 @@ async fn test_invite_user_missing_email() {
 
 #[tokio::test]
 async fn test_invite_user_by_non_admin() {
-    let (mut app, temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let admin_response = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "admin@example.com",
+            "email": "adminuser2@example.com",
             "first_name": "Admin",
             "last_name": "User",
             "password": "AdminPassword123!",
@@ -473,7 +495,7 @@ async fn test_invite_user_by_non_admin() {
         "POST",
         "/auth/invitations/send",
         Some(json!({
-            "email": "member@example.com"
+            "email": "memberuser1@example.com"
         })),
         Some(admin_token),
     )
@@ -482,12 +504,7 @@ async fn test_invite_user_by_non_admin() {
     assert_eq!(invite_response.0, StatusCode::CREATED);
     let invitation_id = invite_response.1["id"].as_str().unwrap().to_string();
 
-    let pool = PgPool::connect(&format!(
-        "sqlite://{}?mode=rwc",
-        temp.path().to_str().unwrap()
-    ))
-    .await
-    .expect("Failed to connect to db");
+    let pool = get_test_db_pool().await;
 
     let invitation = db::get_invitation_by_token(&pool, &invitation_id)
         .await
@@ -498,8 +515,8 @@ async fn test_invite_user_by_non_admin() {
         inv.token
     } else {
         let all_invites =
-            sqlx::query_as::<_, (String,)>("SELECT token FROM invitations WHERE email = ?")
-                .bind("member@example.com")
+            sqlx::query_as::<_, (String,)>("SELECT token FROM invitations WHERE email = $1")
+                .bind("memberuser1@example.com")
                 .fetch_one(&pool)
                 .await
                 .map(|row| row.0)
@@ -540,7 +557,7 @@ async fn test_invite_user_by_non_admin() {
 
 #[tokio::test]
 async fn test_accept_invitation_missing_fields() {
-    let (mut app, _temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let (status, _body) = make_request(
         &mut app,
@@ -561,7 +578,7 @@ async fn test_accept_invitation_missing_fields() {
 
 #[tokio::test]
 async fn test_accept_invitation_short_password() {
-    let (mut app, _temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let (status, _body) = make_request(
         &mut app,
@@ -582,7 +599,7 @@ async fn test_accept_invitation_short_password() {
 
 #[tokio::test]
 async fn test_accept_invitation_invalid_token() {
-    let (mut app, _temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let (status, _body) = make_request(
         &mut app,
@@ -603,14 +620,14 @@ async fn test_accept_invitation_invalid_token() {
 
 #[tokio::test]
 async fn test_complete_registration_and_login_flow() {
-    let (mut app, _temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let register_response = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "admin@example.com",
+            "email": "admin3@example.com",
             "first_name": "Admin",
             "last_name": "User",
             "password": "AdminPassword123!",
@@ -629,7 +646,7 @@ async fn test_complete_registration_and_login_flow() {
         "POST",
         "/auth/login",
         Some(json!({
-            "email": "admin@example.com",
+            "email": "admin3@example.com",
             "password": "AdminPassword123!"
         })),
         None,
@@ -643,13 +660,13 @@ async fn test_complete_registration_and_login_flow() {
         make_request(&mut app, "GET", "/auth/me", None, Some(&admin_token)).await;
 
     assert_eq!(me_status, StatusCode::OK);
-    assert_eq!(me_body["email"], "admin@example.com");
+    assert_eq!(me_body["email"], "admin3@example.com");
     assert_eq!(me_body["role"], "admin");
 }
 
 #[tokio::test]
 async fn test_register_duplicate_email() {
-    let (mut app, _temp) = setup_test_app().await;
+    let mut app = setup_test_app().await;
 
     let _first_register = make_request(
         &mut app,
@@ -689,10 +706,8 @@ async fn test_register_duplicate_email() {
 
 #[tokio::test]
 async fn test_security_logging_on_successful_registration() {
-    let (mut app, temp) = setup_test_app().await;
-    let db_path = temp.path().to_str().unwrap();
-    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = PgPool::connect(&connection_string).await.unwrap();
+    let mut app = setup_test_app().await;
+    let pool = get_test_db_pool().await;
 
     let (status, _) = make_request(
         &mut app,
@@ -730,10 +745,8 @@ async fn test_security_logging_on_successful_registration() {
 
 #[tokio::test]
 async fn test_security_logging_on_successful_login() {
-    let (mut app, temp) = setup_test_app().await;
-    let db_path = temp.path().to_str().unwrap();
-    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = PgPool::connect(&connection_string).await.unwrap();
+    let mut app = setup_test_app().await;
+    let pool = get_test_db_pool().await;
 
     let _ = make_request(
         &mut app,
@@ -782,10 +795,8 @@ async fn test_security_logging_on_successful_login() {
 
 #[tokio::test]
 async fn test_security_logging_on_failed_login_wrong_password() {
-    let (mut app, temp) = setup_test_app().await;
-    let db_path = temp.path().to_str().unwrap();
-    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = PgPool::connect(&connection_string).await.unwrap();
+    let mut app = setup_test_app().await;
+    let pool = get_test_db_pool().await;
 
     let _ = make_request(
         &mut app,
@@ -844,10 +855,8 @@ async fn test_security_logging_on_failed_login_wrong_password() {
 
 #[tokio::test]
 async fn test_security_logging_on_failed_login_user_not_found() {
-    let (mut app, temp) = setup_test_app().await;
-    let db_path = temp.path().to_str().unwrap();
-    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = PgPool::connect(&connection_string).await.unwrap();
+    let mut app = setup_test_app().await;
+    let pool = get_test_db_pool().await;
 
     let (status, body) = make_request(
         &mut app,
@@ -860,7 +869,6 @@ async fn test_security_logging_on_failed_login_user_not_found() {
         None,
     )
     .await;
-
     assert_eq!(status, StatusCode::UNAUTHORIZED);
     assert!(
         body["error"]
@@ -868,6 +876,8 @@ async fn test_security_logging_on_failed_login_user_not_found() {
             .unwrap()
             .contains("Invalid email or password")
     );
+
+    sleep(std::time::Duration::from_secs(2)).await;
 
     let logs = db::get_recent_security_logs(&pool, Some("login_failed".to_string()), 10)
         .await
@@ -886,10 +896,8 @@ async fn test_security_logging_on_failed_login_user_not_found() {
 
 #[tokio::test]
 async fn test_security_logging_on_invitation_sent() {
-    let (mut app, temp) = setup_test_app().await;
-    let db_path = temp.path().to_str().unwrap();
-    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = PgPool::connect(&connection_string).await.unwrap();
+    let mut app = setup_test_app().await;
+    let pool = get_test_db_pool().await;
 
     let (_, register_response) = make_request(
         &mut app,
@@ -942,10 +950,8 @@ async fn test_security_logging_on_invitation_sent() {
 
 #[tokio::test]
 async fn test_security_logging_on_invitation_accepted() {
-    let (mut app, temp) = setup_test_app().await;
-    let db_path = temp.path().to_str().unwrap();
-    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = PgPool::connect(&connection_string).await.unwrap();
+    let mut app = setup_test_app().await;
+    let pool = get_test_db_pool().await;
 
     let (_, register_response) = make_request(
         &mut app,
@@ -977,7 +983,7 @@ async fn test_security_logging_on_invitation_accepted() {
     .await;
 
     let invitation_token: String =
-        sqlx::query_scalar("SELECT token FROM invitations WHERE email = ?")
+        sqlx::query_scalar("SELECT token FROM invitations WHERE email = $1")
             .bind("employee@company.com")
             .fetch_one(&pool)
             .await
@@ -1017,10 +1023,8 @@ async fn test_security_logging_on_invitation_accepted() {
 
 #[tokio::test]
 async fn test_security_logs_order_by_time() {
-    let (mut app, temp) = setup_test_app().await;
-    let db_path = temp.path().to_str().unwrap();
-    let connection_string = format!("sqlite://{}?mode=rwc", db_path);
-    let pool = PgPool::connect(&connection_string).await.unwrap();
+    let mut app = setup_test_app().await;
+    let pool = get_test_db_pool().await;
 
     let _ = make_request(
         &mut app,

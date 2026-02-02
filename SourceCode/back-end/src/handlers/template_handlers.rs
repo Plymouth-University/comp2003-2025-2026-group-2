@@ -29,6 +29,10 @@ use serde_json::json;
     security(("bearer_auth" = [])),
     tag = "Templates"
 )]
+/// Adds a new log template for the current company.
+///
+/// # Errors
+/// Returns an error if the user is not authorized or if template creation fails.
 pub async fn add_template(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -100,6 +104,10 @@ pub async fn add_template(
     security(("bearer_auth" = [])),
     tag = "Templates"
 )]
+/// Retrieves a specific log template by name.
+///
+/// # Errors
+/// Returns an error if the template is not found or if the user is not authorized.
 pub async fn get_template(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -141,6 +149,10 @@ pub async fn get_template(
     security(("bearer_auth" = [])),
     tag = "Templates"
 )]
+/// Retrieves all log templates for the current company.
+///
+/// # Errors
+/// Returns an error if the user is not authorized or if the query fails.
 pub async fn get_all_templates(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -215,6 +227,10 @@ pub async fn get_all_templates(
     security(("bearer_auth" = [])),
     tag = "Templates"
 )]
+/// Updates an existing log template.
+///
+/// # Errors
+/// Returns an error if the user is not authorized or if the update fails.
 pub async fn update_template(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -282,6 +298,10 @@ pub async fn update_template(
     security(("bearer_auth" = [])),
     tag = "Templates"
 )]
+/// Renames an existing log template.
+///
+/// # Errors
+/// Returns an error if the user is not authorized or if the rename fails.
 pub async fn rename_template(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -350,6 +370,10 @@ pub async fn rename_template(
     security(("bearer_auth" = [])),
     tag = "Templates"
 )]
+/// Deletes a specific log template.
+///
+/// # Errors
+/// Returns an error if the user is not authorized or if deletion fails.
 pub async fn delete_template(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,

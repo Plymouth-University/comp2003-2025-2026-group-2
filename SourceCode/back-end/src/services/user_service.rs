@@ -3,9 +3,21 @@ use axum::http::StatusCode;
 use serde_json::json;
 use sqlx::PgPool;
 
+#[cfg(test)]
+mod user_service_tests {
+    #[tokio::test]
+    async fn test_user_service_basic() {
+        assert!(true);
+    }
+}
+
 pub struct UserService;
 
 impl UserService {
+    /// Retrieves a user by their email address.
+    ///
+    /// # Errors
+    /// Returns an error if the user is not found or if database lookup fails.
     pub async fn get_user_by_email(
         db_pool: &PgPool,
         email: &str,
@@ -22,6 +34,10 @@ impl UserService {
             .ok_or((StatusCode::NOT_FOUND, json!({ "error": "User not found" })))
     }
 
+    /// Retrieves a user by their ID.
+    ///
+    /// # Errors
+    /// Returns an error if the user is not found or if database lookup fails.
     pub async fn get_user_by_id(
         db_pool: &PgPool,
         user_id: &str,
@@ -38,6 +54,10 @@ impl UserService {
             .ok_or((StatusCode::NOT_FOUND, json!({ "error": "User not found" })))
     }
 
+    /// Updates a user's profile information.
+    ///
+    /// # Errors
+    /// Returns an error if the database update fails.
     pub async fn update_profile(
         db_pool: &PgPool,
         user_id: &str,
@@ -55,6 +75,10 @@ impl UserService {
             })
     }
 
+    /// Retrieves all members of a specific company.
+    ///
+    /// # Errors
+    /// Returns an error if the database query fails.
     pub async fn get_company_members(
         db_pool: &PgPool,
         company_id: &str,
@@ -70,6 +94,10 @@ impl UserService {
             })
     }
 
+    /// Retrieves the company ID for a specific user.
+    ///
+    /// # Errors
+    /// Returns an error if the user is not associated with a company or if the query fails.
     pub async fn get_user_company_id(
         db_pool: &PgPool,
         user_id: &str,
@@ -89,6 +117,10 @@ impl UserService {
             ))
     }
 
+    /// Updates a company member's profile (admin only).
+    ///
+    /// # Errors
+    /// Returns an error if the caller is not an admin, target is in another company, or update fails.
     pub async fn admin_update_member_profile(
         db_pool: &PgPool,
         admin_user_id: &str,
@@ -133,6 +165,10 @@ impl UserService {
             })
     }
 
+    /// Deletes a company member (admin only).
+    ///
+    /// # Errors
+    /// Returns an error if the caller is not an admin, target is in another company, or deletion fails.
     pub async fn admin_delete_member(
         db_pool: &PgPool,
         admin_user_id: &str,

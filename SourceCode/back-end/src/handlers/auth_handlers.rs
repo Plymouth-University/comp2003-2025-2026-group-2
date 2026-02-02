@@ -33,6 +33,10 @@ use serde_json::json;
     ),
     tag = "Authentication"
 )]
+/// Verifies the validity of a JWT token.
+///
+/// # Errors
+/// Returns an error if the token is invalid, expired, or if there's a database error.
 pub async fn verify_token(
     State(state): State<AppState>,
     Json(payload): Json<VerifyTokenRequest>,
@@ -77,6 +81,10 @@ pub async fn verify_token(
     ),
     tag = "Authentication"
 )]
+/// Registers a new company and its administrative user.
+///
+/// # Errors
+/// Returns an error if validation fails, the email already exists, or registration fails.
 pub async fn register_company_admin(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
@@ -133,7 +141,7 @@ pub async fn register_company_admin(
         ));
     }
 
-    let (token, user_id, role_str) = services::AuthService::register_admin(
+    let (_json_response, token, role) = services::AuthService::register_admin(
         &state.postgres,
         &payload.email,
         &payload.first_name,
@@ -153,7 +161,7 @@ pub async fn register_company_admin(
 
     state.metrics.increment_registrations();
     state.metrics.increment_successful_requests();
-    tracing::info!("Registration successful for user: {}", user_id);
+    tracing::info!("Registration successful");
 
     let cookie_domain = std::env::var("COOKIE_DOMAIN").unwrap_or_default();
     let domain_attr = if cookie_domain.is_empty() {
@@ -178,7 +186,7 @@ pub async fn register_company_admin(
                 first_name: payload.first_name,
                 last_name: payload.last_name,
                 company_name: Some(payload.company_name),
-                role: role_str,
+                role,
                 oauth_provider: None,
             },
         }),
@@ -211,6 +219,10 @@ pub async fn register_company_admin(
     ),
     tag = "Authentication"
 )]
+/// Authenticates a user and returns a JWT token.
+///
+/// # Errors
+/// Returns an error if credentials are invalid or if authentication fails.
 pub async fn login(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
@@ -303,6 +315,10 @@ pub async fn login(
     ),
     tag = "Authentication"
 )]
+/// Retrieves the profile information of the currently authenticated user.
+///
+/// # Errors
+/// Returns an error if the user is not found or if there's a database error.
 pub async fn get_current_user(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -336,6 +352,10 @@ pub async fn get_current_user(
     security(("bearer_auth" = [])),
     tag = "Authentication"
 )]
+/// Updates the profile information of the currently authenticated user.
+///
+/// # Errors
+/// Returns an error if validation fails or the update operation fails.
 pub async fn update_profile(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
@@ -375,6 +395,10 @@ pub async fn update_profile(
     ),
     tag = "Authentication"
 )]
+/// Initiates a password reset process by sending an email.
+///
+/// # Errors
+/// Returns an error if the email is invalid or the request fails.
 pub async fn request_password_reset(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
@@ -433,6 +457,10 @@ pub async fn request_password_reset(
     ),
     tag = "Authentication"
 )]
+/// Resets a user's password using a valid reset token.
+///
+/// # Errors
+/// Returns an error if the token is invalid/expired or the operation fails.
 pub async fn reset_password(
     State(state): State<AppState>,
     Json(payload): Json<ResetPasswordRequest>,

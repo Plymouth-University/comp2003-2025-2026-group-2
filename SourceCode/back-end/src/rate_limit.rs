@@ -62,6 +62,18 @@ impl RateLimitState {
         }
     }
 
+    #[must_use]
+    pub fn disabled() -> Self {
+        Self {
+            ip_login_limiter: Arc::new(DashMap::new()),
+            ip_register_limiter: Arc::new(DashMap::new()),
+            ip_general_limiter: Arc::new(DashMap::new()),
+            email_login_limiter: Arc::new(DashMap::new()),
+            email_register_limiter: Arc::new(DashMap::new()),
+            disabled: true,
+        }
+    }
+
     fn get_or_create_ip_limiter(
         map: &IpLimiter,
         ip: IpAddr,
@@ -116,6 +128,10 @@ impl RateLimitState {
         });
     }
 
+    /// Checks if a login attempt from a given IP is allowed by rate limits.
+    ///
+    /// # Panics
+    /// Panics if the hardcoded quota is invalid.
     #[must_use]
     pub fn check_login(&self, ip: IpAddr) -> bool {
         if self.disabled {
@@ -126,6 +142,10 @@ impl RateLimitState {
         limiter.check().is_ok()
     }
 
+    /// Checks if a login attempt for a given email is allowed by rate limits.
+    ///
+    /// # Panics
+    /// Panics if the hardcoded quota is invalid.
     #[must_use]
     pub fn check_login_email(&self, email: &str) -> bool {
         if self.disabled {
@@ -140,6 +160,10 @@ impl RateLimitState {
         limiter.check().is_ok()
     }
 
+    /// Checks if a registration attempt from a given IP is allowed by rate limits.
+    ///
+    /// # Panics
+    /// Panics if the hardcoded quota is invalid.
     #[must_use]
     pub fn check_register(&self, ip: IpAddr) -> bool {
         if self.disabled {
@@ -150,6 +174,10 @@ impl RateLimitState {
         limiter.check().is_ok()
     }
 
+    /// Checks if a registration attempt for a given email is allowed by rate limits.
+    ///
+    /// # Panics
+    /// Panics if the hardcoded quota is invalid.
     #[must_use]
     pub fn check_register_email(&self, email: &str) -> bool {
         if self.disabled {
@@ -164,6 +192,10 @@ impl RateLimitState {
         limiter.check().is_ok()
     }
 
+    /// Checks if a general request from a given IP is allowed by rate limits.
+    ///
+    /// # Panics
+    /// Panics if the hardcoded quota is invalid.
     #[must_use]
     pub fn check_general(&self, ip: IpAddr) -> bool {
         if self.disabled {
@@ -174,6 +206,10 @@ impl RateLimitState {
         limiter.check().is_ok()
     }
 
+    /// Checks if an OAuth request from a given IP is allowed by rate limits.
+    ///
+    /// # Panics
+    /// Panics if the hardcoded quota is invalid.
     #[must_use]
     pub fn check_oauth(&self, ip: IpAddr) -> bool {
         if self.disabled {
