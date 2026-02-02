@@ -1441,7 +1441,7 @@ pub async fn get_index_usage(pool: &PgPool) -> Result<Vec<IndexUsageStats>> {
             x.idx_tup_fetch as rows_fetched
         FROM pg_stat_user_indexes x
         JOIN pg_class i ON i.oid = x.indexrelid
-        JOIN pg_class t ON t.oid = x.indrelid
+        JOIN pg_class t ON t.oid = x.relid
         ORDER BY x.idx_scan DESC
         ",
     )
