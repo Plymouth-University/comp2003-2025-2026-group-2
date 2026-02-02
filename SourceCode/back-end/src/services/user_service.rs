@@ -131,7 +131,7 @@ impl UserService {
     ) -> Result<db::UserRecord, (StatusCode, serde_json::Value)> {
         let admin = Self::get_user_by_id(db_pool, admin_user_id).await?;
 
-        if !admin.is_admin() {
+        if !admin.can_manage_company() {
             return Err((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "Only company admins can update member profiles" }),
@@ -140,7 +140,8 @@ impl UserService {
 
         let target_user = Self::get_user_by_email(db_pool, target_email).await?;
 
-        if admin.company_id != target_user.company_id {
+        // Company admins can only manage users in their company, but logsmart_admin can manage any company
+        if admin.is_admin() && admin.company_id != target_user.company_id {
             return Err((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "Cannot update users from other companies" }),
@@ -176,7 +177,7 @@ impl UserService {
     ) -> Result<(), (StatusCode, serde_json::Value)> {
         let admin = Self::get_user_by_id(db_pool, admin_user_id).await?;
 
-        if !admin.is_admin() {
+        if !admin.can_manage_company() {
             return Err((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "Only company admins can delete members" }),
@@ -185,7 +186,8 @@ impl UserService {
 
         let target_user = Self::get_user_by_email(db_pool, target_email).await?;
 
-        if admin.company_id != target_user.company_id {
+        // Company admins can only delete users in their company, but logsmart_admin can delete from any company
+        if admin.is_admin() && admin.company_id != target_user.company_id {
             return Err((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "Cannot delete users from other companies" }),

@@ -209,6 +209,25 @@
           };
         };
 
+        dockerImageDarwin = pkgs.dockerTools.buildLayeredImage {
+          name = "nullstring1/logsmart-srv";
+          tag = "latest-darwin";
+          contents = [
+            logSmartBackendNative
+            pkgs.openssl
+            pkgs.cacert
+          ];
+          
+          architecture = "darwin"; 
+          
+          config = {
+            Cmd = [ "${logSmartBackendNative}/bin/logsmart-srv" ];
+            ExposedPorts = {
+              "6767/tcp" = {};
+            };
+          };
+        };
+
         packages = {
           aarch64-linux = logSmartBackendCrossAarch64;
           x86_64-linux = logSmartBackendNative;
@@ -216,6 +235,7 @@
           default = logSmartBackendNative;
           docker-image-aarch64 = dockerImageAarch64;
           docker-image-x86_64 = dockerImagex86_64;
+          docker-image-darwin = dockerImageDarwin;
         };
       in
       {
