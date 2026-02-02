@@ -84,6 +84,7 @@
 			>
 				<option id="userRole" value="member">Member</option>
 				<option id="adminRole" value="admin">Admin</option>
+				<option id="logsmart_adminRole" value="logsmart_admin">Internal Admin</option>
 			</select>
 			<button
 				class="m-5 mb-0 cursor-pointer rounded border-2 border-border-primary bg-bg-primary px-4 py-2 font-bold text-text-primary hover:opacity-80"

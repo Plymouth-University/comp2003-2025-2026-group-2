@@ -32,13 +32,17 @@
 	<div class="flex items-center gap-2">
 		<div
 			class="rounded-full px-3 py-1 text-sm font-medium"
-			style="background-color: {item.role === 'admin'
+			style="background-color: {item.role === 'admin' || item.role === 'logsmart_admin'
 				? '#94C5CC'
-				: 'var(--bg-secondary)'}; color: {item.role === 'admin'
+				: 'var(--bg-secondary)'}; color: {item.role === 'admin' || item.role === 'logsmart_admin'
 				? '#000'
 				: 'var(--text-secondary)'};"
 		>
-			{item.role === 'admin' ? 'Admin' : 'Member'}
+			{item.role === 'admin'
+				? 'Admin'
+				: item.role === 'logsmart_admin'
+					? 'Internal Admin'
+					: 'Member'}
 		</div>
 	</div>
 
