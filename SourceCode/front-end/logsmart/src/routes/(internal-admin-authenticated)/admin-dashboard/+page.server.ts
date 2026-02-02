@@ -29,22 +29,11 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 			indexUsageResponse
 		] = await Promise.all([
 			fetch('/api/admin/companies', { headers }),
-			fetch('/health/database', { headers }),
-			fetch('/health/table-sizes', { headers }),
-			fetch('/health/slow-queries?limit=20', { headers }),
-			fetch('/health/index-usage', { headers })
+			fetch('/api/health/database', { headers }),
+			fetch('/api/health/table-sizes', { headers }),
+			fetch('/api/health/slow-queries?limit=20', { headers }),
+			fetch('/api/health/index-usage', { headers })
 		]);
-
-		// Debug logging for health endpoints
-		console.log('DB Health Response:', dbHealthResponse.status, dbHealthResponse.statusText);
-		console.log('Table Sizes Response:', tableSizesResponse.status, tableSizesResponse.statusText);
-		console.log(
-			'Slow Queries Response:',
-			slowQueriesResponse.status,
-			slowQueriesResponse.statusText
-		);
-		console.log('Index Usage Response:', indexUsageResponse.status, indexUsageResponse.statusText);
-
 		const companies = companiesResponse.ok ? await companiesResponse.json() : { companies: [] };
 
 		let dbHealth = null;
@@ -52,7 +41,6 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 			dbHealth = await dbHealthResponse.json();
 		} else {
 			const errorText = await dbHealthResponse.text();
-			console.log('DB Health Error Body:', errorText);
 		}
 
 		let tableSizes = null;
@@ -60,7 +48,6 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 			tableSizes = await tableSizesResponse.json();
 		} else {
 			const errorText = await tableSizesResponse.text();
-			console.log('Table Sizes Error Body:', errorText);
 		}
 
 		const slowQueries = slowQueriesResponse.ok ? await slowQueriesResponse.json() : null;

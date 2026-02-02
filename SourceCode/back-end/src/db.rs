@@ -1353,12 +1353,13 @@ pub async fn check_unused_indexes(pool: &PgPool) -> Result<Vec<String>> {
 
     let unused = sqlx::query_as::<_, UnusedIndex>(
         r"
-        SELECT indexname as index_name
-        FROM pg_stat_user_indexes
-        WHERE schemaname = 'public'
-        AND idx_scan = 0
-        AND indexname NOT LIKE '%_pkey'
-        ORDER BY indexname
+        SELECT i.relname as index_name
+        FROM pg_stat_user_indexes ui
+        JOIN pg_class i ON i.oid = ui.indexrelid
+        JOIN pg_class t ON t.oid = ui.relid
+        WHERE ui.idx_scan = 0
+        AND i.relname NOT LIKE '%_pkey%'
+        ORDER BY i.relname
         ",
     )
     .fetch_all(pool)
