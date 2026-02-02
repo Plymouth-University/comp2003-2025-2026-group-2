@@ -16,7 +16,7 @@ pub struct UserFactory;
 
 impl UserFactory {
     /// Creates a basic test user with default values
-    #[must_use] 
+    #[must_use]
     pub fn create_basic() -> UserRecord {
         UserRecord {
             id: Uuid::new_v4().to_string(),
@@ -36,7 +36,7 @@ impl UserFactory {
     }
 
     /// Creates an admin user
-    #[must_use] 
+    #[must_use]
     pub fn create_admin() -> UserRecord {
         UserRecord {
             role: UserRole::Admin,
@@ -48,7 +48,7 @@ impl UserFactory {
     }
 
     /// Creates a `LogSmart` admin user
-    #[must_use] 
+    #[must_use]
     pub fn create_logsmart_admin() -> UserRecord {
         UserRecord {
             role: UserRole::LogSmartAdmin,
@@ -60,7 +60,7 @@ impl UserFactory {
     }
 
     /// Creates a user with OAuth provider
-    #[must_use] 
+    #[must_use]
     pub fn create_oauth_user(provider: &str, subject: &str) -> UserRecord {
         UserRecord {
             oauth_provider: Some(provider.to_string()),
@@ -72,7 +72,7 @@ impl UserFactory {
     }
 
     /// Creates a soft-deleted user
-    #[must_use] 
+    #[must_use]
     pub fn create_deleted() -> UserRecord {
         UserRecord {
             deleted_at: Some(Utc::now()),
@@ -86,7 +86,7 @@ pub struct CompanyFactory;
 
 impl CompanyFactory {
     /// Creates a basic test company
-    #[must_use] 
+    #[must_use]
     pub fn create_basic() -> Company {
         Company {
             id: Uuid::new_v4().to_string(),
@@ -97,7 +97,7 @@ impl CompanyFactory {
     }
 
     /// Creates a company with a specific name
-    #[must_use] 
+    #[must_use]
     pub fn create_with_name(name: &str) -> Company {
         Company {
             name: name.to_string(),
@@ -111,7 +111,7 @@ pub struct InvitationFactory;
 
 impl InvitationFactory {
     /// Creates a basic test invitation
-    #[must_use] 
+    #[must_use]
     pub fn create_basic() -> Invitation {
         Invitation {
             id: Uuid::new_v4().to_string(),
@@ -126,7 +126,7 @@ impl InvitationFactory {
     }
 
     /// Creates an expired invitation
-    #[must_use] 
+    #[must_use]
     pub fn create_expired() -> Invitation {
         Invitation {
             expires_at: Utc::now() - chrono::Duration::hours(1),
@@ -135,7 +135,7 @@ impl InvitationFactory {
     }
 
     /// Creates an accepted invitation
-    #[must_use] 
+    #[must_use]
     pub fn create_accepted() -> Invitation {
         Invitation {
             accepted_at: Some(Utc::now()),
@@ -144,7 +144,7 @@ impl InvitationFactory {
     }
 
     /// Creates a cancelled invitation
-    #[must_use] 
+    #[must_use]
     pub fn create_cancelled() -> Invitation {
         Invitation {
             cancelled_at: Some(Utc::now()),
@@ -158,7 +158,7 @@ pub struct PasskeyFactory;
 
 impl PasskeyFactory {
     /// Creates a basic test passkey
-    #[must_use] 
+    #[must_use]
     pub fn create_basic() -> Passkey {
         Passkey {
             id: Uuid::new_v4().to_string(),
@@ -173,7 +173,7 @@ impl PasskeyFactory {
     }
 
     /// Creates a passkey that has been used
-    #[must_use] 
+    #[must_use]
     pub fn create_used() -> Passkey {
         Passkey {
             last_used_at: Some(Utc::now()),
@@ -188,7 +188,7 @@ pub struct PasskeySessionFactory;
 
 impl PasskeySessionFactory {
     /// Creates a basic passkey session
-    #[must_use] 
+    #[must_use]
     pub fn create_basic() -> PasskeySession {
         PasskeySession {
             id: Uuid::new_v4().to_string(),
@@ -207,7 +207,7 @@ pub struct SecurityLogFactory;
 
 impl SecurityLogFactory {
     /// Creates a basic security log entry
-    #[must_use] 
+    #[must_use]
     pub fn create_basic() -> SecurityLog {
         SecurityLog {
             id: Uuid::new_v4().to_string(),
@@ -223,7 +223,7 @@ impl SecurityLogFactory {
     }
 
     /// Creates a failed login attempt log
-    #[must_use] 
+    #[must_use]
     pub fn create_failed_login() -> SecurityLog {
         SecurityLog {
             event_type: "login_failed".to_string(),
@@ -239,7 +239,7 @@ pub struct TemplateFactory;
 
 impl TemplateFactory {
     /// Creates a basic test template
-    #[must_use] 
+    #[must_use]
     pub fn create_basic() -> TemplateDocument {
         TemplateDocument {
             template_name: "Test Template".to_string(),
@@ -274,7 +274,7 @@ impl TemplateFactory {
     }
 
     /// Creates a template with schedule
-    #[must_use] 
+    #[must_use]
     pub fn create_with_schedule() -> TemplateDocument {
         TemplateDocument {
             schedule: Schedule {
@@ -294,7 +294,7 @@ pub struct LogEntryFactory;
 
 impl LogEntryFactory {
     /// Creates a basic log entry
-    #[must_use] 
+    #[must_use]
     pub fn create_basic() -> LogEntry {
         LogEntry {
             entry_id: mongodb::bson::Uuid::new().to_string(),
@@ -314,7 +314,7 @@ impl LogEntryFactory {
     }
 
     /// Creates a submitted log entry
-    #[must_use] 
+    #[must_use]
     pub fn create_submitted() -> LogEntry {
         LogEntry {
             submitted_at: Some(Utc::now()),

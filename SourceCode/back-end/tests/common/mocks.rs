@@ -20,7 +20,7 @@ impl Default for MockWebAuthnService {
 }
 
 impl MockWebAuthnService {
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self {
             credentials: Arc::new(RwLock::new(HashMap::new())),
@@ -82,7 +82,7 @@ impl Default for MockEmailService {
 }
 
 impl MockEmailService {
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self {
             sent_emails: Arc::new(RwLock::new(Vec::new())),
@@ -179,7 +179,7 @@ impl Default for MockOAuthService {
 }
 
 impl MockOAuthService {
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self {
             tokens: Arc::new(RwLock::new(HashMap::new())),
@@ -252,7 +252,7 @@ impl Default for MockOAuthStateStore {
 }
 
 impl MockOAuthStateStore {
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self {
             states: Arc::new(RwLock::new(HashMap::new())),
@@ -280,7 +280,7 @@ impl MockOAuthStateStore {
         states.retain(|_, state| state.expires_at > now);
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn generate_state_string(&self, length: usize) -> String {
         use rand::Rng;
         let charset: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
@@ -306,7 +306,7 @@ pub struct MockRateLimiter {
 }
 
 impl MockRateLimiter {
-    #[must_use] 
+    #[must_use]
     pub fn new(max_requests: u32, window_seconds: u64) -> Self {
         Self {
             requests: Arc::new(RwLock::new(HashMap::new())),
@@ -358,21 +358,21 @@ impl MockRateLimiter {
 }
 
 // Helper functions for creating mock instances
-#[must_use] 
+#[must_use]
 pub fn create_mock_webauthn() -> webauthn_rs::Webauthn {
     // This will need to be implemented based on the actual WebAuthnState structure
     // For now, return a placeholder
     todo!("Implement mock WebAuthnState creation")
 }
 
-#[must_use] 
+#[must_use]
 pub fn create_mock_google_oauth() -> crate::services::GoogleOAuthClient {
     // This will need to be implemented based on the actual OAuthService structure
     // For now, return a placeholder
     todo!("Implement mock OAuthService creation")
 }
 
-#[must_use] 
+#[must_use]
 pub fn create_mock_oauth_state_store() -> crate::handlers::OAuthStateStore {
     // This will need to be implemented based on the actual OAuthStateStore structure
     // For now, return a placeholder

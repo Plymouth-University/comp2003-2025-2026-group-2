@@ -62,7 +62,7 @@ pub async fn create_test_mongodb_client() -> MongoClient {
 }
 
 /// Mock `WebAuthn` configuration
-#[must_use] 
+#[must_use]
 pub fn create_mock_webauthn() -> webauthn_rs::Webauthn {
     // This will be implemented properly in the mocks module
     // For now, return a placeholder
@@ -70,14 +70,14 @@ pub fn create_mock_webauthn() -> webauthn_rs::Webauthn {
 }
 
 /// Mock Google OAuth configuration  
-#[must_use] 
+#[must_use]
 pub fn create_mock_google_oauth() -> crate::services::GoogleOAuthClient {
     // This will be implemented properly in the mocks module
     unimplemented!("Mock Google OAuth implementation needed")
 }
 
 /// Mock OAuth state store
-#[must_use] 
+#[must_use]
 pub fn create_mock_oauth_state_store() -> crate::handlers::OAuthStateStore {
     // This will be implemented properly in the mocks module
     unimplemented!("Mock OAuth state store implementation needed")
