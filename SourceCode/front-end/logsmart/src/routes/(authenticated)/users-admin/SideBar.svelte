@@ -3,9 +3,14 @@
 	import type { Member } from './+page.svelte';
 	import PlaceHolderImage from '$lib/assets/placeholder.png';
 
-	const { setSelectedUser, selectedUser } = $props<{
+	const { setSelectedUser, selectedUser, loggedInUserRole, updateMember } = $props<{
 		setSelectedUser: (email: string | null) => void;
 		selectedUser: Member | null;
+		loggedInUserRole: string;
+		updateMember: (
+			email: string,
+			updates: { first_name: string; last_name: string; role: string }
+		) => void;
 	}>();
 
 	let firstName = $state('');
@@ -84,20 +89,31 @@
 			>
 				<option id="userRole" value="member">Member</option>
 				<option id="adminRole" value="admin">Admin</option>
-				<option id="logsmart_adminRole" value="logsmart_admin">Internal Admin</option>
+				{#if loggedInUserRole === 'logsmart_admin'}
+					<option id="logsmart_adminRole" value="logsmart_admin">Internal Admin</option>
+				{/if}
 			</select>
 			<button
 				class="m-5 mb-0 cursor-pointer rounded border-2 border-border-primary bg-bg-primary px-4 py-2 font-bold text-text-primary hover:opacity-80"
 				type="button"
-				onclick={() =>
-					api.PUT('/auth/admin/update-member', {
+				onclick={async () => {
+					const response = await api.PUT('/auth/admin/update-member', {
 						body: {
 							email: selectedUser?.email,
 							first_name: firstName,
 							last_name: lastName,
 							role: role
 						}
-					})}>Save</button
+					});
+
+					if (!response.error && selectedUser) {
+						updateMember(selectedUser.email, {
+							first_name: firstName,
+							last_name: lastName,
+							role: role
+						});
+					}
+				}}>Save</button
 			>
 		</form>
 	</div>

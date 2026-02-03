@@ -90,6 +90,19 @@
 			alert(`Error removing member: ${error}`);
 		}
 	};
+
+	const updateMember = (
+		email: string,
+		updates: { first_name: string; last_name: string; role: string }
+	) => {
+		const memberIndex = members.findIndex((m: Member) => m.email === email);
+		if (memberIndex !== -1) {
+			members[memberIndex] = { ...members[memberIndex], ...updates };
+			if (selectedUser?.email === email) {
+				selectedUser = members[memberIndex];
+			}
+		}
+	};
 </script>
 
 <svelte:head>
@@ -120,7 +133,7 @@
 				</div>
 			</div>
 		</div>
-		<SideBar {selectedUser} {setSelectedUser} />
+		<SideBar {selectedUser} {setSelectedUser} loggedInUserRole={user.role} {updateMember} />
 	</div>
 </main>
 
