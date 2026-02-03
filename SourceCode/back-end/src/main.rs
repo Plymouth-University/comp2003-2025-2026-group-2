@@ -139,6 +139,7 @@ async fn main() {
     };
 
     let api_routes = Router::new()
+        .route("/health", get(handlers::basic_health_check))
         .route("/auth/register", post(handlers::register_company_admin))
         .route("/auth/login", post(handlers::login))
         .route("/auth/verify", post(handlers::verify_token))

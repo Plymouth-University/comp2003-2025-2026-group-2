@@ -178,6 +178,7 @@
             logSmartBackendCrossAarch64
             pkgsCrossAarch64.openssl
             pkgsCrossAarch64.cacert
+            pkgsCrossAarch64.curl
           ];
           
           architecture = "arm64"; 
@@ -197,6 +198,7 @@
             logSmartBackendNative
             pkgs.openssl
             pkgs.cacert
+            pkgs.curl
           ];
           
           architecture = "amd64"; 
