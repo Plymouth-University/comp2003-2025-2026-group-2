@@ -8,7 +8,7 @@ use axum::{
 };
 use back_end::handlers;
 use back_end::{
-    AppState, db,
+    AppState,
     handlers::login,
     rate_limit::{RateLimitState, rate_limit_middleware},
 };
