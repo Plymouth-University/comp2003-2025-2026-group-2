@@ -28,7 +28,11 @@
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-8">
 					<a
-						href={data?.user?.role === 'logsmart_admin' ? '/admin-dashboard' : (isAdmin ? '/dashboard' : '/logs-list')}
+						href={data?.user?.role === 'logsmart_admin'
+							? '/admin-dashboard'
+							: isAdmin
+								? '/dashboard'
+								: '/logs-list'}
 						class="text-2xl font-bold"
 						style="color: #3D7A82;">LogSmart</a
 					>

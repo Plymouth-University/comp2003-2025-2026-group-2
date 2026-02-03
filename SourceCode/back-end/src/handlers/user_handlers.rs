@@ -90,11 +90,10 @@ pub async fn admin_update_member_profile(
     let role = match payload.role.as_str() {
         "admin" => db::UserRole::Admin,
         "member" => db::UserRole::Member,
-        "logsmart_admin" => db::UserRole::LogSmartAdmin,
         _ => {
             return Err((
                 StatusCode::BAD_REQUEST,
-                Json(json!({ "error": "Invalid role. Must be 'admin', 'member', or 'logsmart_admin'" })),
+                Json(json!({ "error": "Invalid role. Must be 'admin' or'member'" })),
             ));
         }
     };
