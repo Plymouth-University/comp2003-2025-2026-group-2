@@ -45,9 +45,7 @@ async function proxyRequest(event: RequestEvent) {
 			method: request.method,
 			headers,
 			body,
-			redirect: isSwagger
-				? undefined
-				: 'manual'
+			redirect: isSwagger ? undefined : 'manual'
 		});
 
 		if (
