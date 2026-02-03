@@ -1,0 +1,99 @@
+name: Format and Lint Code
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  format-and-lint:
+    name: Format and Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Frontend formatting and linting
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache Bun Dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('SourceCode/front-end/logsmart/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install Frontend Dependencies
+        working-directory: SourceCode/front-end/logsmart
+        run: bun install
+
+      - name: Format Frontend Code
+        working-directory: SourceCode/front-end/logsmart
+        run: bun format
+
+      - name: Lint Frontend Code (with auto-fix)
+        working-directory: SourceCode/front-end/logsmart
+        run: bunx eslint . --fix
+        continue-on-error: true
+
+      # Backend formatting and linting
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Cargo Dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            SourceCode/back-end/target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('SourceCode/back-end/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Format Backend Code
+        working-directory: SourceCode/back-end
+        run: cargo fmt
+
+      - name: Lint Backend Code (with auto-fix)
+        working-directory: SourceCode/back-end
+        # --allow-dirty and --allow-staged are needed because cargo fmt runs first
+        # and we want clippy to fix issues even after fmt has made changes
+        run: cargo clippy --fix --allow-dirty --allow-staged
+        continue-on-error: true
+
+      # Commit changes if any
+      - name: Check for Changes
+        id: check_changes
+        run: |
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and Push Changes
+        if: steps.check_changes.outputs.changes == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore: auto-format and lint code"
+          git push
