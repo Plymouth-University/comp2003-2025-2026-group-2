@@ -1,0 +1,85 @@
+========================================
+MEETING MINUTES
+========================================
+
+PROJECT: LogSmart
+COURSE:  COMP2003
+DATE:    02-Feb-2026
+TIME:    11:00 AM - 11:30 AM
+LOCATION: SMB 105
+
+---
+ATTENDEES
+---
+* Lilla Radek
+* Ben Daffada
+* Daniel Kern
+
+---
+ABSENTEES
+---
+* NONE
+
+-----------------------------
+DISCUSSION & DECISIONS
+-----------------------------
+
+1. Return from Break & Interim Review
+   - Validated the successful submission of the Interim Project Brief, Pitch Video, and Reflection Documents before the break.
+
+2. Sprint 4 Planning (Final Features & PWA)
+   - The primary technical goal for this sprint is to achieve "PWA Criteria" (Progressive Web App).
+   - This involves making the app work offline (Service Workers) and ensuring it is installable.
+   - Security needs to be tightened (Rate limiting, sanitisation) to meet final grade requirements.
+   - Documentation for the final report must start now to avoid a rush at the end.
+
+3. Bug Fixes
+   - Conduct the usability study
+   - Several minor UI bugs and navigation issues need to be fixed in this sprint.
+
+-----------------------------
+PAST ITEMS (COMPLETED - SPRINT 3 / INTERIM)
+-----------------------------
+
+* [TASK: Submission Documents]
+  - Finalise Project Brief/Pitch for Interim Submission (Completed)
+  - Personal Reflection Documents (Completed)
+  - Upload Interim Submission to DLE (Completed)
+
+* [TASK: Testing & Features]
+  - Setup full app tests with Playwright (Completed)
+  - Carry out usability study (Completed)
+  - Link template designer to backend MongoDB storage (Completed)
+  - Add logs entry to backend (Completed)
+
+-----------------------------
+NEW ACTION ITEMS (FOR SPRINT 4)
+-----------------------------
+
+* [TASK 1: PWA & Offline Capabilities]
+  - Implement Service Workers for Offline Capability
+  - Ensure "Add to Home Screen" functionality works
+
+* [TASK 2: Security & Backend Polish]
+  - Implement Rate Limiting on API (Prevent spam/attacks)
+  - Code Refactoring & Comments (Backend)
+
+* [TASK 3: Documentation & Manuals]
+  - Create User Manual / Help Documentation
+  - Begin drafting Final Report structure
+
+* [TASK 4: Quality Assurance]
+  - Fix bugs identified in Usability Study
+  - Code Refactoring & Comments (Frontend)
+
+* [TASK 5: Reports and Admin Functions]
+- Export reports
+- Add admin functionality
+
+-----------------------------
+NEXT MEETING
+-----------------------------
+
+DATE:  0-Feb-2026
+TIME:  11:00 AM
+LOCATION: SMB 105
