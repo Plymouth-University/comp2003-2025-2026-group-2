@@ -75,9 +75,14 @@ jobs:
             ${{ runner.os }}-playwright-
 
       - name: Install Playwright Browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
         working-directory: SourceCode/front-end/logsmart
-        run: bun x playwright install --with-deps chromium
+        run: |
+          if [ ! -d ~/.cache/ms-playwright/chromium-* ]; then
+            echo "Chromium not found, installing..."
+            bun x playwright install --with-deps chromium
+          else
+            echo "Chromium already installed, skipping"
+          fi
 
       - name: Cache Bun Dependencies
         uses: actions/cache@v5
