@@ -34,24 +34,39 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       
+      - name: Cache Docker Image
+        uses: actions/cache@v5
+        id: docker-cache
+        with:
+          path: SourceCode/back-end/result
+          key: ${{ runner.os }}-docker-${{ hashFiles('SourceCode/back-end/**/*.rs', 'SourceCode/back-end/Cargo.*', 'SourceCode/back-end/flake.nix') }}
+          restore-keys: |
+            ${{ runner.os }}-docker-
+      
       - name: Build Backend Docker Image
+        if: steps.docker-cache.outputs.cache-hit != 'true'
         working-directory: ./SourceCode/back-end
         run: |
           echo "🔨 Building Backend Docker Image from Nix..."
           nix build .#docker-image-x86_64
-          docker load < result
+      
+      - name: Load Docker Image
+        working-directory: ./SourceCode/back-end
+        run: docker load < result
 
       - name: Set up Docker Compose
         working-directory: ./SourceCode/back-end
         run: |
           echo "Starting services with Docker Compose..."
-          docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
+          docker compose -f docker-compose.yml -f docker-compose.override.yml up -d --wait
 
       - name: Cache Bun Dependencies
         uses: actions/cache@v5
         with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
+          path: |
+            ~/.bun/install/cache
+            SourceCode/front-end/logsmart/node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('SourceCode/front-end/logsmart/bun.lockb') }}
           restore-keys: |
             ${{ runner.os }}-bun-
 
@@ -60,7 +75,7 @@ jobs:
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/bun.lockb') }}
+          key: ${{ runner.os }}-playwright-${{ hashFiles('SourceCode/front-end/logsmart/bun.lockb') }}-chromium-only
           restore-keys: |
             ${{ runner.os }}-playwright-
 
@@ -74,8 +89,9 @@ jobs:
         run: bun install
 
       - name: Install Playwright Browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         working-directory: SourceCode/front-end/logsmart
-        run: bun x playwright install --with-deps
+        run: bun x playwright install --with-deps chromium
         
       - name: Run Playwright Tests
         working-directory: SourceCode/front-end/logsmart
