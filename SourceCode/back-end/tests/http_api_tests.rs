@@ -112,6 +112,10 @@ async fn setup_test_app() -> Router {
         webauthn,
         google_oauth: None,
         oauth_state_store: Arc::new(handlers::OAuthStateStore::default()),
+        user_cache: moka::future::Cache::builder()
+            .max_capacity(50)
+            .time_to_live(std::time::Duration::from_secs(300))
+            .build(),
     };
 
     let app = Router::new()

@@ -20,6 +20,11 @@ pub async fn create_test_app_state() -> AppState {
     let google_oauth = None; // Use None for now as mocking GoogleOAuthClient is hard (it's not a trait)
     let oauth_state_store = Arc::new(create_mock_oauth_state_store());
 
+    let user_cache = moka::future::Cache::builder()
+        .max_capacity(1_000)
+        .time_to_live(std::time::Duration::from_secs(60))
+        .build();
+
     AppState {
         postgres: postgres_pool,
         mongodb: mongodb_client,
@@ -28,6 +33,7 @@ pub async fn create_test_app_state() -> AppState {
         webauthn,
         google_oauth,
         oauth_state_store,
+        user_cache,
     }
 }
 
