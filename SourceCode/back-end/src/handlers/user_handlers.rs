@@ -93,7 +93,7 @@ pub async fn admin_update_member_profile(
         _ => {
             return Err((
                 StatusCode::BAD_REQUEST,
-                Json(json!({ "error": "Invalid role. Must be 'admin' or 'member'" })),
+                Json(json!({ "error": "Invalid role. Must be 'admin' or'member'" })),
             ));
         }
     };

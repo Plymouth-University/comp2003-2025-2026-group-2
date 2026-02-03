@@ -139,7 +139,7 @@ test('register_company_invalid_password_mismatch', async ({ page }) => {
 });
 
 test('register_company_invalid_duplicate_email', async ({ page, browser }) => {
-	let result = await register(browser, true);
+	const result = await register(browser, true);
 	if (!result) throw new Error('Initial registration failed');
 	await page.goto('http://localhost:5173/');
 	await page.getByRole('link', { name: 'Register Company' }).click();

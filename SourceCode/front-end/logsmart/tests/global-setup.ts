@@ -13,7 +13,7 @@ const FRONTEND_URL = `http://localhost:${FRONTEND_PORT}`;
 const GOOGLE_ISSUER_URL = 'http://localhost:8080/google';
 const MAILHOG_API_URL = process.env.MAILHOG_API_URL || 'http://localhost:8025/api';
 const PID_FILE = path.join(os.tmpdir(), 'logsmart-test-pids.json');
-let backendProcess: any = null;
+const backendProcess: any = null;
 let frontendProcess: any = null;
 let tempDir: string | null = null;
 
@@ -224,7 +224,7 @@ async function globalSetup() {
 
 	await clearMailhogEmails();
 
-	let pidData = {
+	const pidData = {
 		backendPid: backendProcess?.pid,
 		frontendPid: frontendProcess?.pid,
 		tempDir

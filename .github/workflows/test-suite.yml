@@ -39,43 +39,56 @@ jobs:
         run: |
           echo "🔨 Building Backend Docker Image from Nix..."
           nix build .#docker-image-x86_64
-          docker load < result
+      
+      - name: Load Docker Image
+        working-directory: ./SourceCode/back-end
+        run: docker load < result
 
       - name: Set up Docker Compose
         working-directory: ./SourceCode/back-end
         run: |
           echo "Starting services with Docker Compose..."
-          docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
-
-      - name: Cache Bun Dependencies
-        uses: actions/cache@v5
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
-
-      - name: Cache Playwright Browsers
-        uses: actions/cache@v5
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/bun.lockb') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
+          docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose-ci.override.yml up -d --wait
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: Install Frontend Dependencies
-        working-directory: SourceCode/front-end/logsmart
-        run: bun install
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('SourceCode/front-end/logsmart/bun.lockb') }}-chromium-only
+          restore-keys: |
+            ${{ runner.os }}-playwright-
 
       - name: Install Playwright Browsers
         working-directory: SourceCode/front-end/logsmart
-        run: bun x playwright install --with-deps
+        run: |
+          if [ ! -d ~/.cache/ms-playwright/chromium-* ]; then
+            echo "Chromium not found, installing..."
+            bun x playwright install --with-deps chromium
+          else
+            echo "Chromium already installed, skipping"
+          fi
+
+      - name: Cache Bun Dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.bun/install/cache
+            SourceCode/front-end/logsmart/node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('SourceCode/front-end/logsmart/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install Frontend Dependencies
+        working-directory: SourceCode/front-end/logsmart
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: bun install
         
       - name: Run Playwright Tests
         working-directory: SourceCode/front-end/logsmart
@@ -98,15 +111,3 @@ jobs:
         run: |
           echo "Tearing down Docker Compose services..."
           docker compose -f docker-compose.yml -f docker-compose.override.yml down -v
-      
-      - name: Build and push aarch64 Docker Image
-        if: github.event_name != 'pull_request'
-        working-directory: ./SourceCode/back-end
-        run: |
-          echo "📥 Pushing x86_64 Docker Image to Docker Hub..."
-          docker push nullstring1/logsmart-srv:latest-x86-64
-          echo "🔨 Building ARM64 Docker Image from Nix..."
-          nix build .#docker-image-aarch64
-          docker load < result
-          echo "📥 Pushing ARM64 Image to Docker Hub..."
-          docker push nullstring1/logsmart-srv:latest-aarch64

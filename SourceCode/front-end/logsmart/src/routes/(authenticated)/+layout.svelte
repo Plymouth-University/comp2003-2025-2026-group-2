@@ -28,12 +28,35 @@
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-8">
 					<a
-						href={isAdmin ? '/dashboard' : '/logs-list'}
+						href={data?.user?.role === 'logsmart_admin'
+							? '/admin-dashboard'
+							: isAdmin
+								? '/dashboard'
+								: '/logs-list'}
 						class="text-2xl font-bold"
 						style="color: #3D7A82;">LogSmart</a
 					>
 					<nav class="hidden flex-wrap items-center gap-4 md:flex md:gap-6">
-						{#if isAdmin}
+						{#if data?.user?.role === 'logsmart_admin'}
+							<a
+								href="/admin-dashboard"
+								class="hover:opacity-80"
+								style="color: var(--text-secondary);"
+								class:font-bold={currentPath === '/admin-dashboard'}
+								class:underline={currentPath === '/admin-dashboard'}
+							>
+								Admin Dashboard
+							</a>
+							<a
+								href="/dashboard"
+								class="hover:opacity-80"
+								style="color: var(--text-secondary);"
+								class:font-bold={currentPath === '/dashboard'}
+								class:underline={currentPath === '/dashboard'}
+							>
+								Dashboard
+							</a>
+						{:else if isAdmin}
 							<a
 								href="/dashboard"
 								class="hover:opacity-80"
@@ -126,7 +149,26 @@
 					class="mt-4 flex flex-col gap-3 border-t pt-4 md:hidden"
 					style="border-color: var(--border-secondary);"
 				>
-					{#if isAdmin}
+					{#if data?.user?.role === 'logsmart_admin'}
+						<a
+							href="/admin-dashboard"
+							class="block hover:opacity-80"
+							style="color: var(--text-secondary);"
+							class:font-bold={currentPath === '/admin-dashboard'}
+							onclick={closeMobileMenu}
+						>
+							Admin Dashboard
+						</a>
+						<a
+							href="/dashboard"
+							class="block hover:opacity-80"
+							style="color: var(--text-secondary);"
+							class:font-bold={currentPath === '/dashboard'}
+							onclick={closeMobileMenu}
+						>
+							Dashboard
+						</a>
+					{:else if isAdmin}
 						<a
 							href="/dashboard"
 							class="block hover:opacity-80"
