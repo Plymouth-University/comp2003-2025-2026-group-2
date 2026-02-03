@@ -74,6 +74,8 @@ jobs:
 
       - name: Lint Backend Code (with auto-fix)
         working-directory: SourceCode/back-end
+        # --allow-dirty and --allow-staged are needed because cargo fmt runs first
+        # and we want clippy to fix issues even after fmt has made changes
         run: cargo clippy --fix --allow-dirty --allow-staged
         continue-on-error: true
 
