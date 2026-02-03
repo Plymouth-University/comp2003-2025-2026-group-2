@@ -17,7 +17,8 @@
 			page.url.pathname.startsWith('/settings') ||
 			page.url.pathname.startsWith('/templates-dashboard') ||
 			page.url.pathname.startsWith('/users-admin') ||
-			page.url.pathname.startsWith('/template-designer')
+			page.url.pathname.startsWith('/template-designer') ||
+			page.url.pathname.startsWith('/admin-dashboard')
 	);
 
 	async function handleLogout() {
@@ -112,7 +113,7 @@
 					<div class="flex items-center gap-3">
 						{#if data.isAuthenticated}
 							<a
-								href="/dashboard"
+								href={data.user?.role === 'logsmart_admin' ? '/admin-dashboard' : '/dashboard'}
 								class="rounded border border-border-secondary bg-bg-secondary px-4 py-2 text-text-secondary hover:opacity-80"
 							>
 								Dashboard

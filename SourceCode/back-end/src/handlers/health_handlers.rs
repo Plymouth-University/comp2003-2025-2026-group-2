@@ -6,6 +6,11 @@ use serde::Serialize;
 use serde_json::json;
 
 #[derive(Serialize, utoipa::ToSchema)]
+pub struct BasicHealthResponse {
+    pub status: String,
+}
+
+#[derive(Serialize, utoipa::ToSchema)]
 pub struct HealthResponse {
     pub status: String,
     pub metrics: db::DatabaseHealthMetrics,
@@ -25,6 +30,20 @@ pub struct IndexUsageResponse {
 #[derive(Serialize, utoipa::ToSchema)]
 pub struct TableSizesResponse {
     pub tables: Vec<db::TableSizeInfo>,
+}
+
+#[utoipa::path(
+    get,
+    path = "/health",
+    responses(
+        (status = 200, description = "Service is healthy", body = BasicHealthResponse),
+    ),
+    tag = "Health Monitoring"
+)]
+pub async fn basic_health_check() -> impl IntoResponse {
+    Json(BasicHealthResponse {
+        status: "ok".to_string(),
+    })
 }
 
 #[utoipa::path(

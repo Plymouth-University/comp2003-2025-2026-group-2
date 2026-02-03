@@ -75,7 +75,12 @@
 				error = apiError.error || 'Login failed';
 			} else {
 				await invalidateAll();
-				await goto('/dashboard');
+				// Redirect based on user role
+				if (data?.user?.role === 'logsmart_admin') {
+					await goto('/admin-dashboard');
+				} else {
+					await goto('/dashboard');
+				}
 			}
 		} catch (err) {
 			console.error('Login error:', err);
@@ -135,8 +140,14 @@
 				throw new Error(err.error || 'Authentication failed');
 			}
 
+			const userData = await finishResp.json();
 			await invalidateAll();
-			await goto('/dashboard');
+			// Redirect based on user role
+			if (userData?.user?.role === 'logsmart_admin') {
+				await goto('/admin-dashboard');
+			} else {
+				await goto('/dashboard');
+			}
 		} catch (e: any) {
 			console.error(e);
 			error = e.message || 'Passkey login failed';

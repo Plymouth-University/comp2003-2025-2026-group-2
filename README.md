@@ -111,6 +111,13 @@ git push                       # Push to origin (triggers deployment)
 
 ## 🔄 CI/CD & Deployment
 
+### Automated Pull Request Workflow
+When a PR is successfully merged into `main`, a GitHub Action automatically:
+1. Creates a new pull request from `main` to `prod` (if one doesn't exist)
+2. OR updates the existing `main` → `prod` PR with a comment about the new changes
+
+This ensures that all changes are reviewed before being deployed to production.
+
 ### Automatic Deployment
 Push to the `prod` branch triggers automatic deployment:
 - **Front-end:** Deploys to Cloudflare Pages
