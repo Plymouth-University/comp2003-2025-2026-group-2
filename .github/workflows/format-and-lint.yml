@@ -46,7 +46,8 @@ jobs:
 
       - name: Lint Frontend Code (with auto-fix)
         working-directory: SourceCode/front-end/logsmart
-        run: bunx eslint . --fix || true
+        run: bunx eslint . --fix
+        continue-on-error: true
 
       # Backend formatting and linting
       - name: Install Rust Toolchain
@@ -73,7 +74,8 @@ jobs:
 
       - name: Lint Backend Code (with auto-fix)
         working-directory: SourceCode/back-end
-        run: cargo clippy --fix --allow-dirty --allow-staged || true
+        run: cargo clippy --fix --allow-dirty --allow-staged
+        continue-on-error: true
 
       # Commit changes if any
       - name: Check for Changes
