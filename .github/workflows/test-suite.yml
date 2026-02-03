@@ -34,17 +34,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       
-      - name: Cache Docker Image
-        uses: actions/cache@v5
-        id: docker-cache
-        with:
-          path: SourceCode/back-end/result
-          key: ${{ runner.os }}-docker-${{ hashFiles('SourceCode/back-end/**/*.rs', 'SourceCode/back-end/Cargo.*', 'SourceCode/back-end/flake.nix') }}
-          restore-keys: |
-            ${{ runner.os }}-docker-
-      
       - name: Build Backend Docker Image
-        if: steps.docker-cache.outputs.cache-hit != 'true'
         working-directory: ./SourceCode/back-end
         run: |
           echo "🔨 Building Backend Docker Image from Nix..."
@@ -121,13 +111,3 @@ jobs:
         run: |
           echo "Tearing down Docker Compose services..."
           docker compose -f docker-compose.yml -f docker-compose.override.yml down -v
-      
-      - name: Build and push aarch64 Docker Image
-        if: github.event_name != 'pull_request'
-        working-directory: ./SourceCode/back-end
-        run: |
-          echo "🔨 Building ARM64 Docker Image from Nix..."
-          nix build .#docker-image-aarch64
-          docker load < result
-          echo "📥 Pushing ARM64 Image to Docker Hub..."
-          docker push nullstring1/logsmart-srv:latest-aarch64
