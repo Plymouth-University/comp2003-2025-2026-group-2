@@ -34,18 +34,20 @@ async function proxyRequest(event: RequestEvent) {
 	const originalUrl = new URL(request.url);
 	const queryString = originalUrl.search;
 	const url = `${API_URL}/${path}${queryString}`;
-
 	let body = undefined;
 	if (request.method !== 'GET' && request.method !== 'HEAD') {
 		body = await request.text();
 	}
 
+	const isSwagger = url.match(/^http(s)?:\/\/(logsmart.app|127\.0\.0\.1:6767)\/swagger-ui.*/);
 	try {
 		const response = await fetch(url, {
 			method: request.method,
 			headers,
 			body,
-			redirect: 'manual'
+			redirect: isSwagger
+				? undefined
+				: 'manual'
 		});
 
 		if (
@@ -56,7 +58,6 @@ async function proxyRequest(event: RequestEvent) {
 			response.status === 308
 		) {
 			const location = response.headers.get('location');
-			console.log('Redirect detected:', response.status, 'Location:', location);
 			if (location) {
 				throw redirect(303, location);
 			} else {
