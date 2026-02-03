@@ -270,6 +270,7 @@ impl TemplateFactory {
                 month_of_year: None,
             },
             created_by: mongodb::bson::Uuid::new(),
+            version: 1,
         }
     }
 

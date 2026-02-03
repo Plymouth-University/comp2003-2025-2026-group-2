@@ -60,6 +60,24 @@ pub struct TemplateDocument {
     pub updated_at: chrono::DateTime<chrono::Utc>,
     pub schedule: Schedule,
     pub created_by: Uuid,
+    #[serde(default = "default_version")]
+    pub version: u16,
+}
+
+fn default_version() -> u16 {
+    1
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize, ToSchema)]
+pub struct TemplateVersionDocument {
+    pub template_name: String,
+    pub company_id: String,
+    pub version: u16,
+    pub version_name: Option<String>,
+    pub template_layout: TemplateLayout,
+    pub schedule: Schedule,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub created_by: Uuid,
 }
 
 /// Initializes the `MongoDB` client.
@@ -86,6 +104,78 @@ pub async fn add_template(client: &mongodb::Client, template: &TemplateDocument)
 
     collection.insert_one(template).await?;
     Ok(())
+}
+
+/// Adds a new template version to the database.
+///
+/// # Errors
+/// Returns an error if the database operation fails.
+pub async fn add_template_version(
+    client: &mongodb::Client,
+    version_doc: &TemplateVersionDocument,
+) -> Result<()> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<TemplateVersionDocument> =
+        db.collection("template_versions");
+
+    collection.insert_one(version_doc).await?;
+    Ok(())
+}
+
+/// Retrieves all versions for a specific template.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+pub async fn get_template_versions(
+    client: &mongodb::Client,
+    company_id: &str,
+    template_name: &str,
+) -> Result<Vec<TemplateVersionDocument>> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<TemplateVersionDocument> =
+        db.collection("template_versions");
+
+    let filter = mongodb::bson::doc! {
+        "company_id": company_id,
+        "template_name": template_name,
+    };
+
+    let find_options = mongodb::options::FindOptions::builder()
+        .sort(mongodb::bson::doc! { "version": -1 })
+        .build();
+
+    let mut cursor = collection.find(filter).with_options(find_options).await?;
+    let mut versions = Vec::new();
+
+    while let Some(version) = cursor.try_next().await? {
+        versions.push(version);
+    }
+
+    Ok(versions)
+}
+
+/// Retrieves a specific template version.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+pub async fn get_template_version(
+    client: &mongodb::Client,
+    company_id: &str,
+    template_name: &str,
+    version: u16,
+) -> Result<Option<TemplateVersionDocument>> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<TemplateVersionDocument> =
+        db.collection("template_versions");
+
+    let filter = mongodb::bson::doc! {
+        "company_id": company_id,
+        "template_name": template_name,
+        "version": u32::from(version),
+    };
+
+    let result = collection.find_one(filter).await?;
+    Ok(result)
 }
 
 /// Retrieves a log template by its name and company ID.
@@ -165,13 +255,31 @@ pub async fn update_template(
         set_doc.insert("template_layout", mongodb::bson::to_bson(&layout)?);
     }
     set_doc.insert("updated_at", mongodb::bson::to_bson(&chrono::Utc::now())?);
-
-    let updated_template = mongodb::bson::doc! {
-        "$set": set_doc
+    
+    // Increment version
+    let update = mongodb::bson::doc! {
+        "$set": set_doc,
+        "$inc": { "version": 1 }
     };
 
-    collection.update_one(filter, updated_template).await?;
+    collection.update_one(filter, update).await?;
     Ok(())
+}
+
+/// Updates an existing log template with specific version increment.
+///
+/// # Errors
+/// Returns an error if the database update fails.
+pub async fn update_template_with_version(
+    client: &mongodb::Client,
+    template_name: &str,
+    company_id: &str,
+    schedule: Option<&Schedule>,
+    layout: Option<&TemplateLayout>,
+) -> Result<()> {
+    // This is now redundant given update_template handles versioning, 
+    // but we can keep the original signature compatible by forwarding
+    update_template(client, template_name, company_id, schedule, layout).await
 }
 
 /// Renames a log template.

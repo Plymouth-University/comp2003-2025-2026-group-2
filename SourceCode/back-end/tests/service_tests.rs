@@ -89,6 +89,7 @@ fn test_template_creation() {
             month_of_year: None,
         },
         created_by: Uuid::new(),
+        version: 1,
     };
 
     assert_eq!(template.template_name, "Test Template");

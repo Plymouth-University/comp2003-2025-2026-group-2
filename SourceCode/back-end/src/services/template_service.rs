@@ -57,6 +57,7 @@ impl TemplateService {
                 )
             })?,
             schedule,
+            version: 1,
         };
 
         logs_db::add_template(&state.mongodb, &template_document)
@@ -153,7 +154,48 @@ impl TemplateService {
         template_name: &str,
         template_layout: Option<&logs_db::TemplateLayout>,
         schedule: Option<&logs_db::Schedule>,
+        user_id: &str,
+        version_name: Option<String>,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
+        // 1. Fetch current template state
+        let current_template =
+            logs_db::get_template_by_name(&state.mongodb, template_name, company_id)
+                .await
+                .map_err(|e| {
+                    tracing::error!("Failed to fetch template for versioning: {:?}", e);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        json!({ "error": "Database error" }),
+                    )
+                })?
+                .ok_or((
+                    StatusCode::NOT_FOUND,
+                    json!({ "error": "Template not found" }),
+                ))?;
+
+        // 2. Archive current state as a version
+        let version_doc = logs_db::TemplateVersionDocument {
+            template_name: current_template.template_name.clone(),
+            company_id: current_template.company_id.clone(),
+            version: current_template.version,
+            version_name,
+            template_layout: current_template.template_layout.clone(),
+            schedule: current_template.schedule,
+            created_at: chrono::Utc::now(),
+            created_by: mongodb::bson::Uuid::parse_str(user_id).unwrap_or(current_template.created_by), 
+        };
+
+        logs_db::add_template_version(&state.mongodb, &version_doc)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to archive template version: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to create version snapshot" }),
+                )
+            })?;
+
+        // 3. Update template (this increments version in DB)
         logs_db::update_template(
             &state.mongodb,
             template_name,
@@ -170,6 +212,65 @@ impl TemplateService {
             )
         })?;
         Ok(())
+    }
+
+    /// Retrieves version history for a template.
+    ///
+    /// # Errors
+    /// Returns an error if database query fails.
+    pub async fn get_versions(
+        state: &AppState,
+        company_id: &str,
+        template_name: &str,
+    ) -> Result<Vec<logs_db::TemplateVersionDocument>, (StatusCode, serde_json::Value)> {
+        logs_db::get_template_versions(&state.mongodb, company_id, template_name)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to fetch template versions: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Database error" }),
+                )
+            })
+    }
+
+    /// Restores a specific version of a template.
+    ///
+    /// # Errors
+    /// Returns an error if version not found or update fails.
+    pub async fn restore_version(
+        state: &AppState,
+        company_id: &str,
+        template_name: &str,
+        version: u16,
+        user_id: &str,
+    ) -> Result<(), (StatusCode, serde_json::Value)> {
+        // 1. Fetch target version
+        let target_version = logs_db::get_template_version(&state.mongodb, company_id, template_name, version)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to fetch target version: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Database error" }),
+                )
+            })?
+            .ok_or((
+                StatusCode::NOT_FOUND,
+                json!({ "error": "Version not found" }),
+            ))?;
+
+        // 2. Call update_template with the target data
+        // This handles archiving the CURRENT state before overwriting it with the OLD state
+        Self::update_template(
+            state,
+            company_id,
+            template_name,
+            Some(&target_version.template_layout),
+            Some(&target_version.schedule),
+            user_id,
+            Some(format!("Restored from version {}", version)),
+        ).await
     }
 
     /// Renames a log template.
