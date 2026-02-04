@@ -43,7 +43,7 @@ test.describe('Template Versioning', () => {
 
 		// The properties panel should appear. Verify the component was added.
 		// Click on the canvas item to ensure selection if needed, though adding usually selects it.
-		// await page.locator('.canvas-item').first().click();
+		await page.locator('.canvas-item').first().click();
 
 		await page.getByLabel('Placeholder').fill('Field V1');
 		await page.getByRole('button', { name: 'Save Template' }).click();

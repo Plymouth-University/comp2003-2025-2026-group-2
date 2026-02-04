@@ -257,6 +257,7 @@ impl TemplateFactory {
                     selected: None,
                     options: None,
                     editable: Some(true),
+                    placeholder: None,
                 },
             }],
             company_id: Uuid::new_v4().to_string(),

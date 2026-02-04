@@ -76,6 +76,7 @@ fn test_template_creation() {
                 selected: None,
                 options: None,
                 editable: None,
+                placeholder: None,
             },
         }],
         company_id: "company123".to_string(),

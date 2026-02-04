@@ -60,6 +60,7 @@
 			y: field.position.y,
 			props: {
 				text: field.props.text ?? '',
+				placeholder: field.props.placeholder ?? '',
 				size: field.props.size ?? 16,
 				weight: field.props.weight ?? 'normal',
 				editable: field.props.editable ?? true,
@@ -77,6 +78,7 @@
 		const props: ApiTemplateFieldProps = {};
 
 		if (item.props.text !== undefined) props.text = item.props.text;
+		if (item.props.placeholder !== undefined) props.placeholder = item.props.placeholder;
 		if (item.props.size !== undefined) props.size = String(item.props.size);
 		if (item.props.weight !== undefined) props.weight = item.props.weight;
 		if (item.props.editable !== undefined) props.editable = item.props.editable;

@@ -23,6 +23,7 @@ pub struct TemplateFieldProps {
     pub selected: Option<String>,
     pub options: Option<Vec<String>>,
     pub editable: Option<bool>,
+    pub placeholder: Option<String>,
 }
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema, JsonSchema)]

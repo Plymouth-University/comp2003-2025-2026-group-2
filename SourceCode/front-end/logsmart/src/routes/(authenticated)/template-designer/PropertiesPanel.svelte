@@ -167,7 +167,8 @@
 						Size (px)
 						<select
 							value={selectedItem.props.size}
-							onchange={(e) => onUpdateProp(selectedItem.id, 'size', parseInt(e.currentTarget.value))}
+							onchange={(e) =>
+								onUpdateProp(selectedItem.id, 'size', parseInt(e.currentTarget.value))}
 							class="mt-1 w-full border-2 px-3 py-2"
 							style="border-color: var(--border-primary); color: var(--text-primary);"
 						>
