@@ -9,12 +9,14 @@
 	import ComponentsPalette from './ComponentsPalette.svelte';
 	import PropertiesPanel from './PropertiesPanel.svelte';
 	import AiGeneratorSidebar from './AiGeneratorSidebar.svelte';
+	import VersionHistoryModal from './VersionHistoryModal.svelte';
 	import type { CanvasItem, ComponentType, Template } from './types';
 
 	type ApiTemplateField = components['schemas']['TemplateField'];
 	type ApiTemplateFieldProps = components['schemas']['TemplateFieldProps'];
 	type ApiSchedule = components['schemas']['Schedule'];
 	type ApiTemplateInfo = components['schemas']['TemplateInfo'];
+	type ApiTemplateVersionInfo = components['schemas']['TemplateVersionInfo'];
 
 	let templates = $state<Template[]>([]);
 
@@ -43,6 +45,10 @@
 	let aiError = $state<string | null>(null);
 	let canvasItemsBackup = $state<CanvasItem[] | null>(null);
 	let hasUndoAvailable = $derived(canvasItemsBackup !== null);
+
+	let showHistory = $state(false);
+	let historyVersions = $state<ApiTemplateVersionInfo[]>([]);
+	let restoring = $state(false);
 
 	const templateId = $derived(page.url.searchParams.get('id'));
 
@@ -509,11 +515,80 @@
 		window.removeEventListener('mousemove', handleResizeMove);
 		window.removeEventListener('mouseup', handleResizeEnd);
 	}
+
+	async function fetchVersions() {
+		if (!originalTemplateName) return;
+
+		const { data, error } = await api.GET('/logs/templates/versions', {
+			params: {
+				query: {
+					template_name: originalTemplateName
+				}
+			}
+		});
+
+		if (error) {
+			console.error('Failed to fetch versions:', error);
+			alert('Failed to load version history');
+			return;
+		}
+
+		if (data?.versions) {
+			historyVersions = data.versions;
+			showHistory = true;
+		}
+	}
+
+	async function restoreVersion(version: number) {
+		if (!originalTemplateName) return;
+		if (
+			!confirm(
+				`Are you sure you want to restore version ${version}? Current changes will be saved as a new version.`
+			)
+		)
+			return;
+
+		restoring = true;
+		const { error } = await api.POST('/logs/templates/versions/restore', {
+			params: {
+				query: {
+					template_name: originalTemplateName
+				}
+			},
+			body: {
+				version
+			}
+		});
+
+		if (error) {
+			console.error('Failed to restore version:', error);
+			alert('Failed to restore version');
+			restoring = false;
+			return;
+		}
+
+		// Reload the template to reflect changes
+		await loadTemplate(originalTemplateName);
+		showHistory = false;
+		restoring = false;
+		saveSuccess = true;
+		setTimeout(() => {
+			saveSuccess = false;
+		}, 3000);
+	}
 </script>
 
 <svelte:head>
 	<title>Templates Dashboard</title>
 </svelte:head>
+
+<VersionHistoryModal
+	isOpen={showHistory}
+	versions={historyVersions}
+	onClose={() => (showHistory = false)}
+	onRestore={restoreVersion}
+/>
+
 <div class="min-h-full" style="background-color: var(--bg-secondary);">
 	<div class="flex h-[calc(100vh-73px)]">
 		<div
@@ -563,6 +638,7 @@
 			onDeleteSelected={deleteSelected}
 			onDeleteTemplate={deleteTemplate}
 			onItemMoved={markUnsavedChanges}
+			onShowHistory={fetchVersions}
 			{saving}
 			{saveError}
 			{saveSuccess}

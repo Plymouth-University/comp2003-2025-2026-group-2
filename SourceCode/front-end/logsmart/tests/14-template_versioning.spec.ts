@@ -36,25 +36,32 @@ test.describe('Template Versioning', () => {
 		// Note: The placeholder in DesignCanvas is "Enter template title..."
 		await page.getByPlaceholder('Enter template title...').fill(templateName);
 		
-		await page.getByRole('button', { name: 'Text Input' }).click();
-		
+		// Add component by dragging
+		const source = page.getByText('Text Input', { exact: true });
+		const target = page.locator('[data-canvas]');
+		await source.dragTo(target);
+
 		// The properties panel should appear. Verify the component was added.
 		// Click on the canvas item to ensure selection if needed, though adding usually selects it.
 		// await page.locator('.canvas-item').first().click();
 
 		await page.getByLabel('Text').fill('Field V1');
-		await page.getByRole('button', { name: 'Save' }).click();		await expect(page.getByText('Template saved successfully!')).toBeVisible();
+		await page.getByRole('button', { name: 'Save Template' }).click();
+		await expect(page.getByText('Template saved successfully!')).toBeVisible();
 		await page.waitForTimeout(1000); // Wait for save to complete
 
 		// 3. Update template (Version 2)
+		// Ensure item is selected
+		await page.locator('.canvas-item').first().click();
 		await page.getByLabel('Text').fill('Field V2');
-		await page.getByRole('button', { name: 'Save' }).click();
+		await page.getByRole('button', { name: 'Save Template' }).click();
 		await expect(page.getByText('Template saved successfully!')).toBeVisible();
 		await page.waitForTimeout(1000);
 
 		// 4. Update template again (Version 3)
+		await page.locator('.canvas-item').first().click();
 		await page.getByLabel('Text').fill('Field V3');
-		await page.getByRole('button', { name: 'Save' }).click();
+		await page.getByRole('button', { name: 'Save Template' }).click();
 		await expect(page.getByText('Template saved successfully!')).toBeVisible();
 		await page.waitForTimeout(1000);
 

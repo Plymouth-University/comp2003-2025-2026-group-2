@@ -12,6 +12,7 @@
 		onDeleteSelected,
 		onDeleteTemplate,
 		onItemMoved,
+		onShowHistory,
 		saving = false,
 		saveError = null,
 		saveSuccess = false,
@@ -28,6 +29,7 @@
 		onDeleteSelected: () => void;
 		onDeleteTemplate: () => void;
 		onItemMoved?: () => void;
+		onShowHistory?: () => void;
 		saving?: boolean;
 		saveError?: string | null;
 		saveSuccess?: boolean;
@@ -65,6 +67,17 @@
 				>
 					{snapEnabled ? '🧲 Snap On' : '🧲 Snap Off'}
 				</button>
+				{#if isEditing && onShowHistory}
+					<button
+						class="btn-history rounded px-4 py-2 font-medium text-white"
+						onclick={() => {
+							console.log('History button clicked');
+							if (onShowHistory) onShowHistory();
+						}}
+					>
+						🕒 History
+					</button>
+				{/if}
 				{#if selectedItemId}
 					<button
 						class="btn-delete rounded px-4 py-2 font-medium text-white"
@@ -261,5 +274,16 @@
 	}
 	.btn-snap-off:active {
 		background-color: #4e555b;
+	}
+
+	.btn-history {
+		background-color: #607d8b;
+		transition: background-color 0.15s ease;
+	}
+	.btn-history:hover {
+		background-color: #546e7a;
+	}
+	.btn-history:active {
+		background-color: #455a64;
 	}
 </style>
