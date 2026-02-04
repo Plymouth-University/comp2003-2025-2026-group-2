@@ -43,7 +43,7 @@
 	// Function to parse entry data and extract readable values
 	function parseEntryData(entryData: unknown, templateLayout: any[]): string {
 		if (!entryData) return 'No data available';
-		
+
 		try {
 			// Parse the entry data if it's a string
 			let data: any;
@@ -112,8 +112,8 @@
 						// Try to find the option label
 						const options = field.props?.options || field.options;
 						if (Array.isArray(options)) {
-							const option = options.find((opt: any) => 
-								opt.value === fieldValue || opt.id === fieldValue
+							const option = options.find(
+								(opt: any) => opt.value === fieldValue || opt.id === fieldValue
 							);
 							displayValue = option?.label || option?.text || fieldValue;
 						}
@@ -144,12 +144,12 @@
 	function categorizeLogType(templateLayout: any[]): string {
 		if (!templateLayout || templateLayout.length === 0) return 'Text Logs';
 
-		const fieldTypes = templateLayout.map(field => field.field_type).filter(Boolean);
-		
+		const fieldTypes = templateLayout.map((field) => field.field_type).filter(Boolean);
+
 		if (fieldTypes.includes('temperature')) return 'Temperature Logs';
 		if (fieldTypes.includes('checkbox')) return 'Checkbox Logs';
 		if (fieldTypes.includes('dropdown')) return 'Dropdown Logs';
-		
+
 		return 'Text Logs';
 	}
 
@@ -403,7 +403,7 @@
 
 			// Collect available log types from actual data
 			const logTypesSet = new Set<string>();
-			logEntries.forEach(entry => {
+			logEntries.forEach((entry) => {
 				const category = categorizeLogType(entry.template_layout);
 				logTypesSet.add(category);
 			});
@@ -411,13 +411,14 @@
 
 			// Filter entries based on date range and selected log types
 			const selectedLogTypes = logTypes
-				.filter(type => type.checked && type.id !== 'all')
-				.map(type => type.label);
+				.filter((type) => type.checked && type.id !== 'all')
+				.map((type) => type.label);
 
 			// If "All" is selected or no specific types selected, show all types
-			const showAllTypes = logTypes.find(type => type.id === 'all')?.checked || selectedLogTypes.length === 0;
+			const showAllTypes =
+				logTypes.find((type) => type.id === 'all')?.checked || selectedLogTypes.length === 0;
 
-			filteredEntries = logEntries.filter(entry => {
+			filteredEntries = logEntries.filter((entry) => {
 				// Filter by date range
 				const entryDate = new Date(entry.created_at);
 				const fromDate = new Date(dateFromISO);
@@ -436,7 +437,9 @@
 
 			// Sort entries based on arrange preference
 			if (arrangeBy === 'date') {
-				filteredEntries.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+				filteredEntries.sort(
+					(a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+				);
 			} else {
 				filteredEntries.sort((a, b) => {
 					if (a.template_name < b.template_name) return -1;
@@ -457,10 +460,10 @@
 	// Export functions
 	function exportToPDF() {
 		if (!reportGenerated || filteredEntries.length === 0) return;
-		
+
 		const reportContent = generateTextReportContent();
 		const printWindow = window.open('', '_blank');
-		
+
 		if (printWindow) {
 			printWindow.document.write(`
 				<html>
@@ -493,11 +496,11 @@
 
 	function exportToWord(format: 'docx' | 'rtf') {
 		if (!reportGenerated || filteredEntries.length === 0) return;
-		
+
 		let content: string;
 		let mimeType: string;
 		let filename: string;
-		
+
 		if (format === 'rtf') {
 			content = generateRTFContent();
 			mimeType = 'application/rtf';
@@ -508,7 +511,7 @@
 			mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 			filename = 'log-report.doc'; // Use .doc extension for better compatibility
 		}
-		
+
 		const blob = new Blob([content], { type: mimeType });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
@@ -560,7 +563,7 @@
 
 	function generateWordEntries(): string {
 		let content = '';
-		
+
 		if (arrangeBy === 'logType') {
 			const groupedEntries = filteredEntries.reduce((acc: Record<string, LogEntry[]>, entry) => {
 				const category = categorizeLogType(entry.template_layout);
@@ -571,23 +574,23 @@
 
 			Object.entries(groupedEntries).forEach(([category, entries]) => {
 				content += `<h2>${category} (${entries.length} entries)</h2>`;
-				entries.forEach(entry => {
+				entries.forEach((entry) => {
 					content += generateWordEntryHTML(entry);
 				});
 			});
 		} else {
-			filteredEntries.forEach(entry => {
+			filteredEntries.forEach((entry) => {
 				content += generateWordEntryHTML(entry);
 			});
 		}
-		
+
 		return content;
 	}
 
 	function generateWordEntryHTML(entry: LogEntry): string {
 		const entryData = parseEntryData(entry.entry_data, entry.template_layout);
 		const category = arrangeBy === 'date' ? categorizeLogType(entry.template_layout) : '';
-		
+
 		return `
 		<div class="entry">
 			<div class="entry-header">
@@ -639,12 +642,12 @@
 
 			Object.entries(groupedEntries).forEach(([category, entries]) => {
 				rtfContent += `\\b\\fs26 ${category} (${entries.length} entries)\\b0\\fs24\\par\\par`;
-				entries.forEach(entry => {
+				entries.forEach((entry) => {
 					rtfContent += generateRTFEntry(entry);
 				});
 			});
 		} else {
-			filteredEntries.forEach(entry => {
+			filteredEntries.forEach((entry) => {
 				rtfContent += generateRTFEntry(entry);
 			});
 		}
@@ -657,7 +660,7 @@
 		const entryData = parseEntryData(entry.entry_data, entry.template_layout);
 		const category = arrangeBy === 'date' ? categorizeLogType(entry.template_layout) : '';
 		const statusColor = entry.status === 'submitted' ? '\\cf2' : '\\cf3';
-		
+
 		let rtf = `\\pard\\box\\brdrs\\brdrw10\\brdrcf1\\par`;
 		rtf += `\\b ${arrangeBy === 'date' ? category + ' - ' : ''}${entry.template_name}\\b0\\tab ${statusColor}${entry.status}\\cf1\\par`;
 		rtf += `\\fs20 ID: ${entry.id.slice(0, 8)}...\\fs24\\par\\par`;
@@ -669,7 +672,7 @@
 		}
 		rtf += `\\b Period:\\b0 ${entry.period}\\par`;
 		rtf += `\\par\\pard\\par`;
-		
+
 		return rtf;
 	}
 
@@ -694,12 +697,12 @@
 
 			Object.entries(groupedEntries).forEach(([category, entries]) => {
 				content += `<div class="group-header">${category} (${entries.length} entries)</div>`;
-				entries.forEach(entry => {
+				entries.forEach((entry) => {
 					content += generateEntryHTML(entry);
 				});
 			});
 		} else {
-			filteredEntries.forEach(entry => {
+			filteredEntries.forEach((entry) => {
 				content += generateEntryHTML(entry);
 			});
 		}
@@ -728,12 +731,12 @@
 
 			Object.entries(groupedEntries).forEach(([category, entries]) => {
 				content += `<div class="group-header">${category} (${entries.length} entries)</div>`;
-				entries.forEach(entry => {
+				entries.forEach((entry) => {
 					content += generateEntryHTML(entry);
 				});
 			});
 		} else {
-			filteredEntries.forEach(entry => {
+			filteredEntries.forEach((entry) => {
 				content += generateEntryHTML(entry);
 			});
 		}
@@ -1403,7 +1406,7 @@
 					<button
 						onclick={exportToPDF}
 						disabled={!reportGenerated || filteredEntries.length === 0}
-						class="border-2 px-4 py-2 text-sm font-medium hover:opacity-80 sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+						class="border-2 px-4 py-2 text-sm font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						Download PDF
@@ -1411,7 +1414,7 @@
 					<button
 						onclick={() => exportToWord('docx')}
 						disabled={!reportGenerated || filteredEntries.length === 0}
-						class="border-2 px-4 py-2 text-sm font-medium hover:opacity-80 sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+						class="border-2 px-4 py-2 text-sm font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						Download DOCX
@@ -1419,7 +1422,7 @@
 					<button
 						onclick={() => exportToWord('rtf')}
 						disabled={!reportGenerated || filteredEntries.length === 0}
-						class="border-2 px-4 py-2 text-sm font-medium hover:opacity-80 sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+						class="border-2 px-4 py-2 text-sm font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						Download RTF
@@ -1433,12 +1436,22 @@
 				>
 					{#if isLoading}
 						<div class="flex items-center justify-center py-8">
-							<div class="animate-spin rounded-full h-8 w-8 border-b-2" style="border-color: var(--text-primary);"></div>
+							<div
+								class="h-8 w-8 animate-spin rounded-full border-b-2"
+								style="border-color: var(--text-primary);"
+							></div>
 							<span class="ml-3" style="color: var(--text-primary);">Generating report...</span>
 						</div>
 					{:else if error}
 						<div class="flex items-start gap-3 text-red-500">
-							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<svg
+								width="24"
+								height="24"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+							>
 								<circle cx="12" cy="12" r="10"></circle>
 								<line x1="15" y1="9" x2="9" y2="15"></line>
 								<line x1="9" y1="9" x2="15" y2="15"></line>
@@ -1451,83 +1464,142 @@
 					{:else if reportGenerated}
 						<div>
 							<div class="mb-6">
-								<h2 class="text-xl font-bold mb-2" style="color: var(--text-primary);">Log Report</h2>
+								<h2 class="mb-2 text-xl font-bold" style="color: var(--text-primary);">
+									Log Report
+								</h2>
 								<p class="text-sm" style="color: var(--text-secondary);">
-									Date Range: {dateFrom} - {dateTo} | 
-									Arranged by: {arrangeBy === 'date' ? 'Date' : 'Log Type'} | 
-									Total Entries: {filteredEntries.length}
+									Date Range: {dateFrom} - {dateTo} | Arranged by: {arrangeBy === 'date'
+										? 'Date'
+										: 'Log Type'} | Total Entries: {filteredEntries.length}
 								</p>
 							</div>
 
 							{#if filteredEntries.length === 0}
-								<div class="text-center py-8">
-									<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="mx-auto mb-4" style="color: var(--text-secondary);">
+								<div class="py-8 text-center">
+									<svg
+										width="48"
+										height="48"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1"
+										class="mx-auto mb-4"
+										style="color: var(--text-secondary);"
+									>
 										<circle cx="11" cy="11" r="8"></circle>
 										<path d="21 21l-4.35-4.35"></path>
 									</svg>
-									<p class="text-lg font-medium" style="color: var(--text-secondary);">No log entries found</p>
-									<p class="text-sm" style="color: var(--text-secondary);">Try adjusting your date range or log type filters.</p>
+									<p class="text-lg font-medium" style="color: var(--text-secondary);">
+										No log entries found
+									</p>
+									<p class="text-sm" style="color: var(--text-secondary);">
+										Try adjusting your date range or log type filters.
+									</p>
 								</div>
-							{:else}
-								{#if arrangeBy === 'logType'}
-									{@const groupedEntries = filteredEntries.reduce((acc: Record<string, LogEntry[]>, entry) => {
+							{:else if arrangeBy === 'logType'}
+								{@const groupedEntries = filteredEntries.reduce(
+									(acc: Record<string, LogEntry[]>, entry) => {
 										const category = categorizeLogType(entry.template_layout);
 										if (!acc[category]) acc[category] = [];
 										acc[category].push(entry);
 										return acc;
-									}, {})}
-									{#each Object.entries(groupedEntries) as [templateName, entries]}
-										<div class="mb-6">
-											<h3 class="text-lg font-bold mb-3 pb-2 border-b" style="color: var(--text-primary); border-color: var(--border-primary);">
-												{templateName} ({entries.length} entries)
-											</h3>
-											{#each entries as entry}
-												<div class="mb-4 p-4 border rounded" style="border-color: var(--border-primary); background-color: var(--bg-secondary);">
-													<div class="flex justify-between items-start mb-2">
-														<span class="text-sm font-medium" style="color: var(--text-primary);">Entry ID: {entry.id.slice(0, 8)}...</span>
-														<span class="text-xs px-2 py-1 rounded" 
-															style={entry.status === 'submitted' ? 'background-color: #10B981; color: white;' : 'background-color: #F59E0B; color: white;'}>
-															{entry.status}
-														</span>
-													</div>
-													<div class="mb-2 p-2 rounded" style="background-color: var(--bg-primary);">
-														<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">Entry Data:</p>
-														<p class="text-sm" style="color: var(--text-secondary);">{parseEntryData(entry.entry_data, entry.template_layout)}</p>
-													</div>
-													<p class="text-sm mb-2" style="color: var(--text-secondary);">Created: {new Date(entry.created_at).toLocaleString()}</p>
-													{#if entry.submitted_at}
-														<p class="text-sm mb-2" style="color: var(--text-secondary);">Submitted: {new Date(entry.submitted_at).toLocaleString()}</p>
-													{/if}
-													<p class="text-sm" style="color: var(--text-secondary);">Period: {entry.period}</p>
+									},
+									{}
+								)}
+								{#each Object.entries(groupedEntries) as [templateName, entries]}
+									<div class="mb-6">
+										<h3
+											class="mb-3 border-b pb-2 text-lg font-bold"
+											style="color: var(--text-primary); border-color: var(--border-primary);"
+										>
+											{templateName} ({entries.length} entries)
+										</h3>
+										{#each entries as entry}
+											<div
+												class="mb-4 rounded border p-4"
+												style="border-color: var(--border-primary); background-color: var(--bg-secondary);"
+											>
+												<div class="mb-2 flex items-start justify-between">
+													<span class="text-sm font-medium" style="color: var(--text-primary);"
+														>Entry ID: {entry.id.slice(0, 8)}...</span
+													>
+													<span
+														class="rounded px-2 py-1 text-xs"
+														style={entry.status === 'submitted'
+															? 'background-color: #10B981; color: white;'
+															: 'background-color: #F59E0B; color: white;'}
+													>
+														{entry.status}
+													</span>
 												</div>
-											{/each}
-										</div>
-									{/each}
-								{:else}
-									{#each filteredEntries as entry}
-										<div class="mb-4 p-4 border rounded" style="border-color: var(--border-primary); background-color: var(--bg-secondary);">
-											<div class="flex justify-between items-start mb-2">
-												<div>
-													<span class="font-medium" style="color: var(--text-primary);">{categorizeLogType(entry.template_layout)} - {entry.template_name}</span>
-													<span class="text-sm ml-2" style="color: var(--text-secondary);">ID: {entry.id.slice(0, 8)}...</span>
+												<div class="mb-2 rounded p-2" style="background-color: var(--bg-primary);">
+													<p class="mb-1 text-sm font-medium" style="color: var(--text-primary);">
+														Entry Data:
+													</p>
+													<p class="text-sm" style="color: var(--text-secondary);">
+														{parseEntryData(entry.entry_data, entry.template_layout)}
+													</p>
 												</div>
-												<span class="text-xs px-2 py-1 rounded" 
-													style={entry.status === 'submitted' ? 'background-color: #10B981; color: white;' : 'background-color: #F59E0B; color: white;'}>
-													{entry.status}
-												</span>
+												<p class="mb-2 text-sm" style="color: var(--text-secondary);">
+													Created: {new Date(entry.created_at).toLocaleString()}
+												</p>
+												{#if entry.submitted_at}
+													<p class="mb-2 text-sm" style="color: var(--text-secondary);">
+														Submitted: {new Date(entry.submitted_at).toLocaleString()}
+													</p>
+												{/if}
+												<p class="text-sm" style="color: var(--text-secondary);">
+													Period: {entry.period}
+												</p>
 											</div>
-											<div class="mb-2 p-2 rounded" style="background-color: var(--bg-primary);">
-												<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">Entry Data:</p>
-												<p class="text-sm" style="color: var(--text-secondary);">{parseEntryData(entry.entry_data, entry.template_layout)}</p>
+										{/each}
+									</div>
+								{/each}
+							{:else}
+								{#each filteredEntries as entry}
+									<div
+										class="mb-4 rounded border p-4"
+										style="border-color: var(--border-primary); background-color: var(--bg-secondary);"
+									>
+										<div class="mb-2 flex items-start justify-between">
+											<div>
+												<span class="font-medium" style="color: var(--text-primary);"
+													>{categorizeLogType(entry.template_layout)} - {entry.template_name}</span
+												>
+												<span class="ml-2 text-sm" style="color: var(--text-secondary);"
+													>ID: {entry.id.slice(0, 8)}...</span
+												>
 											</div>
-											<p class="text-sm mb-2" style="color: var(--text-secondary);">Created: {new Date(entry.created_at).toLocaleString()}</p>
-											{#if entry.submitted_at}
-												<p class="text-sm mb-2" style="color: var(--text-secondary);">Submitted: {new Date(entry.submitted_at).toLocaleString()}</p>
-											{/if}
-											<p class="text-sm" style="color: var(--text-secondary);">Period: {entry.period}</p>
+											<span
+												class="rounded px-2 py-1 text-xs"
+												style={entry.status === 'submitted'
+													? 'background-color: #10B981; color: white;'
+													: 'background-color: #F59E0B; color: white;'}
+											>
+												{entry.status}
+											</span>
 										</div>
-									{/each}
-								{/if}
+										<div class="mb-2 rounded p-2" style="background-color: var(--bg-primary);">
+											<p class="mb-1 text-sm font-medium" style="color: var(--text-primary);">
+												Entry Data:
+											</p>
+											<p class="text-sm" style="color: var(--text-secondary);">
+												{parseEntryData(entry.entry_data, entry.template_layout)}
+											</p>
+										</div>
+										<p class="mb-2 text-sm" style="color: var(--text-secondary);">
+											Created: {new Date(entry.created_at).toLocaleString()}
+										</p>
+										{#if entry.submitted_at}
+											<p class="mb-2 text-sm" style="color: var(--text-secondary);">
+												Submitted: {new Date(entry.submitted_at).toLocaleString()}
+											</p>
+										{/if}
+										<p class="text-sm" style="color: var(--text-secondary);">
+											Period: {entry.period}
+										</p>
+									</div>
+								{/each}
 							{/if}
 						</div>
 					{:else}
