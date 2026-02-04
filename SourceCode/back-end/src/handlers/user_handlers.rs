@@ -29,21 +29,7 @@ pub async fn get_company_members(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
 ) -> Result<Json<GetCompanyMembersResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user company ID: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "User is not associated with a company" })),
-        ))?;
-
-    let members = db::get_users_by_company_id(&state.postgres, &company_id)
+    let members = db::get_company_members_for_user(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching company members: {:?}", e);
@@ -52,6 +38,13 @@ pub async fn get_company_members(
                 Json(json!({ "error": "Database error" })),
             )
         })?;
+
+    if members.is_empty() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "User is not associated with a company" })),
+        ));
+    }
 
     Ok(Json(members.into()))
 }
@@ -109,6 +102,9 @@ pub async fn admin_update_member_profile(
     .await
     .map_err(|(status, error)| (status, Json(error)))?;
 
+    // Invalidate cache for the updated user
+    state.user_cache.invalidate(&updated_user.id).await;
+
     AuditLogger::log_admin_action(
         &state.postgres,
         claims.user_id,
@@ -142,9 +138,12 @@ pub async fn admin_delete_member(
     State(state): State<AppState>,
     Json(payload): Json<RemoveMemberRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    UserService::admin_delete_member(&state.postgres, &claims.user_id, &payload.email)
+    let deleted_user_id = UserService::admin_delete_member(&state.postgres, &claims.user_id, &payload.email)
         .await
         .map_err(|(status, error)| (status, Json(error)))?;
+
+    // Invalidate cache for the deleted user
+    state.user_cache.invalidate(&deleted_user_id).await;
 
     AuditLogger::log_admin_action(
         &state.postgres,

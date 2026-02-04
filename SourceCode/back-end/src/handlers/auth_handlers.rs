@@ -49,22 +49,29 @@ pub async fn verify_token(
             Json(json!({ "error": "Invalid or expired token" })),
         )
     })?;
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!(
-                "Database error fetching user during token verification: {:?}",
-                e
-            );
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::NOT_FOUND,
-            Json(json!({ "error": "User not found" })),
-        ))?;
+
+    let user = if let Some(user) = state.user_cache.get(&claims.user_id).await {
+        user
+    } else {
+        let user = db::get_user_by_id(&state.postgres, &claims.user_id)
+            .await
+            .map_err(|e| {
+                tracing::error!(
+                    "Database error fetching user during token verification: {:?}",
+                    e
+                );
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Database error" })),
+                )
+            })?
+            .ok_or((
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": "User not found" })),
+            ))?;
+        state.user_cache.insert(claims.user_id.clone(), user.clone()).await;
+        user
+    };
 
     Ok(Json(JwtVerifyResponse { email: user.email }))
 }
@@ -323,19 +330,25 @@ pub async fn get_current_user(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
 ) -> Result<Json<UserResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching current user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::NOT_FOUND,
-            Json(json!({ "error": "User not found" })),
-        ))?;
+    let user = if let Some(user) = state.user_cache.get(&claims.user_id).await {
+        user
+    } else {
+        let user = db::get_user_by_id(&state.postgres, &claims.user_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error fetching current user: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Database error" })),
+                )
+            })?
+            .ok_or((
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": "User not found" })),
+            ))?;
+        state.user_cache.insert(claims.user_id.clone(), user.clone()).await;
+        user
+    };
 
     Ok(Json(user.into()))
 }
@@ -378,6 +391,9 @@ pub async fn update_profile(
         tracing::error!("Failed to update profile: {:?}", e);
         (e.0, Json(e.1))
     })?;
+
+    // Invalidate cache
+    state.user_cache.invalidate(&claims.user_id).await;
 
     AuditLogger::log_profile_updated(&state.postgres, claims.user_id, user.email.clone()).await;
 
@@ -465,12 +481,15 @@ pub async fn reset_password(
     State(state): State<AppState>,
     Json(payload): Json<ResetPasswordRequest>,
 ) -> Result<Json<PasswordResetResponse>, (StatusCode, Json<serde_json::Value>)> {
-    services::AuthService::reset_password(&state.postgres, &payload.token, &payload.new_password)
+    let user_id = services::AuthService::reset_password(&state.postgres, &payload.token, &payload.new_password)
         .await
         .map_err(|e| {
             tracing::error!("Password reset failed: {:?}", e);
             (e.0, Json(e.1))
         })?;
+
+    // Invalidate cache
+    state.user_cache.invalidate(&user_id).await;
 
     state.metrics.increment_successful_requests();
 

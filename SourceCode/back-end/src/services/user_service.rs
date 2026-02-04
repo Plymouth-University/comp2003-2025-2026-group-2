@@ -174,7 +174,7 @@ impl UserService {
         db_pool: &PgPool,
         admin_user_id: &str,
         target_email: &str,
-    ) -> Result<(), (StatusCode, serde_json::Value)> {
+    ) -> Result<String, (StatusCode, serde_json::Value)> {
         let admin = Self::get_user_by_id(db_pool, admin_user_id).await?;
 
         if !admin.can_manage_company() {
@@ -216,6 +216,8 @@ impl UserService {
                     StatusCode::INTERNAL_SERVER_ERROR,
                     json!({ "error": "Failed to delete member" }),
                 )
-            })
+            })?;
+        
+        Ok(target_user.id)
     }
 }

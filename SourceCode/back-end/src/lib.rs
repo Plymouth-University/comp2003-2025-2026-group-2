@@ -29,4 +29,5 @@ pub struct AppState {
     pub webauthn: std::sync::Arc<webauthn_rs::Webauthn>,
     pub google_oauth: Option<services::GoogleOAuthClient>,
     pub oauth_state_store: std::sync::Arc<handlers::OAuthStateStore>,
+    pub user_cache: moka::future::Cache<String, db::UserRecord>,
 }
