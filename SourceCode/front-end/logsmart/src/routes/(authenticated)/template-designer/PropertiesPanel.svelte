@@ -151,46 +151,46 @@
 		{#if selectedItem.type === 'text_input'}
 			<div class="space-y-2">
 				<div>
-					<span class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);"
-						>Placeholder</span
-					>
-					<input
-						type="text"
-						value={selectedItem.props.placeholder}
-						oninput={(e) => onUpdateProp(selectedItem.id, 'placeholder', e.currentTarget.value)}
-						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
-					/>
+					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+						Placeholder
+						<input
+							type="text"
+							value={selectedItem.props.placeholder}
+							oninput={(e) => onUpdateProp(selectedItem.id, 'placeholder', e.currentTarget.value)}
+							class="mt-1 w-full border-2 px-3 py-2"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</label>
 				</div>
 				<div>
-					<span class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);"
-						>Size (px)</span
-					>
-					<select
-						value={selectedItem.props.size}
-						onchange={(e) => onUpdateProp(selectedItem.id, 'size', parseInt(e.currentTarget.value))}
-						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
-					>
-						{#each [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48] as s}
-							<option value={s}>{s}px</option>
-						{/each}
-					</select>
+					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+						Size (px)
+						<select
+							value={selectedItem.props.size}
+							onchange={(e) => onUpdateProp(selectedItem.id, 'size', parseInt(e.currentTarget.value))}
+							class="mt-1 w-full border-2 px-3 py-2"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						>
+							{#each [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48] as s}
+								<option value={s}>{s}px</option>
+							{/each}
+						</select>
+					</label>
 				</div>
 				<div>
-					<span class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);"
-						>Weight</span
-					>
-					<select
-						value={selectedItem.props.weight}
-						onchange={(e) => onUpdateProp(selectedItem.id, 'weight', e.currentTarget.value)}
-						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
-					>
-						<option value="light">Light</option>
-						<option value="normal">Normal</option>
-						<option value="bold">Bold</option>
-					</select>
+					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+						Weight
+						<select
+							value={selectedItem.props.weight}
+							onchange={(e) => onUpdateProp(selectedItem.id, 'weight', e.currentTarget.value)}
+							class="mt-1 w-full border-2 px-3 py-2"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						>
+							<option value="light">Light</option>
+							<option value="normal">Normal</option>
+							<option value="bold">Bold</option>
+						</select>
+					</label>
 				</div>
 			</div>
 		{:else if selectedItem.type === 'label'}
