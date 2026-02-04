@@ -3,8 +3,8 @@ use crate::{
     dto::{
         AddTemplateRequest, AddTemplateResponse, DeleteTemplateRequest, DeleteTemplateResponse,
         ErrorResponse, GetAllTemplatesResponse, GetTemplateRequest, GetTemplateResponse,
-        RenameTemplateRequest, RenameTemplateResponse, TemplateInfo, UpdateTemplateRequest,
-        UpdateTemplateResponse,
+        GetTemplateVersionsResponse, RenameTemplateRequest, RenameTemplateResponse,
+        RestoreTemplateVersionRequest, TemplateInfo, UpdateTemplateRequest, UpdateTemplateResponse,
     },
     middleware::AuthToken,
     services,
@@ -127,7 +127,7 @@ pub async fn get_template(
             Json(json!({ "error": "User is not associated with a company" })),
         ))?;
 
-    let (template_name, template_layout) =
+    let (template_name, template_layout, version, version_name) =
         services::TemplateService::get_template(&state, &company_id, &payload.template_name)
             .await
             .map_err(|(status, err)| (status, Json(err)))?;
@@ -135,6 +135,8 @@ pub async fn get_template(
     Ok(Json(GetTemplateResponse {
         template_name,
         template_layout,
+        version,
+        version_name,
     }))
 }
 
@@ -277,11 +279,142 @@ pub async fn update_template(
         &payload.template_name,
         payload.template_layout.as_ref(),
         payload.schedule.as_ref(),
+        &claims.user_id,
+        payload.version_name.clone(),
     )
     .await
     .map_err(|(status, err)| (status, Json(err)))?;
     Ok(Json(UpdateTemplateResponse {
         message: "Template updated successfully.".to_string(),
+    }))
+}
+
+#[utoipa::path(
+    get,
+    path = "/logs/templates/versions",
+    params(
+        ("template_name", description = "Name of the template to retrieve versions for", example = "ErrorLog")
+    ),
+    responses(
+        (status = 200, description = "Versions retrieved successfully", body = GetTemplateVersionsResponse),
+        (status = 401, description = "Invalid or expired token", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Templates"
+)]
+/// Retrieves the version history of a log template.
+///
+/// # Errors
+/// Returns an error if the user is not authorized or if query fails.
+pub async fn get_template_versions(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    Query(payload): Query<GetTemplateRequest>,
+) -> Result<Json<crate::dto::GetTemplateVersionsResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user company ID: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "User is not associated with a company" })),
+        ))?;
+
+    let versions = services::TemplateService::get_versions(&state, &company_id, &payload.template_name)
+        .await
+        .map_err(|(status, err)| (status, Json(err)))?;
+
+    let version_infos = versions.into_iter().map(|v| crate::dto::TemplateVersionInfo {
+        version: v.version,
+        version_name: v.version_name,
+        created_at: v.created_at.to_string(),
+        created_by: v.created_by.to_string(),
+    }).collect();
+
+    Ok(Json(crate::dto::GetTemplateVersionsResponse {
+        versions: version_infos,
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/logs/templates/versions/restore",
+    params(
+        ("template_name", description = "Name of the template to restore", example = "ErrorLog")
+    ),
+    request_body = RestoreTemplateVersionRequest,
+    responses(
+        (status = 200, description = "Template restored successfully", body = UpdateTemplateResponse),
+        (status = 401, description = "Invalid or expired token", body = ErrorResponse),
+        (status = 400, description = "Bad request", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Templates"
+)]
+/// Restores a specific version of a log template.
+///
+/// # Errors
+/// Returns an error if the user is not authorized or if restoration fails.
+pub async fn restore_template_version(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+    Query(query): Query<GetTemplateRequest>,
+    Json(payload): Json<crate::dto::RestoreTemplateVersionRequest>,
+) -> Result<Json<UpdateTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "User not found" })),
+        ))?;
+
+    if !user.can_manage_company() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Only company admin or LogSmartAdmin can restore templates" })),
+        ));
+    }
+
+    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user company ID: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "User is not associated with a company" })),
+        ))?;
+
+    services::TemplateService::restore_version(
+        &state,
+        &company_id,
+        &query.template_name,
+        payload.version,
+        &claims.user_id,
+    )
+    .await
+    .map_err(|(status, err)| (status, Json(err)))?;
+
+    Ok(Json(UpdateTemplateResponse {
+        message: format!("Template restored to version {}", payload.version),
     }))
 }
 

@@ -14,6 +14,11 @@ export interface paths {
 		get?: never;
 		put?: never;
 		post?: never;
+		/**
+		 * Deletes a company member (admin only).
+		 * @description # Errors
+		 *     Returns an error if the user is not an admin or if the deletion fails.
+		 */
 		delete: operations['admin_delete_member'];
 		options?: never;
 		head?: never;
@@ -28,6 +33,11 @@ export interface paths {
 			cookie?: never;
 		};
 		get?: never;
+		/**
+		 * Updates a company member's profile (admin only).
+		 * @description # Errors
+		 *     Returns an error if the user is not an admin, the request is invalid, or the update fails.
+		 */
 		put: operations['admin_update_member_profile'];
 		post?: never;
 		delete?: never;
@@ -43,10 +53,120 @@ export interface paths {
 			path?: never;
 			cookie?: never;
 		};
+		/**
+		 * Retrieves all members belonging to the current user's company.
+		 * @description # Errors
+		 *     Returns an error if the user is not associated with a company or if the database query fails.
+		 */
 		get: operations['get_company_members'];
 		put?: never;
 		post?: never;
 		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/auth/google/callback': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Handles the callback from Google after the user has authorized the application.
+		 * @description # Errors
+		 *     Returns an error if the state is invalid, code exchange fails, or user creation fails.
+		 */
+		get: operations['google_callback'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/auth/google/initiate': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Initiates the Google OAuth login flow by redirecting the user to Google.
+		 * @description # Errors
+		 *     Returns an error if OAuth is not configured or if URL generation fails.
+		 */
+		get: operations['initiate_google_login'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/auth/google/link': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Directly links a Google account to an existing user profile using a callback code.
+		 * @description # Errors
+		 *     Returns an error if the state is invalid, code exchange fails, or linking fails.
+		 */
+		post: operations['link_google_account'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/auth/google/link/confirm': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Confirms linking a Google account to an existing user profile.
+		 * @description # Errors
+		 *     Returns an error if the link token is invalid/expired or if the linking operation fails.
+		 */
+		post: operations['confirm_google_link'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/auth/google/unlink': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post?: never;
+		/**
+		 * Unlinks a Google account from the user profile.
+		 * @description # Errors
+		 *     Returns an error if the user has no password set (cannot unlink last auth method) or if unlinking fails.
+		 */
+		delete: operations['unlink_google_account'];
 		options?: never;
 		head?: never;
 		patch?: never;
@@ -61,6 +181,11 @@ export interface paths {
 		};
 		get?: never;
 		put?: never;
+		/**
+		 * Accepts an invitation and creates a new user account.
+		 * @description # Errors
+		 *     Returns an error if the token is invalid/expired, validation fails, or account creation fails.
+		 */
 		post: operations['accept_invitation'];
 		delete?: never;
 		options?: never;
@@ -76,6 +201,11 @@ export interface paths {
 			cookie?: never;
 		};
 		get?: never;
+		/**
+		 * Cancels a pending invitation.
+		 * @description # Errors
+		 *     Returns an error if the user is not authorized or if the cancellation fails.
+		 */
 		put: operations['cancel_invitation'];
 		post?: never;
 		delete?: never;
@@ -91,6 +221,11 @@ export interface paths {
 			path?: never;
 			cookie?: never;
 		};
+		/**
+		 * Retrieves details of an invitation using its token.
+		 * @description # Errors
+		 *     Returns an error if the invitation is not found or if there's a database error.
+		 */
 		get: operations['get_invitation_details'];
 		put?: never;
 		post?: never;
@@ -107,6 +242,11 @@ export interface paths {
 			path?: never;
 			cookie?: never;
 		};
+		/**
+		 * Retrieves all pending invitations for the current user's company.
+		 * @description # Errors
+		 *     Returns an error if the user is not authorized or if the query fails.
+		 */
 		get: operations['get_pending_invitations'];
 		put?: never;
 		post?: never;
@@ -125,6 +265,11 @@ export interface paths {
 		};
 		get?: never;
 		put?: never;
+		/**
+		 * Sends an invitation to a new user.
+		 * @description # Errors
+		 *     Returns an error if the user is not authorized, the email is invalid, or the invitation fails to send.
+		 */
 		post: operations['invite_user'];
 		delete?: never;
 		options?: never;
@@ -141,6 +286,11 @@ export interface paths {
 		};
 		get?: never;
 		put?: never;
+		/**
+		 * Authenticates a user and returns a JWT token.
+		 * @description # Errors
+		 *     Returns an error if credentials are invalid or if authentication fails.
+		 */
 		post: operations['login'];
 		delete?: never;
 		options?: never;
@@ -155,6 +305,11 @@ export interface paths {
 			path?: never;
 			cookie?: never;
 		};
+		/**
+		 * Retrieves the profile information of the currently authenticated user.
+		 * @description # Errors
+		 *     Returns an error if the user is not found or if there's a database error.
+		 */
 		get: operations['get_current_user'];
 		put?: never;
 		post?: never;
@@ -173,6 +328,11 @@ export interface paths {
 		};
 		get?: never;
 		put?: never;
+		/**
+		 * Initiates a password reset process by sending an email.
+		 * @description # Errors
+		 *     Returns an error if the email is invalid or the request fails.
+		 */
 		post: operations['request_password_reset'];
 		delete?: never;
 		options?: never;
@@ -189,6 +349,11 @@ export interface paths {
 		};
 		get?: never;
 		put?: never;
+		/**
+		 * Resets a user's password using a valid reset token.
+		 * @description # Errors
+		 *     Returns an error if the token is invalid/expired or the operation fails.
+		 */
 		post: operations['reset_password'];
 		delete?: never;
 		options?: never;
@@ -204,6 +369,11 @@ export interface paths {
 			cookie?: never;
 		};
 		get?: never;
+		/**
+		 * Updates the profile information of the currently authenticated user.
+		 * @description # Errors
+		 *     Returns an error if validation fails or the update operation fails.
+		 */
 		put: operations['update_profile'];
 		post?: never;
 		delete?: never;
@@ -221,6 +391,11 @@ export interface paths {
 		};
 		get?: never;
 		put?: never;
+		/**
+		 * Registers a new company and its administrative user.
+		 * @description # Errors
+		 *     Returns an error if validation fails, the email already exists, or registration fails.
+		 */
 		post: operations['register_company_admin'];
 		delete?: never;
 		options?: never;
@@ -237,6 +412,11 @@ export interface paths {
 		};
 		get?: never;
 		put?: never;
+		/**
+		 * Verifies the validity of a JWT token.
+		 * @description # Errors
+		 *     Returns an error if the token is invalid, expired, or if there's a database error.
+		 */
 		post: operations['verify_token'];
 		delete?: never;
 		options?: never;
@@ -317,6 +497,11 @@ export interface paths {
 		};
 		get?: never;
 		put?: never;
+		/**
+		 * Generates a log layout using LLM based on user prompt.
+		 * @description # Errors
+		 *     Returns an error if the user prompt is empty or if LLM generation fails.
+		 */
 		post: operations['generate_layout'];
 		delete?: never;
 		options?: never;
@@ -331,8 +516,18 @@ export interface paths {
 			path?: never;
 			cookie?: never;
 		};
+		/**
+		 * Lists all log entries for the current user, optionally filtered by template or status.
+		 * @description # Errors
+		 *     Returns an error if the user is not authorized or if the query fails.
+		 */
 		get: operations['list_user_log_entries'];
 		put?: never;
+		/**
+		 * Creates a new log entry draft.
+		 * @description # Errors
+		 *     Returns an error if the template name is empty or if entry creation fails.
+		 */
 		post: operations['create_log_entry'];
 		delete?: never;
 		options?: never;
@@ -347,9 +542,24 @@ export interface paths {
 			path?: never;
 			cookie?: never;
 		};
+		/**
+		 * Retrieves a specific log entry by its ID.
+		 * @description # Errors
+		 *     Returns an error if the entry is not found or if the user is not authorized.
+		 */
 		get: operations['get_log_entry'];
+		/**
+		 * Updates the data of an existing log entry draft.
+		 * @description # Errors
+		 *     Returns an error if the entry is not found or if the update fails.
+		 */
 		put: operations['update_log_entry'];
 		post?: never;
+		/**
+		 * Deletes a log entry.
+		 * @description # Errors
+		 *     Returns an error if the user is not authorized or if deletion fails.
+		 */
 		delete: operations['delete_log_entry'];
 		options?: never;
 		head?: never;
@@ -365,6 +575,11 @@ export interface paths {
 		};
 		get?: never;
 		put?: never;
+		/**
+		 * Submits a log entry, marking it as final.
+		 * @description # Errors
+		 *     Returns an error if the entry is not found or if submission fails.
+		 */
 		post: operations['submit_log_entry'];
 		delete?: never;
 		options?: never;
@@ -381,6 +596,11 @@ export interface paths {
 		};
 		get?: never;
 		put?: never;
+		/**
+		 * Returns a submitted log entry to draft status (admin only).
+		 * @description # Errors
+		 *     Returns an error if the entry is not found or if the operation fails.
+		 */
 		post: operations['unsubmit_log_entry'];
 		delete?: never;
 		options?: never;
@@ -395,6 +615,11 @@ export interface paths {
 			path?: never;
 			cookie?: never;
 		};
+		/**
+		 * Lists all log forms that are due today for the current user's company.
+		 * @description # Errors
+		 *     Returns an error if the user is not authorized or if the query fails.
+		 */
 		get: operations['list_due_forms_today'];
 		put?: never;
 		post?: never;
@@ -411,9 +636,24 @@ export interface paths {
 			path?: never;
 			cookie?: never;
 		};
+		/**
+		 * Retrieves a specific log template by name.
+		 * @description # Errors
+		 *     Returns an error if the template is not found or if the user is not authorized.
+		 */
 		get: operations['get_template'];
 		put?: never;
+		/**
+		 * Adds a new log template for the current company.
+		 * @description # Errors
+		 *     Returns an error if the user is not authorized or if template creation fails.
+		 */
 		post: operations['add_template'];
+		/**
+		 * Deletes a specific log template.
+		 * @description # Errors
+		 *     Returns an error if the user is not authorized or if deletion fails.
+		 */
 		delete: operations['delete_template'];
 		options?: never;
 		head?: never;
@@ -427,6 +667,11 @@ export interface paths {
 			path?: never;
 			cookie?: never;
 		};
+		/**
+		 * Retrieves all log templates for the current company.
+		 * @description # Errors
+		 *     Returns an error if the user is not authorized or if the query fails.
+		 */
 		get: operations['get_all_templates'];
 		put?: never;
 		post?: never;
@@ -444,6 +689,11 @@ export interface paths {
 			cookie?: never;
 		};
 		get?: never;
+		/**
+		 * Renames an existing log template.
+		 * @description # Errors
+		 *     Returns an error if the user is not authorized or if the rename fails.
+		 */
 		put: operations['rename_template'];
 		post?: never;
 		delete?: never;
@@ -460,8 +710,55 @@ export interface paths {
 			cookie?: never;
 		};
 		get?: never;
+		/**
+		 * Updates an existing log template.
+		 * @description # Errors
+		 *     Returns an error if the user is not authorized or if the update fails.
+		 */
 		put: operations['update_template'];
 		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/logs/templates/versions': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Retrieves the version history of a log template.
+		 * @description # Errors
+		 *     Returns an error if the user is not authorized or if query fails.
+		 */
+		get: operations['get_template_versions'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/logs/templates/versions/restore': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Restores a specific version of a log template.
+		 * @description # Errors
+		 *     Returns an error if the user is not authorized or if restoration fails.
+		 */
+		post: operations['restore_template_version'];
 		delete?: never;
 		options?: never;
 		head?: never;
@@ -582,6 +879,12 @@ export interface components {
 		GetTemplateResponse: {
 			template_layout: components['schemas']['Vec'];
 			template_name: string;
+			/** Format: int32 */
+			version: number;
+			version_name?: string | null;
+		};
+		GetTemplateVersionsResponse: {
+			versions: components['schemas']['TemplateVersionInfo'][];
 		};
 		HealthResponse: {
 			metrics: components['schemas']['DatabaseHealthMetrics'];
@@ -640,6 +943,18 @@ export interface components {
 			/** @example SecurePass123! */
 			password: string;
 		};
+		OAuthCallbackRequest: {
+			/** @example authorization-code-from-google */
+			code: string;
+			/** @example csrf-state-token */
+			state: string;
+		};
+		OAuthInitiateResponse: {
+			authorization_url: string;
+		};
+		OAuthLinkConfirmRequest: {
+			link_token: string;
+		};
 		PasswordResetResponse: {
 			message: string;
 		};
@@ -683,6 +998,10 @@ export interface components {
 			new_password: string;
 			/** @example reset-token-here */
 			token: string;
+		};
+		RestoreTemplateVersionRequest: {
+			/** Format: int32 */
+			version: number;
 		};
 		Schedule: {
 			/** Format: int32 */
@@ -737,6 +1056,9 @@ export interface components {
 			template_name: string;
 			/** Format: date-time */
 			updated_at: string;
+			/** Format: int32 */
+			version?: number;
+			version_name?: string | null;
 		};
 		TemplateField: {
 			field_type: string;
@@ -750,6 +1072,7 @@ export interface components {
 			/** Format: float */
 			min?: number | null;
 			options?: string[] | null;
+			placeholder?: string | null;
 			selected?: string | null;
 			size?: string | null;
 			text?: string | null;
@@ -763,6 +1086,13 @@ export interface components {
 			schedule: components['schemas']['Schedule'];
 			template_name: string;
 			updated_at: string;
+		};
+		TemplateVersionInfo: {
+			created_at: string;
+			created_by: string;
+			/** Format: int32 */
+			version: number;
+			version_name?: string | null;
 		};
 		UpdateLogEntryRequest: {
 			entry_data: unknown;
@@ -778,6 +1108,8 @@ export interface components {
 			template_layout?: null | components['schemas']['Vec'];
 			/** @example Kitchen Daily Log */
 			template_name: string;
+			/** @example Major Update */
+			version_name?: string | null;
 		};
 		UpdateTemplateResponse: {
 			message: string;
@@ -787,6 +1119,7 @@ export interface components {
 			email: string;
 			first_name: string;
 			last_name: string;
+			oauth_provider?: string | null;
 			role: components['schemas']['UserRole'];
 		};
 		/** @enum {string} */
@@ -974,6 +1307,213 @@ export interface operations {
 			};
 			/** @description Server error */
 			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	google_callback: {
+		parameters: {
+			query: {
+				/** @description Authorization code from Google */
+				code: string;
+				/** @description CSRF state token */
+				state: string;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Redirect to dashboard on success or login on error */
+			302: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Invalid request */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Authentication failed */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	initiate_google_login: {
+		parameters: {
+			query?: {
+				/** @description OAuth mode: 'link' or omit for login */
+				mode?: string;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description OAuth flow initiated */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['OAuthInitiateResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	link_google_account: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['OAuthCallbackRequest'];
+			};
+		};
+		responses: {
+			/** @description Google account linked successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Invalid request */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Account already linked */
+			409: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	confirm_google_link: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['OAuthLinkConfirmRequest'];
+			};
+		};
+		responses: {
+			/** @description Google account linked successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Invalid request */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Account already linked */
+			409: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	unlink_google_account: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Google account unlinked successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Cannot unlink - password required */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
 				headers: {
 					[name: string]: unknown;
 				};
@@ -2446,6 +2986,107 @@ export interface operations {
 				};
 			};
 			/** @description Password validation failed */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Invalid or expired token */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	get_template_versions: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				/**
+				 * @description Name of the template to retrieve versions for
+				 * @example ErrorLog
+				 */
+				template_name: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Versions retrieved successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['GetTemplateVersionsResponse'];
+				};
+			};
+			/** @description Invalid or expired token */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	restore_template_version: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				/**
+				 * @description Name of the template to restore
+				 * @example ErrorLog
+				 */
+				template_name: string;
+			};
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['RestoreTemplateVersionRequest'];
+			};
+		};
+		responses: {
+			/** @description Template restored successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['UpdateTemplateResponse'];
+				};
+			};
+			/** @description Bad request */
 			400: {
 				headers: {
 					[name: string]: unknown;

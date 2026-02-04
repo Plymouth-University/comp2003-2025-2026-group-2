@@ -76,6 +76,7 @@ fn test_template_creation() {
                 selected: None,
                 options: None,
                 editable: None,
+                placeholder: None,
             },
         }],
         company_id: "company123".to_string(),
@@ -89,6 +90,8 @@ fn test_template_creation() {
             month_of_year: None,
         },
         created_by: Uuid::new(),
+        version: 1,
+        version_name: None,
     };
 
     assert_eq!(template.template_name, "Test Template");
