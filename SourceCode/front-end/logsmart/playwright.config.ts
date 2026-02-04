@@ -5,8 +5,8 @@ export default defineConfig({
 	testDir: './tests',
 	fullyParallel: true,
 	forbidOnly: !!process.env.CI,
-	retries: process.env.CI ? 2 : 0,
-	workers: process.env.CI ? 2 : 6,
+	retries: process.env.CI ? 2 : 1,
+	workers: process.env.CI ? 4 : 6,
 	reporter: 'list',
 	use: {
 		baseURL: process.env.FRONTEND_URL || 'http://localhost:5173',
