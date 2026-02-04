@@ -113,6 +113,11 @@ async fn main() {
         }
     };
 
+    let user_cache = moka::future::Cache::builder()
+        .max_capacity(10_000)
+        .time_to_live(std::time::Duration::from_secs(300)) // 5 minutes
+        .build();
+
     let state = AppState {
         postgres: auth_db_postgres_pool,
         rate_limit: rate_limit_state.clone(),
@@ -136,6 +141,7 @@ async fn main() {
         ),
         google_oauth,
         oauth_state_store: std::sync::Arc::new(handlers::OAuthStateStore::new()),
+        user_cache,
     };
 
     let api_routes = Router::new()
