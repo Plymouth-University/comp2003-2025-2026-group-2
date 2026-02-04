@@ -58,6 +58,7 @@ impl TemplateService {
             })?,
             schedule,
             version: 1,
+            version_name: None,
         };
 
         logs_db::add_template(&state.mongodb, &template_document)
@@ -178,7 +179,7 @@ impl TemplateService {
             template_name: current_template.template_name.clone(),
             company_id: current_template.company_id.clone(),
             version: current_template.version,
-            version_name,
+            version_name: current_template.version_name,
             template_layout: current_template.template_layout.clone(),
             schedule: current_template.schedule,
             created_at: chrono::Utc::now(),
@@ -202,6 +203,7 @@ impl TemplateService {
             company_id,
             schedule,
             template_layout,
+            version_name,
         )
         .await
         .map_err(|e: anyhow::Error| {

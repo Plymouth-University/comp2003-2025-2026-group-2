@@ -272,6 +272,7 @@ impl TemplateFactory {
             },
             created_by: mongodb::bson::Uuid::new(),
             version: 1,
+            version_name: None,
         }
     }
 

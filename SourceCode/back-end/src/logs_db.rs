@@ -63,6 +63,7 @@ pub struct TemplateDocument {
     pub created_by: Uuid,
     #[serde(default = "default_version")]
     pub version: u16,
+    pub version_name: Option<String>,
 }
 
 fn default_version() -> u16 {
@@ -235,8 +236,9 @@ pub async fn update_template(
     company_id: &str,
     schedule: Option<&Schedule>,
     layout: Option<&TemplateLayout>,
+    version_name: Option<String>,
 ) -> Result<()> {
-    if schedule.is_none() && layout.is_none() {
+    if schedule.is_none() && layout.is_none() && version_name.is_none() {
         return Ok(());
     }
     let db = client.database("logs_db");
@@ -254,6 +256,9 @@ pub async fn update_template(
     }
     if let Some(layout) = layout {
         set_doc.insert("template_layout", mongodb::bson::to_bson(&layout)?);
+    }
+    if let Some(name) = version_name {
+        set_doc.insert("version_name", name);
     }
     set_doc.insert("updated_at", mongodb::bson::to_bson(&chrono::Utc::now())?);
     
@@ -280,7 +285,7 @@ pub async fn update_template_with_version(
 ) -> Result<()> {
     // This is now redundant given update_template handles versioning, 
     // but we can keep the original signature compatible by forwarding
-    update_template(client, template_name, company_id, schedule, layout).await
+    update_template(client, template_name, company_id, schedule, layout, None).await
 }
 
 /// Renames a log template.
