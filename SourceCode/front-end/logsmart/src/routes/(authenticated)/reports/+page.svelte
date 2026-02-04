@@ -1,11 +1,15 @@
 <script lang="ts">
+	import { api } from '$lib/api';
+	import type { components } from '$lib/api-types';
+
+	type LogEntry = components['schemas']['LogEntryResponse'];
+
 	let logTypes = $state([
 		{ id: 'all', label: 'All', checked: true },
-		{ id: 'type1', label: 'Log Type 1', checked: false },
-		{ id: 'type2', label: 'Log Type 2', checked: false },
-		{ id: 'type3', label: 'Log Type 3', checked: false },
-		{ id: 'type4', label: 'Log Type 4', checked: false },
-		{ id: 'type5', label: 'Log Type 5', checked: false }
+		{ id: 'type1', label: 'Text Logs', checked: true },
+		{ id: 'type2', label: 'Checkbox Logs', checked: true },
+		{ id: 'type3', label: 'Temperature Logs', checked: true },
+		{ id: 'type4', label: 'Dropdown Logs', checked: true }
 	]);
 
 	const today = new Date();
@@ -29,6 +33,125 @@
 	let activePickerIsFrom = $state(true);
 
 	let reportGenerated = $state(false);
+	let arrangeBy = $state<'date' | 'logType'>('date');
+	let isLoading = $state(false);
+	let error = $state<string | null>(null);
+	let logEntries = $state<LogEntry[]>([]);
+	let filteredEntries = $state<LogEntry[]>([]);
+	let availableLogTypes = $state<Set<string>>(new Set());
+
+	// Function to parse entry data and extract readable values
+	function parseEntryData(entryData: unknown, templateLayout: any[]): string {
+		if (!entryData) return 'No data available';
+		
+		try {
+			// Parse the entry data if it's a string
+			let data: any;
+			if (typeof entryData === 'string') {
+				try {
+					data = JSON.parse(entryData);
+				} catch {
+					// If it fails to parse as JSON, treat as plain text
+					return entryData;
+				}
+			} else if (typeof entryData === 'object') {
+				data = entryData;
+			} else {
+				return String(entryData);
+			}
+
+			if (!templateLayout || templateLayout.length === 0) {
+				// If no template layout, try to display the raw data in a readable format
+				if (typeof data === 'object' && data !== null) {
+					const entries = Object.entries(data)
+						.filter(([key, value]) => value !== null && value !== undefined && value !== '')
+						.map(([key, value]) => `${key}: ${value}`);
+					return entries.length > 0 ? entries.join(', ') : 'No data entered';
+				}
+				return String(data);
+			}
+
+			const results: string[] = [];
+
+			// Try different possible field identifier patterns
+			templateLayout.forEach((field: any, index: number) => {
+				// Try various ways the field ID might be stored
+				const possibleIds = [
+					field.field_id,
+					field.id,
+					field.name,
+					field.props?.name,
+					field.props?.id,
+					`field_${index}`,
+					index.toString()
+				].filter(Boolean);
+
+				let fieldValue: any;
+				let fieldId: string | undefined;
+
+				// Try to find the field value using any of the possible IDs
+				for (const id of possibleIds) {
+					if (data[id] !== undefined && data[id] !== null && data[id] !== '') {
+						fieldValue = data[id];
+						fieldId = id;
+						break;
+					}
+				}
+
+				// If we found a value, format it appropriately
+				if (fieldValue !== undefined && fieldId) {
+					const fieldType = field.field_type || field.type;
+					let displayValue = fieldValue;
+
+					// Format different field types
+					if (fieldType === 'temperature' && typeof fieldValue === 'number') {
+						displayValue = `${fieldValue}°C`;
+					} else if (fieldType === 'checkbox' || fieldType === 'boolean') {
+						displayValue = fieldValue ? 'Yes' : 'No';
+					} else if (fieldType === 'dropdown' || fieldType === 'select') {
+						// Try to find the option label
+						const options = field.props?.options || field.options;
+						if (Array.isArray(options)) {
+							const option = options.find((opt: any) => 
+								opt.value === fieldValue || opt.id === fieldValue
+							);
+							displayValue = option?.label || option?.text || fieldValue;
+						}
+					}
+
+					// Get field label
+					const fieldLabel = field.props?.label || field.label || field.name || `Field ${fieldId}`;
+					results.push(`${fieldLabel}: ${displayValue}`);
+				}
+			});
+
+			// If no results from template parsing, try to show raw data
+			if (results.length === 0 && typeof data === 'object' && data !== null) {
+				const entries = Object.entries(data)
+					.filter(([key, value]) => value !== null && value !== undefined && value !== '')
+					.map(([key, value]) => `${key}: ${value}`);
+				return entries.length > 0 ? entries.join(', ') : 'No data entered';
+			}
+
+			return results.length > 0 ? results.join(', ') : 'No data entered';
+		} catch (e) {
+			console.error('Error parsing entry data:', e);
+			return 'Error parsing data';
+		}
+	}
+
+	// Function to categorize log type based on template layout
+	function categorizeLogType(templateLayout: any[]): string {
+		if (!templateLayout || templateLayout.length === 0) return 'Text Logs';
+
+		const fieldTypes = templateLayout.map(field => field.field_type).filter(Boolean);
+		
+		if (fieldTypes.includes('temperature')) return 'Temperature Logs';
+		if (fieldTypes.includes('checkbox')) return 'Checkbox Logs';
+		if (fieldTypes.includes('dropdown')) return 'Dropdown Logs';
+		
+		return 'Text Logs';
+	}
 
 	// Convert DD/MM/YYYY to YYYY-MM-DD
 	function formatToISO(dateStr: string): string {
@@ -245,8 +368,399 @@
 		'Dec'
 	];
 
-	function generateReport() {
-		reportGenerated = true;
+	function handleAllCheckboxChange(checked: boolean) {
+		logTypes.forEach((logType) => {
+			if (logType.id !== 'all') {
+				logType.checked = checked;
+			}
+		});
+	}
+
+	function handleIndividualCheckboxChange() {
+		const allCheckbox = logTypes.find((logType) => logType.id === 'all');
+		const otherCheckboxes = logTypes.filter((logType) => logType.id !== 'all');
+		const allOthersChecked = otherCheckboxes.every((logType) => logType.checked);
+
+		if (allCheckbox) {
+			allCheckbox.checked = allOthersChecked;
+		}
+	}
+
+	async function generateReport() {
+		isLoading = true;
+		error = null;
+		reportGenerated = false;
+
+		try {
+			// Fetch all log entries for the user's company
+			const response = await api.GET('/logs/entries');
+
+			if (!response.data) {
+				throw new Error('Failed to fetch log entries');
+			}
+
+			logEntries = response.data.entries;
+
+			// Collect available log types from actual data
+			const logTypesSet = new Set<string>();
+			logEntries.forEach(entry => {
+				const category = categorizeLogType(entry.template_layout);
+				logTypesSet.add(category);
+			});
+			availableLogTypes = logTypesSet;
+
+			// Filter entries based on date range and selected log types
+			const selectedLogTypes = logTypes
+				.filter(type => type.checked && type.id !== 'all')
+				.map(type => type.label);
+
+			// If "All" is selected or no specific types selected, show all types
+			const showAllTypes = logTypes.find(type => type.id === 'all')?.checked || selectedLogTypes.length === 0;
+
+			filteredEntries = logEntries.filter(entry => {
+				// Filter by date range
+				const entryDate = new Date(entry.created_at);
+				const fromDate = new Date(dateFromISO);
+				const toDate = new Date(dateToISO);
+				// Set time to end of day for 'to' date
+				toDate.setHours(23, 59, 59, 999);
+
+				const isInDateRange = entryDate >= fromDate && entryDate <= toDate;
+
+				// Filter by log type
+				const entryCategory = categorizeLogType(entry.template_layout);
+				const isCorrectType = showAllTypes || selectedLogTypes.includes(entryCategory);
+
+				return isInDateRange && isCorrectType;
+			});
+
+			// Sort entries based on arrange preference
+			if (arrangeBy === 'date') {
+				filteredEntries.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+			} else {
+				filteredEntries.sort((a, b) => {
+					if (a.template_name < b.template_name) return -1;
+					if (a.template_name > b.template_name) return 1;
+					// If same template, sort by date
+					return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+				});
+			}
+
+			reportGenerated = true;
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'An error occurred while generating the report';
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	// Export functions
+	function exportToPDF() {
+		if (!reportGenerated || filteredEntries.length === 0) return;
+		
+		const reportContent = generateTextReportContent();
+		const printWindow = window.open('', '_blank');
+		
+		if (printWindow) {
+			printWindow.document.write(`
+				<html>
+				<head>
+					<title>Log Report</title>
+					<style>
+						body { font-family: Arial, sans-serif; margin: 20px; }
+						.header { border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px; }
+						.entry { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; page-break-inside: avoid; }
+						.status { padding: 3px 8px; border-radius: 3px; color: white; font-size: 12px; }
+						.submitted { background-color: #10B981; }
+						.draft { background-color: #F59E0B; }
+						.group-header { font-size: 18px; font-weight: bold; margin: 20px 0 10px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+						.entry-data { background-color: #f5f5f5; padding: 10px; margin: 5px 0; border-radius: 3px; }
+						@media print {
+							body { margin: 0; }
+							.entry { page-break-inside: avoid; }
+						}
+					</style>
+				</head>
+				<body>
+					${reportContent}
+				</body>
+				</html>
+			`);
+			printWindow.document.close();
+			printWindow.print();
+		}
+	}
+
+	function exportToWord(format: 'docx' | 'rtf') {
+		if (!reportGenerated || filteredEntries.length === 0) return;
+		
+		let content: string;
+		let mimeType: string;
+		let filename: string;
+		
+		if (format === 'rtf') {
+			content = generateRTFContent();
+			mimeType = 'application/rtf';
+			filename = 'log-report.rtf';
+		} else {
+			// For DOCX, create a proper HTML document that Word can import
+			content = generateWordHTMLContent();
+			mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+			filename = 'log-report.doc'; // Use .doc extension for better compatibility
+		}
+		
+		const blob = new Blob([content], { type: mimeType });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = filename;
+		a.click();
+		URL.revokeObjectURL(url);
+	}
+
+	function generateWordHTMLContent(): string {
+		return `
+<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+	<meta charset="utf-8">
+	<meta name="ProgId" content="Word.Document">
+	<meta name="Generator" content="Microsoft Word">
+	<meta name="Originator" content="Microsoft Word">
+	<title>Log Report</title>
+	<style>
+		body { font-family: 'Times New Roman', serif; font-size: 12pt; margin: 1in; }
+		h1 { font-size: 16pt; font-weight: bold; text-align: center; margin-bottom: 12pt; }
+		h2 { font-size: 14pt; font-weight: bold; margin-top: 12pt; margin-bottom: 6pt; }
+		.header { border-bottom: 1pt solid black; padding-bottom: 6pt; margin-bottom: 12pt; }
+		.entry { border: 1pt solid #ccc; margin: 6pt 0; padding: 8pt; }
+		.entry-header { font-weight: bold; margin-bottom: 4pt; }
+		.entry-data { background-color: #f0f0f0; padding: 4pt; margin: 4pt 0; }
+		.status { padding: 2pt 4pt; border-radius: 2pt; color: white; font-size: 10pt; }
+		.submitted { background-color: #10B981; }
+		.draft { background-color: #F59E0B; }
+		table { width: 100%; border-collapse: collapse; margin: 6pt 0; }
+		td { padding: 4pt; border: 1pt solid #ccc; vertical-align: top; }
+		.label { font-weight: bold; width: 120pt; }
+	</style>
+</head>
+<body>
+	<div class="header">
+		<h1>Log Report</h1>
+		<p><strong>Date Range:</strong> ${dateFrom} - ${dateTo}</p>
+		<p><strong>Arranged by:</strong> ${arrangeBy === 'date' ? 'Date' : 'Log Type'}</p>
+		<p><strong>Total Entries:</strong> ${filteredEntries.length}</p>
+		<p><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
+	</div>
+	
+	${generateWordEntries()}
+</body>
+</html>`;
+	}
+
+	function generateWordEntries(): string {
+		let content = '';
+		
+		if (arrangeBy === 'logType') {
+			const groupedEntries = filteredEntries.reduce((acc: Record<string, LogEntry[]>, entry) => {
+				const category = categorizeLogType(entry.template_layout);
+				if (!acc[category]) acc[category] = [];
+				acc[category].push(entry);
+				return acc;
+			}, {});
+
+			Object.entries(groupedEntries).forEach(([category, entries]) => {
+				content += `<h2>${category} (${entries.length} entries)</h2>`;
+				entries.forEach(entry => {
+					content += generateWordEntryHTML(entry);
+				});
+			});
+		} else {
+			filteredEntries.forEach(entry => {
+				content += generateWordEntryHTML(entry);
+			});
+		}
+		
+		return content;
+	}
+
+	function generateWordEntryHTML(entry: LogEntry): string {
+		const entryData = parseEntryData(entry.entry_data, entry.template_layout);
+		const category = arrangeBy === 'date' ? categorizeLogType(entry.template_layout) : '';
+		
+		return `
+		<div class="entry">
+			<div class="entry-header">
+				${arrangeBy === 'date' ? category + ' - ' : ''}${entry.template_name}
+				<span class="status ${entry.status === 'submitted' ? 'submitted' : 'draft'}">${entry.status}</span>
+				<br><small>ID: ${entry.id.slice(0, 8)}...</small>
+			</div>
+			
+			<table>
+				<tr>
+					<td class="label">Entry Data:</td>
+					<td>${entryData}</td>
+				</tr>
+				<tr>
+					<td class="label">Created:</td>
+					<td>${new Date(entry.created_at).toLocaleString()}</td>
+				</tr>
+				${entry.submitted_at ? `<tr><td class="label">Submitted:</td><td>${new Date(entry.submitted_at).toLocaleString()}</td></tr>` : ''}
+				<tr>
+					<td class="label">Period:</td>
+					<td>${entry.period}</td>
+				</tr>
+			</table>
+		</div>
+		`;
+	}
+
+	function generateRTFContent(): string {
+		// Generate properly formatted RTF
+		let rtfContent = `{\\rtf1\\ansi\\deff0{\\fonttbl{\\f0\\froman Times New Roman;}{\\f1\\fswiss Arial;}}
+{\\colortbl;\\red0\\green0\\blue0;\\red16\\green185\\blue129;\\red245\\green158\\blue11;}
+\\f0\\fs24`;
+
+		// Header
+		rtfContent += `\\qc\\b\\fs28 Log Report\\b0\\fs24\\par\\par`;
+		rtfContent += `\\ql\\b Date Range: \\b0 ${dateFrom} - ${dateTo}\\par`;
+		rtfContent += `\\b Arranged by: \\b0 ${arrangeBy === 'date' ? 'Date' : 'Log Type'}\\par`;
+		rtfContent += `\\b Total Entries: \\b0 ${filteredEntries.length}\\par`;
+		rtfContent += `\\b Generated on: \\b0 ${new Date().toLocaleString()}\\par`;
+		rtfContent += `\\par\\pard\\brdrb\\brdrs\\brdrw10\\par\\par`;
+
+		if (arrangeBy === 'logType') {
+			const groupedEntries = filteredEntries.reduce((acc: Record<string, LogEntry[]>, entry) => {
+				const category = categorizeLogType(entry.template_layout);
+				if (!acc[category]) acc[category] = [];
+				acc[category].push(entry);
+				return acc;
+			}, {});
+
+			Object.entries(groupedEntries).forEach(([category, entries]) => {
+				rtfContent += `\\b\\fs26 ${category} (${entries.length} entries)\\b0\\fs24\\par\\par`;
+				entries.forEach(entry => {
+					rtfContent += generateRTFEntry(entry);
+				});
+			});
+		} else {
+			filteredEntries.forEach(entry => {
+				rtfContent += generateRTFEntry(entry);
+			});
+		}
+
+		rtfContent += '}';
+		return rtfContent;
+	}
+
+	function generateRTFEntry(entry: LogEntry): string {
+		const entryData = parseEntryData(entry.entry_data, entry.template_layout);
+		const category = arrangeBy === 'date' ? categorizeLogType(entry.template_layout) : '';
+		const statusColor = entry.status === 'submitted' ? '\\cf2' : '\\cf3';
+		
+		let rtf = `\\pard\\box\\brdrs\\brdrw10\\brdrcf1\\par`;
+		rtf += `\\b ${arrangeBy === 'date' ? category + ' - ' : ''}${entry.template_name}\\b0\\tab ${statusColor}${entry.status}\\cf1\\par`;
+		rtf += `\\fs20 ID: ${entry.id.slice(0, 8)}...\\fs24\\par\\par`;
+		rtf += `\\b Entry Data:\\b0\\par`;
+		rtf += `\\fi200 ${entryData}\\par\\par`;
+		rtf += `\\fi0\\b Created:\\b0 ${new Date(entry.created_at).toLocaleString()}\\par`;
+		if (entry.submitted_at) {
+			rtf += `\\b Submitted:\\b0 ${new Date(entry.submitted_at).toLocaleString()}\\par`;
+		}
+		rtf += `\\b Period:\\b0 ${entry.period}\\par`;
+		rtf += `\\par\\pard\\par`;
+		
+		return rtf;
+	}
+
+	function generateTextReportContent(): string {
+		let content = `
+			<div class="header">
+				<h1>Log Report</h1>
+				<p><strong>Date Range:</strong> ${dateFrom} - ${dateTo}</p>
+				<p><strong>Arranged by:</strong> ${arrangeBy === 'date' ? 'Date' : 'Log Type'}</p>
+				<p><strong>Total Entries:</strong> ${filteredEntries.length}</p>
+				<p><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
+			</div>
+		`;
+
+		if (arrangeBy === 'logType') {
+			const groupedEntries = filteredEntries.reduce((acc: Record<string, LogEntry[]>, entry) => {
+				const category = categorizeLogType(entry.template_layout);
+				if (!acc[category]) acc[category] = [];
+				acc[category].push(entry);
+				return acc;
+			}, {});
+
+			Object.entries(groupedEntries).forEach(([category, entries]) => {
+				content += `<div class="group-header">${category} (${entries.length} entries)</div>`;
+				entries.forEach(entry => {
+					content += generateEntryHTML(entry);
+				});
+			});
+		} else {
+			filteredEntries.forEach(entry => {
+				content += generateEntryHTML(entry);
+			});
+		}
+
+		return content;
+	}
+
+	function generateReportContent(): string {
+		let content = `
+			<div class="header">
+				<h1>Log Report</h1>
+				<p><strong>Date Range:</strong> ${dateFrom} - ${dateTo}</p>
+				<p><strong>Arranged by:</strong> ${arrangeBy === 'date' ? 'Date' : 'Log Type'}</p>
+				<p><strong>Total Entries:</strong> ${filteredEntries.length}</p>
+				<p><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
+			</div>
+		`;
+
+		if (arrangeBy === 'logType') {
+			const groupedEntries = filteredEntries.reduce((acc: Record<string, LogEntry[]>, entry) => {
+				const category = categorizeLogType(entry.template_layout);
+				if (!acc[category]) acc[category] = [];
+				acc[category].push(entry);
+				return acc;
+			}, {});
+
+			Object.entries(groupedEntries).forEach(([category, entries]) => {
+				content += `<div class="group-header">${category} (${entries.length} entries)</div>`;
+				entries.forEach(entry => {
+					content += generateEntryHTML(entry);
+				});
+			});
+		} else {
+			filteredEntries.forEach(entry => {
+				content += generateEntryHTML(entry);
+			});
+		}
+
+		return content;
+	}
+
+	function generateEntryHTML(entry: LogEntry): string {
+		const entryData = parseEntryData(entry.entry_data, entry.template_layout);
+		const category = categorizeLogType(entry.template_layout);
+		return `
+			<div class="entry">
+				<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+					<div>
+						<strong>${category} - ${entry.template_name}</strong>
+						<small style="color: #666; margin-left: 10px;">ID: ${entry.id.slice(0, 8)}...</small>
+					</div>
+					<span class="status ${entry.status === 'submitted' ? 'submitted' : 'draft'}">${entry.status}</span>
+				</div>
+				<div class="entry-data">
+					<strong>Entry Data:</strong> ${entryData}
+				</div>
+				<p><strong>Created:</strong> ${new Date(entry.created_at).toLocaleString()}</p>
+				${entry.submitted_at ? `<p><strong>Submitted:</strong> ${new Date(entry.submitted_at).toLocaleString()}</p>` : ''}
+				<p><strong>Period:</strong> ${entry.period}</p>
+			</div>
+		`;
 	}
 </script>
 
@@ -817,6 +1331,10 @@
 									<input
 										type="checkbox"
 										bind:checked={logType.checked}
+										onchange={(e) =>
+											logType.id === 'all'
+												? handleAllCheckboxChange(e.currentTarget.checked)
+												: handleIndividualCheckboxChange()}
 										class="h-5 w-5 cursor-pointer border-2"
 										style="border-color: var(--border-primary);"
 									/>
@@ -825,6 +1343,35 @@
 							{/each}
 						</div>
 					</fieldset>
+				</div>
+
+				<!-- Arrange By Options -->
+				<div class="mb-8">
+					<legend class="mb-3 block text-lg font-bold" style="color: var(--text-primary);"
+						>Arrange By:</legend
+					>
+					<div class="flex gap-3">
+						<button
+							type="button"
+							onclick={() => (arrangeBy = 'date')}
+							class="flex-1 border-2 px-4 py-2 font-bold transition-all"
+							style={arrangeBy === 'date'
+								? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
+								: 'border-color: var(--border-primary); background-color: transparent; color: var(--text-secondary);'}
+						>
+							Arrange By Date
+						</button>
+						<button
+							type="button"
+							onclick={() => (arrangeBy = 'logType')}
+							class="flex-1 border-2 px-4 py-2 font-bold transition-all"
+							style={arrangeBy === 'logType'
+								? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
+								: 'border-color: var(--border-primary); background-color: transparent; color: var(--text-secondary);'}
+						>
+							Arrange By Log Type
+						</button>
+					</div>
 				</div>
 
 				<!-- Generate Button -->
@@ -854,19 +1401,25 @@
 				<!-- Download Buttons -->
 				<div class="mb-4 flex flex-col gap-2 sm:flex-row sm:justify-end sm:gap-4">
 					<button
-						class="border-2 px-4 py-2 text-sm font-medium hover:opacity-80 sm:text-base"
+						onclick={exportToPDF}
+						disabled={!reportGenerated || filteredEntries.length === 0}
+						class="border-2 px-4 py-2 text-sm font-medium hover:opacity-80 sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						Download PDF
 					</button>
 					<button
-						class="border-2 px-4 py-2 text-sm font-medium hover:opacity-80 sm:text-base"
+						onclick={() => exportToWord('docx')}
+						disabled={!reportGenerated || filteredEntries.length === 0}
+						class="border-2 px-4 py-2 text-sm font-medium hover:opacity-80 sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						Download DOCX
 					</button>
 					<button
-						class="border-2 px-4 py-2 text-sm font-medium hover:opacity-80 sm:text-base"
+						onclick={() => exportToWord('rtf')}
+						disabled={!reportGenerated || filteredEntries.length === 0}
+						class="border-2 px-4 py-2 text-sm font-medium hover:opacity-80 sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						Download RTF
@@ -875,26 +1428,107 @@
 
 				<!-- Report Preview Area -->
 				<div
-					class="min-h-[400px] border-2 p-4 sm:min-h-[600px] sm:p-8"
+					class="min-h-100 border-2 p-4 sm:min-h-150 sm:p-8"
 					style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 				>
-					{#if reportGenerated}
-						<div class="flex items-start gap-3">
-							<svg
-								width="32"
-								height="32"
-								viewBox="0 0 32 32"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								style="color: var(--text-primary);"
-							>
-								<polyline points="9 17 14 22 23 10"></polyline>
-								<rect x="4" y="4" width="24" height="24" rx="2" ry="2"></rect>
+					{#if isLoading}
+						<div class="flex items-center justify-center py-8">
+							<div class="animate-spin rounded-full h-8 w-8 border-b-2" style="border-color: var(--text-primary);"></div>
+							<span class="ml-3" style="color: var(--text-primary);">Generating report...</span>
+						</div>
+					{:else if error}
+						<div class="flex items-start gap-3 text-red-500">
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<circle cx="12" cy="12" r="10"></circle>
+								<line x1="15" y1="9" x2="9" y2="15"></line>
+								<line x1="9" y1="9" x2="15" y2="15"></line>
 							</svg>
 							<div>
-								<p style="color: var(--text-primary);">Report generated successfully</p>
+								<p class="font-bold">Error generating report</p>
+								<p>{error}</p>
 							</div>
+						</div>
+					{:else if reportGenerated}
+						<div>
+							<div class="mb-6">
+								<h2 class="text-xl font-bold mb-2" style="color: var(--text-primary);">Log Report</h2>
+								<p class="text-sm" style="color: var(--text-secondary);">
+									Date Range: {dateFrom} - {dateTo} | 
+									Arranged by: {arrangeBy === 'date' ? 'Date' : 'Log Type'} | 
+									Total Entries: {filteredEntries.length}
+								</p>
+							</div>
+
+							{#if filteredEntries.length === 0}
+								<div class="text-center py-8">
+									<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="mx-auto mb-4" style="color: var(--text-secondary);">
+										<circle cx="11" cy="11" r="8"></circle>
+										<path d="21 21l-4.35-4.35"></path>
+									</svg>
+									<p class="text-lg font-medium" style="color: var(--text-secondary);">No log entries found</p>
+									<p class="text-sm" style="color: var(--text-secondary);">Try adjusting your date range or log type filters.</p>
+								</div>
+							{:else}
+								{#if arrangeBy === 'logType'}
+									{@const groupedEntries = filteredEntries.reduce((acc: Record<string, LogEntry[]>, entry) => {
+										const category = categorizeLogType(entry.template_layout);
+										if (!acc[category]) acc[category] = [];
+										acc[category].push(entry);
+										return acc;
+									}, {})}
+									{#each Object.entries(groupedEntries) as [templateName, entries]}
+										<div class="mb-6">
+											<h3 class="text-lg font-bold mb-3 pb-2 border-b" style="color: var(--text-primary); border-color: var(--border-primary);">
+												{templateName} ({entries.length} entries)
+											</h3>
+											{#each entries as entry}
+												<div class="mb-4 p-4 border rounded" style="border-color: var(--border-primary); background-color: var(--bg-secondary);">
+													<div class="flex justify-between items-start mb-2">
+														<span class="text-sm font-medium" style="color: var(--text-primary);">Entry ID: {entry.id.slice(0, 8)}...</span>
+														<span class="text-xs px-2 py-1 rounded" 
+															style={entry.status === 'submitted' ? 'background-color: #10B981; color: white;' : 'background-color: #F59E0B; color: white;'}>
+															{entry.status}
+														</span>
+													</div>
+													<div class="mb-2 p-2 rounded" style="background-color: var(--bg-primary);">
+														<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">Entry Data:</p>
+														<p class="text-sm" style="color: var(--text-secondary);">{parseEntryData(entry.entry_data, entry.template_layout)}</p>
+													</div>
+													<p class="text-sm mb-2" style="color: var(--text-secondary);">Created: {new Date(entry.created_at).toLocaleString()}</p>
+													{#if entry.submitted_at}
+														<p class="text-sm mb-2" style="color: var(--text-secondary);">Submitted: {new Date(entry.submitted_at).toLocaleString()}</p>
+													{/if}
+													<p class="text-sm" style="color: var(--text-secondary);">Period: {entry.period}</p>
+												</div>
+											{/each}
+										</div>
+									{/each}
+								{:else}
+									{#each filteredEntries as entry}
+										<div class="mb-4 p-4 border rounded" style="border-color: var(--border-primary); background-color: var(--bg-secondary);">
+											<div class="flex justify-between items-start mb-2">
+												<div>
+													<span class="font-medium" style="color: var(--text-primary);">{categorizeLogType(entry.template_layout)} - {entry.template_name}</span>
+													<span class="text-sm ml-2" style="color: var(--text-secondary);">ID: {entry.id.slice(0, 8)}...</span>
+												</div>
+												<span class="text-xs px-2 py-1 rounded" 
+													style={entry.status === 'submitted' ? 'background-color: #10B981; color: white;' : 'background-color: #F59E0B; color: white;'}>
+													{entry.status}
+												</span>
+											</div>
+											<div class="mb-2 p-2 rounded" style="background-color: var(--bg-primary);">
+												<p class="text-sm font-medium mb-1" style="color: var(--text-primary);">Entry Data:</p>
+												<p class="text-sm" style="color: var(--text-secondary);">{parseEntryData(entry.entry_data, entry.template_layout)}</p>
+											</div>
+											<p class="text-sm mb-2" style="color: var(--text-secondary);">Created: {new Date(entry.created_at).toLocaleString()}</p>
+											{#if entry.submitted_at}
+												<p class="text-sm mb-2" style="color: var(--text-secondary);">Submitted: {new Date(entry.submitted_at).toLocaleString()}</p>
+											{/if}
+											<p class="text-sm" style="color: var(--text-secondary);">Period: {entry.period}</p>
+										</div>
+									{/each}
+								{/if}
+							{/if}
 						</div>
 					{:else}
 						<div class="flex items-start gap-3">
