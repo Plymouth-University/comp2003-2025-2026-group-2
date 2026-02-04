@@ -217,7 +217,7 @@ impl UserService {
                     json!({ "error": "Failed to delete member" }),
                 )
             })?;
-        
+
         Ok(target_user.id)
     }
 }

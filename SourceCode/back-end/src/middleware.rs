@@ -126,7 +126,10 @@ impl FromRequestParts<crate::AppState> for AdminUser {
                     .await
                     .map_err(|_| RoleError::InvalidToken)?
                     .ok_or(RoleError::InvalidToken)?;
-                state.user_cache.insert(claims.user_id.clone(), user.clone()).await;
+                state
+                    .user_cache
+                    .insert(claims.user_id.clone(), user.clone())
+                    .await;
                 user
             };
 
@@ -168,7 +171,10 @@ impl FromRequestParts<crate::AppState> for MemberUser {
                     .await
                     .map_err(|_| RoleError::InvalidToken)?
                     .ok_or(RoleError::InvalidToken)?;
-                state.user_cache.insert(claims.user_id.clone(), user.clone()).await;
+                state
+                    .user_cache
+                    .insert(claims.user_id.clone(), user.clone())
+                    .await;
                 user
             };
 
@@ -213,7 +219,10 @@ impl FromRequestParts<crate::AppState> for LogSmartAdminUser {
                     .await
                     .map_err(|_| RoleError::InvalidToken)?
                     .ok_or(RoleError::InvalidToken)?;
-                state.user_cache.insert(claims.user_id.clone(), user.clone()).await;
+                state
+                    .user_cache
+                    .insert(claims.user_id.clone(), user.clone())
+                    .await;
                 user
             };
 
