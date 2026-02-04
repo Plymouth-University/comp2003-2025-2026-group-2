@@ -6,11 +6,15 @@
 	let {
 		isOpen = false,
 		versions = [],
+		currentVersion = 1,
+		currentVersionName = null,
 		onClose,
 		onRestore
 	}: {
 		isOpen: boolean;
 		versions: TemplateVersionInfo[];
+		currentVersion?: number;
+		currentVersionName?: string | null;
 		onClose: () => void;
 		onRestore: (version: number) => void;
 	} = $props();
@@ -46,11 +50,58 @@
 			</div>
 
 			<div class="max-h-[60vh] overflow-y-auto">
-				{#if versions.length === 0}
+				{#if currentVersion && versions.length === 0}
+					<div class="mb-4 rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
+						<div class="flex items-center">
+							<div class="flex-shrink-0">
+								<svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+									<path
+										fill-rule="evenodd"
+										d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+										clip-rule="evenodd"
+									/>
+								</svg>
+							</div>
+							<div class="ml-3">
+								<h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">
+									Current Version: v{currentVersion}
+									{#if currentVersionName}
+										<span class="font-normal">- {currentVersionName}</span>
+									{/if}
+								</h3>
+								<p class="mt-1 text-xs text-blue-700 dark:text-blue-300">
+									No previous versions available yet. Save changes to create version history.
+								</p>
+							</div>
+						</div>
+					</div>
+				{:else if versions.length === 0}
 					<p class="py-8 text-center text-gray-500 dark:text-gray-400">
 						No history available for this template.
 					</p>
 				{:else}
+					<div class="mb-4 rounded-lg bg-blue-50 p-3 dark:bg-blue-900/20">
+						<div class="flex items-center justify-between">
+							<div>
+								<span class="text-sm font-semibold text-blue-800 dark:text-blue-200">
+									Current Version: v{currentVersion}
+								</span>
+								{#if currentVersionName}
+									<span class="ml-2 text-sm text-blue-700 dark:text-blue-300">
+										{currentVersionName}
+									</span>
+								{/if}
+							</div>
+							<span
+								class="rounded-full bg-blue-600 px-3 py-1 text-xs font-medium text-white dark:bg-blue-500"
+							>
+								Active
+							</span>
+						</div>
+					</div>
+					<h3 class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+						Previous Versions
+					</h3>
 					<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
 						<thead class="bg-gray-50 dark:bg-gray-700">
 							<tr>

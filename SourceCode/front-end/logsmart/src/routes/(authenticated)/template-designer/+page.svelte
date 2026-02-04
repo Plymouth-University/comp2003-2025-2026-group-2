@@ -37,6 +37,7 @@
 	let saving = $state(false);
 	let saveError = $state<string | null>(null);
 	let saveSuccess = $state(false);
+	let versionName = $state('');
 	let deleting = $state(false);
 	let deleteError = $state<string | null>(null);
 	let hasUnsavedChanges = $state(false);
@@ -49,6 +50,8 @@
 	let showHistory = $state(false);
 	let historyVersions = $state<ApiTemplateVersionInfo[]>([]);
 	let restoring = $state(false);
+	let currentVersion = $state<number>(1);
+	let currentVersionName = $state<string | null>(null);
 
 	const templateId = $derived(page.url.searchParams.get('id'));
 
@@ -108,6 +111,8 @@
 			const data = (await response.json()) as components['schemas']['GetTemplateResponse'];
 			logTitle = data.template_name;
 			originalTemplateName = data.template_name;
+			currentVersion = data.version || 1;
+			currentVersionName = data.version_name || null;
 			canvasItems = data.template_layout.map(mapApiFieldToCanvasItem);
 			hasUnsavedChanges = false;
 			isEditing = true;
@@ -150,7 +155,8 @@
 			const { error } = await api.PUT('/logs/templates/update', {
 				body: {
 					template_name: logTitle,
-					template_layout: templateLayout
+					template_layout: templateLayout,
+					version_name: versionName || null
 				}
 			});
 
@@ -186,6 +192,26 @@
 		saveSuccess = true;
 		saving = false;
 		hasUnsavedChanges = false;
+		versionName = '';
+
+		// Reload the template to get updated version info
+		if (isEditing && originalTemplateName) {
+			await loadTemplate(originalTemplateName);
+		}
+
+		// Refresh version history if the modal is open
+		if (showHistory && originalTemplateName) {
+			const { data } = await api.GET('/logs/templates/versions', {
+				params: {
+					query: {
+						template_name: originalTemplateName
+					}
+				}
+			});
+			if (data?.versions) {
+				historyVersions = data.versions;
+			}
+		}
 
 		await fetchTemplates();
 
@@ -587,6 +613,8 @@
 <VersionHistoryModal
 	isOpen={showHistory}
 	versions={historyVersions}
+	{currentVersion}
+	{currentVersionName}
 	onClose={() => (showHistory = false)}
 	onRestore={restoreVersion}
 />
@@ -634,6 +662,7 @@
 		<DesignCanvas
 			bind:canvasItems
 			bind:logTitle
+			bind:versionName
 			bind:selectedItemId
 			bind:canvasRef
 			onSave={saveTemplate}

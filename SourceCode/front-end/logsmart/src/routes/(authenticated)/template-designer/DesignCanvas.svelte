@@ -6,6 +6,7 @@
 	let {
 		canvasItems = $bindable(),
 		logTitle = $bindable(),
+		versionName = $bindable(),
 		selectedItemId = $bindable(),
 		canvasRef = $bindable(),
 		onSave,
@@ -23,6 +24,7 @@
 	}: {
 		canvasItems: CanvasItem[];
 		logTitle: string;
+		versionName: string;
 		selectedItemId: string | null;
 		canvasRef: HTMLDivElement | null;
 		onSave: () => void;
@@ -128,15 +130,30 @@
 			</div>
 		{:else}
 			<div class="rounded-lg border-2 border-border-primary bg-bg-primary p-4">
-				<div class="mb-4">
-					<label for="log-title-input" class="sr-only">Template title</label>
-					<input
-						id="log-title-input"
-						type="text"
-						bind:value={logTitle}
-						placeholder="Enter template title..."
-						class="w-full border-2 border-border-primary bg-bg-primary px-4 py-2 text-text-primary"
-					/>
+				<div class="flex">
+					<div class="mb-4 grow-6">
+						<label for="log-title-input" class="sr-only">Template title</label>
+						<input
+							id="log-title-input"
+							type="text"
+							bind:value={logTitle}
+							placeholder="Enter template title..."
+							class="w-full border-2 border-border-primary bg-bg-primary px-4 py-2 text-text-primary"
+						/>
+					</div>
+
+					{#if isEditing}
+						<div class="mb-4 grow">
+							<label for="version-name-input" class="sr-only">Version name (optional)</label>
+							<input
+								id="version-name-input"
+								type="text"
+								bind:value={versionName}
+								placeholder="Give this version a name (optional)..."
+								class="h-full w-full border-2 border-l-0 border-border-primary bg-bg-primary px-4 py-2 text-sm text-text-primary italic"
+							/>
+						</div>
+					{/if}
 				</div>
 
 				<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -144,7 +161,7 @@
 				<div
 					bind:this={canvasRef}
 					data-canvas
-					class="relative min-h-[500px] rounded border-2 border-dashed border-border-secondary bg-bg-secondary"
+					class="relative min-h-125 rounded border-2 border-dashed border-border-secondary bg-bg-secondary"
 					onclick={handleCanvasClick}
 					onkeydown={(e) => {
 						const target = e.target as HTMLElement;

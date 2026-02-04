@@ -879,6 +879,9 @@ export interface components {
 		GetTemplateResponse: {
 			template_layout: components['schemas']['Vec'];
 			template_name: string;
+			/** Format: int32 */
+			version: number;
+			version_name?: string | null;
 		};
 		GetTemplateVersionsResponse: {
 			versions: components['schemas']['TemplateVersionInfo'][];
@@ -1055,6 +1058,7 @@ export interface components {
 			updated_at: string;
 			/** Format: int32 */
 			version?: number;
+			version_name?: string | null;
 		};
 		TemplateField: {
 			field_type: string;

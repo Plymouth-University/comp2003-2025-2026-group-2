@@ -82,7 +82,7 @@ impl TemplateService {
         state: &AppState,
         company_id: &str,
         template_name: &str,
-    ) -> Result<(String, logs_db::TemplateLayout), (StatusCode, serde_json::Value)> {
+    ) -> Result<(String, logs_db::TemplateLayout, u16, Option<String>), (StatusCode, serde_json::Value)> {
         let template = logs_db::get_template_by_name(&state.mongodb, template_name, company_id)
             .await
             .map_err(|e: anyhow::Error| {
@@ -94,7 +94,7 @@ impl TemplateService {
             })?;
 
         match template {
-            Some(t) => Ok((t.template_name, t.template_layout)),
+            Some(t) => Ok((t.template_name, t.template_layout, t.version, t.version_name)),
             None => Err((
                 StatusCode::NOT_FOUND,
                 json!({ "error": "Template not found" }),

@@ -127,7 +127,7 @@ pub async fn get_template(
             Json(json!({ "error": "User is not associated with a company" })),
         ))?;
 
-    let (template_name, template_layout) =
+    let (template_name, template_layout, version, version_name) =
         services::TemplateService::get_template(&state, &company_id, &payload.template_name)
             .await
             .map_err(|(status, err)| (status, Json(err)))?;
@@ -135,6 +135,8 @@ pub async fn get_template(
     Ok(Json(GetTemplateResponse {
         template_name,
         template_layout,
+        version,
+        version_name,
     }))
 }
 

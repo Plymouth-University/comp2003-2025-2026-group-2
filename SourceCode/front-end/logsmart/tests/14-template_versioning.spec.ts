@@ -54,6 +54,9 @@ test.describe('Template Versioning', () => {
 		// Ensure item is selected
 		await page.locator('.canvas-item').first().click();
 		await page.getByLabel('Placeholder').fill('Field V2');
+		await page
+			.getByPlaceholder('Give this version a name (optional)...')
+			.fill('My Custom Version Name');
 		await page.getByRole('button', { name: 'Save Template' }).click();
 		await expect(page.getByText('Template saved successfully!')).toBeVisible();
 		await page.waitForTimeout(1000);
@@ -70,7 +73,10 @@ test.describe('Template Versioning', () => {
 		await expect(page.getByRole('dialog')).toBeVisible();
 		await expect(page.getByText('Version History')).toBeVisible();
 
-		// Should see previous versions (V1 and V2)
+		// Should see previous versions
+		// V2 should have our custom name
+		await expect(page.getByText('My Custom Version Name')).toBeVisible();
+
 		const restoreButtons = page.getByRole('button', { name: 'Restore' });
 		// Wait for buttons to appear
 		await expect(restoreButtons.first()).toBeVisible();

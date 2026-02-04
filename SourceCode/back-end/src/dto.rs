@@ -343,6 +343,8 @@ pub struct AddTemplateResponse {
 pub struct GetTemplateResponse {
     pub template_name: String,
     pub template_layout: logs_db::TemplateLayout,
+    pub version: u16,
+    pub version_name: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
