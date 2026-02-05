@@ -9,7 +9,7 @@ A security log management system for tracking and analyzing security events.
 
 - **Production:** [https://logsmart.app/](https://logsmart.app/)
 - **API:** [https://logsmart.app/api/](https://logsmart.app/api/)
-- **API Docs:** [https://logsmart.app/api/swagger-ui](https://logsmart.app/api/swagger-ui)
+- **API Docs:** [https://api.logsmart.app/swagger-ui](https://api.logsmart.app/swagger-ui)
 - **Direct API:** [https://api.logsmart.app/](https://api.logsmart.app/)
 - **Repository:** [https://github.com/Plymouth-University/comp2003-2025-2026-group-2](https://github.com/Plymouth-University/comp2003-2025-2026-group-2)
 
