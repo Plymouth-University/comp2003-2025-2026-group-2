@@ -1,9 +1,18 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import { goto } from '$app/navigation';
 
 	let { data } = $props<{ data: PageData }>();
 
 	const todaysLogs = $derived(data?.todaysLogs ?? []);
+
+	const handleCreateNewTemplate = () => {
+		goto('/template-designer');
+	};
+
+	const handleViewReports = () => {
+		goto('/reports');
+	};
 
 	// Get user data from server load
 	const user = $derived(() => {
@@ -122,13 +131,15 @@
 				<div class="min-w-95 px-6 py-6" style="background-color: var(--bg-primary);">
 					<div class="flex flex-col items-start gap-4">
 						<button
-							class="border-2 px-6 py-2 font-medium hover:opacity-80"
+							onclick={handleCreateNewTemplate}
+							class="cursor-pointer border-2 px-6 py-2 font-medium transition-opacity hover:opacity-80"
 							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 						>
-							+ Create New Log
+							+ Create New Template
 						</button>
 						<button
-							class="border-2 px-6 py-2 font-medium hover:opacity-80"
+							onclick={handleViewReports}
+							class="cursor-pointer border-2 px-6 py-2 font-medium transition-opacity hover:opacity-80"
 							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 						>
 							View Reports
