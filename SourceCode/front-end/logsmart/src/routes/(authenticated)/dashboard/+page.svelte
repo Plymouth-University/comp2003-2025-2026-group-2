@@ -108,8 +108,8 @@
 					{:else}
 						<ul class="space-y-2">
 							{#each todaysLogs as log}
-								<li style="color: var(--text-primary);">
-									- {log.template_name}
+								<li style="color: var(--text-primary); overflow: hidden;">
+									- <span style="display: inline-block; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{log.template_name}">{log.template_name}</span>
 									{log.period ? `(${log.period})` : ''}
 								</li>
 							{/each}
