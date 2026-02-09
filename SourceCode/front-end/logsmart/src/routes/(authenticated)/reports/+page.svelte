@@ -79,9 +79,11 @@
 
 			// Try different possible field identifier patterns
 			templateLayout.forEach((field: any, index: number) => {
-				// Skip fields of excluded types
-				const fieldType = field.field_type || field.type;
-				if (excludeFieldTypes.includes(fieldType)) {
+				// Skip fields of excluded types - handle null/undefined as text fields
+				const fieldType = field.field_type;
+				const isExcluded = excludeFieldTypes.includes(fieldType) || 
+				                  (!fieldType && excludeFieldTypes.includes(''));
+				if (isExcluded) {
 					return; // Skip this field
 				}
 
@@ -110,7 +112,7 @@
 
 				// If we found a value, format it appropriately
 				if (fieldValue !== undefined && fieldId) {
-					const fieldType = field.field_type || field.type;
+					const fieldType = field.field_type;
 					let displayValue = fieldValue;
 
 					// Format different field types
@@ -155,6 +157,7 @@
 		if (!templateLayout || templateLayout.length === 0) return 'Text Logs';
 
 		const fieldTypes = templateLayout.map((field) => field.field_type).filter(Boolean);
+		console.log('Categorizing log with field types:', fieldTypes);
 
 		if (fieldTypes.includes('temperature')) return 'Temperature Logs';
 		if (fieldTypes.includes('checkbox')) return 'Checkbox Logs';
@@ -165,7 +168,7 @@
 
 	// Function to get field type from a single field
 	function getFieldType(field: any): string {
-		const fieldType = field.field_type || field.type;
+		const fieldType = field.field_type;
 		if (fieldType === 'temperature') return 'Temperature Logs';
 		if (fieldType === 'checkbox') return 'Checkbox Logs';
 		if (fieldType === 'dropdown') return 'Dropdown Logs';
@@ -186,10 +189,10 @@
 			if (!entry.template_layout) return;
 
 			entry.template_layout.forEach((field: any, index: number) => {
-				const fieldType = field.field_type || field.type;
+const fieldType = field.field_type;
 
-				// Skip excluded field types
-				if (excludedFieldTypes.includes(fieldType)) return;
+				// Skip excluded field types - handle null/undefined as text fields
+				if (excludedFieldTypes.includes(fieldType || '') || (!fieldType && excludedFieldTypes.includes(''))) return;
 
 				// Parse the field data
 				const fieldData = parseFieldData(entry.entry_data, field, index);
@@ -250,7 +253,7 @@
 			if (fieldValue === undefined) return '';
 
 			// Format the field value
-			const fieldType = field.field_type || field.type;
+			const fieldType = field.field_type;
 			let displayValue = fieldValue;
 
 			if (fieldType === 'temperature' && typeof fieldValue === 'number') {
@@ -289,12 +292,13 @@
 				} else if (type.label === 'Dropdown Logs') {
 					excludedTypes.push('dropdown');
 				} else if (type.label === 'Text Logs') {
-					// Text logs don't have a specific field type, so we might need to exclude generic text fields
-					// For now, we'll leave this empty as text is the default
+					// Text logs include fields with no field_type or undefined/null field_type
+					excludedTypes.push('text', 'input', '');
 				}
 			}
 		});
 
+		console.log('Excluded field types:', excludedTypes);
 		return excludedTypes;
 	}
 
@@ -302,20 +306,54 @@
 	function hasRemainingFields(templateLayout: any[], excludeFieldTypes: string[], entryData: unknown = null): boolean {
 		if (!templateLayout || templateLayout.length === 0) return true;
 		
+		// Debug logging
+		console.log('Checking fields for entry:', {
+			templateLayout: templateLayout?.map(f => ({ type: f.field_type, id: f.field_id || f.id })),
+			excludedTypes: excludeFieldTypes
+		});
+		
 		// Check if at least one field is not excluded AND has actual data
-		return templateLayout.some((field, index) => {
-			const fieldType = field.field_type || field.type;
+		const result = templateLayout.some((field, index) => {
+			const fieldType = field.field_type;
 			
-			// Skip excluded field types
-			if (excludeFieldTypes.includes(fieldType)) return false;
+			console.log(`Checking field ${index}: type='${fieldType}', excluded=${excludeFieldTypes.includes(fieldType || '') || (!fieldType && excludeFieldTypes.includes(''))}`);
+			
+			// Skip excluded field types (handle null/undefined/empty as text fields)
+			const isExcluded = excludeFieldTypes.includes(fieldType || '') || 
+			                  (!fieldType && excludeFieldTypes.includes(''));
+			
+			if (isExcluded) {
+				console.log(`Field excluded (type: ${fieldType})`);
+				return false;
+			}
 			
 			// If no entry data provided, just check field type existence
-			if (!entryData) return true;
+			if (!entryData) {
+				console.log(`Field accepted (type: ${fieldType}) - no data check`);
+				return true;
+			}
 			
 			// Check if this field actually has data
 			const fieldData = parseFieldData(entryData, field, index);
-			return fieldData && fieldData !== 'No data entered' && fieldData !== 'No data available' && fieldData.trim() !== '';
+			if (!fieldData) {
+				console.log(`Field rejected (type: ${fieldType}) - no data`);
+				return false;
+			}
+			
+			// Convert to string and check if it's meaningful content
+			const dataStr = String(fieldData);
+			const hasValidData = dataStr !== 'No data entered' && 
+			                    dataStr !== 'No data available' && 
+			                    dataStr.trim() !== '' && 
+			                    dataStr !== 'undefined' && 
+			                    dataStr !== 'null';
+			
+			console.log(`Field ${hasValidData ? 'accepted' : 'rejected'} (type: ${fieldType}) - data: "${dataStr}"`);
+			return hasValidData;
 		});
+		
+		console.log('hasRemainingFields result:', result);
+		return result;
 	}
 
 	// Convert DD/MM/YYYY to YYYY-MM-DD
@@ -598,6 +636,16 @@
 
 				// Check if entry has any remaining fields after filtering
 				const hasFields = hasRemainingFields(entry.template_layout, excludedFieldTypes, entry.entry_data);
+				
+				// Debug logging for troubleshooting
+				if (isInDateRange && !hasFields) {
+					console.log('Entry excluded due to no remaining fields:', {
+						entryId: entry.id.slice(0, 8),
+						templateName: entry.template_name,
+						excludedTypes: excludedFieldTypes,
+						templateLayout: entry.template_layout?.map(f => f.field_type)
+					});
+				}
 
 				return isInDateRange && hasFields;
 			});
@@ -1729,52 +1777,56 @@
 								{/each}
 							{:else}
 								{#each filteredEntries as entry}
-									<div
-										class="mb-4 rounded border p-4"
-										style="border-color: var(--border-primary); background-color: var(--bg-secondary);"
-									>
-										<div class="mb-2 flex items-start justify-between">
-											<div>
-												<span class="font-medium" style="color: var(--text-primary);"
-													>{entry.template_name}</span
+									{@const excludedFieldTypes = getExcludedFieldTypes()}
+									{@const shouldShowEntry = hasRemainingFields(entry.template_layout, excludedFieldTypes, entry.entry_data)}
+									{#if shouldShowEntry}
+										<div
+											class="mb-4 rounded border p-4"
+											style="border-color: var(--border-primary); background-color: var(--bg-secondary);"
+										>
+											<div class="mb-2 flex items-start justify-between">
+												<div>
+													<span class="font-medium" style="color: var(--text-primary);"
+														>{entry.template_name}</span
+													>
+													<span class="ml-2 text-sm" style="color: var(--text-secondary);"
+														>ID: {entry.id.slice(0, 8)}...</span
+													>
+												</div>
+												<span
+													class="rounded px-2 py-1 text-xs"
+													style={entry.status === 'submitted'
+														? 'background-color: #10B981; color: white;'
+														: 'background-color: #F59E0B; color: white;'}
 												>
-												<span class="ml-2 text-sm" style="color: var(--text-secondary);"
-													>ID: {entry.id.slice(0, 8)}...</span
-												>
+													{entry.status}
+												</span>
 											</div>
-											<span
-												class="rounded px-2 py-1 text-xs"
-												style={entry.status === 'submitted'
-													? 'background-color: #10B981; color: white;'
-													: 'background-color: #F59E0B; color: white;'}
-											>
-												{entry.status}
-											</span>
-										</div>
-										<div class="mb-2 rounded p-2" style="background-color: var(--bg-primary);">
-											<p class="mb-1 text-sm font-medium" style="color: var(--text-primary);">
-												Entry Data:
-											</p>
-											<p class="text-sm" style="color: var(--text-secondary);">
-												{parseEntryData(
-													entry.entry_data,
-													entry.template_layout,
-													getExcludedFieldTypes()
-												)}
-											</p>
-										</div>
-										<p class="mb-2 text-sm" style="color: var(--text-secondary);">
-											Created: {new Date(entry.created_at).toLocaleString()}
-										</p>
-										{#if entry.submitted_at}
+											<div class="mb-2 rounded p-2" style="background-color: var(--bg-primary);">
+												<p class="mb-1 text-sm font-medium" style="color: var(--text-primary);">
+													Entry Data:
+												</p>
+												<p class="text-sm" style="color: var(--text-secondary);">
+													{parseEntryData(
+														entry.entry_data,
+														entry.template_layout,
+														excludedFieldTypes
+													)}
+												</p>
+											</div>
 											<p class="mb-2 text-sm" style="color: var(--text-secondary);">
-												Submitted: {new Date(entry.submitted_at).toLocaleString()}
+												Created: {new Date(entry.created_at).toLocaleString()}
 											</p>
-										{/if}
-										<p class="text-sm" style="color: var(--text-secondary);">
-											Period: {entry.period}
-										</p>
-									</div>
+											{#if entry.submitted_at}
+												<p class="mb-2 text-sm" style="color: var(--text-secondary);">
+													Submitted: {new Date(entry.submitted_at).toLocaleString()}
+												</p>
+											{/if}
+											<p class="text-sm" style="color: var(--text-secondary);">
+												Period: {entry.period}
+											</p>
+										</div>
+									{/if}
 								{/each}
 							{/if}
 						</div>
