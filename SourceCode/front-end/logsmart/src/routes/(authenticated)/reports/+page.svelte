@@ -40,6 +40,12 @@
 	let filteredEntries = $state<LogEntry[]>([]);
 	let availableLogTypes = $state<Set<string>>(new Set());
 
+	// Function to normalize field type (handle all text field variants as 'text')
+	function normalizeFieldType(fieldType: any): string {
+		if (!fieldType || fieldType === 'input' || fieldType === 'text' || fieldType === 'text_input' || fieldType === 'label') return 'text';
+		return fieldType;
+	}
+
 	// Function to parse entry data and extract readable values
 	function parseEntryData(
 		entryData: unknown,
@@ -80,10 +86,8 @@
 			// Try different possible field identifier patterns
 			templateLayout.forEach((field: any, index: number) => {
 				// Skip fields of excluded types - handle null/undefined as text fields
-				const fieldType = field.field_type;
-				const isExcluded = excludeFieldTypes.includes(fieldType) || 
-				                  (!fieldType && excludeFieldTypes.includes(''));
-				if (isExcluded) {
+				const fieldType = normalizeFieldType(field.field_type);
+				if (excludeFieldTypes.includes(fieldType)) {
 					return; // Skip this field
 				}
 
@@ -189,10 +193,10 @@
 			if (!entry.template_layout) return;
 
 			entry.template_layout.forEach((field: any, index: number) => {
-const fieldType = field.field_type;
+				const fieldType = normalizeFieldType(field.field_type);
 
-				// Skip excluded field types - handle null/undefined as text fields
-				if (excludedFieldTypes.includes(fieldType || '') || (!fieldType && excludedFieldTypes.includes(''))) return;
+				// Skip excluded field types
+				if (excludedFieldTypes.includes(fieldType)) return;
 
 				// Parse the field data
 				const fieldData = parseFieldData(entry.entry_data, field, index);
@@ -293,7 +297,7 @@ const fieldType = field.field_type;
 					excludedTypes.push('dropdown');
 				} else if (type.label === 'Text Logs') {
 					// Text logs include fields with no field_type or undefined/null field_type
-					excludedTypes.push('text', 'input', '');
+					excludedTypes.push('text');
 				}
 			}
 		});
@@ -314,15 +318,12 @@ const fieldType = field.field_type;
 		
 		// Check if at least one field is not excluded AND has actual data
 		const result = templateLayout.some((field, index) => {
-			const fieldType = field.field_type;
+			const fieldType = normalizeFieldType(field.field_type);
 			
-			console.log(`Checking field ${index}: type='${fieldType}', excluded=${excludeFieldTypes.includes(fieldType || '') || (!fieldType && excludeFieldTypes.includes(''))}`);
+			console.log(`Checking field ${index}: type='${fieldType}', excluded=${excludeFieldTypes.includes(fieldType)}`);
 			
-			// Skip excluded field types (handle null/undefined/empty as text fields)
-			const isExcluded = excludeFieldTypes.includes(fieldType || '') || 
-			                  (!fieldType && excludeFieldTypes.includes(''));
-			
-			if (isExcluded) {
+			// Skip excluded field types
+			if (excludeFieldTypes.includes(fieldType)) {
 				console.log(`Field excluded (type: ${fieldType})`);
 				return false;
 			}
@@ -577,6 +578,11 @@ const fieldType = field.field_type;
 				logType.checked = checked;
 			}
 		});
+
+		// Re-generate report if one was already generated
+		if (reportGenerated && logEntries.length > 0) {
+			refilterReport();
+		}
 	}
 
 	function handleIndividualCheckboxChange() {
@@ -586,6 +592,44 @@ const fieldType = field.field_type;
 
 		if (allCheckbox) {
 			allCheckbox.checked = allOthersChecked;
+		}
+
+		// Re-generate report if one was already generated
+		if (reportGenerated && logEntries.length > 0) {
+			refilterReport();
+		}
+	}
+
+	function refilterReport() {
+		// Re-apply filtering with current excluded types
+		const excludedFieldTypes = getExcludedFieldTypes();
+		filteredEntries = logEntries.filter((entry) => {
+			// Filter by date range
+			const entryDate = new Date(entry.created_at);
+			const fromDate = new Date(dateFromISO);
+			const toDate = new Date(dateToISO);
+			toDate.setHours(23, 59, 59, 999);
+			const isInDateRange = entryDate >= fromDate && entryDate <= toDate;
+
+			// Check if entry has any remaining fields after filtering
+			const hasFields = hasRemainingFields(entry.template_layout, excludedFieldTypes, entry.entry_data);
+
+			return isInDateRange && hasFields;
+		});
+
+		// Sort entries based on arrange preference
+		if (arrangeBy === 'date') {
+			filteredEntries.sort(
+				(a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+			);
+		} else {
+			// For log type sorting, we'll handle grouping in the display
+			filteredEntries.sort((a, b) => {
+				if (a.template_name < b.template_name) return -1;
+				if (a.template_name > b.template_name) return 1;
+				// If same template, sort by date
+				return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+			});
 		}
 	}
 
@@ -603,6 +647,16 @@ const fieldType = field.field_type;
 			}
 
 			logEntries = response.data.entries;
+
+			// DEBUG: Log first entry's template layout to see actual field types
+			if (logEntries.length > 0 && logEntries[0].template_layout) {
+				console.log('=== SAMPLE ENTRY TEMPLATE LAYOUT ===');
+				console.log('Template:', logEntries[0].template_name);
+				console.log('Layout:', JSON.stringify(logEntries[0].template_layout, null, 2));
+				logEntries[0].template_layout.forEach((field: any, idx: number) => {
+					console.log(`Field ${idx}: field_type="${field.field_type}" (typeof: ${typeof field.field_type})`);
+				});
+			}
 
 			// Collect available log types from actual data
 			const logTypesSet = new Set<string>();
