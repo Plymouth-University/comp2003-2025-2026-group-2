@@ -25,15 +25,17 @@ A security log management system for tracking and analyzing security events.
 - **Language:** Rust
 - **Framework:** Axum
 - **Databases:**
-  - SQLite (authentication, security logs, users)
+  - PostgreSQL (authentication, security logs, users)
   - MongoDB (templates, customer logs)
-- **Hosting:** Oracle VPS (ARM64)
+- **Hosting:** Oracle VPS (ARM64) via Docker Swarm
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - **Front-end:** [Bun](https://bun.sh/)
-- **Back-end:** [Nix](https://nixos.org/) (for development environment)
+- **Back-end:** 
+  - [Nix](https://nixos.org/) (for development environment)
+  - [Docker](https://www.docker.com/) & [Docker Compose](https://docs.docker.com/compose/) (for local databases)
 
 ### Local Development
 
@@ -47,7 +49,21 @@ bun run dev
 **Back-end:**
 ```bash
 cd SourceCode/back-end
+
+# Start databases (PostgreSQL and MongoDB)
+docker-compose up -d
+
+# Set up environment
+cp .envrc.example .envrc
+# Edit .envrc with your configuration
+
+# Enter development shell
 nix develop
+
+# Run migrations
+sqlx migrate run
+
+# Start the server
 cargo run
 ```
 
@@ -120,8 +136,10 @@ This ensures that all changes are reviewed before being deployed to production.
 
 ### Automatic Deployment
 Push to the `prod` branch triggers automatic deployment:
-- **Front-end:** Deploys to Cloudflare Pages
-- **Back-end:** Builds and deploys to Oracle VPS via SSH
+- **Front-end:** Deploys to Cloudflare Pages via Wrangler
+- **Back-end:** Builds Docker image with Nix and deploys to Oracle VPS via Docker Swarm
+
+The backend is deployed as a Docker service alongside PostgreSQL and MongoDB containers, all managed by Docker Swarm for high availability and automatic rollback on failure.
 
 ### Manual Deployment
 
@@ -133,15 +151,16 @@ bun run deploy
 
 **Back-end:**
 ```bash
-# Build locally
+# Build locally for ARM64
 cd SourceCode/back-end
 nix build .#aarch64-linux
 
-# Deploy to server
-ssh user@server
-sudo systemctl stop logsmart
-# Upload binary via SFTP
-sudo systemctl start logsmart
+# Build Docker image
+nix build .#docker-image-aarch64
+
+# The image can be loaded and deployed to Docker Swarm
+docker load < result
+docker service update logsmart_backend --image <image-name>
 ```
 
 ### Required GitHub Secrets
@@ -180,12 +199,67 @@ SourceCode/
 └── back-end/              # Rust API server
     ├── src/
     │   ├── main.rs        # Application entry point
-    │   ├── handlers.rs    # API route handlers
+    │   ├── handlers/      # API route handlers
+    │   ├── services/      # Business logic services
     │   ├── auth.rs        # Authentication logic
-    │   └── db.rs          # Database operations
+    │   ├── db.rs          # PostgreSQL database operations
+    │   ├── logs_db.rs     # MongoDB log operations
+    │   ├── middleware.rs  # Request middleware
+    │   ├── rate_limit.rs  # Rate limiting
+    │   └── ...
+    ├── tests/             # Integration and unit tests
+    ├── migrations/        # PostgreSQL migrations
     ├── Cargo.toml
+    ├── docker-compose.yml # Local development databases
     └── flake.nix          # Nix development environment
 ```
+
+## 🧪 Testing
+
+### Back-end Tests
+The back-end includes comprehensive test suites:
+
+```bash
+cd SourceCode/back-end
+nix develop
+
+# Run all tests
+cargo test
+
+# Run specific test files
+cargo test --test http_api_tests
+cargo test --test auth_tests
+cargo test --test rate_limit_tests
+
+# Run tests with output
+cargo test -- --nocapture
+```
+
+Test categories include:
+- API integration tests
+- Authentication tests
+- Database tests
+- Handler tests
+- Rate limiting tests
+- Middleware tests
+- Property-based tests
+- Performance tests
+
+### Front-end Tests
+End-to-end tests using Playwright:
+
+```bash
+cd SourceCode/front-end/logsmart
+bun install
+bun run test
+```
+
+### CI/CD Testing
+All tests are automatically run on pull requests via GitHub Actions. The test suite workflow includes:
+- Building the backend Docker image
+- Starting PostgreSQL and MongoDB via Docker Compose
+- Running Playwright end-to-end tests
+- Code formatting and linting checks
 
 ## 🐛 Troubleshooting
 
@@ -199,3 +273,23 @@ If Swagger UI loads on `*.pages.dev` but not on your custom domain:
 - Check that all required secrets are set correctly
 - Verify Nix flake builds locally: `nix build .#aarch64-linux`
 - Review workflow logs in GitHub Actions tab
+
+### Database Connection Issues
+If you encounter database connection errors during local development:
+1. Ensure Docker Compose services are running: `docker-compose ps`
+2. Check database logs: `docker-compose logs postgres` or `docker-compose logs mongodb`
+3. Verify your `.envrc` file has correct database connection strings
+4. Restart databases: `docker-compose restart postgres mongodb`
+
+### Migration Issues
+If database migrations fail:
+```bash
+# Check migration status
+sqlx migrate info
+
+# Revert last migration
+sqlx migrate revert
+
+# Run migrations again
+sqlx migrate run
+```
