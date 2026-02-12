@@ -1460,15 +1460,11 @@ pub async fn delete_passkey_session(pool: &PgPool, id: &str) -> Result<()> {
     Ok(())
 }
 
-
 /// Retrieves all members of the same company as the requesting user.
 ///
 /// # Errors
 /// Returns an error if database query fails.
-pub async fn get_company_members_for_user(
-    pool: &PgPool,
-    user_id: &str,
-) -> Result<Vec<UserRecord>> {
+pub async fn get_company_members_for_user(pool: &PgPool, user_id: &str) -> Result<Vec<UserRecord>> {
     let users = sqlx::query_as::<_, UserRecord>(
         r"
         SELECT target_user.id, target_user.email, target_user.first_name, target_user.last_name, 

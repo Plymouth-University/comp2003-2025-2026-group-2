@@ -326,16 +326,20 @@ pub async fn get_template_versions(
             Json(json!({ "error": "User is not associated with a company" })),
         ))?;
 
-    let versions = services::TemplateService::get_versions(&state, &company_id, &payload.template_name)
-        .await
-        .map_err(|(status, err)| (status, Json(err)))?;
+    let versions =
+        services::TemplateService::get_versions(&state, &company_id, &payload.template_name)
+            .await
+            .map_err(|(status, err)| (status, Json(err)))?;
 
-    let version_infos = versions.into_iter().map(|v| crate::dto::TemplateVersionInfo {
-        version: v.version,
-        version_name: v.version_name,
-        created_at: v.created_at.to_string(),
-        created_by: v.created_by.to_string(),
-    }).collect();
+    let version_infos = versions
+        .into_iter()
+        .map(|v| crate::dto::TemplateVersionInfo {
+            version: v.version,
+            version_name: v.version_name,
+            created_at: v.created_at.to_string(),
+            created_by: v.created_by.to_string(),
+        })
+        .collect();
 
     Ok(Json(crate::dto::GetTemplateVersionsResponse {
         versions: version_infos,

@@ -42,7 +42,14 @@
 
 	// Function to normalize field type (handle all text field variants as 'text')
 	function normalizeFieldType(fieldType: any): string {
-		if (!fieldType || fieldType === 'input' || fieldType === 'text' || fieldType === 'text_input' || fieldType === 'label') return 'text';
+		if (
+			!fieldType ||
+			fieldType === 'input' ||
+			fieldType === 'text' ||
+			fieldType === 'text_input' ||
+			fieldType === 'label'
+		)
+			return 'text';
 		return fieldType;
 	}
 
@@ -307,52 +314,61 @@
 	}
 
 	// Function to check if an entry has any remaining fields after filtering
-	function hasRemainingFields(templateLayout: any[], excludeFieldTypes: string[], entryData: unknown = null): boolean {
+	function hasRemainingFields(
+		templateLayout: any[],
+		excludeFieldTypes: string[],
+		entryData: unknown = null
+	): boolean {
 		if (!templateLayout || templateLayout.length === 0) return true;
-		
+
 		// Debug logging
 		console.log('Checking fields for entry:', {
-			templateLayout: templateLayout?.map(f => ({ type: f.field_type, id: f.field_id || f.id })),
+			templateLayout: templateLayout?.map((f) => ({ type: f.field_type, id: f.field_id || f.id })),
 			excludedTypes: excludeFieldTypes
 		});
-		
+
 		// Check if at least one field is not excluded AND has actual data
 		const result = templateLayout.some((field, index) => {
 			const fieldType = normalizeFieldType(field.field_type);
-			
-			console.log(`Checking field ${index}: type='${fieldType}', excluded=${excludeFieldTypes.includes(fieldType)}`);
-			
+
+			console.log(
+				`Checking field ${index}: type='${fieldType}', excluded=${excludeFieldTypes.includes(fieldType)}`
+			);
+
 			// Skip excluded field types
 			if (excludeFieldTypes.includes(fieldType)) {
 				console.log(`Field excluded (type: ${fieldType})`);
 				return false;
 			}
-			
+
 			// If no entry data provided, just check field type existence
 			if (!entryData) {
 				console.log(`Field accepted (type: ${fieldType}) - no data check`);
 				return true;
 			}
-			
+
 			// Check if this field actually has data
 			const fieldData = parseFieldData(entryData, field, index);
 			if (!fieldData) {
 				console.log(`Field rejected (type: ${fieldType}) - no data`);
 				return false;
 			}
-			
+
 			// Convert to string and check if it's meaningful content
 			const dataStr = String(fieldData);
-			const hasValidData = dataStr !== 'No data entered' && 
-			                    dataStr !== 'No data available' && 
-			                    dataStr.trim() !== '' && 
-			                    dataStr !== 'undefined' && 
-			                    dataStr !== 'null';
-			
-			console.log(`Field ${hasValidData ? 'accepted' : 'rejected'} (type: ${fieldType}) - data: "${dataStr}"`);
+			const hasValidData =
+				dataStr !== 'No data entered' &&
+				dataStr !== 'No data available' &&
+				dataStr.trim() !== '' &&
+				dataStr !== 'undefined' &&
+				dataStr !== 'null';
+
+			console.log(
+				`Field ${hasValidData ? 'accepted' : 'rejected'} (type: ${fieldType}) - data: "${dataStr}"`
+			);
 			return hasValidData;
 		});
-		
+
 		console.log('hasRemainingFields result:', result);
 		return result;
 	}
@@ -612,7 +628,11 @@
 			const isInDateRange = entryDate >= fromDate && entryDate <= toDate;
 
 			// Check if entry has any remaining fields after filtering
-			const hasFields = hasRemainingFields(entry.template_layout, excludedFieldTypes, entry.entry_data);
+			const hasFields = hasRemainingFields(
+				entry.template_layout,
+				excludedFieldTypes,
+				entry.entry_data
+			);
 
 			return isInDateRange && hasFields;
 		});
@@ -654,7 +674,9 @@
 				console.log('Template:', logEntries[0].template_name);
 				console.log('Layout:', JSON.stringify(logEntries[0].template_layout, null, 2));
 				logEntries[0].template_layout.forEach((field: any, idx: number) => {
-					console.log(`Field ${idx}: field_type="${field.field_type}" (typeof: ${typeof field.field_type})`);
+					console.log(
+						`Field ${idx}: field_type="${field.field_type}" (typeof: ${typeof field.field_type})`
+					);
 				});
 			}
 
@@ -689,15 +711,19 @@
 				const isInDateRange = entryDate >= fromDate && entryDate <= toDate;
 
 				// Check if entry has any remaining fields after filtering
-				const hasFields = hasRemainingFields(entry.template_layout, excludedFieldTypes, entry.entry_data);
-				
+				const hasFields = hasRemainingFields(
+					entry.template_layout,
+					excludedFieldTypes,
+					entry.entry_data
+				);
+
 				// Debug logging for troubleshooting
 				if (isInDateRange && !hasFields) {
 					console.log('Entry excluded due to no remaining fields:', {
 						entryId: entry.id.slice(0, 8),
 						templateName: entry.template_name,
 						excludedTypes: excludedFieldTypes,
-						templateLayout: entry.template_layout?.map(f => f.field_type)
+						templateLayout: entry.template_layout?.map((f) => f.field_type)
 					});
 				}
 
@@ -1674,7 +1700,7 @@
 					<button
 						onclick={exportToPDF}
 						disabled={!reportGenerated || filteredEntries.length === 0}
-						class="border-2 px-4 py-2 text-sm font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
+						class="transform border-2 px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						📄 Download PDF
@@ -1682,7 +1708,7 @@
 					<button
 						onclick={() => exportToWord('docx')}
 						disabled={!reportGenerated || filteredEntries.length === 0}
-						class="border-2 px-4 py-2 text-sm font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:bg-green-50 hover:border-green-400 hover:text-green-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
+						class="transform border-2 px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 hover:border-green-400 hover:bg-green-50 hover:text-green-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						📊 Download DOCX
@@ -1690,7 +1716,7 @@
 					<button
 						onclick={() => exportToWord('rtf')}
 						disabled={!reportGenerated || filteredEntries.length === 0}
-						class="border-2 px-4 py-2 text-sm font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-lg hover:bg-purple-50 hover:border-purple-400 hover:text-purple-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
+						class="transform border-2 px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						📝 Download RTF
@@ -1832,7 +1858,11 @@
 							{:else}
 								{#each filteredEntries as entry}
 									{@const excludedFieldTypes = getExcludedFieldTypes()}
-									{@const shouldShowEntry = hasRemainingFields(entry.template_layout, excludedFieldTypes, entry.entry_data)}
+									{@const shouldShowEntry = hasRemainingFields(
+										entry.template_layout,
+										excludedFieldTypes,
+										entry.entry_data
+									)}
 									{#if shouldShowEntry}
 										<div
 											class="mb-4 rounded border p-4"

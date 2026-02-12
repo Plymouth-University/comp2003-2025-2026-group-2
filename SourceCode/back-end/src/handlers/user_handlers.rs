@@ -138,9 +138,10 @@ pub async fn admin_delete_member(
     State(state): State<AppState>,
     Json(payload): Json<RemoveMemberRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    let deleted_user_id = UserService::admin_delete_member(&state.postgres, &claims.user_id, &payload.email)
-        .await
-        .map_err(|(status, error)| (status, Json(error)))?;
+    let deleted_user_id =
+        UserService::admin_delete_member(&state.postgres, &claims.user_id, &payload.email)
+            .await
+            .map_err(|(status, error)| (status, Json(error)))?;
 
     // Invalidate cache for the deleted user
     state.user_cache.invalidate(&deleted_user_id).await;

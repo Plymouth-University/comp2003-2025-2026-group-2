@@ -228,7 +228,10 @@ async fn main() {
         .route("/logs/templates/update", put(handlers::update_template))
         .route("/logs/templates/rename", put(handlers::rename_template))
         .route("/logs/templates", delete(handlers::delete_template))
-        .route("/logs/templates/versions", get(handlers::get_template_versions))
+        .route(
+            "/logs/templates/versions",
+            get(handlers::get_template_versions),
+        )
         .route(
             "/logs/templates/versions/restore",
             post(handlers::restore_template_version),
