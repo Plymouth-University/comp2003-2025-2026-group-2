@@ -1460,6 +1460,33 @@ pub async fn delete_passkey_session(pool: &PgPool, id: &str) -> Result<()> {
     Ok(())
 }
 
+
+/// Retrieves all members of the same company as the requesting user.
+///
+/// # Errors
+/// Returns an error if database query fails.
+pub async fn get_company_members_for_user(
+    pool: &PgPool,
+    user_id: &str,
+) -> Result<Vec<UserRecord>> {
+    let users = sqlx::query_as::<_, UserRecord>(
+        r"
+        SELECT target_user.id, target_user.email, target_user.first_name, target_user.last_name, 
+               target_user.password_hash, target_user.company_id, target_user.role, target_user.created_at, target_user.deleted_at, 
+               companies.name as company_name, target_user.oauth_provider, target_user.oauth_subject, target_user.oauth_picture
+        FROM users as request_user
+        JOIN users as target_user ON request_user.company_id = target_user.company_id
+        LEFT JOIN companies ON target_user.company_id = companies.id
+        WHERE request_user.id = $1 AND target_user.deleted_at IS NULL
+        ",
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(users)
+}
+
 #[cfg(test)]
 mod db_model_tests {
     use super::*;

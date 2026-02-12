@@ -362,7 +362,7 @@ impl AuthService {
         db_pool: &PgPool,
         reset_token: &str,
         new_password: &str,
-    ) -> Result<(), (StatusCode, serde_json::Value)> {
+    ) -> Result<String, (StatusCode, serde_json::Value)> {
         validate_password_policy(new_password)
             .map_err(|e| (StatusCode::BAD_REQUEST, json!({ "error": e.to_string() })))?;
 
@@ -410,9 +410,9 @@ impl AuthService {
                 )
             })?;
 
-        AuditLogger::log_password_reset_completed(db_pool, user_id).await;
+        AuditLogger::log_password_reset_completed(db_pool, user_id.clone()).await;
 
-        Ok(())
+        Ok(user_id)
     }
 
     /// Changes a user's password.

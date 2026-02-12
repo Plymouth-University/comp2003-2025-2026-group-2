@@ -46,6 +46,12 @@ services:
         target: POSTGRES_USER
       - source: postgres_password_v2
         target: POSTGRES_PASSWORD
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6767/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     deploy:
       replicas: 1
       update_config:

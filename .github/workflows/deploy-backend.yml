@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     name: Build Docker Image and Deploy
     
     steps:
@@ -38,22 +38,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Check if image already exists
-        id: check-image
-        run: |
-          TAG=${GITHUB_SHA::8}
-          IMAGE_NAME="nullstring1/logsmart-srv"
-          # Check for manifest on Docker Hub
-          if docker manifest inspect $IMAGE_NAME:${TAG}-aarch64 > /dev/null 2>&1; then
-            echo "✅ Image ${TAG}-aarch64 already exists. Skipping build."
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "❌ Image not found. Proceeding with build."
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Build and Push Docker Image
-        if: steps.check-image.outputs.exists == 'false'
         working-directory: ./SourceCode/back-end
         run: |
           TAG=${GITHUB_SHA::8}

@@ -1,10 +1,12 @@
 {
 	"openapi": "3.1.0",
-	"info": { "title": "back-end", "description": "", "license": { "name": "" }, "version": "1.0.0" },
+	"info": { "title": "back-end", "description": "", "license": { "name": "" }, "version": "1.1.0" },
 	"paths": {
 		"/auth/admin/remove-member": {
 			"delete": {
 				"tags": ["Company Management"],
+				"summary": "Deletes a company member (admin only).",
+				"description": "# Errors\nReturns an error if the user is not an admin or if the deletion fails.",
 				"operationId": "admin_delete_member",
 				"requestBody": {
 					"content": {
@@ -51,6 +53,8 @@
 		"/auth/admin/update-member": {
 			"put": {
 				"tags": ["Company Management"],
+				"summary": "Updates a company member's profile (admin only).",
+				"description": "# Errors\nReturns an error if the user is not an admin, the request is invalid, or the update fails.",
 				"operationId": "admin_update_member_profile",
 				"requestBody": {
 					"content": {
@@ -106,6 +110,8 @@
 		"/auth/company/members": {
 			"get": {
 				"tags": ["Company Management"],
+				"summary": "Retrieves all members belonging to the current user's company.",
+				"description": "# Errors\nReturns an error if the user is not associated with a company or if the database query fails.",
 				"operationId": "get_company_members",
 				"responses": {
 					"200": {
@@ -135,9 +141,183 @@
 				"security": [{ "bearer_auth": [] }]
 			}
 		},
+		"/auth/google/callback": {
+			"get": {
+				"tags": ["Authentication"],
+				"summary": "Handles the callback from Google after the user has authorized the application.",
+				"description": "# Errors\nReturns an error if the state is invalid, code exchange fails, or user creation fails.",
+				"operationId": "google_callback",
+				"parameters": [
+					{
+						"name": "code",
+						"in": "query",
+						"description": "Authorization code from Google",
+						"required": true,
+						"schema": { "type": "string" }
+					},
+					{
+						"name": "state",
+						"in": "query",
+						"description": "CSRF state token",
+						"required": true,
+						"schema": { "type": "string" }
+					}
+				],
+				"responses": {
+					"302": { "description": "Redirect to dashboard on success or login on error" },
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"401": {
+						"description": "Authentication failed",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				}
+			}
+		},
+		"/auth/google/initiate": {
+			"get": {
+				"tags": ["Authentication"],
+				"summary": "Initiates the Google OAuth login flow by redirecting the user to Google.",
+				"description": "# Errors\nReturns an error if OAuth is not configured or if URL generation fails.",
+				"operationId": "initiate_google_login",
+				"parameters": [
+					{
+						"name": "mode",
+						"in": "query",
+						"description": "OAuth mode: 'link' or omit for login",
+						"required": false,
+						"schema": { "type": "string" }
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "OAuth flow initiated",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/OAuthInitiateResponse" }
+							}
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				}
+			}
+		},
+		"/auth/google/link": {
+			"post": {
+				"tags": ["Authentication"],
+				"summary": "Directly links a Google account to an existing user profile using a callback code.",
+				"description": "# Errors\nReturns an error if the state is invalid, code exchange fails, or linking fails.",
+				"operationId": "link_google_account",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": { "$ref": "#/components/schemas/OAuthCallbackRequest" }
+						}
+					},
+					"required": true
+				},
+				"responses": {
+					"200": { "description": "Google account linked successfully" },
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"409": {
+						"description": "Account already linked",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/auth/google/link/confirm": {
+			"post": {
+				"tags": ["Authentication"],
+				"summary": "Confirms linking a Google account to an existing user profile.",
+				"description": "# Errors\nReturns an error if the link token is invalid/expired or if the linking operation fails.",
+				"operationId": "confirm_google_link",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": { "$ref": "#/components/schemas/OAuthLinkConfirmRequest" }
+						}
+					},
+					"required": true
+				},
+				"responses": {
+					"200": { "description": "Google account linked successfully" },
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"409": {
+						"description": "Account already linked",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/auth/google/unlink": {
+			"delete": {
+				"tags": ["Authentication"],
+				"summary": "Unlinks a Google account from the user profile.",
+				"description": "# Errors\nReturns an error if the user has no password set (cannot unlink last auth method) or if unlinking fails.",
+				"operationId": "unlink_google_account",
+				"responses": {
+					"200": { "description": "Google account unlinked successfully" },
+					"400": {
+						"description": "Cannot unlink - password required",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
 		"/auth/invitations/accept": {
 			"post": {
 				"tags": ["Invitations"],
+				"summary": "Accepts an invitation and creates a new user account.",
+				"description": "# Errors\nReturns an error if the token is invalid/expired, validation fails, or account creation fails.",
 				"operationId": "accept_invitation",
 				"requestBody": {
 					"content": {
@@ -178,6 +358,8 @@
 		"/auth/invitations/cancel": {
 			"put": {
 				"tags": ["Invitations"],
+				"summary": "Cancels a pending invitation.",
+				"description": "# Errors\nReturns an error if the user is not authorized or if the cancellation fails.",
 				"operationId": "cancel_invitation",
 				"requestBody": {
 					"content": {
@@ -226,6 +408,8 @@
 		"/auth/invitations/details": {
 			"get": {
 				"tags": ["Invitations"],
+				"summary": "Retrieves details of an invitation using its token.",
+				"description": "# Errors\nReturns an error if the invitation is not found or if there's a database error.",
 				"operationId": "get_invitation_details",
 				"parameters": [
 					{ "name": "token", "in": "query", "required": true, "schema": { "type": "string" } }
@@ -257,6 +441,8 @@
 		"/auth/invitations/pending": {
 			"get": {
 				"tags": ["Invitations"],
+				"summary": "Retrieves all pending invitations for the current user's company.",
+				"description": "# Errors\nReturns an error if the user is not authorized or if the query fails.",
 				"operationId": "get_pending_invitations",
 				"responses": {
 					"200": {
@@ -289,6 +475,8 @@
 		"/auth/invitations/send": {
 			"post": {
 				"tags": ["Invitations"],
+				"summary": "Sends an invitation to a new user.",
+				"description": "# Errors\nReturns an error if the user is not authorized, the email is invalid, or the invitation fails to send.",
 				"operationId": "invite_user",
 				"requestBody": {
 					"content": {
@@ -336,6 +524,8 @@
 		"/auth/login": {
 			"post": {
 				"tags": ["Authentication"],
+				"summary": "Authenticates a user and returns a JWT token.",
+				"description": "# Errors\nReturns an error if credentials are invalid or if authentication fails.",
 				"operationId": "login",
 				"requestBody": {
 					"content": {
@@ -374,6 +564,8 @@
 		"/auth/me": {
 			"get": {
 				"tags": ["Authentication"],
+				"summary": "Retrieves the profile information of the currently authenticated user.",
+				"description": "# Errors\nReturns an error if the user is not found or if there's a database error.",
 				"operationId": "get_current_user",
 				"responses": {
 					"200": {
@@ -401,6 +593,8 @@
 		"/auth/password/request-reset": {
 			"post": {
 				"tags": ["Authentication"],
+				"summary": "Initiates a password reset process by sending an email.",
+				"description": "# Errors\nReturns an error if the email is invalid or the request fails.",
 				"operationId": "request_password_reset",
 				"requestBody": {
 					"content": {
@@ -437,6 +631,8 @@
 		"/auth/password/reset": {
 			"post": {
 				"tags": ["Authentication"],
+				"summary": "Resets a user's password using a valid reset token.",
+				"description": "# Errors\nReturns an error if the token is invalid/expired or the operation fails.",
 				"operationId": "reset_password",
 				"requestBody": {
 					"content": {
@@ -479,6 +675,8 @@
 		"/auth/profile": {
 			"put": {
 				"tags": ["Authentication"],
+				"summary": "Updates the profile information of the currently authenticated user.",
+				"description": "# Errors\nReturns an error if validation fails or the update operation fails.",
 				"operationId": "update_profile",
 				"requestBody": {
 					"content": {
@@ -514,6 +712,8 @@
 		"/auth/register": {
 			"post": {
 				"tags": ["Authentication"],
+				"summary": "Registers a new company and its administrative user.",
+				"description": "# Errors\nReturns an error if validation fails, the email already exists, or registration fails.",
 				"operationId": "register_company_admin",
 				"requestBody": {
 					"content": {
@@ -552,6 +752,8 @@
 		"/auth/verify": {
 			"post": {
 				"tags": ["Authentication"],
+				"summary": "Verifies the validity of a JWT token.",
+				"description": "# Errors\nReturns an error if the token is invalid, expired, or if there's a database error.",
 				"operationId": "verify_token",
 				"requestBody": {
 					"content": {
@@ -671,6 +873,8 @@
 		"/llm/generate-layout": {
 			"post": {
 				"tags": ["LLM"],
+				"summary": "Generates a log layout using LLM based on user prompt.",
+				"description": "# Errors\nReturns an error if the user prompt is empty or if LLM generation fails.",
 				"operationId": "generate_layout",
 				"requestBody": {
 					"content": {
@@ -694,6 +898,8 @@
 		"/logs/entries": {
 			"get": {
 				"tags": ["Log Entries"],
+				"summary": "Lists all log entries for the current user, optionally filtered by template or status.",
+				"description": "# Errors\nReturns an error if the user is not authorized or if the query fails.",
 				"operationId": "list_user_log_entries",
 				"responses": {
 					"200": {
@@ -721,6 +927,8 @@
 			},
 			"post": {
 				"tags": ["Log Entries"],
+				"summary": "Creates a new log entry draft.",
+				"description": "# Errors\nReturns an error if the template name is empty or if entry creation fails.",
 				"operationId": "create_log_entry",
 				"requestBody": {
 					"content": {
@@ -770,6 +978,8 @@
 		"/logs/entries/:entry_id": {
 			"get": {
 				"tags": ["Log Entries"],
+				"summary": "Retrieves a specific log entry by its ID.",
+				"description": "# Errors\nReturns an error if the entry is not found or if the user is not authorized.",
 				"operationId": "get_log_entry",
 				"responses": {
 					"200": {
@@ -807,6 +1017,8 @@
 			},
 			"put": {
 				"tags": ["Log Entries"],
+				"summary": "Updates the data of an existing log entry draft.",
+				"description": "# Errors\nReturns an error if the entry is not found or if the update fails.",
 				"operationId": "update_log_entry",
 				"requestBody": {
 					"content": {
@@ -852,6 +1064,8 @@
 			},
 			"delete": {
 				"tags": ["Log Entries"],
+				"summary": "Deletes a log entry.",
+				"description": "# Errors\nReturns an error if the user is not authorized or if deletion fails.",
 				"operationId": "delete_log_entry",
 				"responses": {
 					"200": {
@@ -889,6 +1103,8 @@
 		"/logs/entries/:entry_id/submit": {
 			"post": {
 				"tags": ["Log Entries"],
+				"summary": "Submits a log entry, marking it as final.",
+				"description": "# Errors\nReturns an error if the entry is not found or if submission fails.",
 				"operationId": "submit_log_entry",
 				"responses": {
 					"200": {
@@ -930,6 +1146,8 @@
 		"/logs/entries/:entry_id/unsubmit": {
 			"post": {
 				"tags": ["Log Entries"],
+				"summary": "Returns a submitted log entry to draft status (admin only).",
+				"description": "# Errors\nReturns an error if the entry is not found or if the operation fails.",
 				"operationId": "unsubmit_log_entry",
 				"responses": {
 					"200": {
@@ -971,6 +1189,8 @@
 		"/logs/entries/due": {
 			"get": {
 				"tags": ["Log Entries"],
+				"summary": "Lists all log forms that are due today for the current user's company.",
+				"description": "# Errors\nReturns an error if the user is not authorized or if the query fails.",
 				"operationId": "list_due_forms_today",
 				"responses": {
 					"200": {
@@ -998,6 +1218,8 @@
 		"/logs/templates": {
 			"get": {
 				"tags": ["Templates"],
+				"summary": "Retrieves a specific log template by name.",
+				"description": "# Errors\nReturns an error if the template is not found or if the user is not authorized.",
 				"operationId": "get_template",
 				"parameters": [
 					{
@@ -1040,6 +1262,8 @@
 			},
 			"post": {
 				"tags": ["Templates"],
+				"summary": "Adds a new log template for the current company.",
+				"description": "# Errors\nReturns an error if the user is not authorized or if template creation fails.",
 				"operationId": "add_template",
 				"requestBody": {
 					"content": {
@@ -1079,6 +1303,8 @@
 			},
 			"delete": {
 				"tags": ["Templates"],
+				"summary": "Deletes a specific log template.",
+				"description": "# Errors\nReturns an error if the user is not authorized or if deletion fails.",
 				"operationId": "delete_template",
 				"parameters": [
 					{
@@ -1122,6 +1348,8 @@
 		"/logs/templates/all": {
 			"get": {
 				"tags": ["Templates"],
+				"summary": "Retrieves all log templates for the current company.",
+				"description": "# Errors\nReturns an error if the user is not authorized or if the query fails.",
 				"operationId": "get_all_templates",
 				"responses": {
 					"200": {
@@ -1151,6 +1379,8 @@
 		"/logs/templates/rename": {
 			"put": {
 				"tags": ["Templates"],
+				"summary": "Renames an existing log template.",
+				"description": "# Errors\nReturns an error if the user is not authorized or if the rename fails.",
 				"operationId": "rename_template",
 				"requestBody": {
 					"content": {
@@ -1194,6 +1424,8 @@
 		"/logs/templates/update": {
 			"put": {
 				"tags": ["Templates"],
+				"summary": "Updates an existing log template.",
+				"description": "# Errors\nReturns an error if the user is not authorized or if the update fails.",
 				"operationId": "update_template",
 				"requestBody": {
 					"content": {
@@ -1214,6 +1446,100 @@
 					},
 					"400": {
 						"description": "Password validation failed",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"401": {
+						"description": "Invalid or expired token",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/logs/templates/versions": {
+			"get": {
+				"tags": ["Templates"],
+				"summary": "Retrieves the version history of a log template.",
+				"description": "# Errors\nReturns an error if the user is not authorized or if query fails.",
+				"operationId": "get_template_versions",
+				"parameters": [
+					{
+						"name": "template_name",
+						"in": "path",
+						"description": "Name of the template to retrieve versions for",
+						"required": true,
+						"example": "ErrorLog"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Versions retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/GetTemplateVersionsResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Invalid or expired token",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/logs/templates/versions/restore": {
+			"post": {
+				"tags": ["Templates"],
+				"summary": "Restores a specific version of a log template.",
+				"description": "# Errors\nReturns an error if the user is not authorized or if restoration fails.",
+				"operationId": "restore_template_version",
+				"parameters": [
+					{
+						"name": "template_name",
+						"in": "path",
+						"description": "Name of the template to restore",
+						"required": true,
+						"example": "ErrorLog"
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": { "$ref": "#/components/schemas/RestoreTemplateVersionRequest" }
+						}
+					},
+					"required": true
+				},
+				"responses": {
+					"200": {
+						"description": "Template restored successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/UpdateTemplateResponse" }
+							}
+						}
+					},
+					"400": {
+						"description": "Bad request",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -1398,10 +1724,22 @@
 			},
 			"GetTemplateResponse": {
 				"type": "object",
-				"required": ["template_name", "template_layout"],
+				"required": ["template_name", "template_layout", "version"],
 				"properties": {
 					"template_layout": { "$ref": "#/components/schemas/Vec" },
-					"template_name": { "type": "string" }
+					"template_name": { "type": "string" },
+					"version": { "type": "integer", "format": "int32", "minimum": 0 },
+					"version_name": { "type": ["string", "null"] }
+				}
+			},
+			"GetTemplateVersionsResponse": {
+				"type": "object",
+				"required": ["versions"],
+				"properties": {
+					"versions": {
+						"type": "array",
+						"items": { "$ref": "#/components/schemas/TemplateVersionInfo" }
+					}
 				}
 			},
 			"HealthResponse": {
@@ -1505,6 +1843,24 @@
 					"password": { "type": "string", "example": "SecurePass123!" }
 				}
 			},
+			"OAuthCallbackRequest": {
+				"type": "object",
+				"required": ["code", "state"],
+				"properties": {
+					"code": { "type": "string", "example": "authorization-code-from-google" },
+					"state": { "type": "string", "example": "csrf-state-token" }
+				}
+			},
+			"OAuthInitiateResponse": {
+				"type": "object",
+				"required": ["authorization_url"],
+				"properties": { "authorization_url": { "type": "string" } }
+			},
+			"OAuthLinkConfirmRequest": {
+				"type": "object",
+				"required": ["link_token"],
+				"properties": { "link_token": { "type": "string" } }
+			},
 			"PasswordResetResponse": {
 				"type": "object",
 				"required": ["message"],
@@ -1567,6 +1923,11 @@
 					"new_password": { "type": "string", "example": "NewPassword123!" },
 					"token": { "type": "string", "example": "reset-token-here" }
 				}
+			},
+			"RestoreTemplateVersionRequest": {
+				"type": "object",
+				"required": ["version"],
+				"properties": { "version": { "type": "integer", "format": "int32", "minimum": 0 } }
 			},
 			"Schedule": {
 				"type": "object",
@@ -1642,7 +2003,9 @@
 					"schedule": { "$ref": "#/components/schemas/Schedule" },
 					"template_layout": { "$ref": "#/components/schemas/Vec" },
 					"template_name": { "type": "string" },
-					"updated_at": { "type": "string", "format": "date-time" }
+					"updated_at": { "type": "string", "format": "date-time" },
+					"version": { "type": "integer", "format": "int32", "minimum": 0 },
+					"version_name": { "type": ["string", "null"] }
 				}
 			},
 			"TemplateField": {
@@ -1661,6 +2024,7 @@
 					"max": { "type": ["number", "null"], "format": "float" },
 					"min": { "type": ["number", "null"], "format": "float" },
 					"options": { "type": ["array", "null"], "items": { "type": "string" } },
+					"placeholder": { "type": ["string", "null"] },
 					"selected": { "type": ["string", "null"] },
 					"size": { "type": ["string", "null"] },
 					"text": { "type": ["string", "null"] },
@@ -1678,6 +2042,16 @@
 					"schedule": { "$ref": "#/components/schemas/Schedule" },
 					"template_name": { "type": "string" },
 					"updated_at": { "type": "string" }
+				}
+			},
+			"TemplateVersionInfo": {
+				"type": "object",
+				"required": ["version", "created_at", "created_by"],
+				"properties": {
+					"created_at": { "type": "string" },
+					"created_by": { "type": "string" },
+					"version": { "type": "integer", "format": "int32", "minimum": 0 },
+					"version_name": { "type": ["string", "null"] }
 				}
 			},
 			"UpdateLogEntryRequest": {
@@ -1703,7 +2077,8 @@
 					"template_layout": {
 						"oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/Vec" }]
 					},
-					"template_name": { "type": "string", "example": "Kitchen Daily Log" }
+					"template_name": { "type": "string", "example": "Kitchen Daily Log" },
+					"version_name": { "type": ["string", "null"], "example": "Major Update" }
 				}
 			},
 			"UpdateTemplateResponse": {
@@ -1719,6 +2094,7 @@
 					"email": { "type": "string" },
 					"first_name": { "type": "string" },
 					"last_name": { "type": "string" },
+					"oauth_provider": { "type": ["string", "null"] },
 					"role": { "$ref": "#/components/schemas/UserRole" }
 				}
 			},

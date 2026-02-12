@@ -257,6 +257,7 @@ impl TemplateFactory {
                     selected: None,
                     options: None,
                     editable: Some(true),
+                    placeholder: None,
                 },
             }],
             company_id: Uuid::new_v4().to_string(),
@@ -270,6 +271,8 @@ impl TemplateFactory {
                 month_of_year: None,
             },
             created_by: mongodb::bson::Uuid::new(),
+            version: 1,
+            version_name: None,
         }
     }
 

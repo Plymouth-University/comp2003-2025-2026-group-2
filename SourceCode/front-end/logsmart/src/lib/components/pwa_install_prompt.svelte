@@ -65,7 +65,7 @@
 			class="rounded-lg border border-gray-200 bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-800"
 		>
 			<div class="flex items-start gap-3">
-				<div class="flex-shrink-0">
+				<div class="shrink-0">
 					<svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
 							stroke-linecap="round"
@@ -96,7 +96,7 @@
 				</div>
 				<button
 					on:click={dismiss}
-					class="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+					class="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
 					aria-label="Dismiss"
 				>
 					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

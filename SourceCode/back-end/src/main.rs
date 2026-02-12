@@ -113,6 +113,11 @@ async fn main() {
         }
     };
 
+    let user_cache = moka::future::Cache::builder()
+        .max_capacity(10_000)
+        .time_to_live(std::time::Duration::from_secs(300)) // 5 minutes
+        .build();
+
     let state = AppState {
         postgres: auth_db_postgres_pool,
         rate_limit: rate_limit_state.clone(),
@@ -136,9 +141,11 @@ async fn main() {
         ),
         google_oauth,
         oauth_state_store: std::sync::Arc::new(handlers::OAuthStateStore::new()),
+        user_cache,
     };
 
     let api_routes = Router::new()
+        .route("/health", get(handlers::basic_health_check))
         .route("/auth/register", post(handlers::register_company_admin))
         .route("/auth/login", post(handlers::login))
         .route("/auth/verify", post(handlers::verify_token))
@@ -221,6 +228,11 @@ async fn main() {
         .route("/logs/templates/update", put(handlers::update_template))
         .route("/logs/templates/rename", put(handlers::rename_template))
         .route("/logs/templates", delete(handlers::delete_template))
+        .route("/logs/templates/versions", get(handlers::get_template_versions))
+        .route(
+            "/logs/templates/versions/restore",
+            post(handlers::restore_template_version),
+        )
         .route("/logs/entries/due", get(handlers::list_due_forms_today))
         .route("/logs/entries", post(handlers::create_log_entry))
         .route("/logs/entries", get(handlers::list_user_log_entries))

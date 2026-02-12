@@ -189,6 +189,26 @@ pub struct UpdateTemplateRequest {
     pub template_layout: Option<logs_db::TemplateLayout>,
     #[schema(example = "{\"frequency\": \"daily\", \"time\": \"08:00\"}")]
     pub schedule: Option<logs_db::Schedule>,
+    #[schema(example = "Major Update")]
+    pub version_name: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct TemplateVersionInfo {
+    pub version: u16,
+    pub version_name: Option<String>,
+    pub created_at: String,
+    pub created_by: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct GetTemplateVersionsResponse {
+    pub versions: Vec<TemplateVersionInfo>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct RestoreTemplateVersionRequest {
+    pub version: u16,
 }
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -323,6 +343,8 @@ pub struct AddTemplateResponse {
 pub struct GetTemplateResponse {
     pub template_name: String,
     pub template_layout: logs_db::TemplateLayout,
+    pub version: u16,
+    pub version_name: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
