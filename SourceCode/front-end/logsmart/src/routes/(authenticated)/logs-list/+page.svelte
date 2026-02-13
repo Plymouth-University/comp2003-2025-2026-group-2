@@ -156,8 +156,12 @@
 									class="flex items-center justify-between rounded border-2 p-4"
 									style="background-color: var(--bg-primary); border-color: var(--border-primary);"
 								>
-									<div class="flex-1">
-										<div class="text-xl font-semibold" style="color: var(--text-primary);">
+									<div class="min-w-0 flex-1">
+										<div
+											class="text-overflow-ellipsis overflow-hidden text-xl font-semibold whitespace-nowrap"
+											style="color: var(--text-primary);"
+											title={formatTemplateName(form.template_name, form.period)}
+										>
 											{formatTemplateName(form.template_name, form.period)}
 										</div>
 										<div class="text-sm" style="color: var(--text-secondary);">
@@ -202,8 +206,12 @@
 									class="flex items-center justify-between rounded border-2 p-4"
 									style="background-color: var(--bg-primary); border-color: var(--border-primary);"
 								>
-									<div class="flex-1">
-										<div class="text-xl font-semibold" style="color: var(--text-primary);">
+									<div class="min-w-0 flex-1">
+										<div
+											class="text-overflow-ellipsis overflow-hidden text-xl font-semibold whitespace-nowrap"
+											style="color: var(--text-primary);"
+											title={formatTemplateName(log.template_name, log.period)}
+										>
 											{formatTemplateName(log.template_name, log.period)}
 										</div>
 										<div class="text-sm" style="color: var(--text-secondary);">
@@ -249,8 +257,12 @@
 									class="flex items-center justify-between rounded border-2 p-4"
 									style="background-color: var(--bg-primary); border-color: var(--border-primary);"
 								>
-									<div class="flex-1">
-										<div class="text-xl font-semibold" style="color: var(--text-primary);">
+									<div class="min-w-0 flex-1">
+										<div
+											class="text-overflow-ellipsis overflow-hidden text-xl font-semibold whitespace-nowrap"
+											style="color: var(--text-primary);"
+											title={formatTemplateName(form.template_name, form.period)}
+										>
 											{formatTemplateName(form.template_name, form.period)}
 										</div>
 										<div class="text-sm" style="color: var(--text-secondary);">
@@ -295,8 +307,12 @@
 									class="flex items-center justify-between rounded border-2 p-4"
 									style="background-color: var(--bg-primary); border-color: var(--border-primary);"
 								>
-									<div class="flex-1">
-										<div class="text-xl font-semibold" style="color: var(--text-primary);">
+									<div class="min-w-0 flex-1">
+										<div
+											class="text-overflow-ellipsis overflow-hidden text-xl font-semibold whitespace-nowrap"
+											style="color: var(--text-primary);"
+											title={formatTemplateName(log.template_name, log.period)}
+										>
 											{formatTemplateName(log.template_name, log.period)}
 										</div>
 										<div class="text-sm" style="color: var(--text-secondary);">

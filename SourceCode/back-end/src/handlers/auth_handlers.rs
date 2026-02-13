@@ -69,7 +69,10 @@ pub async fn verify_token(
                 StatusCode::NOT_FOUND,
                 Json(json!({ "error": "User not found" })),
             ))?;
-        state.user_cache.insert(claims.user_id.clone(), user.clone()).await;
+        state
+            .user_cache
+            .insert(claims.user_id.clone(), user.clone())
+            .await;
         user
     };
 
@@ -346,7 +349,10 @@ pub async fn get_current_user(
                 StatusCode::NOT_FOUND,
                 Json(json!({ "error": "User not found" })),
             ))?;
-        state.user_cache.insert(claims.user_id.clone(), user.clone()).await;
+        state
+            .user_cache
+            .insert(claims.user_id.clone(), user.clone())
+            .await;
         user
     };
 
@@ -481,12 +487,16 @@ pub async fn reset_password(
     State(state): State<AppState>,
     Json(payload): Json<ResetPasswordRequest>,
 ) -> Result<Json<PasswordResetResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user_id = services::AuthService::reset_password(&state.postgres, &payload.token, &payload.new_password)
-        .await
-        .map_err(|e| {
-            tracing::error!("Password reset failed: {:?}", e);
-            (e.0, Json(e.1))
-        })?;
+    let user_id = services::AuthService::reset_password(
+        &state.postgres,
+        &payload.token,
+        &payload.new_password,
+    )
+    .await
+    .map_err(|e| {
+        tracing::error!("Password reset failed: {:?}", e);
+        (e.0, Json(e.1))
+    })?;
 
     // Invalidate cache
     state.user_cache.invalidate(&user_id).await;

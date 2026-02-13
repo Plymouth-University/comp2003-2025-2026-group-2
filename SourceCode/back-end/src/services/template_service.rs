@@ -82,7 +82,10 @@ impl TemplateService {
         state: &AppState,
         company_id: &str,
         template_name: &str,
-    ) -> Result<(String, logs_db::TemplateLayout, u16, Option<String>), (StatusCode, serde_json::Value)> {
+    ) -> Result<
+        (String, logs_db::TemplateLayout, u16, Option<String>),
+        (StatusCode, serde_json::Value),
+    > {
         let template = logs_db::get_template_by_name(&state.mongodb, template_name, company_id)
             .await
             .map_err(|e: anyhow::Error| {
@@ -94,7 +97,12 @@ impl TemplateService {
             })?;
 
         match template {
-            Some(t) => Ok((t.template_name, t.template_layout, t.version, t.version_name)),
+            Some(t) => Ok((
+                t.template_name,
+                t.template_layout,
+                t.version,
+                t.version_name,
+            )),
             None => Err((
                 StatusCode::NOT_FOUND,
                 json!({ "error": "Template not found" }),
@@ -183,7 +191,8 @@ impl TemplateService {
             template_layout: current_template.template_layout.clone(),
             schedule: current_template.schedule,
             created_at: chrono::Utc::now(),
-            created_by: mongodb::bson::Uuid::parse_str(user_id).unwrap_or(current_template.created_by), 
+            created_by: mongodb::bson::Uuid::parse_str(user_id)
+                .unwrap_or(current_template.created_by),
         };
 
         logs_db::add_template_version(&state.mongodb, &version_doc)
@@ -248,19 +257,20 @@ impl TemplateService {
         user_id: &str,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
         // 1. Fetch target version
-        let target_version = logs_db::get_template_version(&state.mongodb, company_id, template_name, version)
-            .await
-            .map_err(|e| {
-                tracing::error!("Failed to fetch target version: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Database error" }),
-                )
-            })?
-            .ok_or((
-                StatusCode::NOT_FOUND,
-                json!({ "error": "Version not found" }),
-            ))?;
+        let target_version =
+            logs_db::get_template_version(&state.mongodb, company_id, template_name, version)
+                .await
+                .map_err(|e| {
+                    tracing::error!("Failed to fetch target version: {:?}", e);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        json!({ "error": "Database error" }),
+                    )
+                })?
+                .ok_or((
+                    StatusCode::NOT_FOUND,
+                    json!({ "error": "Version not found" }),
+                ))?;
 
         // 2. Call update_template with the target data
         // This handles archiving the CURRENT state before overwriting it with the OLD state
@@ -272,7 +282,8 @@ impl TemplateService {
             Some(&target_version.schedule),
             user_id,
             Some(format!("Restored from version {}", version)),
-        ).await
+        )
+        .await
     }
 
     /// Renames a log template.

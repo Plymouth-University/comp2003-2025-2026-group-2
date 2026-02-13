@@ -34,7 +34,7 @@
 			<ul class="divide-y" style="border-color: var(--border-secondary);">
 				{#if isNewTemplate}
 					<li
-						class="flex items-center gap-3 px-4 py-3"
+						class="flex min-w-0 items-center gap-3 px-4 py-3"
 						style="background-color: var(--bg-secondary);"
 					>
 						<div
@@ -54,7 +54,10 @@
 								<line x1="6" y1="2" x2="6" y2="10"></line>
 							</svg>
 						</div>
-						<span style="color: var(--text-primary); font-style: italic;">
+						<span
+							style="color: var(--text-primary); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;"
+							title={currentTemplateName || 'Untitled Template'}
+						>
 							{currentTemplateName || 'Untitled Template'}
 						</span>
 					</li>
@@ -62,7 +65,7 @@
 				{#each templates as template (template.id)}
 					<!-- svelte-ignore a11y_no_noninteractive_element_to_interactive_role -->
 					<li
-						class="flex cursor-pointer items-center gap-3 px-4 py-3 hover:opacity-80"
+						class="flex min-w-0 cursor-pointer items-center gap-3 px-4 py-3 hover:opacity-80"
 						style={!isNewTemplate && currentTemplateName === template.name
 							? 'background-color: var(--bg-secondary);'
 							: ''}
@@ -90,7 +93,10 @@
 								</svg>
 							{/if}
 						</div>
-						<span style="color: var(--text-primary);">{template.name}</span>
+						<span
+							style="color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;"
+							title={template.name}>{template.name}</span
+						>
 					</li>
 				{/each}
 			</ul>
