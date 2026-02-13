@@ -828,20 +828,33 @@
 	<meta name="Originator" content="Microsoft Word">
 	<title>Log Report</title>
 	<style>
-		body { font-family: 'Times New Roman', serif; font-size: 12pt; margin: 1in; }
-		h1 { font-size: 16pt; font-weight: bold; text-align: center; margin-bottom: 12pt; }
-		h2 { font-size: 14pt; font-weight: bold; margin-top: 12pt; margin-bottom: 6pt; }
-		.header { border-bottom: 1pt solid black; padding-bottom: 6pt; margin-bottom: 12pt; }
-		.entry { border: 1pt solid #ccc; margin: 6pt 0; padding: 8pt; }
-		.entry-header { font-weight: bold; margin-bottom: 4pt; }
-		.entry-data { background-color: #f0f0f0; padding: 4pt; margin: 4pt 0; }
-		.status { padding: 2pt 4pt; border-radius: 2pt; color: white; font-size: 10pt; }
-		.submitted { background-color: #10B981; }
-		.draft { background-color: #F59E0B; }
-		table { width: 100%; border-collapse: collapse; margin: 6pt 0; table-layout: fixed; border: 1pt solid #000; }
-		td { padding: 6pt; border: 1pt solid #000; vertical-align: top; word-wrap: break-word; font-size: 11pt; }
-		.label { font-weight: bold; width: 30%; background-color: #f0f0f0; }
-		.value { width: 70%; }
+		body { 
+			font-family: Aptos, Verdana, 'Segoe UI', Arial, sans-serif; 
+			font-size: 11pt; 
+			margin: 1in; 
+			line-height: 1.4; 
+			text-align: left;
+		}
+		h1 { font-size: 18pt; font-weight: bold; text-align: center; margin-bottom: 14pt; }
+		h2 { font-size: 14pt; font-weight: bold; margin-top: 16pt; margin-bottom: 8pt; text-align: left; }
+		p { margin: 4pt 0; line-height: 1.4; text-align: left; }
+		.header { border-bottom: 2pt solid black; padding-bottom: 8pt; margin-bottom: 16pt; text-align: left; }
+		.entry-box { 
+			border: 1pt solid #999; 
+			margin: 14pt 0; 
+			padding: 12pt; 
+			text-align: left;
+			page-break-inside: avoid;
+			display: block;
+			orphans: 10;
+			widows: 10;
+		}
+		.entry-title { font-size: 12pt; font-weight: bold; margin-bottom: 4pt; }
+		.entry-id { font-size: 9pt; color: #666; margin-bottom: 4pt; }
+		.status-badge { padding: 3pt 8pt; color: white; font-size: 10pt; margin-bottom: 8pt; display: inline-block; }
+		.entry-data-box { background-color: #f5f5f5; padding: 10pt; margin: 8pt 0; border-left: 3pt solid #10B981; }
+		.field-row { margin: 6pt 0; line-height: 1.5; }
+		.field-label { font-weight: bold; color: #333; }
 	</style>
 </head>
 <body>
@@ -887,31 +900,30 @@
 	function generateWordEntryHTML(entry: LogEntry): string {
 		const excludedFieldTypes = getExcludedFieldTypes();
 		const entryData = parseEntryData(entry.entry_data, entry.template_layout, excludedFieldTypes);
+		const statusBg = entry.status === 'submitted' ? '#10B981' : '#F59E0B';
 
+		// Use paragraphs with Word-specific keep-together formatting
 		return `
-		<div class="entry">
-			<div class="entry-header">
-				${entry.template_name}
-				<span class="status ${entry.status === 'submitted' ? 'submitted' : 'draft'}">${entry.status}</span>
-				<br><small>ID: ${entry.id.slice(0, 8)}...</small>
+		<div class="entry-box" style="page-break-inside: avoid; page-break-after: auto;">
+			<p class="entry-title" style="page-break-after: avoid; keep-with-next: always;">${entry.template_name}</p>
+			<p class="entry-id" style="page-break-after: avoid; keep-with-next: always;">ID: ${entry.id.slice(0, 8)}...</p>
+			<p class="status-badge" style="background-color: ${statusBg}; page-break-after: avoid; keep-with-next: always;">${entry.status}</p>
+			
+			<div class="entry-data-box" style="page-break-inside: avoid; keep-with-next: always;">
+				<span class="field-label">Entry Data:</span> ${entryData}
 			</div>
 			
-			<table>
-				<tr>
-					<td class="label">Entry Data:</td>
-					<td class="value">${entryData}</td>
-				</tr>
-				<tr>
-					<td class="label">Created:</td>
-					<td class="value">${new Date(entry.created_at).toLocaleString()}</td>
-				</tr>
-				${entry.submitted_at ? `<tr><td class="label">Submitted:</td><td class="value">${new Date(entry.submitted_at).toLocaleString()}</td></tr>` : ''}
-				<tr>
-					<td class="label">Period:</td>
-					<td class="value">${entry.period}</td>
-				</tr>
-			</table>
+			<p class="field-row" style="page-break-after: avoid; keep-with-next: always;">
+				<span class="field-label">Created:</span> ${new Date(entry.created_at).toLocaleString()}
+			</p>
+			
+			${entry.submitted_at ? `<p class="field-row" style="page-break-after: avoid; keep-with-next: always;"><span class="field-label">Submitted:</span> ${new Date(entry.submitted_at).toLocaleString()}</p>` : ''}
+			
+			<p class="field-row" style="keep-with-next: avoid;">
+				<span class="field-label">Period:</span> ${entry.period}
+			</p>
 		</div>
+		<p style="page-break-after: auto; margin-bottom: 0;">&nbsp;</p>
 		`;
 	}
 
@@ -959,8 +971,11 @@
 		const statusColor = entry.status === 'submitted' ? '\\cf2' : '\\cf3';
 
 		let rtf = `\\pard\\box\\brdrs\\brdrw10\\brdrcf1\\par`;
-		rtf += `\\b ${entry.template_name}\\b0\\tab ${statusColor}${entry.status}\\cf1\\par`;
-		rtf += `\\fi0\\b Created:\\b0 ${new Date(entry.created_at).toLocaleString()}\\par`;
+		rtf += `\\b ${entry.template_name}\\b0\\par`;
+		rtf += `\\i ID: ${entry.id.slice(0, 8)}...\\i0\\par`;
+		rtf += `${statusColor}\\b ${entry.status}\\b0\\cf1\\par\\par`;
+		rtf += `\\b Entry Data:\\b0 ${entryData}\\par\\par`;
+		rtf += `\\b Created:\\b0 ${new Date(entry.created_at).toLocaleString()}\\par`;
 		if (entry.submitted_at) {
 			rtf += `\\b Submitted:\\b0 ${new Date(entry.submitted_at).toLocaleString()}\\par`;
 		}
