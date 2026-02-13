@@ -225,67 +225,6 @@ impl TemplateService {
         Ok(())
     }
 
-    /// Retrieves version history for a template.
-    ///
-    /// # Errors
-    /// Returns an error if database query fails.
-    pub async fn get_versions(
-        state: &AppState,
-        company_id: &str,
-        template_name: &str,
-    ) -> Result<Vec<logs_db::TemplateVersionDocument>, (StatusCode, serde_json::Value)> {
-        logs_db::get_template_versions(&state.mongodb, company_id, template_name)
-            .await
-            .map_err(|e| {
-                tracing::error!("Failed to fetch template versions: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Database error" }),
-                )
-            })
-    }
-
-    /// Restores a specific version of a template.
-    ///
-    /// # Errors
-    /// Returns an error if version not found or update fails.
-    pub async fn restore_version(
-        state: &AppState,
-        company_id: &str,
-        template_name: &str,
-        version: u16,
-        user_id: &str,
-    ) -> Result<(), (StatusCode, serde_json::Value)> {
-        // 1. Fetch target version
-        let target_version =
-            logs_db::get_template_version(&state.mongodb, company_id, template_name, version)
-                .await
-                .map_err(|e| {
-                    tracing::error!("Failed to fetch target version: {:?}", e);
-                    (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        json!({ "error": "Database error" }),
-                    )
-                })?
-                .ok_or((
-                    StatusCode::NOT_FOUND,
-                    json!({ "error": "Version not found" }),
-                ))?;
-
-        // 2. Call update_template with the target data
-        // This handles archiving the CURRENT state before overwriting it with the OLD state
-        Self::update_template(
-            state,
-            company_id,
-            template_name,
-            Some(&target_version.template_layout),
-            Some(&target_version.schedule),
-            user_id,
-            Some(format!("Restored from version {}", version)),
-        )
-        .await
-    }
-
     /// Renames a log template.
     ///
     /// # Errors

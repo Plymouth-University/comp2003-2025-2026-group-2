@@ -261,7 +261,7 @@ pub async fn update_template(
         set_doc.insert("version_name", name);
     }
     set_doc.insert("updated_at", mongodb::bson::to_bson(&chrono::Utc::now())?);
-
+    
     // Increment version
     let update = mongodb::bson::doc! {
         "$set": set_doc,
@@ -283,7 +283,7 @@ pub async fn update_template_with_version(
     schedule: Option<&Schedule>,
     layout: Option<&TemplateLayout>,
 ) -> Result<()> {
-    // This is now redundant given update_template handles versioning,
+    // This is now redundant given update_template handles versioning, 
     // but we can keep the original signature compatible by forwarding
     update_template(client, template_name, company_id, schedule, layout, None).await
 }

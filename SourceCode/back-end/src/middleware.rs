@@ -164,19 +164,10 @@ impl FromRequestParts<crate::AppState> for MemberUser {
                 .validate_token(token)
                 .map_err(|_| RoleError::InvalidToken)?;
 
-            let user = if let Some(user) = state.user_cache.get(&claims.user_id).await {
-                user
-            } else {
-                let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
-                    .await
-                    .map_err(|_| RoleError::InvalidToken)?
-                    .ok_or(RoleError::InvalidToken)?;
-                state
-                    .user_cache
-                    .insert(claims.user_id.clone(), user.clone())
-                    .await;
-                user
-            };
+            let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
+                .await
+                .map_err(|_| RoleError::InvalidToken)?
+                .ok_or(RoleError::InvalidToken)?;
 
             if !matches!(
                 user.get_role(),
@@ -212,19 +203,10 @@ impl FromRequestParts<crate::AppState> for LogSmartAdminUser {
                 .validate_token(token)
                 .map_err(|_| RoleError::InvalidToken)?;
 
-            let user = if let Some(user) = state.user_cache.get(&claims.user_id).await {
-                user
-            } else {
-                let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
-                    .await
-                    .map_err(|_| RoleError::InvalidToken)?
-                    .ok_or(RoleError::InvalidToken)?;
-                state
-                    .user_cache
-                    .insert(claims.user_id.clone(), user.clone())
-                    .await;
-                user
-            };
+            let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
+                .await
+                .map_err(|_| RoleError::InvalidToken)?
+                .ok_or(RoleError::InvalidToken)?;
 
             if !user.is_logsmart_admin() {
                 return Err(RoleError::InsufficientPermissions);
