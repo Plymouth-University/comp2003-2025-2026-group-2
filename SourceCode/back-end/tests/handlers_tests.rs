@@ -78,14 +78,20 @@ fn test_login_missing_password() {
 fn test_invite_user_request_validation() {
     let req = InviteUserRequest {
         email: "newuser@example.com".to_string(),
+        role: Some(back_end::db::UserRole::Staff),
+        branch_id: Some("branch123".to_string()),
     };
     assert_eq!(req.email, "newuser@example.com");
+    assert_eq!(req.role, Some(back_end::db::UserRole::Staff));
+    assert_eq!(req.branch_id, Some("branch123".to_string()));
 }
 
 #[test]
 fn test_invite_user_missing_email() {
     let req = InviteUserRequest {
         email: "".to_string(),
+        role: None,
+        branch_id: None,
     };
     assert!(req.email.is_empty());
 }
@@ -130,26 +136,34 @@ use back_end::db::UserRole;
 #[test]
 fn test_user_response_structure() {
     let user_response = UserResponse {
+        id: "user123".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
+        company_id: Some("company123".to_string()),
         company_name: Some("Test Company".to_string()),
-        role: UserRole::Admin,
+        branch_id: None,
+        role: UserRole::CompanyManager,
+        created_at: chrono::Utc::now(),
         oauth_provider: None,
     };
     assert_eq!(user_response.email, "test@example.com");
-    assert_eq!(user_response.role, UserRole::Admin);
+    assert_eq!(user_response.role, UserRole::CompanyManager);
     assert_eq!(user_response.company_name, Some("Test Company".to_string()));
 }
 
 #[test]
 fn test_user_response_without_company() {
     let user_response = UserResponse {
+        id: "user123".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
+        company_id: None,
         company_name: None,
-        role: UserRole::Member,
+        branch_id: None,
+        role: UserRole::Staff,
+        created_at: chrono::Utc::now(),
         oauth_provider: None,
     };
     assert_eq!(user_response.company_name, None);
@@ -169,11 +183,15 @@ fn test_invitation_response_structure() {
 #[test]
 fn test_auth_response_structure() {
     let user_response = UserResponse {
+        id: "user123".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
+        company_id: Some("company123".to_string()),
         company_name: Some("Test Company".to_string()),
-        role: UserRole::Admin,
+        branch_id: None,
+        role: UserRole::CompanyManager,
+        created_at: chrono::Utc::now(),
         oauth_provider: None,
     };
     let auth_response = AuthResponse {
@@ -226,16 +244,20 @@ fn test_login_request_serialization() {
 #[test]
 fn test_user_response_serialization() {
     let user_response = UserResponse {
+        id: "user123".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
+        company_id: Some("company123".to_string()),
         company_name: Some("Test Company".to_string()),
-        role: UserRole::Admin,
+        branch_id: None,
+        role: UserRole::CompanyManager,
+        created_at: chrono::Utc::now(),
         oauth_provider: None,
     };
     let json = serde_json::to_string(&user_response).unwrap();
     assert!(json.contains("Test Company"));
-    assert!(json.contains("admin"));
+    assert!(json.contains("company_manager"));
 }
 
 #[test]
@@ -274,11 +296,15 @@ fn test_password_validation_length() {
 #[test]
 fn test_response_contains_token() {
     let user_response = UserResponse {
+        id: "user123".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
+        company_id: Some("Test Company".to_string()),
         company_name: Some("Test Company".to_string()),
-        role: UserRole::Admin,
+        branch_id: None,
+        role: UserRole::CompanyManager,
+        created_at: chrono::Utc::now(),
         oauth_provider: None,
     };
     let auth_response = AuthResponse {

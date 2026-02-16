@@ -94,6 +94,31 @@ test.describe('Template Designer - CRUD Operations', () => {
 		}
 	});
 
+	test('save_template_with_branch_visibility', async ({ page }) => {
+		// Navigate directly to branches
+		await page.goto('http://localhost:5173/branches');
+		await page.waitForLoadState('networkidle');
+
+		await page.getByRole('textbox', { name: 'Branch Name' }).fill('Visibility Branch');
+		await page.getByRole('textbox', { name: 'Address' }).fill('Some Address');
+		await page.getByRole('button', { name: 'ADD BRANCH' }).click();
+		await expect(page.getByText('Visibility Branch')).toBeVisible();
+
+		await page.goto('http://localhost:5173/template-designer');
+		await page.waitForLoadState('networkidle');
+
+		const nameInput = page.getByPlaceholder('Template Name');
+		await nameInput.fill('Branch Specific Template');
+
+		// Select branch visibility
+		const branchSelect = page.locator('#branch-select');
+		await expect(branchSelect).toBeVisible();
+		await branchSelect.selectOption({ label: 'Visibility Branch' });
+
+		await page.getByRole('button', { name: 'Save Template' }).click();
+		await expect(page.getByText('Template saved successfully!')).toBeVisible();
+	});
+
 	test('save_without_template_name_shows_error', async ({ page }) => {
 		await page.goto('http://localhost:5173/template-designer');
 		await page.waitForLoadState('networkidle');

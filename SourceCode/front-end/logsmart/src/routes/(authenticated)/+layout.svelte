@@ -7,7 +7,12 @@
 	let mobileMenuOpen = $state(false);
 
 	const currentPath = $derived(page.url.pathname);
-	const isAdmin = $derived(data?.user?.role !== 'member');
+	const isAdmin = $derived(
+		data?.user?.role !== 'staff' ||
+			data?.user?.role === 'admin' ||
+			data?.user?.role === 'logsmart_admin'
+	);
+	const isCompanyManager = $derived(data?.user?.role === 'company_manager');
 
 	async function handleLogout() {
 		await fetch('/api/logout', { method: 'POST' });
@@ -103,6 +108,17 @@
 								class:underline={currentPath === '/templates-dashboard'}
 							>
 								Templates Dashboard
+							</a>
+						{/if}
+						{#if isCompanyManager}
+							<a
+								href="/branches"
+								class="hover:opacity-80"
+								style="color: var(--text-secondary);"
+								class:font-bold={currentPath === '/branches'}
+								class:underline={currentPath === '/branches'}
+							>
+								Branches
 							</a>
 						{/if}
 					</nav>
@@ -215,6 +231,17 @@
 							onclick={closeMobileMenu}
 						>
 							Templates Dashboard
+						</a>
+					{/if}
+					{#if isCompanyManager}
+						<a
+							href="/branches"
+							class="block hover:opacity-80"
+							style="color: var(--text-secondary);"
+							class:font-bold={currentPath === '/branches'}
+							onclick={closeMobileMenu}
+						>
+							Branches
 						</a>
 					{/if}
 					<div class="border-t pt-3" style="border-color: var(--border-secondary);">

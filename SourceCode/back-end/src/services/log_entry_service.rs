@@ -23,19 +23,24 @@ impl LogEntryService {
         user_id: &str,
         template_name: &str,
     ) -> Result<String, (StatusCode, serde_json::Value)> {
-        let company_id = db::get_user_company_id(&state.postgres, user_id)
+        let user = db::get_user_by_id(&state.postgres, user_id)
             .await
             .map_err(|e| {
-                tracing::error!("Database error fetching user company ID: {:?}", e);
+                tracing::error!("Database error fetching user: {:?}", e);
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     json!({ "error": "Database error" }),
                 )
             })?
             .ok_or((
-                StatusCode::FORBIDDEN,
-                json!({ "error": "User is not associated with a company" }),
+                StatusCode::UNAUTHORIZED,
+                json!({ "error": "User not found" }),
             ))?;
+
+        let company_id = user.company_id.ok_or((
+            StatusCode::FORBIDDEN,
+            json!({ "error": "User is not associated with a company" }),
+        ))?;
 
         let template = logs_db::get_template_by_name(&state.mongodb, template_name, &company_id)
             .await
@@ -50,6 +55,16 @@ impl LogEntryService {
                 StatusCode::NOT_FOUND,
                 json!({ "error": "Template not found" }),
             ))?;
+
+        // Check if template is for the correct branch
+        if let Some(template_branch_id) = &template.branch_id {
+            if Some(template_branch_id) != user.branch_id.as_ref() {
+                return Err((
+                    StatusCode::FORBIDDEN,
+                    json!({ "error": "Template is not available for your branch" }),
+                ));
+            }
+        }
 
         let has_entry = logs_db::has_entry_for_current_period(
             &state.mongodb,
@@ -87,6 +102,7 @@ impl LogEntryService {
             entry_id: entry_id.clone(),
             template_name: template_name.to_string(),
             company_id,
+            branch_id: user.branch_id,
             user_id: user_id.to_string(),
             entry_data: serde_json::json!({}),
             created_at: now,
@@ -254,9 +270,7 @@ impl LogEntryService {
                 json!({ "error": "User not found" }),
             ))?;
 
-        let is_admin = user.is_admin() || user.is_logsmart_admin();
-
-        if !is_admin {
+        if !user.can_manage_company() {
             return Err((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "Only admin users can unsubmit log entries" }),
@@ -359,8 +373,9 @@ impl LogEntryService {
     pub async fn list_due_forms(
         state: &AppState,
         company_id: &str,
+        branch_id: Option<&str>,
     ) -> Result<Vec<logs_db::TemplateDocument>, (StatusCode, serde_json::Value)> {
-        logs_db::get_templates_by_company(&state.mongodb, company_id)
+        logs_db::get_templates_by_company_and_branch(&state.mongodb, company_id, branch_id)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to get templates: {:?}", e);

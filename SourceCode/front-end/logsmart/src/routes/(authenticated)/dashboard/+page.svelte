@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { goto } from '$app/navigation';
+	import { passive } from 'svelte/legacy';
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -35,14 +36,16 @@
 			case 'logsmart_admin':
 				role = 'LogSmart Internal Administrator';
 				break;
-			case 'member':
-				role = 'Member';
+			case 'staff':
+				role = 'Staff Member';
 				break;
-			case 'admin':
-				role = 'Company Admin';
+			case 'company_manager':
+				role = 'Company Manager';
+				break;
+			case 'branch_manager':
+				role = 'Branch Manager';
 				break;
 			default:
-				role = 'Member';
 				break;
 		}
 

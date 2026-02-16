@@ -18,7 +18,8 @@
 			page.url.pathname.startsWith('/templates-dashboard') ||
 			page.url.pathname.startsWith('/users-admin') ||
 			page.url.pathname.startsWith('/template-designer') ||
-			page.url.pathname.startsWith('/admin-dashboard')
+			page.url.pathname.startsWith('/admin-dashboard') ||
+			page.url.pathname.startsWith('/branches')
 	);
 
 	async function handleLogout() {

@@ -46,6 +46,24 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/auth/company/branches': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** Lists all branches for the user's company. */
+		get: operations['list_branches'];
+		put?: never;
+		/** Creates a new branch for the user's company. */
+		post: operations['create_branch'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	'/auth/company/members': {
 		parameters: {
 			query?: never;
@@ -509,6 +527,23 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/logs/admin/entries': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** Lists all log entries for the company or branch (managers only). */
+		get: operations['list_company_log_entries'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	'/logs/entries': {
 		parameters: {
 			query?: never;
@@ -535,7 +570,28 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
-	'/logs/entries/:entry_id': {
+	'/logs/entries/due': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Lists all log forms that are due today for the current user's company.
+		 * @description # Errors
+		 *     Returns an error if the user is not authorized or if the query fails.
+		 */
+		get: operations['list_due_forms_today'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/logs/entries/{entry_id}': {
 		parameters: {
 			query?: never;
 			header?: never;
@@ -566,7 +622,7 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
-	'/logs/entries/:entry_id/submit': {
+	'/logs/entries/{entry_id}/submit': {
 		parameters: {
 			query?: never;
 			header?: never;
@@ -587,7 +643,7 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
-	'/logs/entries/:entry_id/unsubmit': {
+	'/logs/entries/{entry_id}/unsubmit': {
 		parameters: {
 			query?: never;
 			header?: never;
@@ -602,27 +658,6 @@ export interface paths {
 		 *     Returns an error if the entry is not found or if the operation fails.
 		 */
 		post: operations['unsubmit_log_entry'];
-		delete?: never;
-		options?: never;
-		head?: never;
-		patch?: never;
-		trace?: never;
-	};
-	'/logs/entries/due': {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		/**
-		 * Lists all log forms that are due today for the current user's company.
-		 * @description # Errors
-		 *     Returns an error if the user is not authorized or if the query fails.
-		 */
-		get: operations['list_due_forms_today'];
-		put?: never;
-		post?: never;
 		delete?: never;
 		options?: never;
 		head?: never;
@@ -780,6 +815,8 @@ export interface components {
 			token: string;
 		};
 		AddTemplateRequest: {
+			/** @example branch-uuid-here */
+			branch_id?: string | null;
 			schedule: components['schemas']['Schedule'];
 			template_layout: components['schemas']['Vec'];
 			/** @example Kitchen Daily Log */
@@ -792,22 +829,38 @@ export interface components {
 			message: string;
 		};
 		AdminUpdateMemberRequest: {
+			/** @example branch-uuid-here */
+			branch_id?: string | null;
 			/** @example user@example.com */
 			email: string;
 			/** @example Jane */
 			first_name: string;
 			/** @example Smith */
 			last_name: string;
-			/** @example member */
+			/** @example staff */
 			role: string;
 		};
 		AuthResponse: {
 			token: string;
 			user: components['schemas']['UserResponse'];
 		};
+		BranchDto: {
+			address: string;
+			company_id: string;
+			/** Format: date-time */
+			created_at: string;
+			id: string;
+			name: string;
+		};
 		CancelInvitationRequest: {
 			/** @example invitation-uuid-here */
 			invitation_id: string;
+		};
+		CreateBranchRequest: {
+			/** @example 123 Regent St, London */
+			address: string;
+			/** @example London Office */
+			name: string;
 		};
 		CreateLogEntryRequest: {
 			/** @example Kitchen Daily Log */
@@ -911,8 +964,11 @@ export interface components {
 			id: string;
 		};
 		InviteUserRequest: {
+			/** @example branch-uuid-here */
+			branch_id?: string | null;
 			/** @example newmember@example.com */
 			email: string;
+			role?: null | components['schemas']['UserRole'];
 		};
 		JwtVerifyResponse: {
 			email: string;
@@ -922,6 +978,9 @@ export interface components {
 		};
 		LayoutGenerationResponse: {
 			layout: unknown;
+		};
+		ListBranchesResponse: {
+			branches: components['schemas']['BranchDto'][];
 		};
 		ListLogEntriesResponse: {
 			entries: components['schemas']['LogEntryResponse'][];
@@ -1046,6 +1105,7 @@ export interface components {
 			tables: components['schemas']['TableSizeInfo'][];
 		};
 		TemplateDocument: {
+			branch_id?: string | null;
 			company_id: string;
 			/** Format: date-time */
 			created_at: string;
@@ -1115,6 +1175,7 @@ export interface components {
 			message: string;
 		};
 		UserResponse: {
+			branch_id?: string | null;
 			company_name?: string | null;
 			email: string;
 			first_name: string;
@@ -1123,7 +1184,13 @@ export interface components {
 			role: components['schemas']['UserRole'];
 		};
 		/** @enum {string} */
-		UserRole: 'admin' | 'member' | 'logsmart_admin';
+		UserRole:
+			| 'admin'
+			| 'member'
+			| 'logsmart_admin'
+			| 'company_manager'
+			| 'branch_manager'
+			| 'staff';
 		Vec: {
 			field_type: string;
 			position: components['schemas']['Position'];
@@ -1260,6 +1327,95 @@ export interface operations {
 			};
 			/** @description User not found */
 			404: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	list_branches: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Branches retrieved successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ListBranchesResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	create_branch: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['CreateBranchRequest'];
+			};
+		};
+		responses: {
+			/** @description Branch created successfully */
+			201: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['BranchDto'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden - only company manager can create branches */
+			403: {
 				headers: {
 					[name: string]: unknown;
 				};
@@ -2301,6 +2457,53 @@ export interface operations {
 			};
 		};
 	};
+	list_company_log_entries: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Company log entries retrieved successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ListLogEntriesResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden - only managers can view all entries */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
 	list_user_log_entries: {
 		parameters: {
 			query?: never;
@@ -2399,11 +2602,51 @@ export interface operations {
 			};
 		};
 	};
-	get_log_entry: {
+	list_due_forms_today: {
 		parameters: {
 			query?: never;
 			header?: never;
 			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Due forms retrieved successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['DueFormsResponse'];
+				};
+			};
+			/** @description Unauthorized - invalid or missing token */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	get_log_entry: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				entry_id: string;
+			};
 			cookie?: never;
 		};
 		requestBody?: never;
@@ -2459,7 +2702,9 @@ export interface operations {
 		parameters: {
 			query?: never;
 			header?: never;
-			path?: never;
+			path: {
+				entry_id: string;
+			};
 			cookie?: never;
 		};
 		requestBody: {
@@ -2519,7 +2764,9 @@ export interface operations {
 		parameters: {
 			query?: never;
 			header?: never;
-			path?: never;
+			path: {
+				entry_id: string;
+			};
 			cookie?: never;
 		};
 		requestBody?: never;
@@ -2575,7 +2822,9 @@ export interface operations {
 		parameters: {
 			query?: never;
 			header?: never;
-			path?: never;
+			path: {
+				entry_id: string;
+			};
 			cookie?: never;
 		};
 		requestBody?: never;
@@ -2631,7 +2880,9 @@ export interface operations {
 		parameters: {
 			query?: never;
 			header?: never;
-			path?: never;
+			path: {
+				entry_id: string;
+			};
 			cookie?: never;
 		};
 		requestBody?: never;
@@ -2665,44 +2916,6 @@ export interface operations {
 			};
 			/** @description Entry not found */
 			404: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					'application/json': components['schemas']['ErrorResponse'];
-				};
-			};
-			/** @description Server error */
-			500: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					'application/json': components['schemas']['ErrorResponse'];
-				};
-			};
-		};
-	};
-	list_due_forms_today: {
-		parameters: {
-			query?: never;
-			header?: never;
-			path?: never;
-			cookie?: never;
-		};
-		requestBody?: never;
-		responses: {
-			/** @description Due forms retrieved successfully */
-			200: {
-				headers: {
-					[name: string]: unknown;
-				};
-				content: {
-					'application/json': components['schemas']['DueFormsResponse'];
-				};
-			};
-			/** @description Unauthorized - invalid or missing token */
-			401: {
 				headers: {
 					[name: string]: unknown;
 				};

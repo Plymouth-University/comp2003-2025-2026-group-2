@@ -11,13 +11,9 @@
 	import AiGeneratorSidebar from './AiGeneratorSidebar.svelte';
 	import VersionHistoryModal from './VersionHistoryModal.svelte';
 	import type { CanvasItem, ComponentType, Template } from './types';
+	import type { PageData } from './$types';
 
-	type ApiTemplateField = components['schemas']['TemplateField'];
-	type ApiTemplateFieldProps = components['schemas']['TemplateFieldProps'];
-	type ApiSchedule = components['schemas']['Schedule'];
-	type ApiTemplateInfo = components['schemas']['TemplateInfo'];
-	type ApiTemplateVersionInfo = components['schemas']['TemplateVersionInfo'];
-
+	let { data } = $props<{ data: PageData }>();
 	let templates = $state<Template[]>([]);
 
 	const componentTypes: ComponentType[] = [
@@ -52,6 +48,13 @@
 	let restoring = $state(false);
 	let currentVersion = $state<number>(1);
 	let currentVersionName = $state<string | null>(null);
+	let branchId = $derived<string | null>(data.user?.branch_id || null);
+	let branches = $state<any[]>([]);
+	const canManageCompany = $derived(
+		data.user?.role === 'company_manager' ||
+			data.user?.role === 'branch_manager' ||
+			data.user?.role === 'logsmart_admin'
+	);
 
 	const templateId = $derived(page.url.searchParams.get('id'));
 
@@ -101,36 +104,43 @@
 
 	async function loadTemplate(name: string) {
 		loading = true;
-		try {
-			const response = await fetch(`/api/logs/templates?template_name=${encodeURIComponent(name)}`);
-			if (!response.ok) {
-				console.error('Failed to load template:', response.statusText);
-				loading = false;
-				return;
+		saveError = null;
+
+		const { data, error } = await api.GET('/logs/templates', {
+			params: {
+				query: {
+					template_name: name
+				}
 			}
-			const data = (await response.json()) as components['schemas']['GetTemplateResponse'];
+		} as any);
+
+		if (error) {
+			console.error('Failed to load template:', error);
+			loading = false;
+			return;
+		}
+
+		if (data) {
 			logTitle = data.template_name;
 			originalTemplateName = data.template_name;
+			canvasItems = data.template_layout.map(mapApiFieldToCanvasItem);
+			isEditing = true;
 			currentVersion = data.version || 1;
 			currentVersionName = data.version_name || null;
-			canvasItems = data.template_layout.map(mapApiFieldToCanvasItem);
-			hasUnsavedChanges = false;
-			isEditing = true;
-		} catch (e) {
-			console.error('Failed to load template:', e);
+			branchId = (data as any).branch_id || null;
 		}
 		loading = false;
+		hasUnsavedChanges = false;
 	}
 
 	async function saveTemplate() {
 		if (!logTitle.trim()) {
-			saveError = 'Please enter a template name';
+			saveError = 'Template name is required';
 			return;
 		}
 
 		saving = true;
 		saveError = null;
-		saveSuccess = false;
 
 		const templateLayout = canvasItems.map(mapCanvasItemToApiField);
 
@@ -175,7 +185,8 @@
 				body: {
 					template_name: logTitle,
 					template_layout: templateLayout,
-					schedule
+					schedule,
+					branch_id: branchId || undefined
 				}
 			});
 
@@ -207,7 +218,7 @@
 						template_name: originalTemplateName
 					}
 				}
-			});
+			} as any);
 			if (data?.versions) {
 				historyVersions = data.versions;
 			}
@@ -243,7 +254,7 @@
 					template_name: originalTemplateName
 				}
 			}
-		});
+		} as any);
 
 		if (error) {
 			deleteError = 'Failed to delete template';
@@ -279,6 +290,11 @@
 				selected: t.template_name === originalTemplateName
 			}));
 		}
+
+		const { data: branchesData } = await api.GET('/auth/company/branches');
+		if (branchesData?.branches) {
+			branches = branchesData.branches;
+		}
 	}
 
 	$effect(() => {
@@ -296,6 +312,7 @@
 		selectedItemId = null;
 		isEditing = false;
 		originalTemplateName = null;
+		branchId = data.user?.branch_id || null;
 		hasUnsavedChanges = false;
 		goto('/template-designer', { replaceState: true });
 	}
@@ -553,7 +570,7 @@
 					template_name: originalTemplateName
 				}
 			}
-		});
+		} as any);
 
 		if (error) {
 			console.error('Failed to fetch versions:', error);
@@ -586,7 +603,7 @@
 			body: {
 				version
 			}
-		});
+		} as any);
 
 		if (error) {
 			console.error('Failed to restore version:', error);
@@ -663,6 +680,9 @@
 			bind:canvasItems
 			bind:logTitle
 			bind:versionName
+			bind:branchId
+			{branches}
+			{canManageCompany}
 			bind:selectedItemId
 			bind:canvasRef
 			onSave={saveTemplate}

@@ -7,13 +7,18 @@
 	import SideBar from './SideBar.svelte';
 	import UserRow from './UserRow.svelte';
 
-	export type Member = components['schemas']['GetCompanyMembersResponse']['members'][0];
-	export type Invitation = components['schemas']['GetPendingInvitationsResponse']['invitations'][0];
+	export type Member = components['schemas']['UserResponse'] & {
+		id: string;
+		company_id: string | null;
+		created_at: string;
+	};
+	export type Invitation = components['schemas']['InvitationResponse'];
 
-	const data = $props<{ data: PageData }>();
-	const members = $state(data.data.members);
-	const invitations = $state(data.data.invitations);
-	const user = $state(data.data.user);
+	let { data } = $props<{ data: PageData }>();
+	const members = $derived(data.members || []);
+	const invitations = $derived(data.invitations || []);
+	const user = $derived(data.user);
+	const branches = $derived(data.branches || []);
 
 	let showingCreateModel = $state(false);
 
@@ -129,11 +134,17 @@
 						</button>
 						<span class="m-3 mt-2 text-sm text-text-primary">Add New</span>
 					</div>
-					<InviteModal {showingCreateModel} {setShowingCreateModel} />
+					<InviteModal {showingCreateModel} {setShowingCreateModel} {branches} />
 				</div>
 			</div>
 		</div>
-		<SideBar {selectedUser} {setSelectedUser} loggedInUserRole={user.role} {updateMember} />
+		<SideBar
+			{selectedUser}
+			{setSelectedUser}
+			loggedInUserRole={user.role}
+			{updateMember}
+			{branches}
+		/>
 	</div>
 </main>
 

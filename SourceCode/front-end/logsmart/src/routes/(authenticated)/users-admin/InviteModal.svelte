@@ -1,12 +1,18 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { api } from '$lib/api';
+	import type { components } from '$lib/api-types';
 
-	const { showingCreateModel, setShowingCreateModel } = $props<{
+	type Branch = components['schemas']['BranchDto'];
+
+	const { showingCreateModel, setShowingCreateModel, branches } = $props<{
 		showingCreateModel: boolean;
 		setShowingCreateModel: (show: boolean) => void;
+		branches: any[];
 	}>();
 	let email = $state('');
+	let role = $state('staff');
+	let branchId = $state(null as string | null);
 </script>
 
 <div
@@ -61,17 +67,53 @@
 						required
 					/>
 				</div>
+				<div class="mb-4">
+					<label for="invite-role" class="mb-2.5 block text-sm font-medium text-text-primary"
+						>Role</label
+					>
+					<select
+						id="invite-role"
+						bind:value={role}
+						class="rounded-base block w-full border-2 border-border-primary bg-bg-primary px-3 py-2.5 text-sm text-text-primary shadow-xs focus:ring-2 focus:outline-none"
+					>
+						<option value="staff">Staff</option>
+						<option value="branch_manager">Branch Manager</option>
+						<option value="company_manager">Company Manager</option>
+					</select>
+				</div>
+				<div class="mb-6">
+					<label for="invite-branch" class="mb-2.5 block text-sm font-medium text-text-primary"
+						>Branch (Optional)</label
+					>
+					<select
+						id="invite-branch"
+						bind:value={branchId}
+						class="rounded-base block w-full border-2 border-border-primary bg-bg-primary px-3 py-2.5 text-sm text-text-primary shadow-xs focus:ring-2 focus:outline-none"
+					>
+						<option value={null}>Company Wide / Headquarters</option>
+						{#each branches as branch}
+							<option value={branch.id}>{branch.name}</option>
+						{/each}
+					</select>
+				</div>
 				<button
 					class="flex cursor-pointer self-center rounded border-2 border-border-primary bg-bg-primary px-5 py-2.5 text-center text-sm font-medium text-text-primary hover:opacity-80"
 					disabled={!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)}
 					aria-label="Send Invite"
 					onclick={async () => {
-						let { error } = await api.POST('/auth/invitations/send', { body: { email: email } });
+						let { error } = await api.POST('/auth/invitations/send', {
+							body: {
+								email: email,
+								role: role as any,
+								branch_id: branchId || undefined
+							}
+						});
 						if (!error) {
 							setShowingCreateModel(false);
 							window.location.reload();
 						} else {
 							console.error('Error sending invite:', error);
+							alert(`Error: ${error.error}`);
 						}
 					}}
 				>

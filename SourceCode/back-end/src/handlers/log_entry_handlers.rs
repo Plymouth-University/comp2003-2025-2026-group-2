@@ -35,7 +35,7 @@ pub async fn list_due_forms_today(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
 ) -> Result<Json<DueFormsResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let _user = db::get_user_by_id(&state.postgres, &claims.user_id)
+    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user: {:?}", e);
@@ -49,23 +49,15 @@ pub async fn list_due_forms_today(
             Json(json!({ "error": "User not found" })),
         ))?;
 
-    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user company ID: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "User is not associated with a company" })),
-        ))?;
+    let company_id = user.company_id.clone().ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
 
-    let templates = services::LogEntryService::list_due_forms(&state, &company_id)
-        .await
-        .map_err(|(status, err)| (status, Json(err)))?;
+    let templates =
+        services::LogEntryService::list_due_forms(&state, &company_id, user.branch_id.as_deref())
+            .await
+            .map_err(|(status, err)| (status, Json(err)))?;
 
     let mut due_forms = Vec::new();
 
@@ -173,7 +165,7 @@ pub async fn create_log_entry(
 
 #[utoipa::path(
     get,
-    path = "/logs/entries/:entry_id",
+    path = "/logs/entries/{entry_id}",
     responses(
         (status = 200, description = "Log entry retrieved successfully", body = LogEntryResponse),
         (status = 401, description = "Unauthorized - invalid or missing token", body = ErrorResponse),
@@ -245,7 +237,7 @@ pub async fn get_log_entry(
 
 #[utoipa::path(
     put,
-    path = "/logs/entries/:entry_id",
+    path = "/logs/entries/{entry_id}",
     request_body = UpdateLogEntryRequest,
     responses(
         (status = 200, description = "Log entry updated successfully", body = LogEntryResponse),
@@ -325,7 +317,7 @@ pub async fn update_log_entry(
 
 #[utoipa::path(
     post,
-    path = "/logs/entries/:entry_id/submit",
+    path = "/logs/entries/{entry_id}/submit",
     responses(
         (status = 200, description = "Log entry submitted successfully", body = SubmitLogEntryResponse),
         (status = 401, description = "Unauthorized - invalid or missing token", body = ErrorResponse),
@@ -356,7 +348,7 @@ pub async fn submit_log_entry(
 
 #[utoipa::path(
     post,
-    path = "/logs/entries/:entry_id/unsubmit",
+    path = "/logs/entries/{entry_id}/unsubmit",
     responses(
         (status = 200, description = "Log entry returned to draft successfully", body = SubmitLogEntryResponse),
         (status = 401, description = "Unauthorized - invalid or missing token", body = ErrorResponse),
@@ -387,7 +379,7 @@ pub async fn unsubmit_log_entry(
 
 #[utoipa::path(
     delete,
-    path = "/logs/entries/:entry_id",
+    path = "/logs/entries/{entry_id}",
     responses(
         (status = 200, description = "Log entry deleted successfully", body = serde_json::Value),
         (status = 401, description = "Unauthorized - invalid or missing token", body = ErrorResponse),
@@ -431,6 +423,105 @@ pub async fn delete_log_entry(
     .map_err(|(status, err)| (status, Json(err)))?;
 
     Ok(Json(json!({ "message": "Log entry deleted successfully" })))
+}
+
+#[utoipa::path(
+    get,
+    path = "/logs/admin/entries",
+    responses(
+        (status = 200, description = "Company log entries retrieved successfully", body = ListLogEntriesResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - only managers can view all entries", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Log Entries"
+)]
+/// Lists all log entries for the company or branch (managers only).
+pub async fn list_company_log_entries(
+    AuthToken(claims): AuthToken,
+    State(state): State<AppState>,
+) -> Result<Json<ListLogEntriesResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "User not found" })),
+        ))?;
+
+    if !user.can_manage_branch() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Only managers can view these logs" })),
+        ));
+    }
+
+    let company_id = user.company_id.clone().ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
+
+    let entries = if user.is_company_manager() || user.is_logsmart_admin() {
+        logs_db::get_company_log_entries(&state.mongodb, &company_id).await
+    } else {
+        let branch_id = user.branch_id.as_ref().ok_or((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Branch manager has no branch assigned" })),
+        ))?;
+        logs_db::get_branch_log_entries(&state.mongodb, &company_id, branch_id).await
+    }
+    .map_err(|e| {
+        tracing::error!("Failed to get log entries: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to get log entries" })),
+        )
+    })?;
+
+    let mut response_entries = Vec::new();
+    for e in entries {
+        let template = logs_db::get_template_by_name(&state.mongodb, &e.template_name, &company_id)
+            .await
+            .map_err(|err| {
+                tracing::error!("Failed to get template: {:?}", err);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Failed to get template" })),
+                )
+            })?;
+
+        let processed_layout = if let Some(template) = template {
+            logs_db::process_template_layout_with_period_string(
+                &template.template_layout,
+                &e.period,
+            )
+        } else {
+            Vec::new()
+        };
+
+        response_entries.push(LogEntryResponse {
+            id: e.entry_id,
+            template_name: e.template_name,
+            template_layout: processed_layout,
+            entry_data: e.entry_data,
+            status: e.status,
+            created_at: e.created_at.to_rfc3339(),
+            updated_at: e.updated_at.to_rfc3339(),
+            submitted_at: e.submitted_at.map(|ts| ts.to_rfc3339()),
+            period: e.period,
+        });
+    }
+
+    Ok(Json(ListLogEntriesResponse {
+        entries: response_entries,
+    }))
 }
 
 #[utoipa::path(

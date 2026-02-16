@@ -13,8 +13,10 @@ pub struct AdminUpdateMemberRequest {
     pub first_name: String,
     #[schema(example = "Smith")]
     pub last_name: String,
-    #[schema(example = "member")]
+    #[schema(example = "staff")]
     pub role: String,
+    #[schema(example = "branch-uuid-here")]
+    pub branch_id: Option<String>,
 }
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CancelInvitationRequest {
@@ -35,6 +37,7 @@ pub struct UserDto {
     pub first_name: String,
     pub last_name: String,
     pub company_id: Option<String>,
+    pub branch_id: Option<String>,
     pub role: UserRole,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
@@ -47,10 +50,45 @@ impl From<crate::db::UserRecord> for UserDto {
             first_name: user.first_name,
             last_name: user.last_name,
             company_id: user.company_id,
+            branch_id: user.branch_id,
             role: user.role,
             created_at: user.created_at,
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct BranchDto {
+    pub id: String,
+    pub company_id: String,
+    pub name: String,
+    pub address: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl From<db::Branch> for BranchDto {
+    fn from(branch: db::Branch) -> Self {
+        Self {
+            id: branch.id,
+            company_id: branch.company_id,
+            name: branch.name,
+            address: branch.address,
+            created_at: branch.created_at,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct CreateBranchRequest {
+    #[schema(example = "London Office")]
+    pub name: String,
+    #[schema(example = "123 Regent St, London")]
+    pub address: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ListBranchesResponse {
+    pub branches: Vec<BranchDto>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -174,6 +212,8 @@ pub struct AddTemplateRequest {
     pub template_layout: logs_db::TemplateLayout,
     #[schema(example = "{\"frequency\": \"daily\", \"time\": \"08:00\"}")]
     pub schedule: logs_db::Schedule,
+    #[schema(example = "branch-uuid-here")]
+    pub branch_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -243,6 +283,10 @@ pub struct LoginRequest {
 pub struct InviteUserRequest {
     #[schema(example = "newmember@example.com")]
     pub email: String,
+    #[schema(example = "staff")]
+    pub role: Option<UserRole>,
+    #[schema(example = "branch-uuid-here")]
+    pub branch_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -270,22 +314,30 @@ pub struct AuthResponse {
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct UserResponse {
+    pub id: String,
     pub email: String,
     pub first_name: String,
     pub last_name: String,
+    pub company_id: Option<String>,
     pub company_name: Option<String>,
+    pub branch_id: Option<String>,
     pub role: UserRole,
+    pub created_at: chrono::DateTime<chrono::Utc>,
     pub oauth_provider: Option<String>,
 }
 
 impl From<db::UserRecord> for UserResponse {
     fn from(user: db::UserRecord) -> Self {
         Self {
+            id: user.id,
             email: user.email,
             first_name: user.first_name,
             last_name: user.last_name,
+            company_id: user.company_id,
             company_name: user.company_name,
+            branch_id: user.branch_id,
             role: user.role,
+            created_at: user.created_at,
             oauth_provider: user.oauth_provider,
         }
     }

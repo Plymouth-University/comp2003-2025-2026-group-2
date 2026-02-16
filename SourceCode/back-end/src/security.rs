@@ -38,7 +38,9 @@ pub trait RoleValidator: Send + Sync {
 pub struct AdminValidator;
 impl RoleValidator for AdminValidator {
     fn validate(&self, role: &UserRole) -> bool {
-        role == &UserRole::Admin || role == &UserRole::LogSmartAdmin
+        role == &UserRole::BranchManager
+            || role == &UserRole::CompanyManager
+            || role == &UserRole::LogSmartAdmin
     }
 }
 
@@ -46,7 +48,10 @@ impl RoleValidator for AdminValidator {
 pub struct MemberValidator;
 impl RoleValidator for MemberValidator {
     fn validate(&self, role: &UserRole) -> bool {
-        role == &UserRole::Member || role == &UserRole::Admin || role == &UserRole::LogSmartAdmin
+        role == &UserRole::Staff
+            || role == &UserRole::BranchManager
+            || role == &UserRole::CompanyManager
+            || role == &UserRole::LogSmartAdmin
     }
 }
 
@@ -89,12 +94,14 @@ mod security_tests {
         let admin_validator = AdminValidator;
         let logsmart_admin_validator = LogSmartAdminValidator;
 
-        let member_role = UserRole::Member;
-        let admin_role = UserRole::Admin;
+        let member_role = UserRole::Staff;
+        let admin_role = UserRole::CompanyManager;
+        let company_manager_role = UserRole::CompanyManager;
         let logsmart_admin_role = UserRole::LogSmartAdmin;
 
         assert!(member_validator.validate(&member_role));
         assert!(admin_validator.validate(&admin_role));
+        assert!(admin_validator.validate(&company_manager_role));
         assert!(logsmart_admin_validator.validate(&logsmart_admin_role));
     }
 }

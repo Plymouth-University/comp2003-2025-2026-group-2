@@ -24,6 +24,7 @@ impl TemplateService {
         template_layout: logs_db::TemplateLayout,
         schedule: logs_db::Schedule,
         user_id: &str,
+        branch_id: Option<String>,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
         let existing_template =
             logs_db::get_template_by_name(&state.mongodb, &template_name, company_id)
@@ -47,6 +48,7 @@ impl TemplateService {
             template_name,
             template_layout,
             company_id: company_id.to_string(),
+            branch_id,
             created_at: chrono::Utc::now(),
             updated_at: chrono::Utc::now(),
             created_by: mongodb::bson::Uuid::parse_str(user_id).map_err(|e| {
@@ -82,7 +84,10 @@ impl TemplateService {
         state: &AppState,
         company_id: &str,
         template_name: &str,
-    ) -> Result<(String, logs_db::TemplateLayout, u16, Option<String>), (StatusCode, serde_json::Value)> {
+    ) -> Result<
+        (String, logs_db::TemplateLayout, u16, Option<String>),
+        (StatusCode, serde_json::Value),
+    > {
         let template = logs_db::get_template_by_name(&state.mongodb, template_name, company_id)
             .await
             .map_err(|e: anyhow::Error| {
@@ -94,7 +99,12 @@ impl TemplateService {
             })?;
 
         match template {
-            Some(t) => Ok((t.template_name, t.template_layout, t.version, t.version_name)),
+            Some(t) => Ok((
+                t.template_name,
+                t.template_layout,
+                t.version,
+                t.version_name,
+            )),
             None => Err((
                 StatusCode::NOT_FOUND,
                 json!({ "error": "Template not found" }),
@@ -109,6 +119,7 @@ impl TemplateService {
     pub async fn get_all_templates(
         state: &AppState,
         company_id: &str,
+        branch_id: Option<&str>,
     ) -> Result<
         Vec<(
             String,
@@ -119,15 +130,16 @@ impl TemplateService {
         )>,
         (StatusCode, serde_json::Value),
     > {
-        let templates = logs_db::get_templates_by_company(&state.mongodb, company_id)
-            .await
-            .map_err(|e: anyhow::Error| {
-                tracing::error!("Failed to get templates: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Failed to get templates" }),
-                )
-            })?;
+        let templates =
+            logs_db::get_templates_by_company_and_branch(&state.mongodb, company_id, branch_id)
+                .await
+                .map_err(|e: anyhow::Error| {
+                    tracing::error!("Failed to get templates: {:?}", e);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        json!({ "error": "Failed to get templates" }),
+                    )
+                })?;
 
         let result = templates
             .into_iter()
@@ -157,6 +169,8 @@ impl TemplateService {
         schedule: Option<&logs_db::Schedule>,
         user_id: &str,
         version_name: Option<String>,
+        branch_id: Option<&str>, // Caller's branch_id
+        is_company_manager: bool,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
         // 1. Fetch current template state
         let current_template =
@@ -174,16 +188,34 @@ impl TemplateService {
                     json!({ "error": "Template not found" }),
                 ))?;
 
+        // Authorization check
+        if !is_company_manager {
+            if current_template.branch_id.is_none() {
+                return Err((
+                    StatusCode::FORBIDDEN,
+                    json!({ "error": "Branch managers cannot update company-wide templates" }),
+                ));
+            }
+            if current_template.branch_id.as_deref() != branch_id {
+                return Err((
+                    StatusCode::FORBIDDEN,
+                    json!({ "error": "Branch managers can only update templates for their own branch" }),
+                ));
+            }
+        }
+
         // 2. Archive current state as a version
         let version_doc = logs_db::TemplateVersionDocument {
             template_name: current_template.template_name.clone(),
             company_id: current_template.company_id.clone(),
+            branch_id: current_template.branch_id.clone(),
             version: current_template.version,
             version_name: current_template.version_name,
             template_layout: current_template.template_layout.clone(),
             schedule: current_template.schedule,
             created_at: chrono::Utc::now(),
-            created_by: mongodb::bson::Uuid::parse_str(user_id).unwrap_or(current_template.created_by), 
+            created_by: mongodb::bson::Uuid::parse_str(user_id)
+                .unwrap_or(current_template.created_by),
         };
 
         logs_db::add_template_version(&state.mongodb, &version_doc)
@@ -246,21 +278,24 @@ impl TemplateService {
         template_name: &str,
         version: u16,
         user_id: &str,
+        branch_id: Option<&str>,
+        is_company_manager: bool,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
         // 1. Fetch target version
-        let target_version = logs_db::get_template_version(&state.mongodb, company_id, template_name, version)
-            .await
-            .map_err(|e| {
-                tracing::error!("Failed to fetch target version: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Database error" }),
-                )
-            })?
-            .ok_or((
-                StatusCode::NOT_FOUND,
-                json!({ "error": "Version not found" }),
-            ))?;
+        let target_version =
+            logs_db::get_template_version(&state.mongodb, company_id, template_name, version)
+                .await
+                .map_err(|e| {
+                    tracing::error!("Failed to fetch target version: {:?}", e);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        json!({ "error": "Database error" }),
+                    )
+                })?
+                .ok_or((
+                    StatusCode::NOT_FOUND,
+                    json!({ "error": "Version not found" }),
+                ))?;
 
         // 2. Call update_template with the target data
         // This handles archiving the CURRENT state before overwriting it with the OLD state
@@ -272,7 +307,10 @@ impl TemplateService {
             Some(&target_version.schedule),
             user_id,
             Some(format!("Restored from version {}", version)),
-        ).await
+            branch_id,
+            is_company_manager,
+        )
+        .await
     }
 
     /// Renames a log template.
@@ -284,7 +322,32 @@ impl TemplateService {
         company_id: &str,
         old_name: &str,
         new_name: &str,
+        branch_id: Option<&str>,
+        is_company_manager: bool,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
+        let template = logs_db::get_template_by_name(&state.mongodb, old_name, company_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to fetch template for rename: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Database error" }),
+                )
+            })?
+            .ok_or((
+                StatusCode::NOT_FOUND,
+                json!({ "error": "Template not found" }),
+            ))?;
+
+        if !is_company_manager
+            && (template.branch_id.is_none() || template.branch_id.as_deref() != branch_id)
+        {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "Unauthorized to rename this template" }),
+            ));
+        }
+
         logs_db::rename_template(&state.mongodb, old_name, new_name, company_id)
             .await
             .map_err(|e: anyhow::Error| {
@@ -305,7 +368,32 @@ impl TemplateService {
         state: &AppState,
         company_id: &str,
         template_name: &str,
+        branch_id: Option<&str>,
+        is_company_manager: bool,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
+        let template = logs_db::get_template_by_name(&state.mongodb, template_name, company_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to fetch template for delete: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Database error" }),
+                )
+            })?
+            .ok_or((
+                StatusCode::NOT_FOUND,
+                json!({ "error": "Template not found" }),
+            ))?;
+
+        if !is_company_manager
+            && (template.branch_id.is_none() || template.branch_id.as_deref() != branch_id)
+        {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "Unauthorized to delete this template" }),
+            ));
+        }
+
         logs_db::delete_template(&state.mongodb, template_name, company_id)
             .await
             .map_err(|e: anyhow::Error| {

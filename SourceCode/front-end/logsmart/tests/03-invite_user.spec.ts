@@ -28,9 +28,14 @@ test('invite_user', async ({ page }) => {
 	await page.getByRole('link', { name: 'Users' }).click();
 	await expect(page.locator('#eventHide')).toContainText(adminCreds.email);
 	await expect(page.locator('#eventHide')).toContainText(adminCreds.firstName.split('-')[0]);
-	await expect(page.locator('#eventHide')).toContainText('Admin');
+	await expect(page.locator('#eventHide')).toContainText('Company Manager');
 	await expect(page.locator('header')).toContainText(adminCreds.email);
 	await page.getByRole('button', { name: '➕' }).click();
+
+	// Verify new fields exist
+	await expect(page.locator('#invite-role')).toBeVisible();
+	await expect(page.locator('#invite-branch')).toBeVisible();
+
 	await page.getByRole('textbox', { name: "New user's email" }).click();
 	const inviteeEmail = `invitee-${Date.now()}@logsmart.app`;
 	await page.getByRole('textbox', { name: "New user's email" }).fill(inviteeEmail);

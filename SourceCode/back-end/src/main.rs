@@ -214,6 +214,8 @@ async fn main() {
             get(handlers::get_pending_invitations),
         )
         .route("/auth/company/members", get(handlers::get_company_members))
+        .route("/auth/company/branches", post(handlers::create_branch))
+        .route("/auth/company/branches", get(handlers::list_branches))
         .route(
             "/auth/admin/update-member",
             put(handlers::admin_update_member_profile),
@@ -239,6 +241,10 @@ async fn main() {
         .route("/logs/entries/due", get(handlers::list_due_forms_today))
         .route("/logs/entries", post(handlers::create_log_entry))
         .route("/logs/entries", get(handlers::list_user_log_entries))
+        .route(
+            "/logs/admin/entries",
+            get(handlers::list_company_log_entries),
+        )
         .route("/logs/entries/{entry_id}", get(handlers::get_log_entry))
         .route("/logs/entries/{entry_id}", put(handlers::update_log_entry))
         .route(

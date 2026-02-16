@@ -32,17 +32,23 @@
 	<div class="flex items-center gap-2">
 		<div
 			class="rounded-full px-3 py-1 text-sm font-medium"
-			style="background-color: {item.role === 'admin' || item.role === 'logsmart_admin'
+			style="background-color: {item.role === 'branch_manager' ||
+			item.role === 'company_manager' ||
+			item.role === 'logsmart_admin'
 				? '#94C5CC'
-				: 'var(--bg-secondary)'}; color: {item.role === 'admin' || item.role === 'logsmart_admin'
+				: 'var(--bg-secondary)'}; color: {item.role === 'branch_manager' ||
+			item.role === 'company_manager' ||
+			item.role === 'logsmart_admin'
 				? '#000'
 				: 'var(--text-secondary)'};"
 		>
-			{item.role === 'admin'
-				? 'Admin'
-				: item.role === 'logsmart_admin'
-					? 'Internal Admin'
-					: 'Member'}
+			{item.role === 'company_manager'
+				? 'Company Manager'
+				: item.role === 'branch_manager'
+					? 'Branch Manager'
+					: item.role === 'logsmart_admin'
+						? 'Internal Admin'
+						: 'Staff'}
 		</div>
 	</div>
 

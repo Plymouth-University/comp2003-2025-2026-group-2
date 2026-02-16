@@ -25,6 +25,8 @@ impl InvitationService {
         admin_email: String,
         recipient_email: String,
         company_id: String,
+        role: db::UserRole,
+        branch_id: Option<String>,
         ip_address: Option<String>,
         user_agent: Option<String>,
     ) -> Result<(String, chrono::DateTime<chrono::Utc>), (StatusCode, serde_json::Value)> {
@@ -52,6 +54,8 @@ impl InvitationService {
             company_id,
             recipient_email.clone(),
             token,
+            role,
+            branch_id,
             expires_at,
         )
         .await
@@ -252,7 +256,7 @@ impl InvitationService {
                 json!({ "error": "Admin user not found" }),
             ))?;
 
-        if !admin.is_admin() {
+        if !admin.can_manage_company() {
             return Err((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "Only company admins can cancel invitations" }),

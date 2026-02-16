@@ -1,4 +1,4 @@
-import type { Browser } from '@playwright/test';
+import { type Browser, expect, type Page } from '@playwright/test';
 
 const MAILHOG_API_URL = process.env.MAILHOG_API_URL || 'http://localhost:8025/api';
 
@@ -76,7 +76,9 @@ const decodeMailBody = (email: MailhogEmail): string => {
 	if (encoding === 'base64') {
 		try {
 			body = Buffer.from(body, 'base64').toString('utf-8');
-		} catch (e) {}
+		} catch (e) {
+			console.error('Failed to decode base64 email body:', e);
+		}
 	}
 
 	body = body.replace(/=\r?\n/g, '');
@@ -176,34 +178,62 @@ const register = async (browser: Browser, close = true) => {
 const sendInvitation = async (
 	browser: Browser,
 	admin: { email: string; password: string },
-	email: string
+	email: string,
+	role?: string,
+	branchName?: string
 ): Promise<string | null> => {
 	const page = await browser.newPage();
-	await page.goto('http://localhost:5173/');
-	await page.getByRole('link', { name: 'Login' }).click();
-	await page.waitForURL('**/login');
+	await page.goto('http://localhost:5173/login');
 	await page.getByRole('textbox', { name: 'Email' }).fill(admin.email);
 	await page.getByRole('textbox', { name: 'Password' }).fill(admin.password);
 	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 	await page.waitForURL('**/dashboard');
 	await page.getByRole('link', { name: 'Users' }).click();
+	await page.waitForURL('**/users-admin');
 	await page.getByRole('button', { name: '➕' }).click();
 	await page.getByRole('textbox', { name: "New user's email" }).fill(email);
+
+	if (role) {
+		console.log(`[sendInvitation] Selecting role: ${role}`);
+		await page.locator('#invite-role').selectOption(role);
+	}
+
+	if (branchName) {
+		console.log(`[sendInvitation] Selecting branch: ${branchName}`);
+		const select = page.locator('#invite-branch');
+		await expect(select).toBeVisible();
+		await select.selectOption({ label: branchName });
+	}
+
+	console.log(`[sendInvitation] Clicking Send Invite`);
 	await page.getByRole('button', { name: 'Send Invite' }).click();
+
+	// Wait for modal to close or some feedback
+	await page.waitForTimeout(1000);
 	await page.close();
 
+	console.log(`[sendInvitation] Fetching token from Mailhog for ${email}`);
 	return await getInvitationToken(email);
 };
 
 const acceptInvitation = async (
-	page: any,
+	page: Page,
 	token: string,
 	firstName: string,
 	lastName: string,
-	password: string
+	password: string,
+	waitFor: string = '**/logs-list'
 ): Promise<boolean> => {
 	await page.goto(`http://localhost:5173/accept-invitation?token=${token}`);
 	await page.waitForURL('**/accept-invitation**');
+
+	// Check if there is an error message
+	const errorLocator = page.locator('.text-red-600');
+	if (await errorLocator.isVisible()) {
+		const errorText = await errorLocator.textContent();
+		console.error(`[acceptInvitation] Error on page: ${errorText}`);
+		return false;
+	}
 
 	await page.getByRole('button', { name: 'Accept Invitation' }).click();
 
@@ -214,8 +244,36 @@ const acceptInvitation = async (
 	await page.getByRole('textbox', { name: 'Confirm Password' }).fill(password);
 	await page.getByRole('button', { name: 'Create Account' }).click();
 
-	await page.waitForURL('**/logs-list');
-	return page.url().includes('/logs-list');
+	await page.waitForURL(waitFor, { timeout: 10000 });
+	return page.url().includes(waitFor.replace('**', ''));
+};
+
+const sendInvitationOnPage = async (
+	page: Page,
+	email: string,
+	role?: string,
+	branchName?: string
+): Promise<string | null> => {
+	await page.getByRole('link', { name: 'Users' }).click();
+	await page.waitForURL('**/users-admin');
+
+	await page.getByRole('button', { name: '➕' }).click();
+	await page.waitForLoadState('networkidle');
+	await page.getByRole('textbox', { name: "New user's email" }).fill(email);
+
+	if (role) {
+		await page.locator('#invite-role').selectOption(role);
+	}
+
+	if (branchName) {
+		const select = page.locator('#invite-branch');
+		await expect(select).toBeVisible();
+		await select.selectOption({ label: branchName });
+	}
+
+	await page.getByRole('button', { name: 'Send Invite' }).click();
+
+	return await getInvitationToken(email);
 };
 
 export {
@@ -226,5 +284,6 @@ export {
 	clearMailhogEmails,
 	requestPasswordResetToken,
 	sendInvitation,
+	sendInvitationOnPage,
 	acceptInvitation
 };

@@ -3,8 +3,8 @@
 
 	let { data } = $props<{ data: PageData }>();
 
-	const isMember = $derived(data?.user?.role === 'member');
-	const isAdmin = $derived(data?.user?.role === 'admin' || data?.user?.role === 'logsmart_admin');
+	const isMember = $derived(data?.user?.role === 'staff');
+	const isAdmin = $derived(data?.user?.role.match(/company_manager|branch_manager|logsmart_admin/));
 
 	const sortedPastLogs = $derived(
 		data.pastLogs

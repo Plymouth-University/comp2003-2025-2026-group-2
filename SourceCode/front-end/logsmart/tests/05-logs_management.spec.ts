@@ -27,7 +27,7 @@ test.describe('Logs Management - Admin', () => {
 
 	test('view_logs_list_admin', async ({ page }) => {
 		await page.getByRole('link', { name: 'Logs', exact: true }).click();
-		await page.waitForURL('**/logs-list', { timeout: 99999999 });
+		await page.waitForURL('**/logs-list');
 		await expect(page.locator('body')).toContainText('Logs Due Today');
 		await expect(page.locator('body')).toContainText('All Logs');
 	});

@@ -46,6 +46,9 @@ use utoipa::OpenApi;
         handlers::link_google_account,
         handlers::confirm_google_link,
         handlers::unlink_google_account,
+        handlers::create_branch,
+        handlers::list_branches,
+        handlers::list_company_log_entries,
     ),
     components(
         schemas(
@@ -72,6 +75,9 @@ use utoipa::OpenApi;
             dto::AdminUpdateMemberRequest,
             dto::RemoveMemberRequest,
             dto::GetCompanyMembersResponse,
+            dto::BranchDto,
+            dto::CreateBranchRequest,
+            dto::ListBranchesResponse,
             dto::GetInvitationDetailsRequest,
             dto::GetInvitationDetailsResponse,
             dto::GetPendingInvitationsResponse,

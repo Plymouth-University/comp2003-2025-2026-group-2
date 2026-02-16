@@ -2,26 +2,30 @@
 	import { api } from '$lib/api';
 	import type { Member } from './+page.svelte';
 	import PlaceHolderImage from '$lib/assets/placeholder.png';
+	import type { components } from '$lib/api-types';
 
-	const { setSelectedUser, selectedUser, loggedInUserRole, updateMember } = $props<{
+	const { setSelectedUser, selectedUser, loggedInUserRole, updateMember, branches } = $props<{
 		setSelectedUser: (email: string | null) => void;
 		selectedUser: Member | null;
 		loggedInUserRole: string;
 		updateMember: (
 			email: string,
-			updates: { first_name: string; last_name: string; role: string }
+			updates: { first_name: string; last_name: string; role: string; branch_id: string | null }
 		) => void;
+		branches: any[];
 	}>();
 
 	let firstName = $state('');
 	let lastName = $state('');
 	let role = $state('');
+	let branchId = $state(null as string | null);
 
 	$effect(() => {
 		if (selectedUser) {
 			firstName = selectedUser.first_name;
 			lastName = selectedUser.last_name;
 			role = selectedUser.role;
+			branchId = selectedUser.branch_id || null;
 		}
 	});
 </script>
@@ -81,17 +85,31 @@
 					}}>Reset</button
 				>
 			</div>
+			<label for="sidebar-role" class="mb-1 text-sm font-medium text-text-primary">Role</label>
 			<select
 				class="mb-3 border-2 border-border-primary bg-bg-primary px-3 py-1 text-text-primary"
 				name="role"
-				id="role"
+				id="sidebar-role"
 				bind:value={role}
 			>
-				<option id="userRole" value="member">Member</option>
-				<option id="adminRole" value="admin">Admin</option>
+				<option value="staff">Staff</option>
+				<option value="branch_manager">Branch Manager</option>
+				<option value="company_manager">Company Manager</option>
 				{#if loggedInUserRole === 'logsmart_admin'}
 					<option id="logsmart_adminRole" value="logsmart_admin">Internal Admin</option>
 				{/if}
+			</select>
+			<label for="sidebar-branch" class="mb-1 text-sm font-medium text-text-primary">Branch</label>
+			<select
+				class="mb-3 border-2 border-border-primary bg-bg-primary px-3 py-1 text-text-primary"
+				name="branch"
+				id="sidebar-branch"
+				bind:value={branchId}
+			>
+				<option value={null}>No Branch (HQ)</option>
+				{#each branches as branch}
+					<option value={branch.id}>{branch.name}</option>
+				{/each}
 			</select>
 			<button
 				class="m-5 mb-0 cursor-pointer rounded border-2 border-border-primary bg-bg-primary px-4 py-2 font-bold text-text-primary hover:opacity-80"
@@ -99,10 +117,11 @@
 				onclick={async () => {
 					const response = await api.PUT('/auth/admin/update-member', {
 						body: {
-							email: selectedUser?.email,
+							email: selectedUser?.email as string,
 							first_name: firstName,
 							last_name: lastName,
-							role: role
+							role: role,
+							branch_id: branchId || undefined
 						}
 					});
 
@@ -110,8 +129,11 @@
 						updateMember(selectedUser.email, {
 							first_name: firstName,
 							last_name: lastName,
-							role: role
+							role: role,
+							branch_id: branchId
 						});
+					} else if (response.error) {
+						alert(`Failed to update member: ${response.error.error}`);
 					}
 				}}>Save</button
 			>
