@@ -269,6 +269,9 @@ async fn main() {
             post(handlers::unsubmit_log_entry),
         )
         .route("/llm/generate-layout", post(handlers::generate_layout))
+        .route("/clock/in", post(handlers::clock_in))
+        .route("/clock/out", post(handlers::clock_out))
+        .route("/clock/status", get(handlers::get_clock_status))
         .route("/health/database", get(handlers::get_db_health))
         .route("/health/slow-queries", get(handlers::get_db_slow_queries))
         .route("/health/index-usage", get(handlers::get_db_index_usage))

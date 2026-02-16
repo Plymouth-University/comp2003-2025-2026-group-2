@@ -49,6 +49,9 @@ use utoipa::OpenApi;
         handlers::create_branch,
         handlers::list_branches,
         handlers::list_company_log_entries,
+        handlers::clock_in,
+        handlers::clock_out,
+        handlers::get_clock_status,
     ),
     components(
         schemas(
@@ -126,6 +129,8 @@ use utoipa::OpenApi;
             dto::OAuthCallbackRequest,
             dto::OAuthInitiateResponse,
             handlers::OAuthLinkConfirmRequest,
+            dto::ClockEventResponse,
+            dto::ClockStatusResponse,
         )
     ),
     tags(
@@ -135,6 +140,7 @@ use utoipa::OpenApi;
         (name = "Company Management", description = "Company member management"),
         (name = "Log Entries", description = "Log entry management"),
         (name = "Health Monitoring", description = "Database health and performance monitoring (LogSmart Admin only)"),
+        (name = "Clock In/Out", description = "Employee clock in and clock out tracking"),
     ),
     modifiers(&SecurityAddon)
 )]

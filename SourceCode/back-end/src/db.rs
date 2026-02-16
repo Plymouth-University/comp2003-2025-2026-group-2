@@ -188,6 +188,17 @@ pub struct PasskeySession {
     pub expires_at: chrono::DateTime<chrono::Utc>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct ClockEvent {
+    pub id: String,
+    pub user_id: String,
+    pub company_id: String,
+    pub clock_in: chrono::DateTime<chrono::Utc>,
+    pub clock_out: Option<chrono::DateTime<chrono::Utc>>,
+    pub status: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
 /// Initialize database by running `SQLx` migrations
 ///
 /// This function runs all pending migrations from the `migrations/` directory.
@@ -1828,6 +1839,100 @@ pub async fn get_company_members_for_user(pool: &PgPool, user_id: &str) -> Resul
     }
 
     Ok(users)
+}
+
+/// Creates a new clock-in event for a user.
+///
+/// # Errors
+/// Returns an error if the database insert fails.
+pub async fn clock_in(pool: &PgPool, user_id: &str, company_id: &str) -> Result<ClockEvent> {
+    let id = Uuid::new_v4().to_string();
+    let event = sqlx::query_as::<_, ClockEvent>(
+        r"
+        INSERT INTO clock_events (id, user_id, company_id, clock_in, status)
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP, 'in')
+        RETURNING id, user_id, company_id, clock_in, clock_out, status, created_at
+        ",
+    )
+    .bind(&id)
+    .bind(user_id)
+    .bind(company_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(event)
+}
+
+/// Clocks out a user by updating the most recent open clock-in event.
+///
+/// # Errors
+/// Returns an error if the database update fails.
+pub async fn clock_out(pool: &PgPool, user_id: &str) -> Result<Option<ClockEvent>> {
+    let event = sqlx::query_as::<_, ClockEvent>(
+        r"
+        UPDATE clock_events
+        SET clock_out = CURRENT_TIMESTAMP, status = 'out'
+        WHERE id = (
+            SELECT id FROM clock_events
+            WHERE user_id = $1 AND status = 'in'
+            ORDER BY clock_in DESC
+            LIMIT 1
+        )
+        RETURNING id, user_id, company_id, clock_in, clock_out, status, created_at
+        ",
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(event)
+}
+
+/// Gets the current clock status for a user (latest event).
+///
+/// # Errors
+/// Returns an error if the database query fails.
+pub async fn get_clock_status(pool: &PgPool, user_id: &str) -> Result<Option<ClockEvent>> {
+    let event = sqlx::query_as::<_, ClockEvent>(
+        r"
+        SELECT id, user_id, company_id, clock_in, clock_out, status, created_at
+        FROM clock_events
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+        LIMIT 1
+        ",
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(event)
+}
+
+/// Gets the last N clock events for a user.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+pub async fn get_recent_clock_events(
+    pool: &PgPool,
+    user_id: &str,
+    limit: i64,
+) -> Result<Vec<ClockEvent>> {
+    let events = sqlx::query_as::<_, ClockEvent>(
+        r"
+        SELECT id, user_id, company_id, clock_in, clock_out, status, created_at
+        FROM clock_events
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2
+        ",
+    )
+    .bind(user_id)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(events)
 }
 
 #[cfg(test)]

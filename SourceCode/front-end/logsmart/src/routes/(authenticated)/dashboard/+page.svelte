@@ -1,10 +1,12 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import { goto } from '$app/navigation';
+	import ClockInOut from '$lib/components/ClockInOut.svelte';
 
 	let { data } = $props<{ data: PageData }>();
 
 	const todaysLogs = $derived(data?.todaysLogs ?? []);
+	const clockStatus = $derived(data?.clockStatus ?? null);
 
 	const handleCreateNewTemplate = () => {
 		goto('/template-designer');
@@ -122,6 +124,11 @@
 					{/if}
 				</div>
 			</div>
+		</div>
+
+		<!-- Clock In / Out Section -->
+		<div class="mb-8">
+			<ClockInOut initialStatus={clockStatus} />
 		</div>
 
 		<!-- Quick Actions Section -->

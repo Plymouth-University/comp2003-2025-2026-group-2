@@ -624,3 +624,35 @@ impl From<db::Passkey> for PasskeyDto {
         }
     }
 }
+
+// Clock In/Out DTOs
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ClockEventResponse {
+    pub id: String,
+    pub user_id: String,
+    pub clock_in: chrono::DateTime<chrono::Utc>,
+    pub clock_out: Option<chrono::DateTime<chrono::Utc>>,
+    pub status: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl From<db::ClockEvent> for ClockEventResponse {
+    fn from(event: db::ClockEvent) -> Self {
+        Self {
+            id: event.id,
+            user_id: event.user_id,
+            clock_in: event.clock_in,
+            clock_out: event.clock_out,
+            status: event.status,
+            created_at: event.created_at,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ClockStatusResponse {
+    pub is_clocked_in: bool,
+    pub current_event: Option<ClockEventResponse>,
+    pub recent_events: Vec<ClockEventResponse>,
+}

@@ -22,7 +22,7 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 		const isReadonlyHQ = user?.role === 'staff' && !user?.branch_id;
 
 		if (user?.role === 'staff' && !isReadonlyHQ) {
-			const [dueTodayResponse, pastLogsResponse] = await Promise.all([
+			const [dueTodayResponse, pastLogsResponse, clockResponse] = await Promise.all([
 				fetch('/api/logs/entries/due', {
 					headers: {
 						Authorization: `Bearer ${token}`,
@@ -34,6 +34,11 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 						Authorization: `Bearer ${token}`,
 						'Cache-Control': 'no-cache'
 					}
+				}),
+				fetch('/api/clock/status', {
+					headers: {
+						Authorization: `Bearer ${token}`
+					}
 				})
 			]);
 
@@ -43,15 +48,17 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 			const pastLogsData: ListLogEntriesResponse = pastLogsResponse.ok
 				? await pastLogsResponse.json()
 				: { entries: [] };
+			const clockStatus = clockResponse.ok ? await clockResponse.json() : null;
 
 			return {
 				user: user as User,
 				dueToday: dueToday.forms || [],
 				pastLogs: pastLogsData.entries || [],
+				clockStatus,
 				error: null
 			};
 		} else {
-			const [dueTodayResponse, allLogsResponse] = await Promise.all([
+			const [dueTodayResponse, allLogsResponse, clockResponse] = await Promise.all([
 				fetch('/api/logs/entries/due', {
 					headers: {
 						Authorization: `Bearer ${token}`,
@@ -63,6 +70,11 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 						Authorization: `Bearer ${token}`,
 						'Cache-Control': 'no-cache'
 					}
+				}),
+				fetch('/api/clock/status', {
+					headers: {
+						Authorization: `Bearer ${token}`
+					}
 				})
 			]);
 
@@ -72,11 +84,13 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 			const allLogsData: ListLogEntriesResponse = allLogsResponse.ok
 				? await allLogsResponse.json()
 				: { entries: [] };
+			const clockStatus = clockResponse.ok ? await clockResponse.json() : null;
 
 			return {
 				user: user as User,
 				dueToday: dueToday.forms || [],
 				allLogs: allLogsData.entries || [],
+				clockStatus,
 				error: null
 			};
 		}
