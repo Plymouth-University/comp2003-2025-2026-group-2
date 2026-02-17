@@ -92,7 +92,7 @@
 				bind:value={role}
 			>
 				<option value="staff">Staff</option>
-				<option value="branch_manager">Branch Manager</option>
+				<option value="branch_manager" disabled={loggedInUserRole == "branch_manager"}>Branch Manager</option>
 				<option value="company_manager" disabled={loggedInUserRole == "branch_manager"}>Company Manager</option>
 				{#if loggedInUserRole === 'logsmart_admin'}
 					<option id="logsmart_adminRole" value="logsmart_admin">Internal Admin</option>
@@ -105,7 +105,7 @@
 				id="sidebar-branch"
 				bind:value={branchId}
 			>
-				<option value={null}>No Branch (HQ)</option>
+				<option value={null} disabled={loggedInUserRole == "branch_manager"}>No Branch (HQ)</option>
 				{#each branches as branch}
 					<option value={branch.id}>{branch.name}</option>
 				{/each}
