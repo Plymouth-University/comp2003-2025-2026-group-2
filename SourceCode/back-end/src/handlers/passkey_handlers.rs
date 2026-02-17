@@ -563,7 +563,7 @@ pub async fn finish_passkey_login(
     let user_agent = extract_user_agent(&headers);
 
     let token = JwtManager::get_config()
-        .generate_token(user.id.clone(), 24)
+        .generate_token(user.id.as_str(), 24)
         .map_err(|e| {
             tracing::error!("Token creation error: {:?}", e);
             (
@@ -764,7 +764,7 @@ pub async fn finish_discoverable_passkey_login(
     let user_agent = extract_user_agent(&headers);
 
     let token = JwtManager::get_config()
-        .generate_token(user.id.clone(), 24)
+        .generate_token(user.id.as_str(), 24)
         .map_err(|e| {
             tracing::error!("Token creation error: {:?}", e);
             (

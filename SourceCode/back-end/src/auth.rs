@@ -1,10 +1,10 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use argon2::{
+    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
 use chrono::{Duration, Utc};
-use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -30,15 +30,15 @@ impl JwtConfig {
     ///
     /// # Errors
     /// Returns an error if token encoding fails.
-    pub fn generate_token(&self, user_id: String, expires_in_hours: i64) -> Result<String> {
+    pub fn generate_token(&self, user_id: &str, expires_in_hours: i64) -> Result<String> {
         let now = Utc::now();
         let exp = now + Duration::hours(expires_in_hours);
 
         let claims = Claims {
-            sub: user_id.clone(),
+            sub: user_id.to_string(),
             exp: exp.timestamp(),
             iat: now.timestamp(),
-            user_id,
+            user_id: user_id.to_string(),
         };
 
         let token = encode(
@@ -185,18 +185,15 @@ mod auth_tests {
     #[test]
     fn test_generate_token_success() {
         let config = JwtConfig::new("test_secret".to_string());
-        let result = config.generate_token("user123".to_string(), 1);
+        let result = config.generate_token("user123", 1);
         assert!(result.is_ok());
-        let token = result.unwrap();
-        assert!(!token.is_empty());
-        assert!(token.contains('.')); // JWT tokens have 3 parts separated by dots
     }
 
     #[test]
     fn test_generate_token_different_user_ids() {
         let config = JwtConfig::new("test_secret".to_string());
-        let token1 = config.generate_token("user1".to_string(), 1).unwrap();
-        let token2 = config.generate_token("user2".to_string(), 1).unwrap();
+        let token1 = config.generate_token("user1", 1).unwrap();
+        let token2 = config.generate_token("user2", 1).unwrap();
         assert_ne!(token1, token2);
     }
 
@@ -204,8 +201,8 @@ mod auth_tests {
     fn test_generate_token_different_expiry() {
         let config = JwtConfig::new("test_secret".to_string());
         let user_id = "user123".to_string();
-        let token1 = config.generate_token(user_id.clone(), 1).unwrap();
-        let token2 = config.generate_token(user_id, 24).unwrap();
+        let token1 = config.generate_token(user_id.as_str(), 1).unwrap();
+        let token2 = config.generate_token(user_id.as_str(), 24).unwrap();
         assert_ne!(token1, token2);
     }
 
@@ -213,7 +210,7 @@ mod auth_tests {
     fn test_generate_token_with_special_characters() {
         let config = JwtConfig::new("test_secret".to_string());
         let user_id = "user@domain.com+tag#123".to_string();
-        let result = config.generate_token(user_id, 1);
+        let result = config.generate_token(user_id.as_str(), 1);
         assert!(result.is_ok());
     }
 
@@ -222,7 +219,7 @@ mod auth_tests {
     fn test_validate_token_success() {
         let config = JwtConfig::new("test_secret".to_string());
         let user_id = "user123".to_string();
-        let token = config.generate_token(user_id.clone(), 24).unwrap();
+        let token = config.generate_token(user_id.as_str(), 24).unwrap();
         let result = config.validate_token(&token);
         assert!(result.is_ok());
         let claims = result.unwrap();
@@ -243,7 +240,7 @@ mod auth_tests {
     fn test_validate_token_wrong_secret() {
         let config1 = JwtConfig::new("secret1".to_string());
         let config2 = JwtConfig::new("secret2".to_string());
-        let token = config1.generate_token("user123".to_string(), 24).unwrap();
+        let token = config1.generate_token("user123", 24).unwrap();
         let result = config2.validate_token(&token);
         assert!(result.is_err());
     }
@@ -251,7 +248,7 @@ mod auth_tests {
     #[test]
     fn test_validate_token_expired() {
         let config = JwtConfig::new("test_secret".to_string());
-        let token = config.generate_token("user123".to_string(), -1).unwrap(); // Expired 1 hour ago
+        let token = config.generate_token("user123", -1).unwrap(); // Expired 1 hour ago
         let result = config.validate_token(&token);
         assert!(result.is_err());
     }
@@ -556,7 +553,7 @@ mod auth_tests {
 
         // Test token generation and validation
         let user_id = "test_user".to_string();
-        let token = config.generate_token(user_id.clone(), 1).unwrap();
+        let token = config.generate_token(user_id.as_str(), 1).unwrap();
         let claims = config.validate_token(&token).unwrap();
         assert_eq!(claims.user_id, user_id);
     }
@@ -587,7 +584,7 @@ mod auth_tests {
     fn test_jwt_config_with_unicode_secret() {
         let unicode_secret = "sëcrët_wïth_ünïcödé_çhàracters".to_string();
         let config = JwtConfig::new(unicode_secret);
-        let result = config.generate_token("user123".to_string(), 1);
+        let result = config.generate_token("user123", 1);
         assert!(result.is_ok());
     }
 

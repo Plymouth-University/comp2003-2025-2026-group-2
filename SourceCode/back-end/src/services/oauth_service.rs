@@ -366,7 +366,7 @@ impl GoogleOAuthClient {
     /// Returns an error if token generation fails.
     pub fn generate_jwt_for_user(
         &self,
-        user_id: String,
+        user_id: &str,
     ) -> Result<String, (StatusCode, serde_json::Value)> {
         let jwt_config = JwtManager::get_config();
         jwt_config.generate_token(user_id, 24).map_err(|e| {
