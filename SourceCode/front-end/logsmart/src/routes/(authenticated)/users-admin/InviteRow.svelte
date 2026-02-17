@@ -15,7 +15,7 @@
 >
 	<div class="flex flex-1 flex-col gap-2">
 		<div class="flex items-center gap-2">
-			<div class="font-semibold" style="color: var(--text-primary);">
+			<div class="font-semibold" style="color: grey;">
 				{invite.email}
 			</div>
 			<span class="text-xs font-medium" style="color: #B8860B;">⏳ Pending</span>
