@@ -128,7 +128,7 @@ impl LogEntryService {
     /// Retrieves a specific log entry.
     ///
     /// # Errors
-    /// Returns an error if the entry is not found or if the user doesn't own the entry.
+    /// Returns an error if the entry is not found or if the user doesn't have permission to view it.
     pub async fn get_log_entry(
         state: &AppState,
         user_id: &str,
@@ -145,11 +145,42 @@ impl LogEntryService {
             })?
             .ok_or((StatusCode::NOT_FOUND, json!({ "error": "Entry not found" })))?;
 
+        // Check if user owns the entry or has management permissions (including readonly HQ)
         if entry.user_id != user_id {
-            return Err((
+            let user = db::get_user_by_id(&state.postgres, user_id)
+                .await
+                .map_err(|e| {
+                    tracing::error!("Database error fetching user: {:?}", e);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        json!({ "error": "Database error" }),
+                    )
+                })?
+                .ok_or((
+                    StatusCode::UNAUTHORIZED,
+                    json!({ "error": "User not found" }),
+                ))?;
+
+            // Allow if user can manage branch or is readonly HQ
+            if !user.can_manage_branch() && !user.is_readonly_hq() {
+                return Err((
+                    StatusCode::FORBIDDEN,
+                    json!({ "error": "You do not have permission to view this entry" }),
+                ));
+            }
+
+            // Additional check: ensure entry belongs to same company
+            let user_company_id = user.company_id.ok_or((
                 StatusCode::FORBIDDEN,
-                json!({ "error": "You do not have permission to view this entry" }),
-            ));
+                json!({ "error": "User is not associated with a company" }),
+            ))?;
+
+            if entry.company_id != user_company_id {
+                return Err((
+                    StatusCode::FORBIDDEN,
+                    json!({ "error": "You do not have permission to view this entry" }),
+                ));
+            }
         }
 
         Ok(entry)

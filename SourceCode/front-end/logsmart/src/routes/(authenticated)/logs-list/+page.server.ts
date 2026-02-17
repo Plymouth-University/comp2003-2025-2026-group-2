@@ -18,9 +18,10 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 	}
 
 	try {
-		if (
-			user?.role === 'staff'
-		) {
+		// Check if user is readonly HQ (staff with no branch)
+		const isReadonlyHQ = user?.role === 'staff' && !user?.branch_id;
+
+		if (user?.role === 'staff' && !isReadonlyHQ) {
 			const [dueTodayResponse, pastLogsResponse] = await Promise.all([
 				fetch('/api/logs/entries/due', {
 					headers: {

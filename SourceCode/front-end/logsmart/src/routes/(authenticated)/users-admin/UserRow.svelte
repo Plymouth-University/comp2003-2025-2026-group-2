@@ -1,5 +1,5 @@
 <script lang="ts">
-	const { item, setSelectedUser, onRemove } = $props<{
+	const { item, setSelectedUser, onRemove, isReadonlyHQ } = $props<{
 		item: {
 			email: string;
 			first_name: string;
@@ -8,6 +8,7 @@
 		};
 		setSelectedUser: (email: string) => void;
 		onRemove: (email: string) => Promise<void>;
+		isReadonlyHQ: boolean;
 	}>();
 </script>
 
@@ -52,16 +53,18 @@
 		</div>
 	</div>
 
-	<div class="flex gap-2">
-		<button
-			type="button"
-			onclick={() => onRemove(item.email)}
-			class="rounded px-3 py-1 text-sm font-medium transition-colors hover:underline"
-			style="color: var(--text-secondary);"
-		>
-			Remove
-		</button>
-	</div>
+	{#if !isReadonlyHQ}
+		<div class="flex gap-2">
+			<button
+				type="button"
+				onclick={() => onRemove(item.email)}
+				class="rounded px-3 py-1 text-sm font-medium transition-colors hover:underline"
+				style="color: var(--text-secondary);"
+			>
+				Remove
+			</button>
+		</div>
+	{/if}
 </div>
 
 <style>

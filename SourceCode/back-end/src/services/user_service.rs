@@ -132,7 +132,7 @@ impl UserService {
     ) -> Result<db::UserRecord, (StatusCode, serde_json::Value)> {
         let admin = Self::get_user_by_id(db_pool, admin_user_id).await?;
 
-        if !admin.can_manage_branch() {
+        if !admin.can_manage_branch() || admin.is_readonly_hq() {
             return Err((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "Only managers can update member profiles" }),
@@ -207,7 +207,7 @@ impl UserService {
     ) -> Result<String, (StatusCode, serde_json::Value)> {
         let admin = Self::get_user_by_id(db_pool, admin_user_id).await?;
 
-        if !admin.can_manage_branch() {
+        if !admin.can_manage_branch() || admin.is_readonly_hq() {
             return Err((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "Only managers can delete members" }),

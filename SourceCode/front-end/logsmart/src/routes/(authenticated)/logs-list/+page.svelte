@@ -3,8 +3,9 @@
 
 	let { data } = $props<{ data: PageData }>();
 
-	const isMember = $derived(data?.user?.role === 'staff');
-	const isAdmin = $derived(data?.user?.role.match(/company_manager|branch_manager|logsmart_admin/));
+	const isReadonlyHQ = $derived(data?.user?.role === 'staff' && !data?.user?.branch_id);
+	const isMember = $derived(data?.user?.role === 'staff' && !isReadonlyHQ);
+	const isAdmin = $derived(data?.user?.role.match(/company_manager|branch_manager|logsmart_admin/) || isReadonlyHQ);
 
 	const sortedPastLogs = $derived(
 		data.pastLogs
@@ -177,13 +178,15 @@
 											{/if}
 										</div>
 									</div>
-									<button
-										onclick={() => handleFillLog(form.template_name, form.period, form.status)}
-										class="rounded px-6 py-2 font-semibold hover:opacity-80"
-										style="background-color: #3D7A82; color: white;"
-									>
-										Fill Out
-									</button>
+									{#if !isReadonlyHQ}
+										<button
+											onclick={() => handleFillLog(form.template_name, form.period, form.status)}
+											class="rounded px-6 py-2 font-semibold hover:opacity-80"
+											style="background-color: #3D7A82; color: white;"
+										>
+											Fill Out
+										</button>
+									{/if}
 								</div>
 							{/each}
 						</div>
@@ -278,13 +281,15 @@
 											{/if}
 										</div>
 									</div>
-									<button
-										onclick={() => handleFillLog(form.template_name, form.period, form.status)}
-										class="rounded px-6 py-2 font-semibold hover:opacity-80"
-										style="background-color: #3D7A82; color: white;"
-									>
-										Fill Out
-									</button>
+									{#if !isReadonlyHQ}
+										<button
+											onclick={() => handleFillLog(form.template_name, form.period, form.status)}
+											class="rounded px-6 py-2 font-semibold hover:opacity-80"
+											style="background-color: #3D7A82; color: white;"
+										>
+											Fill Out
+										</button>
+									{/if}
 								</div>
 							{/each}
 						</div>
@@ -336,21 +341,15 @@
 											>
 												View
 											</button>
-											<button
-												onclick={() => handleUnsubmit(log.id)}
-												class="rounded px-6 py-2 hover:opacity-80"
-												style="background-color: #f59e0b; color: white;"
-											>
-												Unsubmit
-											</button>
-										{:else}
-											<button
-												onclick={() => handleEditLog(log.id)}
-												class="rounded px-6 py-2 hover:opacity-80"
-												style="background-color: #3D7A82; color: white;"
-											>
-												Edit
-											</button>
+											{#if !isReadonlyHQ}
+												<button
+													onclick={() => handleUnsubmit(log.id)}
+													class="rounded px-6 py-2 hover:opacity-80"
+													style="background-color: #f59e0b; color: white;"
+												>
+													Unsubmit
+												</button>
+											{/if}
 										{/if}
 									</div>
 								</div>

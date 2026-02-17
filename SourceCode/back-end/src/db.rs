@@ -114,6 +114,11 @@ impl UserRecord {
     pub fn can_manage_branch(&self) -> bool {
         self.is_branch_manager() || self.can_manage_company()
     }
+
+    #[must_use]
+    pub fn is_readonly_hq(&self) -> bool {
+        self.is_staff() && self.branch_id.is_none()
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]

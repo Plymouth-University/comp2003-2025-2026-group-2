@@ -7,10 +7,12 @@
 	let mobileMenuOpen = $state(false);
 
 	const currentPath = $derived(page.url.pathname);
+	const isReadonlyHQ = $derived(data?.user?.role === 'staff' && !data?.user?.branch_id);
 	const isAdmin = $derived(
 		data?.user?.role !== 'staff' ||
 			data?.user?.role === 'admin' ||
-			data?.user?.role === 'logsmart_admin'
+			data?.user?.role === 'logsmart_admin' ||
+			isReadonlyHQ
 	);
 	const isCompanyManager = $derived(data?.user?.role === 'company_manager');
 

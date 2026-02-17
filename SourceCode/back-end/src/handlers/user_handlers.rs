@@ -70,7 +70,7 @@ pub async fn get_company_members(
         ));
     }
 
-    let filtered_members = if user.is_company_manager() || user.is_logsmart_admin() {
+    let filtered_members = if user.is_company_manager() || user.is_logsmart_admin() || user.is_readonly_hq() {
         members
     } else if user.is_branch_manager() {
         let filtered = members

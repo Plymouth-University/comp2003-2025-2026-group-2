@@ -49,7 +49,7 @@ pub async fn add_template(
             Json(json!({ "error": "User not found" })),
         ))?;
 
-    if !user.can_manage_branch() {
+    if !user.can_manage_branch() || user.is_readonly_hq() {
         return Err((
             StatusCode::FORBIDDEN,
             Json(json!({ "error": "Only managers can create templates" })),
@@ -175,7 +175,7 @@ pub async fn get_all_templates(
             Json(json!({ "error": "User not found" })),
         ))?;
 
-    if !user.can_manage_branch() {
+    if !user.can_manage_branch() && !user.is_readonly_hq() {
         return Err((
             StatusCode::FORBIDDEN,
             Json(json!({ "error": "Only managers can access templates" })),
@@ -250,7 +250,7 @@ pub async fn update_template(
             Json(json!({ "error": "User not found" })),
         ))?;
 
-    if !user.can_manage_branch() {
+    if !user.can_manage_branch() || user.is_readonly_hq() {
         return Err((
             StatusCode::FORBIDDEN,
             Json(json!({ "error": "Only managers can update templates" })),
@@ -372,7 +372,7 @@ pub async fn restore_template_version(
             Json(json!({ "error": "User not found" })),
         ))?;
 
-    if !user.can_manage_branch() {
+    if !user.can_manage_branch() || user.is_readonly_hq() {
         return Err((
             StatusCode::FORBIDDEN,
             Json(json!({ "error": "Only managers can restore templates" })),
@@ -434,7 +434,7 @@ pub async fn rename_template(
             Json(json!({ "error": "User not found" })),
         ))?;
 
-    if !user.can_manage_branch() {
+    if !user.can_manage_branch() || user.is_readonly_hq() {
         return Err((
             StatusCode::FORBIDDEN,
             Json(json!({ "error": "Only managers can rename templates" })),
@@ -496,7 +496,7 @@ pub async fn delete_template(
             Json(json!({ "error": "User not found" })),
         ))?;
 
-    if !user.can_manage_branch() {
+    if !user.can_manage_branch() || user.is_readonly_hq() {
         return Err((
             StatusCode::FORBIDDEN,
             Json(json!({ "error": "Only managers can delete templates" })),

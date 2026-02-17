@@ -456,7 +456,7 @@ pub async fn list_company_log_entries(
             Json(json!({ "error": "User not found" })),
         ))?;
 
-    if !user.can_manage_branch() {
+    if !user.can_manage_branch() && !user.is_readonly_hq() {
         return Err((
             StatusCode::FORBIDDEN,
             Json(json!({ "error": "Only managers can view these logs" })),
@@ -468,7 +468,7 @@ pub async fn list_company_log_entries(
         Json(json!({ "error": "User is not associated with a company" })),
     ))?;
 
-    let entries = if user.is_company_manager() || user.is_logsmart_admin() {
+    let entries = if user.is_company_manager() || user.is_logsmart_admin() || user.is_readonly_hq() {
         logs_db::get_company_log_entries(&state.mongodb, &company_id).await
     } else {
         let branch_id = user.branch_id.as_ref().ok_or((

@@ -5,9 +5,14 @@
 	import type { Template, TemplateSchedule, DayOfWeek } from './types';
 	import TemplateRow from './TemplateRow.svelte';
 	import TemplateSettingsWizard from './TemplateSettingsWizard.svelte';
+	import type { PageData } from './$types';
 
 	type ApiTemplateInfo = components['schemas']['TemplateInfo'];
 	type ApiSchedule = components['schemas']['Schedule'];
+
+	let { data }: { data: PageData } = $props();
+	let user = $derived(data?.user);
+	let isReadonlyHQ = $derived(user?.role === 'staff' && !user?.branch_id);
 
 	const dayNumberToName: DayOfWeek[] = [
 		'sunday',
@@ -198,14 +203,16 @@
 	<div class="mx-auto max-w-5xl px-6 py-8">
 		<div class="mb-8 flex items-center justify-between">
 			<h1 class="text-3xl font-bold" style="color: var(--text-primary);">Templates Dashboard</h1>
-			<button
-				type="button"
-				class="btn-create rounded px-6 py-3 text-white md:font-medium"
-				onclick={handleCreateNew}
-			>
-				<span class="hidden sm:inline">➕ Create New Template</span>
-				<span class="sm:hidden">➕</span>
-			</button>
+			{#if !isReadonlyHQ}
+				<button
+					type="button"
+					class="btn-create rounded px-6 py-3 text-white md:font-medium"
+					onclick={handleCreateNew}
+				>
+					<span class="hidden sm:inline">➕ Create New Template</span>
+					<span class="sm:hidden">➕</span>
+				</button>
+			{/if}
 		</div>
 
 		<div class="mb-6">
@@ -256,14 +263,15 @@
 			</div>
 		{:else}
 			<div class="space-y-4">
-				{#each filteredTemplates as template (template.id)}
-					<TemplateRow
-						{template}
-						onEdit={handleEdit}
-						onSettings={handleSettings}
-						onDelete={handleDelete}
-					/>
-				{/each}
+			{#each filteredTemplates as template (template.id)}
+				<TemplateRow
+					{template}
+					onEdit={handleEdit}
+					onSettings={handleSettings}
+					onDelete={handleDelete}
+					{isReadonlyHQ}
+				/>
+			{/each}
 			</div>
 		{/if}
 

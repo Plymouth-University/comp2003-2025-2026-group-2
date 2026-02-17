@@ -4,6 +4,13 @@
 
 	type LogEntry = components['schemas']['LogEntryResponse'];
 
+	// Get user data from parent layout
+	let { data } = $props();
+	let user = $derived(data?.user);
+
+	// Check if user is readonly HQ (staff with no branch)
+	let isReadonlyHQ = $derived(user?.role === 'staff' && !user?.branch_id);
+
 	let logTypes = $state([
 		{ id: 'all', label: 'All', checked: true },
 		{ id: 'type1', label: 'Text Logs', checked: true },
@@ -659,8 +666,10 @@
 		reportGenerated = false;
 
 		try {
-			// Fetch all log entries for the user's company
-			const response = await api.GET('/logs/entries');
+			// Fetch log entries - use admin endpoint for readonly HQ to get all company logs
+			const response = isReadonlyHQ
+				? await api.GET('/logs/admin/entries')
+				: await api.GET('/logs/entries');
 
 			if (!response.data) {
 				throw new Error('Failed to fetch log entries');
