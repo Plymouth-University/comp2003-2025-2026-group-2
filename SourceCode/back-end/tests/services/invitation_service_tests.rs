@@ -10,7 +10,7 @@ async fn test_send_invitation_success() {
     let pool = setup_test_db().await;
     
     // Create admin user
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::Admin, Some("company123")).await;
+    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
     
     // Test successful invitation sending
     let result = InvitationService::send_invitation(
@@ -34,7 +34,7 @@ async fn test_send_invitation_user_already_exists() {
     let pool = setup_test_db().await;
     
     // Create admin and existing user
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::Admin, Some("company123")).await;
+    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
     let existing_user = create_test_user(&pool, "existing@example.com", Some("company123")).await;
     
     // Test invitation to existing user
@@ -180,7 +180,7 @@ async fn test_cancel_invitation_success() {
     let pool = setup_test_db().await;
     
     // Create admin and invitation
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::Admin, Some("company123")).await;
+    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
     let invitation = create_test_invitation(&pool, "company123", "newuser@example.com").await;
     
     // Test successful invitation cancellation
@@ -198,7 +198,7 @@ async fn test_cancel_invitation_non_admin_forbidden() {
     let pool = setup_test_db().await;
     
     // Create regular user and invitation
-    let user = create_test_user_with_role(&pool, "user@example.com", UserRole::Member, Some("company123")).await;
+    let user = create_test_user_with_role(&pool, "user@example.com", UserRole::Staff, Some("company123")).await;
     let invitation = create_test_invitation(&pool, "company123", "newuser@example.com").await;
     
     // Test non-admin trying to cancel invitation
@@ -215,7 +215,7 @@ async fn test_cancel_invitation_different_company_forbidden() {
     let pool = setup_test_db().await;
     
     // Create admin from company1 and invitation for company2
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::Admin, Some("company1")).await;
+    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company1")).await;
     let invitation = create_test_invitation(&pool, "company2", "newuser@example.com").await;
     
     // Test admin trying to cancel invitation from different company
@@ -232,7 +232,7 @@ async fn test_cancel_invitation_already_accepted() {
     let pool = setup_test_db().await;
     
     // Create admin and accepted invitation
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::Admin, Some("company123")).await;
+    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
     let mut invitation = create_test_invitation(&pool, "company123", "newuser@example.com").await;
     invitation.accepted_at = Some(Utc::now());
     
@@ -253,7 +253,7 @@ async fn test_cancel_invitation_already_cancelled() {
     let pool = setup_test_db().await;
     
     // Create admin and cancelled invitation
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::Admin, Some("company123")).await;
+    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
     let invitation = create_test_invitation(&pool, "company123", "newuser@example.com").await;
     
     // Cancel the invitation first
@@ -289,7 +289,7 @@ async fn test_cancel_invitation_not_found() {
     let pool = setup_test_db().await;
     
     // Create admin
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::Admin, Some("company123")).await;
+    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
     
     // Test with non-existent invitation ID
     let result = InvitationService::cancel_invitation(&pool, &admin.id, "non-existent-invitation").await;

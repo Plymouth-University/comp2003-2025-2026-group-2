@@ -107,6 +107,74 @@
 				"security": [{ "bearer_auth": [] }]
 			}
 		},
+		"/auth/company/branches": {
+			"get": {
+				"tags": ["Company Management"],
+				"summary": "Lists all branches for the user's company.",
+				"operationId": "list_branches",
+				"responses": {
+					"200": {
+						"description": "Branches retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ListBranchesResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			},
+			"post": {
+				"tags": ["Company Management"],
+				"summary": "Creates a new branch for the user's company.",
+				"operationId": "create_branch",
+				"requestBody": {
+					"content": {
+						"application/json": { "schema": { "$ref": "#/components/schemas/CreateBranchRequest" } }
+					},
+					"required": true
+				},
+				"responses": {
+					"201": {
+						"description": "Branch created successfully",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/BranchDto" } }
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden - only company manager can create branches",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
 		"/auth/company/members": {
 			"get": {
 				"tags": ["Company Management"],
@@ -895,6 +963,42 @@
 				"security": [{ "bearer_token": [] }]
 			}
 		},
+		"/logs/admin/entries": {
+			"get": {
+				"tags": ["Log Entries"],
+				"summary": "Lists all log entries for the company or branch (managers only).",
+				"operationId": "list_company_log_entries",
+				"responses": {
+					"200": {
+						"description": "Company log entries retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ListLogEntriesResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden - only managers can view all entries",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
 		"/logs/entries": {
 			"get": {
 				"tags": ["Log Entries"],
@@ -975,12 +1079,44 @@
 				"security": [{ "bearer_auth": [] }]
 			}
 		},
-		"/logs/entries/:entry_id": {
+		"/logs/entries/due": {
+			"get": {
+				"tags": ["Log Entries"],
+				"summary": "Lists all log forms that are due today for the current user's company.",
+				"description": "# Errors\nReturns an error if the user is not authorized or if the query fails.",
+				"operationId": "list_due_forms_today",
+				"responses": {
+					"200": {
+						"description": "Due forms retrieved successfully",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/DueFormsResponse" } }
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing token",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/logs/entries/{entry_id}": {
 			"get": {
 				"tags": ["Log Entries"],
 				"summary": "Retrieves a specific log entry by its ID.",
 				"description": "# Errors\nReturns an error if the entry is not found or if the user is not authorized.",
 				"operationId": "get_log_entry",
+				"parameters": [
+					{ "name": "entry_id", "in": "path", "required": true, "schema": { "type": "string" } }
+				],
 				"responses": {
 					"200": {
 						"description": "Log entry retrieved successfully",
@@ -1020,6 +1156,9 @@
 				"summary": "Updates the data of an existing log entry draft.",
 				"description": "# Errors\nReturns an error if the entry is not found or if the update fails.",
 				"operationId": "update_log_entry",
+				"parameters": [
+					{ "name": "entry_id", "in": "path", "required": true, "schema": { "type": "string" } }
+				],
 				"requestBody": {
 					"content": {
 						"application/json": {
@@ -1067,6 +1206,9 @@
 				"summary": "Deletes a log entry.",
 				"description": "# Errors\nReturns an error if the user is not authorized or if deletion fails.",
 				"operationId": "delete_log_entry",
+				"parameters": [
+					{ "name": "entry_id", "in": "path", "required": true, "schema": { "type": "string" } }
+				],
 				"responses": {
 					"200": {
 						"description": "Log entry deleted successfully",
@@ -1100,12 +1242,15 @@
 				"security": [{ "bearer_auth": [] }]
 			}
 		},
-		"/logs/entries/:entry_id/submit": {
+		"/logs/entries/{entry_id}/submit": {
 			"post": {
 				"tags": ["Log Entries"],
 				"summary": "Submits a log entry, marking it as final.",
 				"description": "# Errors\nReturns an error if the entry is not found or if submission fails.",
 				"operationId": "submit_log_entry",
+				"parameters": [
+					{ "name": "entry_id", "in": "path", "required": true, "schema": { "type": "string" } }
+				],
 				"responses": {
 					"200": {
 						"description": "Log entry submitted successfully",
@@ -1143,12 +1288,15 @@
 				"security": [{ "bearer_auth": [] }]
 			}
 		},
-		"/logs/entries/:entry_id/unsubmit": {
+		"/logs/entries/{entry_id}/unsubmit": {
 			"post": {
 				"tags": ["Log Entries"],
 				"summary": "Returns a submitted log entry to draft status (admin only).",
 				"description": "# Errors\nReturns an error if the entry is not found or if the operation fails.",
 				"operationId": "unsubmit_log_entry",
+				"parameters": [
+					{ "name": "entry_id", "in": "path", "required": true, "schema": { "type": "string" } }
+				],
 				"responses": {
 					"200": {
 						"description": "Log entry returned to draft successfully",
@@ -1186,40 +1334,10 @@
 				"security": [{ "bearer_auth": [] }]
 			}
 		},
-		"/logs/entries/due": {
-			"get": {
-				"tags": ["Log Entries"],
-				"summary": "Lists all log forms that are due today for the current user's company.",
-				"description": "# Errors\nReturns an error if the user is not authorized or if the query fails.",
-				"operationId": "list_due_forms_today",
-				"responses": {
-					"200": {
-						"description": "Due forms retrieved successfully",
-						"content": {
-							"application/json": { "schema": { "$ref": "#/components/schemas/DueFormsResponse" } }
-						}
-					},
-					"401": {
-						"description": "Unauthorized - invalid or missing token",
-						"content": {
-							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
-						}
-					},
-					"500": {
-						"description": "Server error",
-						"content": {
-							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
-						}
-					}
-				},
-				"security": [{ "bearer_auth": [] }]
-			}
-		},
 		"/logs/templates": {
 			"get": {
 				"tags": ["Templates"],
 				"summary": "Retrieves a specific log template by name.",
-				"description": "# Errors\nReturns an error if the template is not found or if the user is not authorized.",
 				"operationId": "get_template",
 				"parameters": [
 					{
@@ -1232,21 +1350,21 @@
 				],
 				"responses": {
 					"200": {
-						"description": "Password reset successfully",
+						"description": "Template retrieved successfully",
 						"content": {
 							"application/json": {
 								"schema": { "$ref": "#/components/schemas/GetTemplateResponse" }
 							}
 						}
 					},
-					"400": {
-						"description": "Password validation failed",
+					"401": {
+						"description": "Invalid or expired token",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
 					},
-					"401": {
-						"description": "Invalid or expired token",
+					"404": {
+						"description": "Template not found",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -1263,7 +1381,6 @@
 			"post": {
 				"tags": ["Templates"],
 				"summary": "Adds a new log template for the current company.",
-				"description": "# Errors\nReturns an error if the user is not authorized or if template creation fails.",
 				"operationId": "add_template",
 				"requestBody": {
 					"content": {
@@ -1280,14 +1397,14 @@
 							}
 						}
 					},
-					"400": {
-						"description": "Password validation failed",
+					"401": {
+						"description": "Invalid or expired token",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
 					},
-					"401": {
-						"description": "Invalid or expired token",
+					"403": {
+						"description": "Forbidden",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -1304,7 +1421,6 @@
 			"delete": {
 				"tags": ["Templates"],
 				"summary": "Deletes a specific log template.",
-				"description": "# Errors\nReturns an error if the user is not authorized or if deletion fails.",
 				"operationId": "delete_template",
 				"parameters": [
 					{
@@ -1323,14 +1439,14 @@
 							}
 						}
 					},
-					"400": {
-						"description": "Password validation failed",
+					"401": {
+						"description": "Unauthorized",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
 					},
-					"401": {
-						"description": "Invalid or expired token",
+					"403": {
+						"description": "Forbidden",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -1348,8 +1464,7 @@
 		"/logs/templates/all": {
 			"get": {
 				"tags": ["Templates"],
-				"summary": "Retrieves all log templates for the current company.",
-				"description": "# Errors\nReturns an error if the user is not authorized or if the query fails.",
+				"summary": "Retrieves all log templates for the current company/branch.",
 				"operationId": "get_all_templates",
 				"responses": {
 					"200": {
@@ -1361,7 +1476,13 @@
 						}
 					},
 					"401": {
-						"description": "Invalid or expired token",
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -1380,7 +1501,6 @@
 			"put": {
 				"tags": ["Templates"],
 				"summary": "Renames an existing log template.",
-				"description": "# Errors\nReturns an error if the user is not authorized or if the rename fails.",
 				"operationId": "rename_template",
 				"requestBody": {
 					"content": {
@@ -1399,14 +1519,14 @@
 							}
 						}
 					},
-					"400": {
-						"description": "Password validation failed",
+					"401": {
+						"description": "Unauthorized",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
 					},
-					"401": {
-						"description": "Invalid or expired token",
+					"403": {
+						"description": "Forbidden",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -1425,7 +1545,6 @@
 			"put": {
 				"tags": ["Templates"],
 				"summary": "Updates an existing log template.",
-				"description": "# Errors\nReturns an error if the user is not authorized or if the update fails.",
 				"operationId": "update_template",
 				"requestBody": {
 					"content": {
@@ -1444,14 +1563,14 @@
 							}
 						}
 					},
-					"400": {
-						"description": "Password validation failed",
+					"401": {
+						"description": "Unauthorized",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
 					},
-					"401": {
-						"description": "Invalid or expired token",
+					"403": {
+						"description": "Forbidden",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -1470,7 +1589,6 @@
 			"get": {
 				"tags": ["Templates"],
 				"summary": "Retrieves the version history of a log template.",
-				"description": "# Errors\nReturns an error if the user is not authorized or if query fails.",
 				"operationId": "get_template_versions",
 				"parameters": [
 					{
@@ -1491,7 +1609,7 @@
 						}
 					},
 					"401": {
-						"description": "Invalid or expired token",
+						"description": "Unauthorized",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -1510,7 +1628,6 @@
 			"post": {
 				"tags": ["Templates"],
 				"summary": "Restores a specific version of a log template.",
-				"description": "# Errors\nReturns an error if the user is not authorized or if restoration fails.",
 				"operationId": "restore_template_version",
 				"parameters": [
 					{
@@ -1545,7 +1662,13 @@
 						}
 					},
 					"401": {
-						"description": "Invalid or expired token",
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -1577,6 +1700,7 @@
 				"type": "object",
 				"required": ["template_name", "template_layout", "schedule"],
 				"properties": {
+					"branch_id": { "type": ["string", "null"], "example": "branch-uuid-here" },
 					"schedule": { "$ref": "#/components/schemas/Schedule" },
 					"template_layout": { "$ref": "#/components/schemas/Vec" },
 					"template_name": { "type": "string", "example": "Kitchen Daily Log" }
@@ -1596,10 +1720,11 @@
 				"type": "object",
 				"required": ["email", "first_name", "last_name", "role"],
 				"properties": {
+					"branch_id": { "type": ["string", "null"], "example": "branch-uuid-here" },
 					"email": { "type": "string", "example": "user@example.com" },
 					"first_name": { "type": "string", "example": "Jane" },
 					"last_name": { "type": "string", "example": "Smith" },
-					"role": { "type": "string", "example": "member" }
+					"role": { "type": "string", "example": "staff" }
 				}
 			},
 			"AuthResponse": {
@@ -1610,10 +1735,29 @@
 					"user": { "$ref": "#/components/schemas/UserResponse" }
 				}
 			},
+			"BranchDto": {
+				"type": "object",
+				"required": ["id", "company_id", "name", "address", "created_at"],
+				"properties": {
+					"address": { "type": "string" },
+					"company_id": { "type": "string" },
+					"created_at": { "type": "string", "format": "date-time" },
+					"id": { "type": "string" },
+					"name": { "type": "string" }
+				}
+			},
 			"CancelInvitationRequest": {
 				"type": "object",
 				"required": ["invitation_id"],
 				"properties": { "invitation_id": { "type": "string", "example": "invitation-uuid-here" } }
+			},
+			"CreateBranchRequest": {
+				"type": "object",
+				"required": ["name", "address"],
+				"properties": {
+					"address": { "type": "string", "example": "123 Regent St, London" },
+					"name": { "type": "string", "example": "London Office" }
+				}
 			},
 			"CreateLogEntryRequest": {
 				"type": "object",
@@ -1784,7 +1928,11 @@
 			"InviteUserRequest": {
 				"type": "object",
 				"required": ["email"],
-				"properties": { "email": { "type": "string", "example": "newmember@example.com" } }
+				"properties": {
+					"branch_id": { "type": ["string", "null"], "example": "branch-uuid-here" },
+					"email": { "type": "string", "example": "newmember@example.com" },
+					"role": { "oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/UserRole" }] }
+				}
 			},
 			"JwtVerifyResponse": {
 				"type": "object",
@@ -1800,6 +1948,13 @@
 				"type": "object",
 				"required": ["layout"],
 				"properties": { "layout": {} }
+			},
+			"ListBranchesResponse": {
+				"type": "object",
+				"required": ["branches"],
+				"properties": {
+					"branches": { "type": "array", "items": { "$ref": "#/components/schemas/BranchDto" } }
+				}
 			},
 			"ListLogEntriesResponse": {
 				"type": "object",
@@ -1997,6 +2152,7 @@
 					"created_by"
 				],
 				"properties": {
+					"branch_id": { "type": ["string", "null"] },
 					"company_id": { "type": "string" },
 					"created_at": { "type": "string", "format": "date-time" },
 					"created_by": { "type": "string", "format": "uuid" },
@@ -2054,6 +2210,15 @@
 					"version_name": { "type": ["string", "null"] }
 				}
 			},
+			"UpdateBranchRequest": {
+				"type": "object",
+				"required": ["branch_id", "name", "address"],
+				"properties": {
+					"address": { "type": "string", "example": "123 Regent St, London" },
+					"branch_id": { "type": "string", "example": "550e8400-e29b-41d4-a716-446655440000" },
+					"name": { "type": "string", "example": "London Office" }
+				}
+			},
 			"UpdateLogEntryRequest": {
 				"type": "object",
 				"required": ["entry_data"],
@@ -2088,17 +2253,24 @@
 			},
 			"UserResponse": {
 				"type": "object",
-				"required": ["email", "first_name", "last_name", "role"],
+				"required": ["id", "email", "first_name", "last_name", "role", "created_at"],
 				"properties": {
+					"branch_id": { "type": ["string", "null"] },
+					"company_id": { "type": ["string", "null"] },
 					"company_name": { "type": ["string", "null"] },
+					"created_at": { "type": "string", "format": "date-time" },
 					"email": { "type": "string" },
 					"first_name": { "type": "string" },
+					"id": { "type": "string" },
 					"last_name": { "type": "string" },
 					"oauth_provider": { "type": ["string", "null"] },
 					"role": { "$ref": "#/components/schemas/UserRole" }
 				}
 			},
-			"UserRole": { "type": "string", "enum": ["admin", "member", "logsmart_admin"] },
+			"UserRole": {
+				"type": "string",
+				"enum": ["logsmart_admin", "company_manager", "branch_manager", "staff"]
+			},
 			"Vec": {
 				"type": "array",
 				"items": {

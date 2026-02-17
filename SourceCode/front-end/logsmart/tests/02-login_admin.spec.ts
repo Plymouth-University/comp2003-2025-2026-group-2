@@ -28,7 +28,7 @@ test('login_admin_valid', async ({ page }) => {
 	await expect(page.locator('body')).toContainText(adminCreds.firstName.split('-')[0]);
 	await expect(page.locator('body')).toContainText(adminCreds.email);
 	await expect(page.locator('body')).toContainText(adminCreds.companyName);
-	await expect(page.locator('body')).toContainText('Company Admin');
+	await expect(page.locator('body')).toContainText('Company Manager');
 });
 
 test('login_admin_invalid_empty_email', async ({ page }) => {

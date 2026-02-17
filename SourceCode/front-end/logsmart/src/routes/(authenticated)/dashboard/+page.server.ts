@@ -1,10 +1,12 @@
-import { redirect, type RequestEvent } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 	const { user } = await parent();
 
-	if (user?.role == 'member') {
+	// Allow readonly HQ (staff with no branch) to access dashboard
+	const isReadonlyHQ = user?.role === 'staff' && !user?.branch_id;
+	if (user?.role === 'staff' && !isReadonlyHQ) {
 		throw redirect(303, '/logs-list');
 	}
 

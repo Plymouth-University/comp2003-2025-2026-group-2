@@ -34,13 +34,13 @@ async fn test_register_creates_user_and_company() {
         "User".to_string(),
         Some(password_hash),
         None,
-        UserRole::Admin,
+        UserRole::CompanyManager,
     )
     .await
     .expect("Failed to create user");
 
     assert!(user.email.starts_with("testregisteradmin"));
-    assert_eq!(user.role, UserRole::Admin);
+    assert_eq!(user.role, UserRole::CompanyManager);
 
     let company = db::create_company(
         &pool,
@@ -67,7 +67,7 @@ async fn test_user_creation_and_retrieval() {
         "Doe".to_string(),
         Some(password_hash.clone()),
         None,
-        UserRole::Member,
+        UserRole::Staff,
     )
     .await
     .expect("Failed to create user");
@@ -97,7 +97,7 @@ async fn test_member_user_creation() {
         "Doe".to_string(),
         Some(password_hash.clone()),
         None,
-        UserRole::Member,
+        UserRole::Staff,
     )
     .await
     .expect("Failed to create user");
@@ -128,7 +128,7 @@ async fn test_invalid_password_verification() {
         "User".to_string(),
         Some(password_hash),
         None,
-        UserRole::Member,
+        UserRole::Staff,
     )
     .await
     .expect("Failed to create user");
@@ -199,6 +199,8 @@ async fn test_invitation_creation_and_retrieval() {
         company.id,
         test_email.clone(),
         token.clone(),
+        UserRole::Staff,
+        None,
         expires_at,
     )
     .await
@@ -227,13 +229,13 @@ async fn test_admin_user_creation() {
         "User".to_string(),
         Some(password_hash),
         None,
-        UserRole::Admin,
+        UserRole::CompanyManager,
     )
     .await
     .expect("Failed to create admin user");
 
-    assert!(user.is_admin());
-    assert_eq!(user.get_role(), UserRole::Admin);
+    assert!(user.is_company_manager());
+    assert_eq!(user.get_role(), UserRole::CompanyManager);
 }
 
 #[tokio::test]
@@ -255,7 +257,7 @@ async fn test_user_with_company_association() {
         "Name".to_string(),
         Some(password_hash),
         Some(company.id.clone()),
-        UserRole::Member,
+        UserRole::Staff,
     )
     .await
     .expect("Failed to create user");
@@ -280,9 +282,9 @@ async fn test_multiple_users_creation() {
             Some(password_hash.clone()),
             None,
             if i % 2 == 0 {
-                UserRole::Admin
+                UserRole::CompanyManager
             } else {
-                UserRole::Member
+                UserRole::Staff
             },
         )
         .await
@@ -311,9 +313,17 @@ async fn test_invitation_acceptance() {
     let test_email = format!("newmember_{}@example.com", uuid::Uuid::new_v4());
     let expires_at = chrono::Utc::now() + chrono::Duration::days(7);
 
-    let _invitation = db::create_invitation(&pool, company.id, test_email, token, expires_at)
-        .await
-        .expect("Failed to create invitation");
+    let _invitation = db::create_invitation(
+        &pool,
+        company.id,
+        test_email,
+        token,
+        UserRole::Staff,
+        None,
+        expires_at,
+    )
+    .await
+    .expect("Failed to create invitation");
 
     assert_eq!(_invitation.accepted_at, None);
 
@@ -364,6 +374,8 @@ async fn test_request_validation_structures() {
 
     let invite_req = InviteUserRequest {
         email: "newuser@example.com".to_string(),
+        role: Some(UserRole::Staff),
+        branch_id: None,
     };
 
     assert!(!invite_req.email.is_empty());

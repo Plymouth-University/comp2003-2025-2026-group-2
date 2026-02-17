@@ -1,4 +1,4 @@
-import type { Browser } from '@playwright/test';
+import { type Browser, expect, type Page } from '@playwright/test';
 
 const MAILHOG_API_URL = process.env.MAILHOG_API_URL || 'http://localhost:8025/api';
 
@@ -76,7 +76,9 @@ const decodeMailBody = (email: MailhogEmail): string => {
 	if (encoding === 'base64') {
 		try {
 			body = Buffer.from(body, 'base64').toString('utf-8');
-		} catch (e) {}
+		} catch (e) {
+			console.error('Failed to decode base64 email body:', e);
+		}
 	}
 
 	body = body.replace(/=\r?\n/g, '');
@@ -85,7 +87,26 @@ const decodeMailBody = (email: MailhogEmail): string => {
 	return body;
 };
 
-const getPasswordResetToken = async (email: string, maxAttempts = 30): Promise<string | null> => {
+const getPasswordResetToken = async (email: string, maxAttempts = 60): Promise<string | null> => {
+	for (let i = 0; i < maxAttempts; i++) {
+		const mailhogEmail = await getEmailByRecipient(email);
+
+		if (mailhogEmail) {
+			const body = decodeMailBody(mailhogEmail);
+
+			const tokenMatch = body.match(/token=([a-zA-Z0-9_-]+)/);
+			if (tokenMatch) {
+				return tokenMatch[1];
+			}
+		}
+
+		await new Promise((resolve) => setTimeout(resolve, 1000));
+	}
+
+	return null;
+};
+
+const getBranchDeletionToken = async (email: string, maxAttempts = 30): Promise<string | null> => {
 	for (let i = 0; i < maxAttempts; i++) {
 		const mailhogEmail = await getEmailByRecipient(email);
 
@@ -121,10 +142,10 @@ const requestPasswordResetToken = async (
 	await page.goto('http://localhost:5173/reset-password');
 	await page.getByRole('textbox', { name: 'Email' }).fill(email);
 	await page.getByRole('button', { name: 'Send Reset Link' }).click();
-	await page.waitForTimeout(1000);
+	await page.waitForTimeout(2000);
 	await page.close();
 
-	return await getPasswordResetToken(email);
+	return await getPasswordResetToken(email, 60);
 };
 
 const register = async (browser: Browser, close = true) => {
@@ -173,37 +194,95 @@ const register = async (browser: Browser, close = true) => {
 	return { companyName, firstName, lastName, email, password, page };
 };
 
+const createBranch = async (page: Page, name: string, address: string): Promise<void> => {
+	await page.getByRole('link', { name: 'Branches' }).click();
+	await page.waitForURL('**/branches');
+	await page.getByRole('textbox', { name: 'Branch Name' }).fill(name);
+	await page.getByRole('textbox', { name: 'Address' }).fill(address);
+	await page.locator('form > div.search-container.relative.flex-1 > div > button').first().click();
+	await page.getByRole('button', { name: 'ADD BRANCH' }).click();
+	await expect(page.getByText(name)).toBeVisible();
+};
+
 const sendInvitation = async (
 	browser: Browser,
 	admin: { email: string; password: string },
-	email: string
+	email: string,
+	role: string = 'staff',
+	branchName?: string
 ): Promise<string | null> => {
 	const page = await browser.newPage();
-	await page.goto('http://localhost:5173/');
-	await page.getByRole('link', { name: 'Login' }).click();
-	await page.waitForURL('**/login');
+	await page.goto('http://localhost:5173/login');
 	await page.getByRole('textbox', { name: 'Email' }).fill(admin.email);
 	await page.getByRole('textbox', { name: 'Password' }).fill(admin.password);
 	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 	await page.waitForURL('**/dashboard');
 	await page.getByRole('link', { name: 'Users' }).click();
+	await page.waitForURL('**/users-admin');
 	await page.getByRole('button', { name: '➕' }).click();
 	await page.getByRole('textbox', { name: "New user's email" }).fill(email);
+
+	console.log(`[sendInvitation] Selecting role: ${role}`);
+	await page.locator('#invite-role').selectOption(role);
+
+	if (branchName) {
+		console.log(`[sendInvitation] Selecting branch: ${branchName}`);
+		const select = page.locator('#invite-branch');
+		await expect(select).toBeVisible();
+		await page.waitForTimeout(500);
+		try {
+			await select.selectOption({ label: branchName });
+		} catch {
+			try {
+				const options = await select.locator('option').all();
+				for (let i = 0; i < options.length; i++) {
+					const text = await options[i].textContent();
+					if (text && text.includes(branchName)) {
+						await select.selectOption({ index: i });
+						break;
+					}
+				}
+			} catch (e) {
+				console.log(`[sendInvitation] Could not select branch: ${e}`);
+			}
+		}
+	} else if (role !== 'staff') {
+		const select = page.locator('#invite-branch');
+		await expect(select).toBeVisible();
+		const options = await select.locator('option').all();
+		if (options.length > 1) {
+			await select.selectOption({ index: 1 });
+		}
+	}
+
+	console.log(`[sendInvitation] Clicking Send Invite`);
 	await page.getByRole('button', { name: 'Send Invite' }).click();
+
+	await page.waitForTimeout(1000);
 	await page.close();
 
+	console.log(`[sendInvitation] Fetching token from Mailhog for ${email}`);
 	return await getInvitationToken(email);
 };
 
 const acceptInvitation = async (
-	page: any,
+	page: Page,
 	token: string,
 	firstName: string,
 	lastName: string,
-	password: string
+	password: string,
+	waitFor: string = '**/dashboard'
 ): Promise<boolean> => {
 	await page.goto(`http://localhost:5173/accept-invitation?token=${token}`);
 	await page.waitForURL('**/accept-invitation**');
+
+	// Check if there is an error message
+	const errorLocator = page.locator('.text-red-600');
+	if (await errorLocator.isVisible()) {
+		const errorText = await errorLocator.textContent();
+		console.error(`[acceptInvitation] Error on page: ${errorText}`);
+		return false;
+	}
 
 	await page.getByRole('button', { name: 'Accept Invitation' }).click();
 
@@ -214,17 +293,69 @@ const acceptInvitation = async (
 	await page.getByRole('textbox', { name: 'Confirm Password' }).fill(password);
 	await page.getByRole('button', { name: 'Create Account' }).click();
 
-	await page.waitForURL('**/logs-list');
-	return page.url().includes('/logs-list');
+	await page.waitForURL(waitFor, { timeout: 10000 });
+	return page.url().includes(waitFor.replace('**', ''));
+};
+
+const sendInvitationOnPage = async (
+	page: Page,
+	email: string,
+	role: string = 'staff',
+	branchName?: string
+): Promise<string | null> => {
+	await page.getByRole('link', { name: 'Users' }).click();
+	await page.waitForURL('**/users-admin');
+
+	await page.getByRole('button', { name: '➕' }).click();
+	await page.waitForLoadState('networkidle');
+	await page.getByRole('textbox', { name: "New user's email" }).fill(email);
+
+	await page.locator('#invite-role').selectOption(role);
+
+	if (branchName) {
+		const select = page.locator('#invite-branch');
+		await expect(select).toBeVisible();
+		await page.waitForTimeout(500);
+		try {
+			await select.selectOption({ label: branchName });
+		} catch {
+			try {
+				const options = await select.locator('option').all();
+				for (let i = 0; i < options.length; i++) {
+					const text = await options[i].textContent();
+					if (text && text.includes(branchName)) {
+						await select.selectOption({ index: i });
+						break;
+					}
+				}
+			} catch (e) {
+				console.log(`[sendInvitationOnPage] Could not select branch: ${e}`);
+			}
+		}
+	} else if (role !== 'staff') {
+		const select = page.locator('#invite-branch');
+		await expect(select).toBeVisible();
+		const options = await select.locator('option').all();
+		if (options.length > 1) {
+			await select.selectOption({ index: 1 });
+		}
+	}
+
+	await page.getByRole('button', { name: 'Send Invite' }).click();
+
+	return await getInvitationToken(email);
 };
 
 export {
 	register,
+	createBranch,
 	getEmailByRecipient,
 	getInvitationToken,
+	getBranchDeletionToken,
 	getPasswordResetToken,
 	clearMailhogEmails,
 	requestPasswordResetToken,
 	sendInvitation,
+	sendInvitationOnPage,
 	acceptInvitation
 };

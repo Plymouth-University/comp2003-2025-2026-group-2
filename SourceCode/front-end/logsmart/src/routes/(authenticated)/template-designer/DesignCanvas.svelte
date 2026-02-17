@@ -9,6 +9,9 @@
 		versionName = $bindable(),
 		selectedItemId = $bindable(),
 		canvasRef = $bindable(),
+		branchId = $bindable(null),
+		branches = [],
+		canManageCompany = false,
 		onSave,
 		onDeleteSelected,
 		onDeleteTemplate,
@@ -27,6 +30,9 @@
 		versionName: string;
 		selectedItemId: string | null;
 		canvasRef: HTMLDivElement | null;
+		branchId?: string | null;
+		branches?: any[];
+		canManageCompany?: boolean;
 		onSave: () => void;
 		onDeleteSelected: () => void;
 		onDeleteTemplate: () => void;
@@ -137,7 +143,7 @@
 							id="log-title-input"
 							type="text"
 							bind:value={logTitle}
-							placeholder="Enter template title..."
+							placeholder="Template Name"
 							class="w-full border-2 border-border-primary bg-bg-primary px-4 py-2 text-text-primary"
 						/>
 					</div>
@@ -152,6 +158,22 @@
 								placeholder="Give this version a name (optional)..."
 								class="h-full w-full border-2 border-l-0 border-border-primary bg-bg-primary px-4 py-2 text-sm text-text-primary italic"
 							/>
+						</div>
+					{:else}
+						<div class="mb-4 grow">
+							<label for="branch-select" class="sr-only">Branch visibility</label>
+							<select
+								id="branch-select"
+								bind:value={branchId}
+								class="h-full w-full border-2 border-l-0 border-border-primary bg-bg-primary px-4 py-2 text-sm text-text-primary"
+							>
+								{#if canManageCompany}
+									<option value={null}>Company Wide Visibility</option>
+								{/if}
+								{#each branches as branch}
+									<option value={branch.id}>{branch.name}</option>
+								{/each}
+							</select>
 						</div>
 					{/if}
 				</div>

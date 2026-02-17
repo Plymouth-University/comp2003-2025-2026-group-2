@@ -7,13 +7,21 @@
 	import SideBar from './SideBar.svelte';
 	import UserRow from './UserRow.svelte';
 
-	export type Member = components['schemas']['GetCompanyMembersResponse']['members'][0];
-	export type Invitation = components['schemas']['GetPendingInvitationsResponse']['invitations'][0];
+	export type Member = components['schemas']['UserResponse'] & {
+		id: string;
+		company_id: string | null;
+		created_at: string;
+	};
+	export type Invitation = components['schemas']['InvitationResponse'];
 
-	const data = $props<{ data: PageData }>();
-	const members = $state(data.data.members);
-	const invitations = $state(data.data.invitations);
-	const user = $state(data.data.user);
+	let { data } = $props<{ data: PageData }>();
+	const members = $derived(data.members || []);
+	const invitations = $derived(data.invitations || []);
+	const user = $derived(data.user);
+	const branches = $derived(data.branches || []);
+
+	// Check if current user is readonly HQ (staff with no branch)
+	const isReadonlyHQ = $derived(user?.role === 'staff' && !user?.branch_id);
 
 	let showingCreateModel = $state(false);
 
@@ -117,23 +125,37 @@
 						<InviteRow {invite} onCancel={cancelInvitation} />
 					{/each}
 					{#each members as item (item.email)}
-						<UserRow {item} {setSelectedUser} onRemove={removeMember} />
+						<UserRow {item} {setSelectedUser} onRemove={removeMember} {isReadonlyHQ} />
 					{/each}
-					<div class="add-button-container mr-5 flex flex-col place-items-end self-end text-4xl">
-						<button
-							class="z-80 h-20 w-20 cursor-pointer self-end rounded-full border-4 border-border-primary bg-bg-primary text-text-primary drop-shadow-lg duration-300 hover:drop-shadow-2xl"
-							type="button"
-							onclick={() => (showingCreateModel = !showingCreateModel)}
-						>
-							<span>&#10133;</span>
-						</button>
-						<span class="m-3 mt-2 text-sm text-text-primary">Add New</span>
-					</div>
-					<InviteModal {showingCreateModel} {setShowingCreateModel} />
+					{#if !isReadonlyHQ}
+						<div class="add-button-container mr-5 flex flex-col place-items-end self-end text-4xl">
+							<button
+								class="z-80 h-20 w-20 cursor-pointer self-end rounded-full border-4 border-border-primary bg-bg-primary text-text-primary drop-shadow-lg duration-300 hover:drop-shadow-2xl"
+								type="button"
+								onclick={() => (showingCreateModel = !showingCreateModel)}
+							>
+								<span>&#10133;</span>
+							</button>
+							<span class="m-3 mt-2 text-sm text-text-primary">Add New</span>
+						</div>
+					{/if}
+					<InviteModal
+						{showingCreateModel}
+						{setShowingCreateModel}
+						{branches}
+						loggedInUserRole={user.role}
+					/>
 				</div>
 			</div>
 		</div>
-		<SideBar {selectedUser} {setSelectedUser} loggedInUserRole={user.role} {updateMember} />
+		<SideBar
+			{selectedUser}
+			{setSelectedUser}
+			loggedInUserRole={user.role}
+			{updateMember}
+			{branches}
+			{isReadonlyHQ}
+		/>
 	</div>
 </main>
 

@@ -142,8 +142,8 @@ async fn test_admin_update_member_profile_success() {
     let pool = setup_test_db().await;
     
     // Create admin and member users
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::Admin, Some("company123")).await;
-    let member = create_test_user_with_role(&pool, "member@example.com", UserRole::Member, Some("company123")).await;
+    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
+    let member = create_test_user_with_role(&pool, "member@example.com", UserRole::Staff, Some("company123")).await;
     
     // Test admin updating member profile
     let result = UserService::admin_update_member_profile(
@@ -152,14 +152,14 @@ async fn test_admin_update_member_profile_success() {
         "member@example.com",
         "UpdatedFirstName".to_string(),
         "UpdatedLastName".to_string(),
-        UserRole::Admin, // Promote to admin
+        UserRole::CompanyManager, // Promote to admin
     ).await;
     
     assert!(result.is_ok());
     let updated_member = result.unwrap();
     assert_eq!(updated_member.first_name, "UpdatedFirstName");
     assert_eq!(updated_member.last_name, "UpdatedLastName");
-    assert_eq!(updated_member.role, UserRole::Admin);
+    assert_eq!(updated_member.role, UserRole::CompanyManager);
 }
 
 #[tokio::test]
@@ -167,8 +167,8 @@ async fn test_admin_update_member_profile_non_admin_forbidden() {
     let pool = setup_test_db().await;
     
     // Create regular user attempting to act as admin
-    let user1 = create_test_user_with_role(&pool, "user1@example.com", UserRole::Member, Some("company123")).await;
-    let user2 = create_test_user_with_role(&pool, "user2@example.com", UserRole::Member, Some("company123")).await;
+    let user1 = create_test_user_with_role(&pool, "user1@example.com", UserRole::Staff, Some("company123")).await;
+    let user2 = create_test_user_with_role(&pool, "user2@example.com", UserRole::Staff, Some("company123")).await;
     
     // Test non-admin trying to update member profile
     let result = UserService::admin_update_member_profile(
@@ -177,7 +177,7 @@ async fn test_admin_update_member_profile_non_admin_forbidden() {
         "user2@example.com",
         "UpdatedFirstName".to_string(),
         "UpdatedLastName".to_string(),
-        UserRole::Member,
+        UserRole::Staff,
     ).await;
     
     assert!(result.is_err());
@@ -191,8 +191,8 @@ async fn test_admin_update_member_profile_different_company_forbidden() {
     let pool = setup_test_db().await;
     
     // Create admin and member from different companies
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::Admin, Some("company1")).await;
-    let member = create_test_user_with_role(&pool, "member@example.com", UserRole::Member, Some("company2")).await;
+    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company1")).await;
+    let member = create_test_user_with_role(&pool, "member@example.com", UserRole::Staff, Some("company2")).await;
     
     // Test admin trying to update member from different company
     let result = UserService::admin_update_member_profile(
@@ -201,7 +201,7 @@ async fn test_admin_update_member_profile_different_company_forbidden() {
         "member@example.com",
         "UpdatedFirstName".to_string(),
         "UpdatedLastName".to_string(),
-        UserRole::Member,
+        UserRole::Staff,
     ).await;
     
     assert!(result.is_err());
@@ -215,8 +215,8 @@ async fn test_admin_delete_member_success() {
     let pool = setup_test_db().await;
     
     // Create admin and member users
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::Admin, Some("company123")).await;
-    let member = create_test_user_with_role(&pool, "member@example.com", UserRole::Member, Some("company123")).await;
+    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
+    let member = create_test_user_with_role(&pool, "member@example.com", UserRole::Staff, Some("company123")).await;
     
     // Test admin deleting member
     let result = UserService::admin_delete_member(
@@ -237,7 +237,7 @@ async fn test_admin_delete_member_self_forbidden() {
     let pool = setup_test_db().await;
     
     // Create admin user
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::Admin, Some("company123")).await;
+    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
     
     // Test admin trying to delete themselves
     let result = UserService::admin_delete_member(
@@ -257,8 +257,8 @@ async fn test_admin_delete_member_non_admin_forbidden() {
     let pool = setup_test_db().await;
     
     // Create regular users
-    let user1 = create_test_user_with_role(&pool, "user1@example.com", UserRole::Member, Some("company123")).await;
-    let user2 = create_test_user_with_role(&pool, "user2@example.com", UserRole::Member, Some("company123")).await;
+    let user1 = create_test_user_with_role(&pool, "user1@example.com", UserRole::Staff, Some("company123")).await;
+    let user2 = create_test_user_with_role(&pool, "user2@example.com", UserRole::Staff, Some("company123")).await;
     
     // Test non-admin trying to delete member
     let result = UserService::admin_delete_member(
@@ -278,7 +278,7 @@ async fn test_admin_delete_logsmart_admin_forbidden() {
     let pool = setup_test_db().await;
     
     // Create company admin and LogSmart admin
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::Admin, Some("company123")).await;
+    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
     let logsmart_admin = create_test_user_with_role(&pool, "logsmart@example.com", UserRole::LogSmartAdmin, Some("company123")).await;
     
     // Test company admin trying to delete LogSmart admin
@@ -299,7 +299,7 @@ async fn test_admin_update_logsmart_admin_forbidden() {
     let pool = setup_test_db().await;
     
     // Create company admin and LogSmart admin
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::Admin, Some("company123")).await;
+    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
     let logsmart_admin = create_test_user_with_role(&pool, "logsmart@example.com", UserRole::LogSmartAdmin, Some("company123")).await;
     
     // Test company admin trying to update LogSmart admin

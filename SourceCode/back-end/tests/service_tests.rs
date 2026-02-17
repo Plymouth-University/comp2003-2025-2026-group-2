@@ -14,8 +14,9 @@ fn test_user_creation() {
         last_name: "User".to_string(),
         password_hash: Some("hash".to_string()),
         company_id: Some("company123".to_string()),
+        branch_id: Some("branch123".to_string()),
         company_name: None,
-        role: UserRole::Member,
+        role: UserRole::Staff,
         created_at: Utc::now(),
         deleted_at: None,
         oauth_provider: None,
@@ -24,7 +25,8 @@ fn test_user_creation() {
     };
 
     assert_eq!(user.email, "test@example.com");
-    assert_eq!(user.role, UserRole::Member);
+    assert_eq!(user.role, UserRole::Staff);
+    assert_eq!(user.branch_id, Some("branch123".to_string()));
     assert!(user.password_hash.is_some());
 }
 
@@ -48,6 +50,8 @@ fn test_invitation_creation() {
         email: "invite@example.com".to_string(),
         company_id: "company123".to_string(),
         token: "token123".to_string(),
+        role: UserRole::Staff,
+        branch_id: Some("branch123".to_string()),
         created_at: Utc::now(),
         expires_at: Utc::now() + chrono::Duration::hours(24),
         accepted_at: None,
@@ -55,6 +59,8 @@ fn test_invitation_creation() {
     };
 
     assert_eq!(invitation.email, "invite@example.com");
+    assert_eq!(invitation.role, UserRole::Staff);
+    assert_eq!(invitation.branch_id, Some("branch123".to_string()));
     assert!(invitation.accepted_at.is_none());
 }
 
@@ -80,6 +86,7 @@ fn test_template_creation() {
             },
         }],
         company_id: "company123".to_string(),
+        branch_id: Some("branch123".to_string()),
         created_at: Utc::now(),
         updated_at: Utc::now(),
         schedule: Schedule {
@@ -96,6 +103,7 @@ fn test_template_creation() {
 
     assert_eq!(template.template_name, "Test Template");
     assert_eq!(template.template_layout.len(), 1);
+    assert_eq!(template.branch_id, Some("branch123".to_string()));
 }
 
 #[test]
@@ -104,6 +112,7 @@ fn test_log_entry_creation() {
         entry_id: Uuid::new().to_string(),
         template_name: "Test Template".to_string(),
         company_id: "company123".to_string(),
+        branch_id: Some("branch123".to_string()),
         user_id: "user123".to_string(),
         entry_data: serde_json::json!({"field1": "value1"}),
         created_at: Utc::now(),
@@ -115,5 +124,6 @@ fn test_log_entry_creation() {
 
     assert_eq!(entry.template_name, "Test Template");
     assert_eq!(entry.status, "draft");
+    assert_eq!(entry.branch_id, Some("branch123".to_string()));
     assert!(entry.submitted_at.is_none());
 }

@@ -277,7 +277,7 @@ impl GoogleOAuthClient {
             user_info.sub,
             user_info.picture,
             None,
-            db::UserRole::Member,
+            db::UserRole::Staff,
         )
         .await
         .map_err(|e| {

@@ -7,7 +7,7 @@ use crate::{
     dto::{
         AcceptInvitationRequest, AuthResponse, CancelInvitationRequest, ErrorResponse,
         GetInvitationDetailsRequest, GetInvitationDetailsResponse, InvitationResponse,
-        InviteUserRequest, UserResponse,
+        InviteUserRequest,
     },
     jwt_manager::JwtManager,
     middleware::AuthToken,
@@ -83,11 +83,36 @@ pub async fn invite_user(
             Json(json!({ "error": "User not found" })),
         ))?;
 
-    if !user.can_manage_company() {
+    if !user.can_manage_branch() {
         return Err((
             StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Only company admin or LogSmartAdmin can invite users" })),
+            Json(json!({ "error": "Only managers can invite users" })),
         ));
+    }
+
+    // Branch managers can only invite staff to their own branch
+    if user.is_branch_manager() {
+        if payload.branch_id.is_none() {
+            return Err((
+                StatusCode::FORBIDDEN,
+                Json(json!({ "error": "Branch managers cannot invite company-wide users" })),
+            ));
+        }
+        if payload.branch_id != user.branch_id {
+            return Err((
+                StatusCode::FORBIDDEN,
+                Json(
+                    json!({ "error": "Branch managers can only invite users to their own branch" }),
+                ),
+            ));
+        }
+        if let Some(role) = &payload.role
+            && *role != db::UserRole::Staff {
+                return Err((
+                    StatusCode::FORBIDDEN,
+                    Json(json!({ "error": "Branch managers can only invite staff members" })),
+                ));
+            }
     }
 
     let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
@@ -110,6 +135,8 @@ pub async fn invite_user(
         user.email,
         payload.email.clone(),
         company_id,
+        payload.role.unwrap_or(db::UserRole::Staff),
+        payload.branch_id,
         Some(ip_address),
         user_agent,
     )
@@ -240,6 +267,8 @@ pub async fn accept_invitation(
         payload.last_name.clone(),
         password_hash,
         &invitation.company_id,
+        invitation.role,
+        invitation.branch_id,
     )
     .await
     .map_err(|e| {
@@ -298,14 +327,7 @@ pub async fn accept_invitation(
         StatusCode::CREATED,
         Json(AuthResponse {
             token: token.clone(),
-            user: UserResponse {
-                email: invitation.email,
-                first_name: payload.first_name,
-                last_name: payload.last_name,
-                company_name: None,
-                role: created_user.role,
-                oauth_provider: None,
-            },
+            user: created_user.into(),
         }),
     )
         .into_response();
@@ -418,10 +440,10 @@ pub async fn get_pending_invitations(
             Json(json!({ "error": "User not found" })),
         ))?;
 
-    if !user.can_manage_company() {
+    if !user.can_manage_branch() {
         return Err((
             StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Only company admin or LogSmartAdmin can view invitations" })),
+            Json(json!({ "error": "Only managers can view invitations" })),
         ));
     }
 
@@ -445,12 +467,19 @@ pub async fn get_pending_invitations(
             .map(|inv_list| {
                 inv_list
                     .into_iter()
+                    .filter(|inv| {
+                        if user.is_company_manager() || user.is_logsmart_admin() {
+                            true
+                        } else {
+                            inv.branch_id == user.branch_id
+                        }
+                    })
                     .map(|inv| InvitationResponse {
                         id: inv.id,
                         email: inv.email,
                         expires_at: inv.expires_at,
                     })
-                    .collect()
+                    .collect::<Vec<_>>()
             })
             .map_err(|(status, err)| (status, Json(err)))?;
 

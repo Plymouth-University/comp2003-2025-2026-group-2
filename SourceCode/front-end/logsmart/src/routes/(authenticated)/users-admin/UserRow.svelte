@@ -1,5 +1,5 @@
 <script lang="ts">
-	const { item, setSelectedUser, onRemove } = $props<{
+	const { item, setSelectedUser, onRemove, isReadonlyHQ } = $props<{
 		item: {
 			email: string;
 			first_name: string;
@@ -8,6 +8,7 @@
 		};
 		setSelectedUser: (email: string) => void;
 		onRemove: (email: string) => Promise<void>;
+		isReadonlyHQ: boolean;
 	}>();
 </script>
 
@@ -32,30 +33,38 @@
 	<div class="flex items-center gap-2">
 		<div
 			class="rounded-full px-3 py-1 text-sm font-medium"
-			style="background-color: {item.role === 'admin' || item.role === 'logsmart_admin'
+			style="background-color: {item.role === 'branch_manager' ||
+			item.role === 'company_manager' ||
+			item.role === 'logsmart_admin'
 				? '#94C5CC'
-				: 'var(--bg-secondary)'}; color: {item.role === 'admin' || item.role === 'logsmart_admin'
+				: 'var(--bg-secondary)'}; color: {item.role === 'branch_manager' ||
+			item.role === 'company_manager' ||
+			item.role === 'logsmart_admin'
 				? '#000'
 				: 'var(--text-secondary)'};"
 		>
-			{item.role === 'admin'
-				? 'Admin'
-				: item.role === 'logsmart_admin'
-					? 'Internal Admin'
-					: 'Member'}
+			{item.role === 'company_manager'
+				? 'Company Manager'
+				: item.role === 'branch_manager'
+					? 'Branch Manager'
+					: item.role === 'logsmart_admin'
+						? 'Internal Admin'
+						: 'Staff'}
 		</div>
 	</div>
 
-	<div class="flex gap-2">
-		<button
-			type="button"
-			onclick={() => onRemove(item.email)}
-			class="rounded px-3 py-1 text-sm font-medium transition-colors hover:underline"
-			style="color: var(--text-secondary);"
-		>
-			Remove
-		</button>
-	</div>
+	{#if !isReadonlyHQ}
+		<div class="flex gap-2">
+			<button
+				type="button"
+				onclick={() => onRemove(item.email)}
+				class="rounded px-3 py-1 text-sm font-medium transition-colors hover:underline"
+				style="color: var(--text-secondary);"
+			>
+				Remove
+			</button>
+		</div>
+	{/if}
 </div>
 
 <style>

@@ -45,7 +45,9 @@ test.describe('Google OAuth Unlink', () => {
 
 		await fillMockOAuthForm(page, adminCreds.email, adminCreds.firstName, adminCreds.lastName);
 		await page.waitForURL('**/settings', { timeout: 30000 });
-		await expect(page.locator('body')).toContainText(/google account is linked/i);
+		await expect(page.getByRole('button', { name: /unlink google account/i })).toBeVisible({
+			timeout: 5000
+		});
 
 		page.on('dialog', (dialog) => dialog.accept());
 		await page.getByRole('button', { name: 'Unlink Google Account' }).click();

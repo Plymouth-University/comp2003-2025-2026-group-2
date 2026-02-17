@@ -4,7 +4,7 @@ use crate::{
         AddTokenResponse, AuthResponse, ErrorResponse, ListPasskeysResponse,
         PasskeyAuthenticationFinishRequest, PasskeyAuthenticationStartRequest,
         PasskeyAuthenticationStartResponse, PasskeyRegistrationFinishRequest,
-        PasskeyRegistrationStartRequest, PasskeyRegistrationStartResponse, UserResponse,
+        PasskeyRegistrationStartRequest, PasskeyRegistrationStartResponse,
     },
     jwt_manager::JwtManager,
     middleware::AuthToken,
@@ -588,14 +588,7 @@ pub async fn finish_passkey_login(
 
     let mut response = Json(AuthResponse {
         token: token.clone(),
-        user: UserResponse {
-            email: user.email.clone(),
-            first_name: user.first_name,
-            last_name: user.last_name,
-            company_name: user.company_name,
-            role: user.role,
-            oauth_provider: user.oauth_provider,
-        },
+        user: user.clone().into(),
     })
     .into_response();
 
@@ -796,14 +789,7 @@ pub async fn finish_discoverable_passkey_login(
 
     let mut response = Json(AuthResponse {
         token: token.clone(),
-        user: UserResponse {
-            email: user.email.clone(),
-            first_name: user.first_name,
-            last_name: user.last_name,
-            company_name: user.company_name,
-            role: user.role,
-            oauth_provider: user.oauth_provider,
-        },
+        user: user.clone().into(),
     })
     .into_response();
 

@@ -29,6 +29,28 @@ pub async fn get_company_members(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
 ) -> Result<Json<GetCompanyMembersResponse>, (StatusCode, Json<serde_json::Value>)> {
+    tracing::info!("get_company_members called for user_id: {}", claims.user_id);
+    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "User not found" })),
+        ))?;
+
+    tracing::info!(
+        "User found: email={}, role={:?}, branch_id={:?}",
+        user.email,
+        user.role,
+        user.branch_id
+    );
+
     let members = db::get_company_members_for_user(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
@@ -39,6 +61,8 @@ pub async fn get_company_members(
             )
         })?;
 
+    tracing::info!("Total members found in company: {}", members.len());
+
     if members.is_empty() {
         return Err((
             StatusCode::FORBIDDEN,
@@ -46,7 +70,28 @@ pub async fn get_company_members(
         ));
     }
 
-    Ok(Json(members.into()))
+    let filtered_members =
+        if user.is_company_manager() || user.is_logsmart_admin() || user.is_readonly_hq() {
+            members
+        } else if user.is_branch_manager() {
+            let filtered = members
+                .into_iter()
+                .filter(|m| {
+                    tracing::info!(
+                        "Checking member: email={}, branch_id={:?}",
+                        m.email,
+                        m.branch_id
+                    );
+                    m.branch_id == user.branch_id
+                })
+                .collect::<Vec<_>>();
+            tracing::info!("Filtered members for branch manager: {}", filtered.len());
+            filtered
+        } else {
+            members.into_iter().filter(|m| m.id == user.id).collect()
+        };
+
+    Ok(Json(filtered_members.into()))
 }
 
 #[utoipa::path(
@@ -81,12 +126,15 @@ pub async fn admin_update_member_profile(
     }
 
     let role = match payload.role.as_str() {
-        "admin" => db::UserRole::Admin,
-        "member" => db::UserRole::Member,
+        "company_manager" => db::UserRole::CompanyManager,
+        "branch_manager" => db::UserRole::BranchManager,
+        "staff" => db::UserRole::Staff,
         _ => {
             return Err((
                 StatusCode::BAD_REQUEST,
-                Json(json!({ "error": "Invalid role. Must be 'admin' or'member'" })),
+                Json(
+                    json!({ "error": "Invalid role. Must be 'company_manager', 'branch_manager', or 'staff'" }),
+                ),
             ));
         }
     };
@@ -98,6 +146,7 @@ pub async fn admin_update_member_profile(
         payload.first_name.clone(),
         payload.last_name.clone(),
         role,
+        payload.branch_id,
     )
     .await
     .map_err(|(status, error)| (status, Json(error)))?;

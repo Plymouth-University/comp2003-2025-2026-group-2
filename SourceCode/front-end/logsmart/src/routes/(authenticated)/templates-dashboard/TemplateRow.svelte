@@ -5,12 +5,14 @@
 		template,
 		onEdit,
 		onSettings,
-		onDelete
+		onDelete,
+		isReadonlyHQ
 	}: {
 		template: Template;
 		onEdit: (template: Template) => void;
 		onSettings: (template: Template) => void;
 		onDelete: (template: Template) => void;
+		isReadonlyHQ: boolean;
 	} = $props();
 
 	function formatSchedule(schedule: TemplateSchedule): string {
@@ -96,34 +98,36 @@
 		</div>
 	</div>
 
-	<div class="flex w-full shrink-0 gap-1 sm:w-auto sm:gap-2">
-		<button
-			type="button"
-			class="btn-edit flex-1 rounded px-2 py-2 text-xs font-medium text-white sm:flex-none sm:px-4 sm:text-base"
-			onclick={() => onEdit(template)}
-			title="Edit template design"
-		>
-			<span class="hidden xs:inline">✏️ Edit</span>
-			<span class="xs:hidden">✏️</span>
-		</button>
-		<button
-			type="button"
-			class="btn-settings flex-1 rounded px-2 py-2 text-xs font-medium text-white sm:flex-none sm:px-4 sm:text-base"
-			onclick={() => onSettings(template)}
-			title="Schedule settings"
-		>
-			<span class="hidden xs:inline">⚙️ Settings</span>
-			<span class="xs:hidden">⚙️</span>
-		</button>
-		<button
-			type="button"
-			class="btn-delete flex-none rounded px-2 py-2 text-xs font-medium text-white sm:px-4 sm:text-base"
-			onclick={() => onDelete(template)}
-			title="Delete template"
-		>
-			🗑️
-		</button>
-	</div>
+	{#if !isReadonlyHQ}
+		<div class="flex w-full shrink-0 gap-1 sm:w-auto sm:gap-2">
+			<button
+				type="button"
+				class="btn-edit flex-1 rounded px-2 py-2 text-xs font-medium text-white sm:flex-none sm:px-4 sm:text-base"
+				onclick={() => onEdit(template)}
+				title="Edit template design"
+			>
+				<span class="hidden xs:inline">✏️ Edit</span>
+				<span class="xs:hidden">✏️</span>
+			</button>
+			<button
+				type="button"
+				class="btn-settings flex-1 rounded px-2 py-2 text-xs font-medium text-white sm:flex-none sm:px-4 sm:text-base"
+				onclick={() => onSettings(template)}
+				title="Schedule settings"
+			>
+				<span class="hidden xs:inline">⚙️ Settings</span>
+				<span class="xs:hidden">⚙️</span>
+			</button>
+			<button
+				type="button"
+				class="btn-delete flex-none rounded px-2 py-2 text-xs font-medium text-white sm:px-4 sm:text-base"
+				onclick={() => onDelete(template)}
+				title="Delete template"
+			>
+				🗑️
+			</button>
+		</div>
+	{/if}
 </div>
 
 <style>

@@ -8,21 +8,27 @@ use uuid::Uuid;
 #[sqlx(type_name = "user_role")]
 #[sqlx(rename_all = "lowercase")]
 pub enum UserRole {
-    #[serde(rename = "admin")]
-    Admin,
-    #[serde(rename = "member")]
-    Member,
     #[serde(rename = "logsmart_admin")]
     #[sqlx(rename = "logsmart_admin")]
     LogSmartAdmin,
+    #[serde(rename = "company_manager")]
+    #[sqlx(rename = "company_manager")]
+    CompanyManager,
+    #[serde(rename = "branch_manager")]
+    #[sqlx(rename = "branch_manager")]
+    BranchManager,
+    #[serde(rename = "staff")]
+    #[sqlx(rename = "staff")]
+    Staff,
 }
 
 impl std::fmt::Display for UserRole {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            UserRole::Admin => write!(f, "admin"),
-            UserRole::Member => write!(f, "member"),
             UserRole::LogSmartAdmin => write!(f, "logsmart_admin"),
+            UserRole::CompanyManager => write!(f, "company_manager"),
+            UserRole::BranchManager => write!(f, "branch_manager"),
+            UserRole::Staff => write!(f, "staff"),
         }
     }
 }
@@ -32,9 +38,10 @@ impl std::str::FromStr for UserRole {
 
     fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
         match s {
-            "admin" => Ok(UserRole::Admin),
-            "member" => Ok(UserRole::Member),
             "logsmart_admin" => Ok(UserRole::LogSmartAdmin),
+            "company_manager" => Ok(UserRole::CompanyManager),
+            "branch_manager" => Ok(UserRole::BranchManager),
+            "staff" => Ok(UserRole::Staff),
             _ => Err(format!("Unknown role: {s}")),
         }
     }
@@ -57,6 +64,7 @@ pub struct UserRecord {
     pub last_name: String,
     pub password_hash: Option<String>,
     pub company_id: Option<String>,
+    pub branch_id: Option<String>,
     pub company_name: Option<String>,
     pub role: UserRole,
     pub created_at: chrono::DateTime<chrono::Utc>,
@@ -73,29 +81,53 @@ impl UserRecord {
     }
 
     #[must_use]
-    pub fn is_admin(&self) -> bool {
-        self.get_role() == UserRole::Admin
-    }
-
-    #[must_use]
-    pub fn is_member(&self) -> bool {
-        self.get_role() == UserRole::Member
-    }
-
-    #[must_use]
     pub fn is_logsmart_admin(&self) -> bool {
         self.get_role() == UserRole::LogSmartAdmin
     }
 
     #[must_use]
+    pub fn is_company_manager(&self) -> bool {
+        self.get_role() == UserRole::CompanyManager
+    }
+
+    #[must_use]
+    pub fn is_branch_manager(&self) -> bool {
+        self.get_role() == UserRole::BranchManager
+    }
+
+    #[must_use]
+    pub fn is_staff(&self) -> bool {
+        self.get_role() == UserRole::Staff
+    }
+
+    #[must_use]
     pub fn is_company_admin(&self) -> bool {
-        self.is_admin()
+        self.is_company_manager()
     }
 
     #[must_use]
     pub fn can_manage_company(&self) -> bool {
-        self.is_admin() || self.is_logsmart_admin()
+        self.is_company_manager() || self.is_logsmart_admin()
     }
+
+    #[must_use]
+    pub fn can_manage_branch(&self) -> bool {
+        self.is_branch_manager() || self.can_manage_company()
+    }
+
+    #[must_use]
+    pub fn is_readonly_hq(&self) -> bool {
+        self.is_staff() && self.branch_id.is_none()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, PartialEq)]
+pub struct Branch {
+    pub id: String,
+    pub company_id: String,
+    pub name: String,
+    pub address: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -112,6 +144,8 @@ pub struct Invitation {
     pub company_id: String,
     pub email: String,
     pub token: String,
+    pub role: UserRole,
+    pub branch_id: Option<String>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub expires_at: chrono::DateTime<chrono::Utc>,
     pub accepted_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -213,6 +247,7 @@ where
         last_name,
         password_hash,
         company_id,
+        branch_id: None,
         company_name: None,
         role,
         created_at: now,
@@ -255,7 +290,7 @@ pub async fn get_user_by_email(pool: &PgPool, email: &str) -> Result<Option<User
     let user = sqlx::query_as::<_, UserRecord>(
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
-               users.password_hash, users.company_id, users.role, users.created_at, users.deleted_at, 
+               users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
                companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
@@ -277,7 +312,7 @@ pub async fn get_user_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRecord
     let user = sqlx::query_as::<_, UserRecord>(
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
-            users.password_hash, users.company_id, users.role, users.created_at, users.deleted_at, 
+            users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
             companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
@@ -287,6 +322,17 @@ pub async fn get_user_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRecord
     .bind(id)
     .fetch_optional(pool)
     .await?;
+
+    if let Some(u) = &user {
+        tracing::info!(
+            "DB: Found user {} with company_id: {:?}, branch_id: {:?}",
+            u.email,
+            u.company_id,
+            u.branch_id
+        );
+    } else {
+        tracing::info!("DB: User {} not found", id);
+    }
 
     Ok(user)
 }
@@ -303,7 +349,7 @@ pub async fn get_user_by_oauth(
     let user = sqlx::query_as::<_, UserRecord>(
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
-            users.password_hash, users.company_id, users.role, users.created_at, users.deleted_at, 
+            users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
             companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
@@ -365,6 +411,7 @@ where
         last_name,
         password_hash: None,
         company_id,
+        branch_id: None,
         company_name: None,
         role,
         created_at: now,
@@ -502,6 +549,8 @@ pub async fn create_invitation(
     company_id: String,
     email: String,
     token: String,
+    role: UserRole,
+    branch_id: Option<String>,
     expires_at: chrono::DateTime<chrono::Utc>,
 ) -> Result<Invitation> {
     let id = Uuid::new_v4().to_string();
@@ -509,14 +558,16 @@ pub async fn create_invitation(
 
     sqlx::query(
         r"
-        INSERT INTO invitations (id, company_id, email, token, created_at, expires_at)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO invitations (id, company_id, email, token, role, branch_id, created_at, expires_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ",
     )
     .bind(&id)
     .bind(&company_id)
     .bind(&email)
     .bind(&token)
+    .bind(&role)
+    .bind(&branch_id)
     .bind(now)
     .bind(expires_at)
     .execute(pool)
@@ -527,6 +578,8 @@ pub async fn create_invitation(
         company_id,
         email,
         token,
+        role,
+        branch_id,
         created_at: now,
         expires_at,
         accepted_at: None,
@@ -541,7 +594,7 @@ pub async fn create_invitation(
 pub async fn get_invitation_by_token(pool: &PgPool, token: &str) -> Result<Option<Invitation>> {
     let invitation = sqlx::query_as::<_, Invitation>(
         r"
-        SELECT id, company_id, email, token, created_at, expires_at, accepted_at, cancelled_at
+        SELECT id, company_id, email, token, role, branch_id, created_at, expires_at, accepted_at, cancelled_at
         FROM invitations
         WHERE token = $1 AND accepted_at IS NULL AND cancelled_at IS NULL
         ",
@@ -608,7 +661,7 @@ pub async fn get_invitation_by_id(
 ) -> Result<Option<Invitation>> {
     let invitation = sqlx::query_as::<_, Invitation>(
         r"
-        SELECT id, company_id, email, token, created_at, expires_at, accepted_at, cancelled_at
+        SELECT id, company_id, email, token, role, branch_id, created_at, expires_at, accepted_at, cancelled_at
         FROM invitations
         WHERE id = $1
         ",
@@ -764,7 +817,7 @@ pub async fn update_user_profile(
     Ok(user)
 }
 
-/// Updates a user's profile information including their role.
+/// Updates a user's profile information including their role and branch.
 ///
 /// # Errors
 /// Returns an error if database update fails or user not found.
@@ -774,17 +827,19 @@ pub async fn update_user_profile_full(
     first_name: String,
     last_name: String,
     role: UserRole,
+    branch_id: Option<String>,
 ) -> Result<UserRecord> {
     sqlx::query(
         r"
         UPDATE users
-        SET first_name = $1, last_name = $2, role = $3
-        WHERE id = $4
+        SET first_name = $1, last_name = $2, role = $3, branch_id = $4
+        WHERE id = $5
         ",
     )
     .bind(&first_name)
     .bind(&last_name)
     .bind(&role)
+    .bind(branch_id)
     .bind(user_id)
     .execute(pool)
     .await?;
@@ -1025,7 +1080,7 @@ pub async fn get_users_by_company_id(pool: &PgPool, company_id: &str) -> Result<
     let users = sqlx::query_as::<_, UserRecord>(
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
-               users.password_hash, users.company_id, users.role, users.created_at, users.deleted_at, 
+               users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
                companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
@@ -1062,6 +1117,283 @@ where
     Ok(())
 }
 
+/// Creates a new branch for a company.
+///
+/// # Errors
+/// Returns an error if database insert fails.
+pub async fn create_branch<'a, E>(
+    executor: E,
+    company_id: String,
+    name: String,
+    address: String,
+) -> Result<Branch>
+where
+    E: sqlx::Executor<'a, Database = sqlx::Postgres>,
+{
+    let id = Uuid::new_v4().to_string();
+    let now = chrono::Utc::now();
+
+    sqlx::query(
+        r"
+        INSERT INTO branches (id, company_id, name, address, created_at)
+        VALUES ($1, $2, $3, $4, $5)
+        ",
+    )
+    .bind(&id)
+    .bind(&company_id)
+    .bind(&name)
+    .bind(&address)
+    .bind(now)
+    .execute(executor)
+    .await?;
+
+    Ok(Branch {
+        id,
+        company_id,
+        name,
+        address,
+        created_at: now,
+    })
+}
+
+/// Retrieves all branches for a company.
+///
+/// # Errors
+/// Returns an error if database query fails.
+pub async fn get_branches_by_company_id(pool: &PgPool, company_id: &str) -> Result<Vec<Branch>> {
+    let branches = sqlx::query_as::<_, Branch>(
+        r"
+        SELECT id, company_id, name, address, created_at
+        FROM branches
+        WHERE company_id = $1
+        ORDER BY name ASC
+        ",
+    )
+    .bind(company_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(branches)
+}
+
+/// Branch with deletion status information
+pub struct BranchWithDeletionStatus {
+    pub branch: Branch,
+    pub has_pending_deletion: bool,
+    pub deletion_requested_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+/// Retrieves all branches for a company with their deletion status.
+///
+/// # Errors
+/// Returns an error if database query fails.
+pub async fn get_branches_by_company_id_with_deletion_status(
+    pool: &PgPool,
+    company_id: &str,
+) -> Result<Vec<BranchWithDeletionStatus>> {
+    let branches = sqlx::query_as::<_, Branch>(
+        r"
+        SELECT id, company_id, name, address, created_at
+        FROM branches
+        WHERE company_id = $1
+        ORDER BY name ASC
+        ",
+    )
+    .bind(company_id)
+    .fetch_all(pool)
+    .await?;
+
+    let mut result = Vec::new();
+    for branch in branches {
+        let deletion_info: Option<(bool, Option<chrono::DateTime<chrono::Utc>>)> = sqlx::query_as(
+            r"
+            SELECT 
+                CASE WHEN COUNT(*) > 0 THEN true ELSE false END as has_pending,
+                MIN(created_at) as requested_at
+            FROM branch_deletion_tokens
+            WHERE branch_id = $1 AND used_at IS NULL AND expires_at > now()
+            ",
+        )
+        .bind(&branch.id)
+        .fetch_optional(pool)
+        .await?;
+
+        let (has_pending_deletion, deletion_requested_at) = deletion_info.unwrap_or((false, None));
+
+        result.push(BranchWithDeletionStatus {
+            branch,
+            has_pending_deletion,
+            deletion_requested_at,
+        });
+    }
+
+    Ok(result)
+}
+
+/// Retrieves a branch by its ID.
+///
+/// # Errors
+/// Returns an error if database query fails.
+pub async fn get_branch_by_id(pool: &PgPool, branch_id: &str) -> Result<Option<Branch>> {
+    let branch = sqlx::query_as::<_, Branch>(
+        r"
+        SELECT id, company_id, name, address, created_at
+        FROM branches
+        WHERE id = $1
+        ",
+    )
+    .bind(branch_id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(branch)
+}
+
+/// Updates a branch's details.
+///
+/// # Errors
+/// Returns an error if database update fails.
+pub async fn update_branch(
+    pool: &PgPool,
+    branch_id: &str,
+    name: &str,
+    address: &str,
+) -> Result<Branch> {
+    let updated_branch = sqlx::query_as::<_, Branch>(
+        r"
+        UPDATE branches
+        SET name = $1, address = $2
+        WHERE id = $3
+        RETURNING id, company_id, name, address, created_at
+        ",
+    )
+    .bind(name)
+    .bind(address)
+    .bind(branch_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(updated_branch)
+}
+
+/// Deletes a branch by its ID.
+///
+/// # Errors
+/// Returns an error if database delete fails.
+pub async fn delete_branch(pool: &PgPool, branch_id: &str) -> Result<()> {
+    sqlx::query(
+        r"
+        DELETE FROM branches
+        WHERE id = $1
+        ",
+    )
+    .bind(branch_id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Creates a branch deletion token.
+///
+/// # Errors
+/// Returns an error if database insert fails.
+pub async fn create_branch_deletion_token(
+    pool: &PgPool,
+    user_id: String,
+    branch_id: String,
+    token: String,
+    expires_at: chrono::DateTime<chrono::Utc>,
+) -> Result<String> {
+    let id = Uuid::new_v4().to_string();
+    let now = chrono::Utc::now();
+
+    sqlx::query(
+        r"
+        INSERT INTO branch_deletion_tokens (id, user_id, branch_id, token, created_at, expires_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ",
+    )
+    .bind(&id)
+    .bind(&user_id)
+    .bind(&branch_id)
+    .bind(&token)
+    .bind(now)
+    .bind(expires_at)
+    .execute(pool)
+    .await?;
+
+    Ok(id)
+}
+
+/// Retrieves a branch deletion token record by its token.
+///
+/// # Errors
+/// Returns an error if database query fails.
+pub async fn get_branch_deletion_token(
+    pool: &PgPool,
+    token: &str,
+) -> Result<Option<(String, String, String)>> {
+    let result = sqlx::query_as::<_, (String, String, String)>(
+        r"
+        SELECT id, user_id, branch_id
+        FROM branch_deletion_tokens
+        WHERE token = $1 AND used_at IS NULL AND expires_at > now()
+        ",
+    )
+    .bind(token)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(result)
+}
+
+/// Marks a branch deletion token as used.
+///
+/// # Errors
+/// Returns an error if database update fails.
+pub async fn mark_branch_deletion_token_used(pool: &PgPool, token_id: &str) -> Result<()> {
+    let now = chrono::Utc::now();
+
+    sqlx::query(
+        r"
+        UPDATE branch_deletion_tokens
+        SET used_at = $1
+        WHERE id = $2
+        ",
+    )
+    .bind(now)
+    .bind(token_id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Updates the branch association for a user.
+///
+/// # Errors
+/// Returns an error if database update fails.
+pub async fn update_user_branch(
+    pool: &PgPool,
+    user_id: &str,
+    branch_id: Option<String>,
+) -> Result<()> {
+    sqlx::query(
+        r"
+        UPDATE users
+        SET branch_id = $1
+        WHERE id = $2
+        ",
+    )
+    .bind(branch_id)
+    .bind(user_id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
 /// Accepts an invitation and creates a new user in a single transaction.
 ///
 /// # Errors
@@ -1074,6 +1406,8 @@ pub async fn accept_invitation_with_user_creation(
     last_name: String,
     password_hash: String,
     company_id: &str,
+    role: UserRole,
+    branch_id: Option<String>,
 ) -> Result<UserRecord> {
     let mut tx = pool.begin().await?;
 
@@ -1082,8 +1416,8 @@ pub async fn accept_invitation_with_user_creation(
 
     sqlx::query(
         r"
-        INSERT INTO users (id, email, first_name, last_name, password_hash, company_id, role, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO users (id, email, first_name, last_name, password_hash, company_id, branch_id, role, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         "
     )
     .bind(&user_id)
@@ -1092,7 +1426,8 @@ pub async fn accept_invitation_with_user_creation(
     .bind(&last_name)
     .bind(&password_hash)
     .bind(company_id)
-    .bind(UserRole::Member)
+    .bind(&branch_id)
+    .bind(&role)
     .bind(now)
     .execute(&mut *tx)
     .await?;
@@ -1118,8 +1453,9 @@ pub async fn accept_invitation_with_user_creation(
         last_name,
         password_hash: Some(password_hash),
         company_id: Some(company_id.to_string()),
+        branch_id,
         company_name: None,
-        role: UserRole::Member,
+        role,
         created_at: now,
         deleted_at: None,
         oauth_provider: None,
@@ -1378,7 +1714,7 @@ pub async fn get_pending_invitations_by_company_id(
 ) -> Result<Vec<Invitation>> {
     let invitations = sqlx::query_as::<_, Invitation>(
         r"
-        SELECT id, company_id, email, token, created_at, expires_at, accepted_at, cancelled_at
+        SELECT id, company_id, email, token, role, branch_id, created_at, expires_at, accepted_at, cancelled_at
         FROM invitations
         WHERE company_id = $1 AND accepted_at IS NULL AND cancelled_at IS NULL AND expires_at > now()
         ",
@@ -1460,19 +1796,16 @@ pub async fn delete_passkey_session(pool: &PgPool, id: &str) -> Result<()> {
     Ok(())
 }
 
-
 /// Retrieves all members of the same company as the requesting user.
 ///
 /// # Errors
 /// Returns an error if database query fails.
-pub async fn get_company_members_for_user(
-    pool: &PgPool,
-    user_id: &str,
-) -> Result<Vec<UserRecord>> {
+pub async fn get_company_members_for_user(pool: &PgPool, user_id: &str) -> Result<Vec<UserRecord>> {
+    tracing::info!("DB: Fetching members for user_id: {}", user_id);
     let users = sqlx::query_as::<_, UserRecord>(
         r"
         SELECT target_user.id, target_user.email, target_user.first_name, target_user.last_name, 
-               target_user.password_hash, target_user.company_id, target_user.role, target_user.created_at, target_user.deleted_at, 
+               target_user.password_hash, target_user.company_id, target_user.branch_id, target_user.role, target_user.created_at, target_user.deleted_at, 
                companies.name as company_name, target_user.oauth_provider, target_user.oauth_subject, target_user.oauth_picture
         FROM users as request_user
         JOIN users as target_user ON request_user.company_id = target_user.company_id
@@ -1484,6 +1817,16 @@ pub async fn get_company_members_for_user(
     .fetch_all(pool)
     .await?;
 
+    tracing::info!("DB: Found {} members", users.len());
+    for u in &users {
+        tracing::info!(
+            "DB: Member email={}, company_id={:?}, branch_id={:?}",
+            u.email,
+            u.company_id,
+            u.branch_id
+        );
+    }
+
     Ok(users)
 }
 
@@ -1494,15 +1837,21 @@ mod db_model_tests {
 
     // UserRole Enum Tests
     #[test]
-    fn test_user_role_admin_string_conversion() {
-        let role = UserRole::Admin;
-        assert_eq!(role.to_string(), "admin");
+    fn test_user_role_company_manager_string_conversion() {
+        let role = UserRole::CompanyManager;
+        assert_eq!(role.to_string(), "company_manager");
     }
 
     #[test]
-    fn test_user_role_member_string_conversion() {
-        let role = UserRole::Member;
-        assert_eq!(role.to_string(), "member");
+    fn test_user_role_branch_manager_string_conversion() {
+        let role = UserRole::BranchManager;
+        assert_eq!(role.to_string(), "branch_manager");
+    }
+
+    #[test]
+    fn test_user_role_staff_string_conversion() {
+        let role = UserRole::Staff;
+        assert_eq!(role.to_string(), "staff");
     }
 
     #[test]
@@ -1512,15 +1861,21 @@ mod db_model_tests {
     }
 
     #[test]
-    fn test_user_role_from_str_admin() {
-        let role: UserRole = "admin".parse().unwrap();
-        assert_eq!(role, UserRole::Admin);
+    fn test_user_role_from_str_branch_manager() {
+        let role: UserRole = "branch_manager".parse().unwrap();
+        assert_eq!(role, UserRole::BranchManager);
     }
 
     #[test]
-    fn test_user_role_from_str_member() {
-        let role: UserRole = "member".parse().unwrap();
-        assert_eq!(role, UserRole::Member);
+    fn test_user_role_from_str_staff() {
+        let role: UserRole = "staff".parse().unwrap();
+        assert_eq!(role, UserRole::Staff);
+    }
+
+    #[test]
+    fn test_user_role_from_str_company_manager() {
+        let role: UserRole = "company_manager".parse().unwrap();
+        assert_eq!(role, UserRole::CompanyManager);
     }
 
     #[test]
@@ -1542,21 +1897,21 @@ mod db_model_tests {
         // Test that parsing is case sensitive
         assert!("ADMIN".parse::<UserRole>().is_err());
         assert!("Admin".parse::<UserRole>().is_err());
-        assert!("ADMIN".parse::<UserRole>().is_err());
+        assert!("COMPANY_MANAGER".parse::<UserRole>().is_err());
 
         // Only lowercase should work
-        assert!("admin".parse::<UserRole>().is_ok());
+        assert!("company_manager".parse::<UserRole>().is_ok());
     }
 
     #[test]
     fn test_user_role_serde_compatibility() {
         // Test that serde attributes work correctly
-        let role = UserRole::Admin;
+        let role = UserRole::BranchManager;
         let serialized = serde_json::to_string(&role).unwrap();
-        assert!(serialized.contains("\"admin\""));
+        assert!(serialized.contains("\"branch_manager\""));
 
         let deserialized: UserRole = serde_json::from_str(&serialized).unwrap();
-        assert_eq!(deserialized, UserRole::Admin);
+        assert_eq!(deserialized, UserRole::BranchManager);
     }
 
     // UserRecord Tests
@@ -1569,8 +1924,9 @@ mod db_model_tests {
             last_name: "User".to_string(),
             password_hash: Some("hash".to_string()),
             company_id: Some("company1".to_string()),
+            branch_id: None,
             company_name: None,
-            role: UserRole::Admin,
+            role: UserRole::CompanyManager,
             created_at: Utc::now(),
             deleted_at: None,
             oauth_provider: None,
@@ -1578,8 +1934,7 @@ mod db_model_tests {
             oauth_picture: None,
         };
 
-        assert!(user.is_admin());
-        assert!(!user.is_member());
+        assert!(!user.is_branch_manager());
         assert!(!user.is_logsmart_admin());
         assert!(user.is_company_admin());
         assert!(user.can_manage_company());
@@ -1588,12 +1943,12 @@ mod db_model_tests {
     #[test]
     fn test_user_record_member_role_methods() {
         let user = UserRecord {
-            role: UserRole::Member,
+            role: UserRole::Staff,
             ..create_test_user_record()
         };
 
-        assert!(!user.is_admin());
-        assert!(user.is_member());
+        assert!(!user.is_branch_manager());
+        assert!(user.is_staff());
         assert!(!user.is_logsmart_admin());
         assert!(!user.is_company_admin());
         assert!(!user.can_manage_company());
@@ -1606,8 +1961,8 @@ mod db_model_tests {
             ..create_test_user_record()
         };
 
-        assert!(!user.is_admin());
-        assert!(!user.is_member());
+        assert!(!user.is_branch_manager());
+        assert!(!user.is_staff());
         assert!(user.is_logsmart_admin());
         assert!(!user.is_company_admin());
         assert!(user.can_manage_company());
@@ -1694,6 +2049,8 @@ mod db_model_tests {
             company_id: "company1".to_string(),
             email: "test@example.com".to_string(),
             token: "token123".to_string(),
+            role: UserRole::Staff,
+            branch_id: None,
             created_at: now,
             expires_at,
             accepted_at: None,
@@ -1924,8 +2281,9 @@ mod db_model_tests {
             last_name: "User".to_string(),
             password_hash: Some("hash".to_string()),
             company_id: Some("company1".to_string()),
+            branch_id: None,
             company_name: None,
-            role: UserRole::Member,
+            role: UserRole::Staff,
             created_at: Utc::now(),
             deleted_at: None,
             oauth_provider: None,
@@ -1940,6 +2298,8 @@ mod db_model_tests {
             company_id: "company1".to_string(),
             email: "test@example.com".to_string(),
             token: "token123".to_string(),
+            role: UserRole::Staff,
+            branch_id: None,
             created_at: Utc::now(),
             expires_at: Utc::now() + Duration::hours(24),
             accepted_at: None,

@@ -35,14 +35,16 @@
 			case 'logsmart_admin':
 				role = 'LogSmart Internal Administrator';
 				break;
-			case 'member':
-				role = 'Member';
+			case 'staff':
+				role = 'Staff Member';
 				break;
-			case 'admin':
-				role = 'Company Admin';
+			case 'company_manager':
+				role = 'Company Manager';
+				break;
+			case 'branch_manager':
+				role = 'Branch Manager';
 				break;
 			default:
-				role = 'Member';
 				break;
 		}
 

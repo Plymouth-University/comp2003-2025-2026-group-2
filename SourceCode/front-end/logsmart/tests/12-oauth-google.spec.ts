@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { register } from './utils';
 
-async function fillMockOAuthForm(page: any, email: string, firstName: string, lastName: string) {
+async function fillMockOAuthForm(page: Page, email: string, firstName: string, lastName: string) {
 	await page.fill('input[name="subject"], input#subject, input[type="text"]', email);
 	const claimsJson = JSON.stringify({
 		email: email,
@@ -44,9 +44,10 @@ test.describe('Google OAuth Authentication', () => {
 		await page.waitForURL(/localhost:8080/, { timeout: 10000 });
 
 		await fillMockOAuthForm(page, adminCreds.email, adminCreds.firstName, adminCreds.lastName);
-		await page.waitForURL('**/settings', { timeout: 30000 });
-		await expect(page.locator('body')).toContainText(/google account is linked/i);
-
+		await page.waitForURL('**/settings', { timeout: 10000 });
+		await expect(page.getByRole('button', { name: /unlink google account/i })).toBeVisible({
+			timeout: 5000
+		});
 		await page.getByRole('button', { name: /logout/i }).click();
 		await page.waitForURL('**/login');
 
