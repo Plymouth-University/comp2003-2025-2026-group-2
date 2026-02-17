@@ -52,6 +52,7 @@ use utoipa::OpenApi;
         handlers::clock_in,
         handlers::clock_out,
         handlers::get_clock_status,
+        handlers::get_company_clock_events,
     ),
     components(
         schemas(
@@ -131,6 +132,8 @@ use utoipa::OpenApi;
             handlers::OAuthLinkConfirmRequest,
             dto::ClockEventResponse,
             dto::ClockStatusResponse,
+            dto::CompanyClockEventResponse,
+            dto::CompanyClockEventsResponse,
         )
     ),
     tags(

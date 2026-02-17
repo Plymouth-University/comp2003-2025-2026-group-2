@@ -656,3 +656,37 @@ pub struct ClockStatusResponse {
     pub current_event: Option<ClockEventResponse>,
     pub recent_events: Vec<ClockEventResponse>,
 }
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CompanyClockEventResponse {
+    pub id: String,
+    pub user_id: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub email: String,
+    pub clock_in: chrono::DateTime<chrono::Utc>,
+    pub clock_out: Option<chrono::DateTime<chrono::Utc>>,
+    pub status: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl From<db::CompanyClockEventRow> for CompanyClockEventResponse {
+    fn from(row: db::CompanyClockEventRow) -> Self {
+        Self {
+            id: row.id,
+            user_id: row.user_id,
+            first_name: row.first_name,
+            last_name: row.last_name,
+            email: row.email,
+            clock_in: row.clock_in,
+            clock_out: row.clock_out,
+            status: row.status,
+            created_at: row.created_at,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CompanyClockEventsResponse {
+    pub events: Vec<CompanyClockEventResponse>,
+}

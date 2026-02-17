@@ -1935,6 +1935,54 @@ pub async fn get_recent_clock_events(
     Ok(events)
 }
 
+/// A clock event row joined with user info, for company-wide reporting.
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct CompanyClockEventRow {
+    pub id: String,
+    pub user_id: String,
+    pub company_id: String,
+    pub clock_in: chrono::DateTime<chrono::Utc>,
+    pub clock_out: Option<chrono::DateTime<chrono::Utc>>,
+    pub status: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub first_name: String,
+    pub last_name: String,
+    pub email: String,
+}
+
+/// Gets all clock events for a company, joined with user name/email.
+/// Optionally filtered by date range.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+pub async fn get_company_clock_events(
+    pool: &PgPool,
+    company_id: &str,
+    from: Option<chrono::DateTime<chrono::Utc>>,
+    to: Option<chrono::DateTime<chrono::Utc>>,
+) -> Result<Vec<CompanyClockEventRow>> {
+    let events = sqlx::query_as::<_, CompanyClockEventRow>(
+        r"
+        SELECT ce.id, ce.user_id, ce.company_id, ce.clock_in, ce.clock_out,
+               ce.status, ce.created_at,
+               u.first_name, u.last_name, u.email
+        FROM clock_events ce
+        JOIN users u ON u.id = ce.user_id
+        WHERE ce.company_id = $1
+          AND ($2::timestamptz IS NULL OR ce.clock_in >= $2)
+          AND ($3::timestamptz IS NULL OR ce.clock_in <= $3)
+        ORDER BY ce.clock_in DESC
+        ",
+    )
+    .bind(company_id)
+    .bind(from)
+    .bind(to)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(events)
+}
+
 #[cfg(test)]
 mod db_model_tests {
     use super::*;

@@ -87,6 +87,15 @@
 								Users
 							</a>
 							<a
+								href="/attendance-admin"
+								style="color: var(--text-secondary);"
+								class="hover:opacity-80"
+								class:font-bold={currentPath === '/attendance-admin'}
+								class:underline={currentPath === '/attendance-admin'}
+							>
+								Attendance
+							</a>
+							<a
 								href="/reports"
 								style="color: var(--text-secondary);"
 								class="hover:opacity-80"
@@ -197,6 +206,15 @@
 							onclick={closeMobileMenu}
 						>
 							Users
+						</a>
+						<a
+							href="/attendance-admin"
+							style="color: var(--text-secondary);"
+							class="block hover:opacity-80"
+							class:font-bold={currentPath === '/attendance-admin'}
+							onclick={closeMobileMenu}
+						>
+							Attendance
 						</a>
 						<a
 							href="/reports"

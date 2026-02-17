@@ -1,5 +1,6 @@
 use crate::db;
 use axum::http::StatusCode;
+use chrono::{DateTime, Utc};
 use serde_json::json;
 use sqlx::PgPool;
 
@@ -94,5 +95,20 @@ impl ClockService {
             })?;
 
         Ok((current, recent))
+    }
+
+    pub async fn get_company_clock_events(
+        pool: &PgPool,
+        company_id: &str,
+        from: Option<DateTime<Utc>>,
+        to: Option<DateTime<Utc>>,
+    ) -> Result<Vec<db::CompanyClockEventRow>, (StatusCode, serde_json::Value)> {
+        let events = db::get_company_clock_events(pool, company_id, from, to)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error fetching company clock events: {:?}", e);
+                (StatusCode::INTERNAL_SERVER_ERROR, json!({"error": "Database error"}))
+            })?;
+        Ok(events)
     }
 }
