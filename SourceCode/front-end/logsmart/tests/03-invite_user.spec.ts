@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test';
-import { register, getInvitationToken, sendInvitation } from './utils';
+import { test, expect, type Page } from '@playwright/test';
+import { register, createBranch, getInvitationToken, sendInvitation } from './utils';
 
 let adminCreds: {
 	email: string;
@@ -7,12 +7,29 @@ let adminCreds: {
 	companyName: string;
 	firstName: string;
 	lastName: string;
+	page?: Page;
 };
 
 test.beforeAll(async ({ browser }) => {
-	const creds = await register(browser);
+	const creds = await register(browser, false);
 	if (!creds) throw new Error('Failed to register admin user');
 	adminCreds = creds;
+	await createBranch(adminCreds.page!, 'Main Branch', '123 Main St');
+});
+
+test.beforeEach(async ({ browser }) => {
+	if (!adminCreds.page) {
+		adminCreds.page = await browser.newPage();
+		await adminCreds.page.goto('http://localhost:5173/');
+		await adminCreds.page.getByRole('link', { name: 'Login' }).click();
+		await adminCreds.page.waitForURL('**/login');
+		await adminCreds.page.getByRole('textbox', { name: 'Email' }).click();
+		await adminCreds.page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
+		await adminCreds.page.getByRole('textbox', { name: 'Email' }).press('Tab');
+		await adminCreds.page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
+		await adminCreds.page.getByRole('button', { name: 'Sign in', exact: true }).click();
+		await adminCreds.page.waitForURL('**/dashboard');
+	}
 });
 
 test('invite_user', async ({ page }) => {
@@ -25,24 +42,37 @@ test('invite_user', async ({ page }) => {
 	await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
 	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 	await page.waitForURL('**/dashboard');
+
 	await page.getByRole('link', { name: 'Users' }).click();
 	await expect(page.locator('#eventHide')).toContainText(adminCreds.email);
 	await expect(page.locator('#eventHide')).toContainText(adminCreds.firstName.split('-')[0]);
-	await expect(page.locator('#eventHide')).toContainText('Admin');
+	await expect(page.locator('#eventHide')).toContainText('Company Manager');
 	await expect(page.locator('header')).toContainText(adminCreds.email);
 	await page.getByRole('button', { name: '➕' }).click();
+
+	await expect(page.locator('#invite-role')).toBeVisible();
+	await expect(page.locator('#invite-branch')).toBeVisible();
+
 	await page.getByRole('textbox', { name: "New user's email" }).click();
 	const inviteeEmail = `invitee-${Date.now()}@logsmart.app`;
 	await page.getByRole('textbox', { name: "New user's email" }).fill(inviteeEmail);
+	await page.locator('#invite-branch').selectOption({ label: 'Main Branch' });
 	await page.getByRole('button', { name: 'Send Invite' }).click();
 
 	const invitationToken = await getInvitationToken(inviteeEmail);
 	expect(invitationToken).toBeTruthy();
 });
 
-test('accept_invitation', async ({ page }) => {
+test('accept_invitation', async ({ page, browser }) => {
+	//await createBranch(adminCreds.page, 'Main Branch', '123 Main St');
 	const inviteeEmail = `invitee-${Date.now()}@logsmart.app`;
-	const invitationToken = await sendInvitation(page.context().browser()!, adminCreds, inviteeEmail);
+	const invitationToken = await sendInvitation(
+		browser,
+		adminCreds,
+		inviteeEmail,
+		'staff',
+		'Main Branch'
+	);
 	expect(invitationToken).toBeTruthy();
 
 	await page.goto(`http://localhost:5173/accept-invitation?token=${invitationToken}`);

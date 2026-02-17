@@ -23,7 +23,7 @@ async fn test_create_log_entry_success() {
     let state = create_mock_app_state();
     
     // Create user with company
-    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Member, Some("company123")).await;
+    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Staff, Some("company123")).await;
     
     let template_name = "Daily Standup";
     
@@ -73,7 +73,7 @@ async fn test_create_log_entry_template_not_found() {
     let state = create_mock_app_state();
     
     // Create user with company
-    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Member, Some("company123")).await;
+    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Staff, Some("company123")).await;
     
     let template_name = "Non-existent Template";
     
@@ -100,7 +100,7 @@ async fn test_create_log_entry_duplicate_for_period() {
     let state = create_mock_app_state();
     
     // Create user with company
-    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Member, Some("company123")).await;
+    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Staff, Some("company123")).await;
     
     let template_name = "Daily Check-in";
     
@@ -136,7 +136,7 @@ async fn test_get_log_entry_success() {
     let state = create_mock_app_state();
     
     // Create user with company
-    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Member, Some("company123")).await;
+    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Staff, Some("company123")).await;
     
     let entry_id = "test-entry-id-123";
     
@@ -295,7 +295,7 @@ async fn test_unsubmit_log_entry_admin_success() {
     let state = create_mock_app_state();
     
     // Create admin user
-    let admin = create_test_user_with_role(&state.postgres, "admin@example.com", UserRole::Admin, Some("company123")).await;
+    let admin = create_test_user_with_role(&state.postgres, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
     
     let entry_id = "submitted-entry-to-unsubmit";
     
@@ -318,7 +318,7 @@ async fn test_unsubmit_log_entry_non_admin_forbidden() {
     let state = create_mock_app_state();
     
     // Create regular user
-    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Member, Some("company123")).await;
+    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Staff, Some("company123")).await;
     
     let entry_id = "submitted-entry";
     
@@ -364,7 +364,7 @@ async fn test_delete_log_entry_admin_success() {
     let state = create_mock_app_state();
     
     // Create admin and regular user
-    let admin = create_test_user_with_role(&state.postgres, "admin@example.com", UserRole::Admin, Some("company123")).await;
+    let admin = create_test_user_with_role(&state.postgres, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
     let user = create_test_user(&state.postgres, "user@example.com", Some("company123")).await;
     
     let entry_id = "user-entry-to-delete-by-admin";
@@ -450,7 +450,7 @@ async fn test_get_user_log_entries_success() {
     let state = create_mock_app_state();
     
     // Create user with company
-    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Member, Some("company123")).await;
+    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Staff, Some("company123")).await;
     
     let company_id = "company123";
     

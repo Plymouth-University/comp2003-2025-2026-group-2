@@ -52,10 +52,7 @@ services:
       - target-cache:/app/target
     working_dir: /app
     command: >
-      sh -c "
-        cargo install cargo-watch &&
-        cargo watch -x 'run'
-      "
+      cargo run
     ports:
       - "6767:6767"
     environment:

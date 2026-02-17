@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { acceptInvitation, register, sendInvitation } from './utils';
+import { acceptInvitation, register, sendInvitation, createBranch } from './utils';
 
 let adminCreds: {
 	email: string;
@@ -9,10 +9,22 @@ let adminCreds: {
 	lastName: string;
 };
 
+const BRANCH_NAME = 'Test Branch';
+
 test.beforeAll(async ({ browser }) => {
 	const creds = await register(browser);
 	if (!creds) throw new Error('Failed to register admin user');
 	adminCreds = creds;
+
+	const page = await browser.newPage();
+	await page.goto('http://localhost:5173/login');
+	await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
+	await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
+	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+	await page.waitForURL('**/dashboard');
+
+	await createBranch(page, BRANCH_NAME, '123 Test St');
+	await page.close();
 });
 
 test.describe('Logs Management - Admin', () => {
@@ -27,7 +39,7 @@ test.describe('Logs Management - Admin', () => {
 
 	test('view_logs_list_admin', async ({ page }) => {
 		await page.getByRole('link', { name: 'Logs', exact: true }).click();
-		await page.waitForURL('**/logs-list', { timeout: 99999999 });
+		await page.waitForURL('**/logs-list');
 		await expect(page.locator('body')).toContainText('Logs Due Today');
 		await expect(page.locator('body')).toContainText('All Logs');
 	});
@@ -84,14 +96,21 @@ test.describe('Logs Management - Member', () => {
 
 	test.beforeAll(async ({ browser }) => {
 		const memberEmail = `member-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}@logsmart.app`;
-		const invitationToken = await sendInvitation(browser, adminCreds, memberEmail);
+		const invitationToken = await sendInvitation(
+			browser,
+			adminCreds,
+			memberEmail,
+			'staff',
+			BRANCH_NAME
+		);
 		if (!invitationToken) throw new Error('Failed to get invitation token');
 		const success = await acceptInvitation(
 			await browser.newPage(),
 			invitationToken!,
 			'Member',
 			'User',
-			'Member123!'
+			'Member123!',
+			'**/logs-list'
 		);
 		if (!success) throw new Error('Failed to accept invitation for member user');
 		memberCreds = { email: memberEmail, password: 'Member123!' };

@@ -69,7 +69,10 @@ pub async fn verify_token(
                 StatusCode::NOT_FOUND,
                 Json(json!({ "error": "User not found" })),
             ))?;
-        state.user_cache.insert(claims.user_id.clone(), user.clone()).await;
+        state
+            .user_cache
+            .insert(claims.user_id.clone(), user.clone())
+            .await;
         user
     };
 
@@ -148,7 +151,7 @@ pub async fn register_company_admin(
         ));
     }
 
-    let (_json_response, token, role) = services::AuthService::register_admin(
+    let (user_record, token) = services::AuthService::register_admin(
         &state.postgres,
         &payload.email,
         &payload.first_name,
@@ -188,14 +191,7 @@ pub async fn register_company_admin(
         StatusCode::CREATED,
         Json(AuthResponse {
             token: token.clone(),
-            user: UserResponse {
-                email: payload.email,
-                first_name: payload.first_name,
-                last_name: payload.last_name,
-                company_name: Some(payload.company_name),
-                role,
-                oauth_provider: None,
-            },
+            user: user_record.into(),
         }),
     )
         .into_response();
@@ -284,14 +280,7 @@ pub async fn login(
 
     let mut response = Json(AuthResponse {
         token: token.clone(),
-        user: UserResponse {
-            email: user.email,
-            first_name: user.first_name,
-            last_name: user.last_name,
-            company_name: user.company_name,
-            role: user.role,
-            oauth_provider: user.oauth_provider,
-        },
+        user: user.into(),
     })
     .into_response();
 
@@ -346,7 +335,10 @@ pub async fn get_current_user(
                 StatusCode::NOT_FOUND,
                 Json(json!({ "error": "User not found" })),
             ))?;
-        state.user_cache.insert(claims.user_id.clone(), user.clone()).await;
+        state
+            .user_cache
+            .insert(claims.user_id.clone(), user.clone())
+            .await;
         user
     };
 
@@ -481,12 +473,16 @@ pub async fn reset_password(
     State(state): State<AppState>,
     Json(payload): Json<ResetPasswordRequest>,
 ) -> Result<Json<PasswordResetResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user_id = services::AuthService::reset_password(&state.postgres, &payload.token, &payload.new_password)
-        .await
-        .map_err(|e| {
-            tracing::error!("Password reset failed: {:?}", e);
-            (e.0, Json(e.1))
-        })?;
+    let user_id = services::AuthService::reset_password(
+        &state.postgres,
+        &payload.token,
+        &payload.new_password,
+    )
+    .await
+    .map_err(|e| {
+        tracing::error!("Password reset failed: {:?}", e);
+        (e.0, Json(e.1))
+    })?;
 
     // Invalidate cache
     state.user_cache.invalidate(&user_id).await;

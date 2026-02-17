@@ -126,7 +126,10 @@ impl FromRequestParts<crate::AppState> for AdminUser {
                     .await
                     .map_err(|_| RoleError::InvalidToken)?
                     .ok_or(RoleError::InvalidToken)?;
-                state.user_cache.insert(claims.user_id.clone(), user.clone()).await;
+                state
+                    .user_cache
+                    .insert(claims.user_id.clone(), user.clone())
+                    .await;
                 user
             };
 
@@ -168,13 +171,19 @@ impl FromRequestParts<crate::AppState> for MemberUser {
                     .await
                     .map_err(|_| RoleError::InvalidToken)?
                     .ok_or(RoleError::InvalidToken)?;
-                state.user_cache.insert(claims.user_id.clone(), user.clone()).await;
+                state
+                    .user_cache
+                    .insert(claims.user_id.clone(), user.clone())
+                    .await;
                 user
             };
 
             if !matches!(
                 user.get_role(),
-                UserRole::Member | UserRole::Admin | UserRole::LogSmartAdmin
+                UserRole::Staff
+                    | UserRole::CompanyManager
+                    | UserRole::BranchManager
+                    | UserRole::LogSmartAdmin
             ) {
                 return Err(RoleError::InsufficientPermissions);
             }
@@ -213,7 +222,10 @@ impl FromRequestParts<crate::AppState> for LogSmartAdminUser {
                     .await
                     .map_err(|_| RoleError::InvalidToken)?
                     .ok_or(RoleError::InvalidToken)?;
-                state.user_cache.insert(claims.user_id.clone(), user.clone()).await;
+                state
+                    .user_cache
+                    .insert(claims.user_id.clone(), user.clone())
+                    .await;
                 user
             };
 

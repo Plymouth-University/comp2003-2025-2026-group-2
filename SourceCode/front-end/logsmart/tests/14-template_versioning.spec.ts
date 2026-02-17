@@ -33,8 +33,8 @@ test.describe('Template Versioning', () => {
 		await page.waitForLoadState('networkidle');
 
 		// 2. Create initial template (Version 1)
-		// Note: The placeholder in DesignCanvas is "Enter template title..."
-		await page.getByPlaceholder('Enter template title...').fill(templateName);
+		// Note: The placeholder in DesignCanvas is "Template Name"
+		await page.getByPlaceholder('Template Name').fill(templateName);
 
 		// Add component by dragging
 		const source = page.getByText('Text Input', { exact: true });
@@ -75,7 +75,7 @@ test.describe('Template Versioning', () => {
 
 		// Should see previous versions
 		// V2 should have our custom name
-		await expect(page.getByText('My Custom Version Name')).toBeVisible();
+		await expect(page.getByRole('cell', { name: 'My Custom Version Name' })).toBeVisible();
 
 		const restoreButtons = page.getByRole('button', { name: 'Restore' });
 		// Wait for buttons to appear

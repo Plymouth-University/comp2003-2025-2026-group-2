@@ -205,7 +205,7 @@ async fn test_register_user_success() {
     assert_eq!(status, StatusCode::CREATED);
     assert!(body["token"].is_string());
     assert_eq!(body["user"]["email"], "adminuser1@example.com");
-    assert_eq!(body["user"]["role"], "admin");
+    assert_eq!(body["user"]["role"], "company_manager");
 }
 
 #[tokio::test]
@@ -658,14 +658,14 @@ async fn test_complete_registration_and_login_flow() {
     .await;
 
     assert_eq!(login_status, StatusCode::OK);
-    assert_eq!(login_body["user"]["role"], "admin");
+    assert_eq!(login_body["user"]["role"], "company_manager");
 
     let (me_status, me_body) =
         make_request(&mut app, "GET", "/auth/me", None, Some(&admin_token)).await;
 
     assert_eq!(me_status, StatusCode::OK);
     assert_eq!(me_body["email"], "admin3@example.com");
-    assert_eq!(me_body["role"], "admin");
+    assert_eq!(me_body["role"], "company_manager");
 }
 
 #[tokio::test]

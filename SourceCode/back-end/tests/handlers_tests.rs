@@ -1,7 +1,11 @@
 use back_end::dto::AuthResponse;
 use back_end::dto::InvitationResponse;
+use back_end::dto::RequestBranchDeletionResponse;
 use back_end::dto::UserResponse;
-use back_end::dto::{AcceptInvitationRequest, InviteUserRequest, LoginRequest, RegisterRequest};
+use back_end::dto::{
+    AcceptInvitationRequest, CreateBranchRequest, InviteUserRequest, LoginRequest, RegisterRequest,
+    RequestBranchDeletionRequest, UpdateBranchRequest,
+};
 use back_end::jwt_manager::JwtManager;
 
 #[test]
@@ -78,14 +82,20 @@ fn test_login_missing_password() {
 fn test_invite_user_request_validation() {
     let req = InviteUserRequest {
         email: "newuser@example.com".to_string(),
+        role: Some(back_end::db::UserRole::Staff),
+        branch_id: Some("branch123".to_string()),
     };
     assert_eq!(req.email, "newuser@example.com");
+    assert_eq!(req.role, Some(back_end::db::UserRole::Staff));
+    assert_eq!(req.branch_id, Some("branch123".to_string()));
 }
 
 #[test]
 fn test_invite_user_missing_email() {
     let req = InviteUserRequest {
         email: "".to_string(),
+        role: None,
+        branch_id: None,
     };
     assert!(req.email.is_empty());
 }
@@ -130,26 +140,34 @@ use back_end::db::UserRole;
 #[test]
 fn test_user_response_structure() {
     let user_response = UserResponse {
+        id: "user123".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
+        company_id: Some("company123".to_string()),
         company_name: Some("Test Company".to_string()),
-        role: UserRole::Admin,
+        branch_id: None,
+        role: UserRole::CompanyManager,
+        created_at: chrono::Utc::now(),
         oauth_provider: None,
     };
     assert_eq!(user_response.email, "test@example.com");
-    assert_eq!(user_response.role, UserRole::Admin);
+    assert_eq!(user_response.role, UserRole::CompanyManager);
     assert_eq!(user_response.company_name, Some("Test Company".to_string()));
 }
 
 #[test]
 fn test_user_response_without_company() {
     let user_response = UserResponse {
+        id: "user123".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
+        company_id: None,
         company_name: None,
-        role: UserRole::Member,
+        branch_id: None,
+        role: UserRole::Staff,
+        created_at: chrono::Utc::now(),
         oauth_provider: None,
     };
     assert_eq!(user_response.company_name, None);
@@ -169,11 +187,15 @@ fn test_invitation_response_structure() {
 #[test]
 fn test_auth_response_structure() {
     let user_response = UserResponse {
+        id: "user123".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
+        company_id: Some("company123".to_string()),
         company_name: Some("Test Company".to_string()),
-        role: UserRole::Admin,
+        branch_id: None,
+        role: UserRole::CompanyManager,
+        created_at: chrono::Utc::now(),
         oauth_provider: None,
     };
     let auth_response = AuthResponse {
@@ -226,16 +248,20 @@ fn test_login_request_serialization() {
 #[test]
 fn test_user_response_serialization() {
     let user_response = UserResponse {
+        id: "user123".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
+        company_id: Some("company123".to_string()),
         company_name: Some("Test Company".to_string()),
-        role: UserRole::Admin,
+        branch_id: None,
+        role: UserRole::CompanyManager,
+        created_at: chrono::Utc::now(),
         oauth_provider: None,
     };
     let json = serde_json::to_string(&user_response).unwrap();
     assert!(json.contains("Test Company"));
-    assert!(json.contains("admin"));
+    assert!(json.contains("company_manager"));
 }
 
 #[test]
@@ -274,11 +300,15 @@ fn test_password_validation_length() {
 #[test]
 fn test_response_contains_token() {
     let user_response = UserResponse {
+        id: "user123".to_string(),
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
+        company_id: Some("Test Company".to_string()),
         company_name: Some("Test Company".to_string()),
-        role: UserRole::Admin,
+        branch_id: None,
+        role: UserRole::CompanyManager,
+        created_at: chrono::Utc::now(),
         oauth_provider: None,
     };
     let auth_response = AuthResponse {
@@ -286,4 +316,42 @@ fn test_response_contains_token() {
         user: user_response,
     };
     assert!(auth_response.token.len() > 0);
+}
+
+#[test]
+fn test_create_branch_request_validation() {
+    let req = CreateBranchRequest {
+        name: "Main Office".to_string(),
+        address: "123 Main St".to_string(),
+    };
+    assert_eq!(req.name, "Main Office");
+    assert_eq!(req.address, "123 Main St");
+}
+
+#[test]
+fn test_update_branch_request_validation() {
+    let req = UpdateBranchRequest {
+        branch_id: "branch123".to_string(),
+        name: "Updated Office".to_string(),
+        address: "456 New St".to_string(),
+    };
+    assert_eq!(req.branch_id, "branch123");
+    assert_eq!(req.name, "Updated Office");
+    assert_eq!(req.address, "456 New St");
+}
+
+#[test]
+fn test_request_branch_deletion_request() {
+    let req = RequestBranchDeletionRequest {
+        branch_id: "branch123".to_string(),
+    };
+    assert_eq!(req.branch_id, "branch123");
+}
+
+#[test]
+fn test_branch_deletion_response_message() {
+    let resp = RequestBranchDeletionResponse {
+        message: "A confirmation email has been sent".to_string(),
+    };
+    assert!(resp.message.contains("confirmation"));
 }

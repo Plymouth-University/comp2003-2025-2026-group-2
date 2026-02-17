@@ -161,7 +161,7 @@ async fn test_get_or_create_user_new_oauth_user_success() {
     assert_eq!(new_user.oauth_provider, Some("google".to_string()));
     assert_eq!(new_user.oauth_subject, Some(user_info.sub));
     assert_eq!(new_user.oauth_picture, user_info.picture);
-    assert_eq!(new_user.role, UserRole::Member);
+    assert_eq!(new_user.role, UserRole::Staff);
 }
 
 #[tokio::test]

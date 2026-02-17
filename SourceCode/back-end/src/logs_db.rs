@@ -57,6 +57,7 @@ pub struct TemplateDocument {
     pub template_name: String,
     pub template_layout: TemplateLayout,
     pub company_id: String,
+    pub branch_id: Option<String>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
     pub schedule: Schedule,
@@ -74,6 +75,7 @@ fn default_version() -> u16 {
 pub struct TemplateVersionDocument {
     pub template_name: String,
     pub company_id: String,
+    pub branch_id: Option<String>,
     pub version: u16,
     pub version_name: Option<String>,
     pub template_layout: TemplateLayout,
@@ -201,19 +203,37 @@ pub async fn get_template_by_name(
     Ok(result)
 }
 
-/// Retrieves all log templates for a specific company.
-///
-/// # Errors
-/// Returns an error if the database query fails.
 pub async fn get_templates_by_company(
     client: &mongodb::Client,
     company_id: &str,
 ) -> Result<Vec<TemplateDocument>> {
+    get_templates_by_company_and_branch(client, company_id, None).await
+}
+
+/// Retrieves all log templates for a specific company, optionally filtered by branch.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+pub async fn get_templates_by_company_and_branch(
+    client: &mongodb::Client,
+    company_id: &str,
+    branch_id: Option<&str>,
+) -> Result<Vec<TemplateDocument>> {
     let db = client.database("logs_db");
     let collection: mongodb::Collection<TemplateDocument> = db.collection("templates");
 
-    let filter = mongodb::bson::doc! {
-        "company_id": company_id,
+    let filter = if let Some(bid) = branch_id {
+        mongodb::bson::doc! {
+            "company_id": company_id,
+            "$or": [
+                { "branch_id": bid },
+                { "branch_id": null }
+            ]
+        }
+    } else {
+        mongodb::bson::doc! {
+            "company_id": company_id,
+        }
     };
 
     let mut cursor = collection.find(filter).await?;
@@ -224,6 +244,85 @@ pub async fn get_templates_by_company(
     }
 
     Ok(templates)
+}
+
+/// Retrieves all log entries for a branch.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+pub async fn get_branch_log_entries(
+    client: &mongodb::Client,
+    company_id: &str,
+    branch_id: &str,
+) -> Result<Vec<LogEntry>> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "company_id": company_id,
+        "branch_id": branch_id,
+    };
+
+    let mut cursor = collection.find(filter).await?;
+    let mut entries = Vec::new();
+
+    while let Some(entry) = cursor.try_next().await? {
+        entries.push(entry);
+    }
+
+    Ok(entries)
+}
+
+/// Retrieves all log entries for a company.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+pub async fn get_company_log_entries(
+    client: &mongodb::Client,
+    company_id: &str,
+) -> Result<Vec<LogEntry>> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "company_id": company_id,
+    };
+
+    let mut cursor = collection.find(filter).await?;
+    let mut entries = Vec::new();
+
+    while let Some(entry) = cursor.try_next().await? {
+        entries.push(entry);
+    }
+
+    Ok(entries)
+}
+
+/// Retrieves log entries for specific branches in a company.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+pub async fn get_branches_log_entries(
+    client: &mongodb::Client,
+    company_id: &str,
+    branch_ids: &[String],
+) -> Result<Vec<LogEntry>> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "company_id": company_id,
+        "branch_id": mongodb::bson::doc! { "$in": branch_ids }
+    };
+
+    let mut cursor = collection.find(filter).await?;
+    let mut entries = Vec::new();
+
+    while let Some(entry) = cursor.try_next().await? {
+        entries.push(entry);
+    }
+
+    Ok(entries)
 }
 
 /// Updates an existing log template.
@@ -261,7 +360,7 @@ pub async fn update_template(
         set_doc.insert("version_name", name);
     }
     set_doc.insert("updated_at", mongodb::bson::to_bson(&chrono::Utc::now())?);
-    
+
     // Increment version
     let update = mongodb::bson::doc! {
         "$set": set_doc,
@@ -283,7 +382,7 @@ pub async fn update_template_with_version(
     schedule: Option<&Schedule>,
     layout: Option<&TemplateLayout>,
 ) -> Result<()> {
-    // This is now redundant given update_template handles versioning, 
+    // This is now redundant given update_template handles versioning,
     // but we can keep the original signature compatible by forwarding
     update_template(client, template_name, company_id, schedule, layout, None).await
 }
@@ -355,6 +454,7 @@ pub struct LogEntry {
     pub entry_id: String,
     pub template_name: String,
     pub company_id: String,
+    pub branch_id: Option<String>,
     pub user_id: String,
     pub entry_data: serde_json::Value,
     pub created_at: chrono::DateTime<chrono::Utc>,

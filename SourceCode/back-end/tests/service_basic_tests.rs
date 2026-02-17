@@ -7,15 +7,15 @@ async fn test_user_factory_basic() {
     assert_eq!(user.email, "test@example.com");
     assert_eq!(user.first_name, "Test");
     assert_eq!(user.last_name, "User");
-    assert_eq!(user.role, UserRole::Member);
+    assert_eq!(user.role, UserRole::Staff);
     assert!(user.password_hash.is_some());
 }
 
 #[tokio::test]
-async fn test_user_factory_admin() {
-    let user = UserFactory::create_admin();
+async fn test_user_factory_company_manager() {
+    let user = UserFactory::create_company_manager();
     assert_eq!(user.email, "admin@test.com");
-    assert_eq!(user.role, UserRole::Admin);
+    assert_eq!(user.role, UserRole::CompanyManager);
 }
 
 #[tokio::test]

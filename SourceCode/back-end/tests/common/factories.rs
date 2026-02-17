@@ -25,8 +25,9 @@ impl UserFactory {
             last_name: "User".to_string(),
             password_hash: Some("hashed_password".to_string()),
             company_id: Some(Uuid::new_v4().to_string()),
+            branch_id: None,
             company_name: Some("Test Company".to_string()),
-            role: UserRole::Member,
+            role: UserRole::Staff,
             created_at: Utc::now(),
             deleted_at: None,
             oauth_provider: None,
@@ -35,11 +36,11 @@ impl UserFactory {
         }
     }
 
-    /// Creates an admin user
+    /// Creates a company manager user
     #[must_use]
-    pub fn create_admin() -> UserRecord {
+    pub fn create_company_manager() -> UserRecord {
         UserRecord {
-            role: UserRole::Admin,
+            role: UserRole::CompanyManager,
             email: "admin@test.com".to_string(),
             first_name: "Admin".to_string(),
             last_name: "User".to_string(),
@@ -118,6 +119,8 @@ impl InvitationFactory {
             email: "invite@example.com".to_string(),
             company_id: Uuid::new_v4().to_string(),
             token: Uuid::new_v4().to_string(),
+            role: UserRole::Staff,
+            branch_id: None,
             expires_at: Utc::now() + chrono::Duration::hours(24),
             created_at: Utc::now(),
             accepted_at: None,
@@ -261,6 +264,7 @@ impl TemplateFactory {
                 },
             }],
             company_id: Uuid::new_v4().to_string(),
+            branch_id: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
             schedule: Schedule {
@@ -303,6 +307,7 @@ impl LogEntryFactory {
             entry_id: mongodb::bson::Uuid::new().to_string(),
             template_name: "Test Template".to_string(),
             company_id: Uuid::new_v4().to_string(),
+            branch_id: None,
             user_id: Uuid::new_v4().to_string(),
             entry_data: serde_json::json!({
                 "field1": "Test value",
@@ -478,7 +483,7 @@ pub async fn create_test_user(
         r"
         INSERT INTO users (id, email, first_name, last_name, password_hash, company_id, role)
         VALUES ($1, $2, $3, $4, $5, $6, $7::user_role)
-        RETURNING id, email, first_name, last_name, password_hash, company_id, created_at, deleted_at, oauth_provider, oauth_subject, oauth_picture
+        RETURNING id, email, first_name, last_name, password_hash, company_id, branch_id, created_at, deleted_at, oauth_provider, oauth_subject, oauth_picture
         "
     )
     .bind(user.id)
@@ -497,6 +502,7 @@ pub async fn create_test_user(
         last_name: row.get("last_name"),
         password_hash: row.get("password_hash"),
         company_id: row.get("company_id"),
+        branch_id: row.get("branch_id"),
         company_name: None,
         role: role_clone,
         created_at: row.get("created_at"),
@@ -529,7 +535,7 @@ pub async fn create_test_user_with_role(
         r"
         INSERT INTO users (id, email, first_name, last_name, password_hash, company_id, role)
         VALUES ($1, $2, $3, $4, $5, $6, $7::user_role)
-        RETURNING id, email, first_name, last_name, password_hash, company_id, role, created_at, deleted_at, oauth_provider, oauth_subject, oauth_picture
+        RETURNING id, email, first_name, last_name, password_hash, company_id, branch_id, role, created_at, deleted_at, oauth_provider, oauth_subject, oauth_picture
         "
     )
     .bind(user.id)
@@ -548,6 +554,7 @@ pub async fn create_test_user_with_role(
         last_name: row.get("last_name"),
         password_hash: row.get("password_hash"),
         company_id: row.get("company_id"),
+        branch_id: row.get("branch_id"),
         company_name: None,
         role: user.role,
         created_at: row.get("created_at"),
@@ -568,19 +575,19 @@ pub async fn create_test_company(pool: &sqlx::PgPool, name: &str, address: &str)
     company.name = name.to_string();
     company.address = address.to_string();
 
-    sqlx::query!(
-        "INSERT INTO companies (id, name, address) VALUES ($1, $2, $3) RETURNING id, name, address, created_at",
-        company.id,
-        company.name,
-        company.address
+    sqlx::query(
+        "INSERT INTO companies (id, name, address) VALUES ($1, $2, $3) RETURNING id, name, address, created_at"
     )
+    .bind(&company.id)
+    .bind(&company.name)
+    .bind(&company.address)
     .fetch_one(pool)
     .await
     .map(|row| Company {
-        id: row.id,
-        name: row.name,
-        address: row.address,
-        created_at: row.created_at.unwrap(),
+        id: row.get("id"),
+        name: row.get("name"),
+        address: row.get("address"),
+        created_at: row.get("created_at"),
     })
     .unwrap()
 }
@@ -598,30 +605,34 @@ pub async fn create_test_invitation(
     invitation.company_id = company_id.to_string();
     invitation.email = email.to_string();
 
-    sqlx::query!(
+    sqlx::query(
         r"
-        INSERT INTO invitations (id, company_id, email, token, expires_at, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id, company_id, email, token, created_at, expires_at, accepted_at, cancelled_at
-        ",
-        invitation.id,
-        invitation.company_id,
-        invitation.email,
-        invitation.token,
-        invitation.expires_at,
-        invitation.created_at
+        INSERT INTO invitations (id, company_id, email, token, role, branch_id, expires_at, created_at)
+        VALUES ($1, $2, $3, $4, $5::user_role, $6, $7, $8)
+        RETURNING id, company_id, email, token, role, branch_id, created_at, expires_at, accepted_at, cancelled_at
+        "
     )
+    .bind(&invitation.id)
+    .bind(&invitation.company_id)
+    .bind(&invitation.email)
+    .bind(&invitation.token)
+    .bind(invitation.role.to_string())
+    .bind(&invitation.branch_id)
+    .bind(invitation.expires_at)
+    .bind(invitation.created_at)
     .fetch_one(pool)
     .await
     .map(|row| Invitation {
-        id: row.id,
-        company_id: row.company_id,
-        email: row.email,
-        token: row.token,
-        created_at: row.created_at.unwrap(),
-        expires_at: row.expires_at,
-        accepted_at: row.accepted_at,
-        cancelled_at: row.cancelled_at,
+        id: row.get("id"),
+        company_id: row.get("company_id"),
+        email: row.get("email"),
+        token: row.get("token"),
+        role: invitation.role,
+        branch_id: row.get("branch_id"),
+        created_at: row.get("created_at"),
+        expires_at: row.get("expires_at"),
+        accepted_at: row.get("accepted_at"),
+        cancelled_at: row.get("cancelled_at"),
     })
     .unwrap()
 }
@@ -641,30 +652,34 @@ pub async fn create_test_invitation_with_expiry(
     invitation.email = email.to_string();
     invitation.expires_at = expires_at;
 
-    sqlx::query!(
+    sqlx::query(
         r"
-        INSERT INTO invitations (id, company_id, email, token, expires_at, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id, company_id, email, token, created_at, expires_at, accepted_at, cancelled_at
-        ",
-        invitation.id,
-        invitation.company_id,
-        invitation.email,
-        invitation.token,
-        invitation.expires_at,
-        invitation.created_at
+        INSERT INTO invitations (id, company_id, email, token, role, branch_id, expires_at, created_at)
+        VALUES ($1, $2, $3, $4, $5::user_role, $6, $7, $8)
+        RETURNING id, company_id, email, token, role, branch_id, created_at, expires_at, accepted_at, cancelled_at
+        "
     )
+    .bind(&invitation.id)
+    .bind(&invitation.company_id)
+    .bind(&invitation.email)
+    .bind(&invitation.token)
+    .bind(invitation.role.to_string())
+    .bind(&invitation.branch_id)
+    .bind(invitation.expires_at)
+    .bind(invitation.created_at)
     .fetch_one(pool)
     .await
     .map(|row| Invitation {
-        id: row.id,
-        company_id: row.company_id,
-        email: row.email,
-        token: row.token,
-        created_at: row.created_at.unwrap(),
-        expires_at: row.expires_at,
-        accepted_at: row.accepted_at,
-        cancelled_at: row.cancelled_at,
+        id: row.get("id"),
+        company_id: row.get("company_id"),
+        email: row.get("email"),
+        token: row.get("token"),
+        role: invitation.role,
+        branch_id: row.get("branch_id"),
+        created_at: row.get("created_at"),
+        expires_at: row.get("expires_at"),
+        accepted_at: row.get("accepted_at"),
+        cancelled_at: row.get("cancelled_at"),
     })
     .unwrap()
 }

@@ -38,7 +38,7 @@ impl AuthService {
         company_address: &str,
         ip_address: Option<String>,
         user_agent: Option<String>,
-    ) -> Result<(String, String, UserRole), (StatusCode, serde_json::Value)> {
+    ) -> Result<(db::UserRecord, String), (StatusCode, serde_json::Value)> {
         let mut tx = db_pool.begin().await.map_err(|e| {
             tracing::error!("Failed to begin transaction: {:?}", e);
             (
@@ -69,14 +69,14 @@ impl AuthService {
             )
         })?;
 
-        let user = db::create_user(
+        let mut user = db::create_user(
             &mut *tx,
             email.to_string(),
             first_name.to_string(),
             last_name.to_string(),
             Some(password_hash),
             Some(company.id.clone()),
-            UserRole::Admin,
+            UserRole::CompanyManager,
         )
         .await
         .map_err(|e| {
@@ -96,6 +96,7 @@ impl AuthService {
         })?;
 
         let user_id = user.id.clone();
+        user.company_name = Some(company_name.to_string());
 
         let token = JwtManager::get_config()
             .generate_token(user_id.clone(), 24)
@@ -118,18 +119,7 @@ impl AuthService {
         )
         .await;
 
-        let response = serde_json::json!({
-            "message": "Admin registration successful",
-            "user_id": user_id,
-            "token": token,
-            "role": "admin",
-        });
-
-        Ok((
-            serde_json::to_string(&response).unwrap(),
-            token,
-            UserRole::Admin,
-        ))
+        Ok((user, token))
     }
 
     /// Performs user login and returns a JWT token.

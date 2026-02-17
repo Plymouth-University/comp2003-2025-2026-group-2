@@ -2,7 +2,7 @@ import type { components } from '$lib/api-types';
 
 type ListLogEntriesResponse = components['schemas']['ListLogEntriesResponse'];
 type DueFormsResponse = components['schemas']['DueFormsResponse'];
-type Form = components['schemas']['DueFormsResponse']['forms'][0];
+type User = components['schemas']['UserResponse'];
 
 export const load = async ({ parent, fetch, cookies }: any) => {
 	const { user } = await parent();
@@ -10,7 +10,7 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 
 	if (!token) {
 		return {
-			user,
+			user: user as User,
 			dueToday: [],
 			pastLogs: [],
 			error: 'No authentication token'
@@ -18,7 +18,10 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 	}
 
 	try {
-		if (user?.role === 'member') {
+		// Check if user is readonly HQ (staff with no branch)
+		const isReadonlyHQ = user?.role === 'staff' && !user?.branch_id;
+
+		if (user?.role === 'staff' && !isReadonlyHQ) {
 			const [dueTodayResponse, pastLogsResponse] = await Promise.all([
 				fetch('/api/logs/entries/due', {
 					headers: {
@@ -42,7 +45,7 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 				: { entries: [] };
 
 			return {
-				user,
+				user: user as User,
 				dueToday: dueToday.forms || [],
 				pastLogs: pastLogsData.entries || [],
 				error: null
@@ -55,7 +58,7 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 						'Cache-Control': 'no-cache'
 					}
 				}),
-				fetch('/api/logs/entries', {
+				fetch('/api/logs/admin/entries', {
 					headers: {
 						Authorization: `Bearer ${token}`,
 						'Cache-Control': 'no-cache'
@@ -71,7 +74,7 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 				: { entries: [] };
 
 			return {
-				user,
+				user: user as User,
 				dueToday: dueToday.forms || [],
 				allLogs: allLogsData.entries || [],
 				error: null
@@ -80,7 +83,7 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 	} catch (error) {
 		console.error('Error fetching logs:', error);
 		return {
-			user,
+			user: user as User,
 			dueToday: [],
 			pastLogs: [],
 			allLogs: [],
