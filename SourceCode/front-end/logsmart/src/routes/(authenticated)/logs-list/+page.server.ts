@@ -19,9 +19,7 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 
 	try {
 		if (
-			user?.role === 'company_manager' ||
-			user?.role === 'staff' ||
-			user?.role === 'branch_manager'
+			user?.role === 'staff'
 		) {
 			const [dueTodayResponse, pastLogsResponse] = await Promise.all([
 				fetch('/api/logs/entries/due', {
