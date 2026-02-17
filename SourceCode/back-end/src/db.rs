@@ -1195,6 +1195,33 @@ pub async fn get_branch_by_id(pool: &PgPool, branch_id: &str) -> Result<Option<B
     Ok(branch)
 }
 
+/// Updates a branch's details.
+///
+/// # Errors
+/// Returns an error if database update fails.
+pub async fn update_branch(
+    pool: &PgPool,
+    branch_id: &str,
+    name: &str,
+    address: &str,
+) -> Result<Branch> {
+    let updated_branch = sqlx::query_as::<_, Branch>(
+        r"
+        UPDATE branches
+        SET name = $1, address = $2
+        WHERE id = $3
+        RETURNING id, company_id, name, address, created_at
+        ",
+    )
+    .bind(name)
+    .bind(address)
+    .bind(branch_id)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(updated_branch)
+}
+
 /// Updates the branch association for a user.
 ///
 /// # Errors

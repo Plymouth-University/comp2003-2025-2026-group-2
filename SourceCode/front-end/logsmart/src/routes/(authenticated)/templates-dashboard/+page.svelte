@@ -263,15 +263,15 @@
 			</div>
 		{:else}
 			<div class="space-y-4">
-			{#each filteredTemplates as template (template.id)}
-				<TemplateRow
-					{template}
-					onEdit={handleEdit}
-					onSettings={handleSettings}
-					onDelete={handleDelete}
-					{isReadonlyHQ}
-				/>
-			{/each}
+				{#each filteredTemplates as template (template.id)}
+					<TemplateRow
+						{template}
+						onEdit={handleEdit}
+						onSettings={handleSettings}
+						onDelete={handleDelete}
+						{isReadonlyHQ}
+					/>
+				{/each}
 			</div>
 		{/if}
 

@@ -3,17 +3,18 @@
 	import type { Member } from './+page.svelte';
 	import PlaceHolderImage from '$lib/assets/placeholder.png';
 
-	const { setSelectedUser, selectedUser, loggedInUserRole, updateMember, branches, isReadonlyHQ } = $props<{
-		setSelectedUser: (email: string | null) => void;
-		selectedUser: Member | null;
-		loggedInUserRole: string;
-		updateMember: (
-			email: string,
-			updates: { first_name: string; last_name: string; role: string; branch_id: string | null }
-		) => void;
-		branches: any[];
-		isReadonlyHQ: boolean;
-	}>();
+	const { setSelectedUser, selectedUser, loggedInUserRole, updateMember, branches, isReadonlyHQ } =
+		$props<{
+			setSelectedUser: (email: string | null) => void;
+			selectedUser: Member | null;
+			loggedInUserRole: string;
+			updateMember: (
+				email: string,
+				updates: { first_name: string; last_name: string; role: string; branch_id: string | null }
+			) => void;
+			branches: any[];
+			isReadonlyHQ: boolean;
+		}>();
 
 	let firstName = $state('');
 	let lastName = $state('');

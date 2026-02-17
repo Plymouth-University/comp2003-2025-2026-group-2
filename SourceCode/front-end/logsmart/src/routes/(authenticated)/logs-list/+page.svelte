@@ -5,7 +5,9 @@
 
 	const isReadonlyHQ = $derived(data?.user?.role === 'staff' && !data?.user?.branch_id);
 	const isMember = $derived(data?.user?.role === 'staff' && !isReadonlyHQ);
-	const isAdmin = $derived(data?.user?.role.match(/company_manager|branch_manager|logsmart_admin/) || isReadonlyHQ);
+	const isAdmin = $derived(
+		data?.user?.role.match(/company_manager|branch_manager|logsmart_admin/) || isReadonlyHQ
+	);
 
 	const sortedPastLogs = $derived(
 		data.pastLogs

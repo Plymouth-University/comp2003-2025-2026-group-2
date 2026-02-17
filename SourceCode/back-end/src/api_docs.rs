@@ -77,6 +77,7 @@ use utoipa::OpenApi;
             dto::GetCompanyMembersResponse,
             dto::BranchDto,
             dto::CreateBranchRequest,
+            dto::UpdateBranchRequest,
             dto::ListBranchesResponse,
             dto::GetInvitationDetailsRequest,
             dto::GetInvitationDetailsResponse,

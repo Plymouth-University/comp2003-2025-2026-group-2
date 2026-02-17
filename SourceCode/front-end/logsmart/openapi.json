@@ -1338,7 +1338,6 @@
 			"get": {
 				"tags": ["Templates"],
 				"summary": "Retrieves a specific log template by name.",
-				"description": "# Errors\nReturns an error if the template is not found or if the user is not authorized.",
 				"operationId": "get_template",
 				"parameters": [
 					{
@@ -1351,21 +1350,21 @@
 				],
 				"responses": {
 					"200": {
-						"description": "Password reset successfully",
+						"description": "Template retrieved successfully",
 						"content": {
 							"application/json": {
 								"schema": { "$ref": "#/components/schemas/GetTemplateResponse" }
 							}
 						}
 					},
-					"400": {
-						"description": "Password validation failed",
+					"401": {
+						"description": "Invalid or expired token",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
 					},
-					"401": {
-						"description": "Invalid or expired token",
+					"404": {
+						"description": "Template not found",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -1382,7 +1381,6 @@
 			"post": {
 				"tags": ["Templates"],
 				"summary": "Adds a new log template for the current company.",
-				"description": "# Errors\nReturns an error if the user is not authorized or if template creation fails.",
 				"operationId": "add_template",
 				"requestBody": {
 					"content": {
@@ -1399,14 +1397,14 @@
 							}
 						}
 					},
-					"400": {
-						"description": "Password validation failed",
+					"401": {
+						"description": "Invalid or expired token",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
 					},
-					"401": {
-						"description": "Invalid or expired token",
+					"403": {
+						"description": "Forbidden",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -1423,7 +1421,6 @@
 			"delete": {
 				"tags": ["Templates"],
 				"summary": "Deletes a specific log template.",
-				"description": "# Errors\nReturns an error if the user is not authorized or if deletion fails.",
 				"operationId": "delete_template",
 				"parameters": [
 					{
@@ -1442,14 +1439,14 @@
 							}
 						}
 					},
-					"400": {
-						"description": "Password validation failed",
+					"401": {
+						"description": "Unauthorized",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
 					},
-					"401": {
-						"description": "Invalid or expired token",
+					"403": {
+						"description": "Forbidden",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -1467,8 +1464,7 @@
 		"/logs/templates/all": {
 			"get": {
 				"tags": ["Templates"],
-				"summary": "Retrieves all log templates for the current company.",
-				"description": "# Errors\nReturns an error if the user is not authorized or if the query fails.",
+				"summary": "Retrieves all log templates for the current company/branch.",
 				"operationId": "get_all_templates",
 				"responses": {
 					"200": {
@@ -1480,7 +1476,13 @@
 						}
 					},
 					"401": {
-						"description": "Invalid or expired token",
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -1499,7 +1501,6 @@
 			"put": {
 				"tags": ["Templates"],
 				"summary": "Renames an existing log template.",
-				"description": "# Errors\nReturns an error if the user is not authorized or if the rename fails.",
 				"operationId": "rename_template",
 				"requestBody": {
 					"content": {
@@ -1518,14 +1519,14 @@
 							}
 						}
 					},
-					"400": {
-						"description": "Password validation failed",
+					"401": {
+						"description": "Unauthorized",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
 					},
-					"401": {
-						"description": "Invalid or expired token",
+					"403": {
+						"description": "Forbidden",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -1544,7 +1545,6 @@
 			"put": {
 				"tags": ["Templates"],
 				"summary": "Updates an existing log template.",
-				"description": "# Errors\nReturns an error if the user is not authorized or if the update fails.",
 				"operationId": "update_template",
 				"requestBody": {
 					"content": {
@@ -1563,14 +1563,14 @@
 							}
 						}
 					},
-					"400": {
-						"description": "Password validation failed",
+					"401": {
+						"description": "Unauthorized",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
 					},
-					"401": {
-						"description": "Invalid or expired token",
+					"403": {
+						"description": "Forbidden",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -1589,7 +1589,6 @@
 			"get": {
 				"tags": ["Templates"],
 				"summary": "Retrieves the version history of a log template.",
-				"description": "# Errors\nReturns an error if the user is not authorized or if query fails.",
 				"operationId": "get_template_versions",
 				"parameters": [
 					{
@@ -1610,7 +1609,7 @@
 						}
 					},
 					"401": {
-						"description": "Invalid or expired token",
+						"description": "Unauthorized",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -1629,7 +1628,6 @@
 			"post": {
 				"tags": ["Templates"],
 				"summary": "Restores a specific version of a log template.",
-				"description": "# Errors\nReturns an error if the user is not authorized or if restoration fails.",
 				"operationId": "restore_template_version",
 				"parameters": [
 					{
@@ -1664,7 +1662,13 @@
 						}
 					},
 					"401": {
-						"description": "Invalid or expired token",
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden",
 						"content": {
 							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
 						}
@@ -2206,6 +2210,15 @@
 					"version_name": { "type": ["string", "null"] }
 				}
 			},
+			"UpdateBranchRequest": {
+				"type": "object",
+				"required": ["branch_id", "name", "address"],
+				"properties": {
+					"address": { "type": "string", "example": "123 Regent St, London" },
+					"branch_id": { "type": "string", "example": "550e8400-e29b-41d4-a716-446655440000" },
+					"name": { "type": "string", "example": "London Office" }
+				}
+			},
 			"UpdateLogEntryRequest": {
 				"type": "object",
 				"required": ["entry_data"],
@@ -2240,12 +2253,15 @@
 			},
 			"UserResponse": {
 				"type": "object",
-				"required": ["email", "first_name", "last_name", "role"],
+				"required": ["id", "email", "first_name", "last_name", "role", "created_at"],
 				"properties": {
 					"branch_id": { "type": ["string", "null"] },
+					"company_id": { "type": ["string", "null"] },
 					"company_name": { "type": ["string", "null"] },
+					"created_at": { "type": "string", "format": "date-time" },
 					"email": { "type": "string" },
 					"first_name": { "type": "string" },
+					"id": { "type": "string" },
 					"last_name": { "type": "string" },
 					"oauth_provider": { "type": ["string", "null"] },
 					"role": { "$ref": "#/components/schemas/UserRole" }
@@ -2253,7 +2269,7 @@
 			},
 			"UserRole": {
 				"type": "string",
-				"enum": ["admin", "member", "logsmart_admin", "company_manager", "branch_manager", "staff"]
+				"enum": ["logsmart_admin", "company_manager", "branch_manager", "staff"]
 			},
 			"Vec": {
 				"type": "array",

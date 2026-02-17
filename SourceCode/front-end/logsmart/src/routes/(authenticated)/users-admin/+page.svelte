@@ -19,7 +19,7 @@
 	const invitations = $derived(data.invitations || []);
 	const user = $derived(data.user);
 	const branches = $derived(data.branches || []);
-	
+
 	// Check if current user is readonly HQ (staff with no branch)
 	const isReadonlyHQ = $derived(user?.role === 'staff' && !user?.branch_id);
 
@@ -124,9 +124,9 @@
 					{#each invitations as invite (invite.email)}
 						<InviteRow {invite} onCancel={cancelInvitation} />
 					{/each}
-				{#each members as item (item.email)}
-					<UserRow {item} {setSelectedUser} onRemove={removeMember} {isReadonlyHQ} />
-				{/each}
+					{#each members as item (item.email)}
+						<UserRow {item} {setSelectedUser} onRemove={removeMember} {isReadonlyHQ} />
+					{/each}
 					{#if !isReadonlyHQ}
 						<div class="add-button-container mr-5 flex flex-col place-items-end self-end text-4xl">
 							<button

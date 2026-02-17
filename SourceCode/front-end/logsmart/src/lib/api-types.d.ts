@@ -671,24 +671,12 @@ export interface paths {
 			path?: never;
 			cookie?: never;
 		};
-		/**
-		 * Retrieves a specific log template by name.
-		 * @description # Errors
-		 *     Returns an error if the template is not found or if the user is not authorized.
-		 */
+		/** Retrieves a specific log template by name. */
 		get: operations['get_template'];
 		put?: never;
-		/**
-		 * Adds a new log template for the current company.
-		 * @description # Errors
-		 *     Returns an error if the user is not authorized or if template creation fails.
-		 */
+		/** Adds a new log template for the current company. */
 		post: operations['add_template'];
-		/**
-		 * Deletes a specific log template.
-		 * @description # Errors
-		 *     Returns an error if the user is not authorized or if deletion fails.
-		 */
+		/** Deletes a specific log template. */
 		delete: operations['delete_template'];
 		options?: never;
 		head?: never;
@@ -702,11 +690,7 @@ export interface paths {
 			path?: never;
 			cookie?: never;
 		};
-		/**
-		 * Retrieves all log templates for the current company.
-		 * @description # Errors
-		 *     Returns an error if the user is not authorized or if the query fails.
-		 */
+		/** Retrieves all log templates for the current company/branch. */
 		get: operations['get_all_templates'];
 		put?: never;
 		post?: never;
@@ -724,11 +708,7 @@ export interface paths {
 			cookie?: never;
 		};
 		get?: never;
-		/**
-		 * Renames an existing log template.
-		 * @description # Errors
-		 *     Returns an error if the user is not authorized or if the rename fails.
-		 */
+		/** Renames an existing log template. */
 		put: operations['rename_template'];
 		post?: never;
 		delete?: never;
@@ -745,11 +725,7 @@ export interface paths {
 			cookie?: never;
 		};
 		get?: never;
-		/**
-		 * Updates an existing log template.
-		 * @description # Errors
-		 *     Returns an error if the user is not authorized or if the update fails.
-		 */
+		/** Updates an existing log template. */
 		put: operations['update_template'];
 		post?: never;
 		delete?: never;
@@ -765,11 +741,7 @@ export interface paths {
 			path?: never;
 			cookie?: never;
 		};
-		/**
-		 * Retrieves the version history of a log template.
-		 * @description # Errors
-		 *     Returns an error if the user is not authorized or if query fails.
-		 */
+		/** Retrieves the version history of a log template. */
 		get: operations['get_template_versions'];
 		put?: never;
 		post?: never;
@@ -788,11 +760,7 @@ export interface paths {
 		};
 		get?: never;
 		put?: never;
-		/**
-		 * Restores a specific version of a log template.
-		 * @description # Errors
-		 *     Returns an error if the user is not authorized or if restoration fails.
-		 */
+		/** Restores a specific version of a log template. */
 		post: operations['restore_template_version'];
 		delete?: never;
 		options?: never;
@@ -1154,6 +1122,14 @@ export interface components {
 			version: number;
 			version_name?: string | null;
 		};
+		UpdateBranchRequest: {
+			/** @example 123 Regent St, London */
+			address: string;
+			/** @example 550e8400-e29b-41d4-a716-446655440000 */
+			branch_id: string;
+			/** @example London Office */
+			name: string;
+		};
 		UpdateLogEntryRequest: {
 			entry_data: unknown;
 		};
@@ -1176,21 +1152,19 @@ export interface components {
 		};
 		UserResponse: {
 			branch_id?: string | null;
+			company_id?: string | null;
 			company_name?: string | null;
+			/** Format: date-time */
+			created_at: string;
 			email: string;
 			first_name: string;
+			id: string;
 			last_name: string;
 			oauth_provider?: string | null;
 			role: components['schemas']['UserRole'];
 		};
 		/** @enum {string} */
-		UserRole:
-			| 'admin'
-			| 'member'
-			| 'logsmart_admin'
-			| 'company_manager'
-			| 'branch_manager'
-			| 'staff';
+		UserRole: 'logsmart_admin' | 'company_manager' | 'branch_manager' | 'staff';
 		Vec: {
 			field_type: string;
 			position: components['schemas']['Position'];
@@ -2949,7 +2923,7 @@ export interface operations {
 		};
 		requestBody?: never;
 		responses: {
-			/** @description Password reset successfully */
+			/** @description Template retrieved successfully */
 			200: {
 				headers: {
 					[name: string]: unknown;
@@ -2958,8 +2932,8 @@ export interface operations {
 					'application/json': components['schemas']['GetTemplateResponse'];
 				};
 			};
-			/** @description Password validation failed */
-			400: {
+			/** @description Invalid or expired token */
+			401: {
 				headers: {
 					[name: string]: unknown;
 				};
@@ -2967,8 +2941,8 @@ export interface operations {
 					'application/json': components['schemas']['ErrorResponse'];
 				};
 			};
-			/** @description Invalid or expired token */
-			401: {
+			/** @description Template not found */
+			404: {
 				headers: {
 					[name: string]: unknown;
 				};
@@ -3009,8 +2983,8 @@ export interface operations {
 					'application/json': components['schemas']['AddTemplateResponse'];
 				};
 			};
-			/** @description Password validation failed */
-			400: {
+			/** @description Invalid or expired token */
+			401: {
 				headers: {
 					[name: string]: unknown;
 				};
@@ -3018,8 +2992,8 @@ export interface operations {
 					'application/json': components['schemas']['ErrorResponse'];
 				};
 			};
-			/** @description Invalid or expired token */
-			401: {
+			/** @description Forbidden */
+			403: {
 				headers: {
 					[name: string]: unknown;
 				};
@@ -3058,8 +3032,8 @@ export interface operations {
 					'application/json': components['schemas']['DeleteTemplateResponse'];
 				};
 			};
-			/** @description Password validation failed */
-			400: {
+			/** @description Unauthorized */
+			401: {
 				headers: {
 					[name: string]: unknown;
 				};
@@ -3067,8 +3041,8 @@ export interface operations {
 					'application/json': components['schemas']['ErrorResponse'];
 				};
 			};
-			/** @description Invalid or expired token */
-			401: {
+			/** @description Forbidden */
+			403: {
 				headers: {
 					[name: string]: unknown;
 				};
@@ -3105,8 +3079,17 @@ export interface operations {
 					'application/json': components['schemas']['GetAllTemplatesResponse'];
 				};
 			};
-			/** @description Invalid or expired token */
+			/** @description Unauthorized */
 			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden */
+			403: {
 				headers: {
 					[name: string]: unknown;
 				};
@@ -3147,8 +3130,8 @@ export interface operations {
 					'application/json': components['schemas']['RenameTemplateResponse'];
 				};
 			};
-			/** @description Password validation failed */
-			400: {
+			/** @description Unauthorized */
+			401: {
 				headers: {
 					[name: string]: unknown;
 				};
@@ -3156,8 +3139,8 @@ export interface operations {
 					'application/json': components['schemas']['ErrorResponse'];
 				};
 			};
-			/** @description Invalid or expired token */
-			401: {
+			/** @description Forbidden */
+			403: {
 				headers: {
 					[name: string]: unknown;
 				};
@@ -3198,8 +3181,8 @@ export interface operations {
 					'application/json': components['schemas']['UpdateTemplateResponse'];
 				};
 			};
-			/** @description Password validation failed */
-			400: {
+			/** @description Unauthorized */
+			401: {
 				headers: {
 					[name: string]: unknown;
 				};
@@ -3207,8 +3190,8 @@ export interface operations {
 					'application/json': components['schemas']['ErrorResponse'];
 				};
 			};
-			/** @description Invalid or expired token */
-			401: {
+			/** @description Forbidden */
+			403: {
 				headers: {
 					[name: string]: unknown;
 				};
@@ -3251,7 +3234,7 @@ export interface operations {
 					'application/json': components['schemas']['GetTemplateVersionsResponse'];
 				};
 			};
-			/** @description Invalid or expired token */
+			/** @description Unauthorized */
 			401: {
 				headers: {
 					[name: string]: unknown;
@@ -3308,8 +3291,17 @@ export interface operations {
 					'application/json': components['schemas']['ErrorResponse'];
 				};
 			};
-			/** @description Invalid or expired token */
+			/** @description Unauthorized */
 			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden */
+			403: {
 				headers: {
 					[name: string]: unknown;
 				};

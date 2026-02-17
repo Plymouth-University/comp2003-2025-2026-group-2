@@ -216,6 +216,7 @@ async fn main() {
         .route("/auth/company/members", get(handlers::get_company_members))
         .route("/auth/company/branches", post(handlers::create_branch))
         .route("/auth/company/branches", get(handlers::list_branches))
+        .route("/auth/company/branches", put(handlers::update_branch))
         .route(
             "/auth/admin/update-member",
             put(handlers::admin_update_member_profile),

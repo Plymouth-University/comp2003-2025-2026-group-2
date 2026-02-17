@@ -121,7 +121,12 @@
 			{data.error}
 		</div>
 	{:else}
-		<h1 class="mb-6 text-center text-3xl font-bold" style="padding-top:1%; color: var(--text-primary)">{templateName}</h1>
+		<h1
+			class="mb-6 text-center text-3xl font-bold"
+			style="padding-top:1%; color: var(--text-primary)"
+		>
+			{templateName}
+		</h1>
 		<div
 			class="rounded-lg border-2 p-8"
 			style="border-color: var(--border-color); margin-left:10%; margin-right:10%; background-color: var(--bg-primary);"

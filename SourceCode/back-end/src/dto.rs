@@ -86,6 +86,16 @@ pub struct CreateBranchRequest {
     pub address: String,
 }
 
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UpdateBranchRequest {
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
+    pub branch_id: String,
+    #[schema(example = "London Office")]
+    pub name: String,
+    #[schema(example = "123 Regent St, London")]
+    pub address: String,
+}
+
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ListBranchesResponse {
     pub branches: Vec<BranchDto>,
