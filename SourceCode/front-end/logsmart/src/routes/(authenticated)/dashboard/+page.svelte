@@ -17,7 +17,7 @@
 	};
 
 	// Get user data from server load
-	const user = $derived(() => {
+	const user = $derived((() => {
 		if (!data.user) {
 			return {
 				name: 'Loading...',
@@ -57,39 +57,79 @@
 			role: role,
 			initials: initials || '?'
 		};
-	});
+	})());
+
+	// Draggable boxes state
+	type BoxId = 'logs' | 'clock' | 'actions';
+	let boxes = $state<BoxId[]>(['logs', 'clock', 'actions']);
+	let draggedBox: BoxId | null = $state(null);
+	let dragOverIndex: number | null = $state(null);
+
+	function handleDragStart(boxId: BoxId) {
+		draggedBox = boxId;
+	}
+
+	function handleDragEnd() {
+		draggedBox = null;
+		dragOverIndex = null;
+	}
+
+	function handleDragOver(event: DragEvent, index: number) {
+		event.preventDefault();
+		dragOverIndex = index;
+	}
+
+	function handleDrop(event: DragEvent, targetIndex: number) {
+		event.preventDefault();
+		if (draggedBox === null) return;
+
+		const draggedIndex = boxes.indexOf(draggedBox);
+		if (draggedIndex === -1) return;
+
+		// Reorder the boxes array
+		const newBoxes = [...boxes];
+		newBoxes.splice(draggedIndex, 1);
+		newBoxes.splice(targetIndex, 0, draggedBox);
+		boxes = newBoxes;
+
+		draggedBox = null;
+		dragOverIndex = null;
+	}
 </script>
 
 <svelte:head>
 	<title>Dashboard</title>
 </svelte:head>
-<div class="h-full w-full" style="background-color: var(--bg-secondary);">
+<div class="h-full w-full overflow-auto" style="background-color: var(--bg-secondary);">
 	<!-- Main Content -->
-	<div class="mx-auto max-w-7xl px-6 py-8">
+	<div class="mx-auto max-w-450 px-6 py-8">
 		<!-- Header with User Profile -->
-		<div class="mb-8 flex flex-wrap items-start justify-between">
-			<h1 class="mb-8 text-3xl font-bold" style="color: var(--text-primary);">
-				Dashboard Overview
-			</h1>
+		<div class="mb-6 flex flex-wrap items-start justify-between gap-4">
+			<div>
+				<h1 class="text-3xl font-bold" style="color: var(--text-primary);">Dashboard Overview</h1>
+				<p class="mt-2 text-sm" style="color: var(--text-secondary);">
+					Drag and drop the boxes below to reorder them
+				</p>
+			</div>
 
 			<!-- User Profile Section -->
-			<div class="inline-block border-2" style="border-color: var(--border-primary);">
+			<div class="border-2" style="border-color: var(--border-primary);">
 				<div class="px-6 py-4" style="background-color: var(--bg-primary);">
 					<div class="flex items-center gap-4">
 						<!-- Profile Picture (Initials) -->
 						<div
-							class="flex h-16 w-16 items-center justify-center rounded-full text-xl font-bold text-white"
+							class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white"
 							style="background-color: #3D7A82;"
 						>
-							{user().initials}
+							{user.initials}
 						</div>
 						<!-- User Info -->
 						<div class="text-left">
-							<div class="font-bold" style="color: var(--text-primary);">{user().name}</div>
-							<div class="text-sm" style="color: var(--text-secondary);">{user().email}</div>
-							<div class="text-sm" style="color: var(--text-secondary);">{user().company}</div>
+							<div class="font-bold" style="color: var(--text-primary);">{user.name}</div>
+							<div class="text-sm" style="color: var(--text-secondary);">{user.email}</div>
+							<div class="text-sm" style="color: var(--text-secondary);">{user.company}</div>
 							<div class="text-sm font-medium" style="color: var(--text-primary);">
-								{user().role}
+								{user.role}
 							</div>
 						</div>
 					</div>
@@ -97,68 +137,93 @@
 			</div>
 		</div>
 
-		<!-- Today's Logs Section -->
-		<div class="mb-8">
-			<div class="inline-block border-2" style="border-color: var(--border-primary);">
+		<!-- Three Equal Draggable Boxes in Horizontal Row -->
+		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+			{#each boxes as boxId, index (boxId)}
 				<div
-					class="border-b-2 px-6 py-4"
-					style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+					role="button"
+					tabindex="0"
+					draggable="true"
+					ondragstart={() => handleDragStart(boxId)}
+					ondragend={handleDragEnd}
+					ondragover={(e) => handleDragOver(e, index)}
+					ondrop={(e) => handleDrop(e, index)}
+					class="cursor-move transition-opacity duration-200"
+					class:opacity-50={draggedBox === boxId}
+					class:ring-2={dragOverIndex === index && draggedBox !== boxId}
+					class:ring-teal-500={dragOverIndex === index && draggedBox !== boxId}
+					style="min-height: 500px;"
 				>
-					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Today's Logs</h2>
-				</div>
-				<div class="min-h-70 min-w-95 px-6 py-6" style="background-color: var(--bg-primary);">
-					{#if todaysLogs.length === 0}
-						<div style="color: var(--text-secondary);">No logs due today</div>
-					{:else}
-						<ul class="space-y-2">
-							{#each todaysLogs as log}
-								<li style="color: var(--text-primary); overflow: hidden;">
-									- <span
-										style="display: inline-block; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-										title={log.template_name}>{log.template_name}</span
+					{#if boxId === 'logs'}
+						<!-- Today's Logs Box -->
+						<div class="flex w-full flex-col border-2" style="border-color: var(--border-primary);">
+							<div
+								class="border-b-2 px-6 py-4"
+								style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+							>
+								<h2 class="text-xl font-bold" style="color: var(--text-primary);">Today's Logs</h2>
+							</div>
+							<div class="flex-1 overflow-auto px-6 py-6" style="background-color: var(--bg-primary);">
+								{#if todaysLogs.length === 0}
+									<div style="color: var(--text-secondary);">No logs due today</div>
+								{:else}
+									<ul class="space-y-2">
+										{#each todaysLogs as log}
+											<li style="color: var(--text-primary); overflow: hidden;">
+												- <span
+													class="inline-block max-w-full overflow-hidden text-ellipsis whitespace-nowrap"
+													title={log.template_name}>{log.template_name}</span
+												>
+												{log.period ? `(${log.period})` : ''}
+											</li>
+										{/each}
+									</ul>
+								{/if}
+							</div>
+						</div>
+					{:else if boxId === 'clock'}
+						<!-- Clock In/Out Box -->
+						<ClockInOut initialStatus={clockStatus} />
+					{:else if boxId === 'actions'}
+						<!-- Quick Actions Box -->
+						<div class="flex w-full flex-col border-2" style="border-color: var(--border-primary);">
+							<div
+								class="border-b-2 px-6 py-4"
+								style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+							>
+								<h2 class="text-xl font-bold" style="color: var(--text-primary);">Quick Actions</h2>
+							</div>
+							<div class="flex flex-1 flex-col px-6 py-6" style="background-color: var(--bg-primary);">
+								<div class="flex flex-col gap-3">
+									<button
+										onclick={handleCreateNewTemplate}
+										class="cursor-pointer border-2 px-6 py-2 font-medium transition-opacity hover:opacity-80"
+										style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 									>
-									{log.period ? `(${log.period})` : ''}
-								</li>
-							{/each}
-						</ul>
+										+ Create New Template
+									</button>
+									<button
+										onclick={handleViewReports}
+										class="cursor-pointer border-2 px-6 py-2 font-medium transition-opacity hover:opacity-80"
+										style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+									>
+										View Reports
+									</button>
+								</div>
+							</div>
+						</div>
 					{/if}
 				</div>
-			</div>
-		</div>
-
-		<!-- Clock In / Out Section -->
-		<div class="mb-8">
-			<ClockInOut initialStatus={clockStatus} />
-		</div>
-
-		<!-- Quick Actions Section -->
-		<div>
-			<div class="inline-block border-2" style="border-color: var(--border-primary);">
-				<div
-					class="border-b-2 px-6 py-4"
-					style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-				>
-					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Quick Actions</h2>
-				</div>
-				<div class="min-w-95 px-6 py-6" style="background-color: var(--bg-primary);">
-					<div class="flex flex-col items-start gap-4">
-						<button
-							onclick={handleCreateNewTemplate}
-							class="cursor-pointer border-2 px-6 py-2 font-medium transition-opacity hover:opacity-80"
-							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
-						>
-							+ Create New Template
-						</button>
-						<button
-							onclick={handleViewReports}
-							class="cursor-pointer border-2 px-6 py-2 font-medium transition-opacity hover:opacity-80"
-							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
-						>
-							View Reports
-						</button>
-					</div>
-				</div>
-			</div>
+			{/each}
 		</div>
 	</div>
 </div>
+
+<style>
+	[draggable='true'] {
+		user-select: none;
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		-ms-user-select: none;
+	}
+</style>

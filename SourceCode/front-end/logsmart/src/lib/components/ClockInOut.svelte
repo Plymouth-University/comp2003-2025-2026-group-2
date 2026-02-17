@@ -109,14 +109,14 @@
 	}
 </script>
 
-<div class="inline-block border-2" style="border-color: var(--border-primary);">
+<div class="flex h-full w-full flex-col border-2" style="border-color: var(--border-primary);">
 	<div
 		class="border-b-2 px-6 py-4"
 		style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 	>
 		<h2 class="text-xl font-bold" style="color: var(--text-primary);">Clock In / Out</h2>
 	</div>
-	<div class="min-w-95 px-6 py-6" style="background-color: var(--bg-primary);">
+	<div class="flex-1 overflow-auto px-6 py-6" style="background-color: var(--bg-primary);">
 		<!-- Current Status -->
 		<div class="mb-4 flex items-center gap-3">
 			<span
