@@ -1,6 +1,13 @@
 use crate::{
-    AppState, auth::generate_uuid6_token, db, email,
-    dto::{BranchDto, ConfirmBranchDeletionRequest, ConfirmBranchDeletionResponse, CreateBranchRequest, ErrorResponse, ListBranchesResponse, RequestBranchDeletionRequest, RequestBranchDeletionResponse, UpdateBranchRequest},
+    AppState,
+    auth::generate_uuid6_token,
+    db,
+    dto::{
+        BranchDto, ConfirmBranchDeletionRequest, ConfirmBranchDeletionResponse,
+        CreateBranchRequest, ErrorResponse, ListBranchesResponse, RequestBranchDeletionRequest,
+        RequestBranchDeletionResponse, UpdateBranchRequest,
+    },
+    email,
     middleware::AuthToken,
 };
 use axum::{Json, extract::State, http::StatusCode};
@@ -94,15 +101,16 @@ pub async fn list_branches(
             Json(json!({ "error": "User is not associated with a company" })),
         ))?;
 
-    let branches = db::get_branches_by_company_id_with_deletion_status(&state.postgres, &company_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching branches: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?;
+    let branches =
+        db::get_branches_by_company_id_with_deletion_status(&state.postgres, &company_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error fetching branches: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Database error" })),
+                )
+            })?;
 
     Ok(Json(ListBranchesResponse {
         branches: branches.into_iter().map(BranchDto::from).collect(),
@@ -240,7 +248,7 @@ pub async fn request_branch_deletion(
             Json(json!({ "error": "Only company managers can delete branches" })),
         ));
     }
-    
+
     let branch = db::get_branch_by_id(&state.postgres, &payload.branch_id)
         .await
         .map_err(|e| {

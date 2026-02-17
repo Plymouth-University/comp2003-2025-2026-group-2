@@ -211,7 +211,10 @@ pub async fn send_branch_deletion_confirmation_email(
 ///
 /// # Errors
 /// Returns an error if the email fails to send.
-pub async fn send_branch_deleted_notification_email(to_email: &str, branch_name: &str) -> Result<()> {
+pub async fn send_branch_deleted_notification_email(
+    to_email: &str,
+    branch_name: &str,
+) -> Result<()> {
     let subject = "Branch Deleted - LogSmart";
     let body = format!(
         "Hello,\n\n\

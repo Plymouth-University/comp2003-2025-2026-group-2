@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 
 	// Fetch branches for company managers, HQ staff, and branch managers
 	let branches: Array<{ id: string; name: string; address: string; created_at: string }> = [];
-	let userBranchId = user?.branch_id;
+	const userBranchId = user?.branch_id;
 
 	if (isCompanyManager || isReadonlyHQ) {
 		const token = cookies.get('ls-token');

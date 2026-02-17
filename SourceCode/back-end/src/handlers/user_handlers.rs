@@ -70,25 +70,26 @@ pub async fn get_company_members(
         ));
     }
 
-    let filtered_members = if user.is_company_manager() || user.is_logsmart_admin() || user.is_readonly_hq() {
-        members
-    } else if user.is_branch_manager() {
-        let filtered = members
-            .into_iter()
-            .filter(|m| {
-                tracing::info!(
-                    "Checking member: email={}, branch_id={:?}",
-                    m.email,
-                    m.branch_id
-                );
-                m.branch_id == user.branch_id
-            })
-            .collect::<Vec<_>>();
-        tracing::info!("Filtered members for branch manager: {}", filtered.len());
-        filtered
-    } else {
-        members.into_iter().filter(|m| m.id == user.id).collect()
-    };
+    let filtered_members =
+        if user.is_company_manager() || user.is_logsmart_admin() || user.is_readonly_hq() {
+            members
+        } else if user.is_branch_manager() {
+            let filtered = members
+                .into_iter()
+                .filter(|m| {
+                    tracing::info!(
+                        "Checking member: email={}, branch_id={:?}",
+                        m.email,
+                        m.branch_id
+                    );
+                    m.branch_id == user.branch_id
+                })
+                .collect::<Vec<_>>();
+            tracing::info!("Filtered members for branch manager: {}", filtered.len());
+            filtered
+        } else {
+            members.into_iter().filter(|m| m.id == user.id).collect()
+        };
 
     Ok(Json(filtered_members.into()))
 }

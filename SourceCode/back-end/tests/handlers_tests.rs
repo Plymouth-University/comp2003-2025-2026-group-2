@@ -2,7 +2,10 @@ use back_end::dto::AuthResponse;
 use back_end::dto::InvitationResponse;
 use back_end::dto::RequestBranchDeletionResponse;
 use back_end::dto::UserResponse;
-use back_end::dto::{AcceptInvitationRequest, CreateBranchRequest, InviteUserRequest, LoginRequest, RegisterRequest, RequestBranchDeletionRequest, UpdateBranchRequest};
+use back_end::dto::{
+    AcceptInvitationRequest, CreateBranchRequest, InviteUserRequest, LoginRequest, RegisterRequest,
+    RequestBranchDeletionRequest, UpdateBranchRequest,
+};
 use back_end::jwt_manager::JwtManager;
 
 #[test]
