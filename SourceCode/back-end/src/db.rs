@@ -114,7 +114,7 @@ impl UserRecord {
     pub fn is_readonly_hq(&self) -> bool {
         self.is_staff() && self.branch_id.is_none()
     }
-    
+
     #[must_use]
     pub fn can_read_manage_branch(&self) -> bool {
         self.is_readonly_hq() || self.can_manage_branch()

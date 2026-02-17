@@ -58,12 +58,13 @@ impl LogEntryService {
 
         // Check if template is for the correct branch
         if let Some(template_branch_id) = &template.branch_id
-            && Some(template_branch_id) != user.branch_id.as_ref() {
-                return Err((
-                    StatusCode::FORBIDDEN,
-                    json!({ "error": "Template is not available for your branch" }),
-                ));
-            }
+            && Some(template_branch_id) != user.branch_id.as_ref()
+        {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "Template is not available for your branch" }),
+            ));
+        }
 
         let has_entry = logs_db::has_entry_for_current_period(
             &state.mongodb,
