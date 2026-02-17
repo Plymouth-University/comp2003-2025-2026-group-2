@@ -64,6 +64,32 @@
 	let boxes = $state<BoxId[]>(['logs', 'clock', 'actions']);
 	let draggedBox: BoxId | null = $state(null);
 	let dragOverIndex: number | null = $state(null);
+	let mounted = $state(false);
+
+	// Load saved box order from localStorage after mount
+	$effect(() => {
+		if (typeof window !== 'undefined') {
+			const saved = localStorage.getItem('dashboard-box-order');
+			if (saved) {
+				try {
+					const parsed = JSON.parse(saved) as BoxId[];
+					if (Array.isArray(parsed) && parsed.length === 3) {
+						boxes = parsed;
+					}
+				} catch {
+					// Ignore invalid data
+				}
+			}
+			mounted = true;
+		}
+	});
+
+	// Save box order to localStorage whenever it changes
+	$effect(() => {
+		if (typeof window !== 'undefined' && boxes.length === 3 && mounted) {
+			localStorage.setItem('dashboard-box-order', JSON.stringify(boxes));
+		}
+	});
 
 	function handleDragStart(boxId: BoxId) {
 		draggedBox = boxId;
@@ -107,9 +133,6 @@
 		<div class="mb-6 flex flex-wrap items-start justify-between gap-4">
 			<div>
 				<h1 class="text-3xl font-bold" style="color: var(--text-primary);">Dashboard Overview</h1>
-				<p class="mt-2 text-sm" style="color: var(--text-secondary);">
-					Drag and drop the boxes below to reorder them
-				</p>
 			</div>
 
 			<!-- User Profile Section -->
@@ -138,7 +161,7 @@
 		</div>
 
 		<!-- Three Equal Draggable Boxes in Horizontal Row -->
-		<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+		<div class="grid grid-cols-1 gap-6 transition-opacity duration-200 lg:grid-cols-3" class:opacity-0={!mounted} class:opacity-100={mounted}>
 			{#each boxes as boxId, index (boxId)}
 				<div
 					role="button"
