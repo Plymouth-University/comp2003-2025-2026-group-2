@@ -178,3 +178,52 @@ pub async fn send_invitation_cancelled_email(to_email: &str) -> Result<()> {
     tracing::info!("Invitation cancellation email sent to {}", to_email);
     Ok(())
 }
+
+/// Sends a branch deletion confirmation link to a user.
+///
+/// # Errors
+/// Returns an error if the email fails to send.
+pub async fn send_branch_deletion_confirmation_email(
+    to_email: &str,
+    branch_name: &str,
+    confirmation_link: &str,
+) -> Result<()> {
+    let subject = "Confirm Branch Deletion - LogSmart";
+    let body = format!(
+        "Hello,\n\n\
+        We received a request to delete the branch '{}'.\n\n\
+        This is a sensitive operation that will permanently remove the branch and disassociate any users currently assigned to it.\n\n\
+        Please click the link below to confirm and proceed with the deletion:\n\n\
+        {confirmation_link}\n\n\
+        This link will expire in 1 hour.\n\n\
+        If you did not request this deletion, please ignore this email and contact your system administrator immediately.\n\n\
+        Best regards,\n\
+        The LogSmart Team",
+        branch_name
+    );
+
+    send_email(to_email, subject, &body).await?;
+    tracing::info!("Branch deletion confirmation email sent to {}", to_email);
+    Ok(())
+}
+
+/// Sends a notification that a branch has been successfully deleted.
+///
+/// # Errors
+/// Returns an error if the email fails to send.
+pub async fn send_branch_deleted_notification_email(to_email: &str, branch_name: &str) -> Result<()> {
+    let subject = "Branch Deleted - LogSmart";
+    let body = format!(
+        "Hello,\n\n\
+        The branch '{}' has been successfully deleted from your LogSmart account.\n\n\
+        Any users previously assigned to this branch have been disassociated and will need to be reassigned to other branches if needed.\n\n\
+        If you have any questions, please contact your system administrator.\n\n\
+        Best regards,\n\
+        The LogSmart Team",
+        branch_name
+    );
+
+    send_email(to_email, subject, &body).await?;
+    tracing::info!("Branch deleted notification email sent to {}", to_email);
+    Ok(())
+}

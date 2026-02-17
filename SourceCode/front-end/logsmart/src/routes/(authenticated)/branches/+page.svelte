@@ -201,7 +201,7 @@
 			if (error) {
 				alert(`Failed to update branch: ${error.error}`);
 			} else if (updatedBranch) {
-				branches = branches.map((b) => (b.id === editingBranchId ? updatedBranch : b));
+				branches = branches.map(b => b.id === editingBranchId ? updatedBranch : b);
 				cancelEditingBranch();
 			}
 		} catch (error) {
@@ -209,6 +209,52 @@
 			alert('An unexpected error occurred');
 		} finally {
 			isUpdating = false;
+		}
+	}
+
+	// Delete branch states
+	let showDeleteModal = $state(false);
+	let branchToDelete = $state<{ id: string; name: string } | null>(null);
+	let isRequestingDeletion = $state(false);
+	let deletionMessage = $state<string | null>(null);
+
+	function startDeleteBranch(branch: { id: string; name: string }) {
+		branchToDelete = branch;
+		showDeleteModal = true;
+		deletionMessage = null;
+	}
+
+	function cancelDeleteBranch() {
+		showDeleteModal = false;
+		branchToDelete = null;
+		deletionMessage = null;
+	}
+
+	async function requestBranchDeletion() {
+		if (!branchToDelete) return;
+
+		isRequestingDeletion = true;
+		try {
+			const response = await fetch('/api/auth/company/branches/request-deletion', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ branch_id: branchToDelete.id })
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				alert(`Failed to request deletion: ${data.error || 'Unknown error'}`);
+			} else {
+				deletionMessage = data.message || 'A confirmation email has been sent to your inbox.';
+			}
+		} catch (error) {
+			console.error('Error requesting branch deletion:', error);
+			alert('An unexpected error occurred');
+		} finally {
+			isRequestingDeletion = false;
 		}
 	}
 </script>
@@ -368,22 +414,44 @@
 					<!-- View Mode -->
 					<div class="mb-2 flex items-center justify-between">
 						<h3 class="text-xl font-bold text-text-primary">{branch.name}</h3>
-						<span class="text-xs text-text-secondary">ID: {branch.id.slice(0, 8)}...</span>
+						{#if branch.has_pending_deletion}
+							<span class="rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800">
+								Deletion Pending
+							</span>
+						{:else}
+							<span class="text-xs text-text-secondary">ID: {branch.id.slice(0, 8)}...</span>
+						{/if}
 					</div>
 					<p class="text-text-secondary">{branch.address}</p>
+					{#if branch.has_pending_deletion && branch.deletion_requested_at}
+						<div class="mt-2 rounded bg-yellow-50 p-2 text-xs text-yellow-800">
+							<span class="font-semibold">Deletion requested:</span> {new Date(branch.deletion_requested_at).toLocaleString()}
+						</div>
+					{/if}
 					<div
 						class="mt-4 flex items-center justify-between border-t-2 border-border-secondary pt-4"
 					>
 						<span class="text-xs font-medium text-text-secondary"
 							>CREATED AT: {new Date(branch.created_at).toLocaleDateString()}</span
 						>
-						<button
-							type="button"
-							onclick={() => startEditingBranch(branch)}
-							class="rounded-base border-2 border-border-primary bg-bg-secondary px-4 py-1 text-sm font-bold text-text-primary shadow-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
-						>
-							EDIT
-						</button>
+						{#if !branch.has_pending_deletion}
+							<div class="flex gap-2">
+								<button
+									type="button"
+									onclick={() => startEditingBranch(branch)}
+									class="rounded-base border-2 border-border-primary bg-bg-secondary px-4 py-1 text-sm font-bold text-text-primary shadow-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+								>
+									EDIT
+								</button>
+								<button
+									type="button"
+									onclick={() => startDeleteBranch(branch)}
+									class="rounded-base border-2 border-red-600 bg-red-200 px-4 py-1 text-sm font-bold shadow-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+								>
+									DELETE
+								</button>
+							</div>
+						{/if}
 					</div>
 				{/if}
 			</div>
@@ -396,3 +464,74 @@
 		{/each}
 	</div>
 </div>
+
+{#if showDeleteModal && branchToDelete}
+	<div
+		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+		onclick={(e) => e.target === e.currentTarget && cancelDeleteBranch()}
+	>
+		<div class="mx-4 w-full max-w-md rounded-lg border-2 p-6 shadow-xl" style="background-color: var(--bg-primary); border-color: var(--border-primary);">
+			<div class="mb-4 text-center">
+				<div class="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full" style="background-color: #fee2e2;">
+					<svg class="h-6 w-6" style="color: #dc2626;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+					</svg>
+				</div>
+				<h3 class="mb-2 text-xl font-bold" style="color: var(--text-primary);">Delete Branch</h3>
+				<p class="text-sm" style="color: var(--text-secondary);">
+					Are you sure you want to delete <strong>{branchToDelete.name}</strong>?
+				</p>
+			</div>
+
+			{#if deletionMessage}
+				<div class="mb-4 rounded-lg p-3 text-center text-sm" style="background-color: #dcfce7; color: #166534;">
+					{deletionMessage}
+				</div>
+				<button
+					type="button"
+					onclick={cancelDeleteBranch}
+					class="w-full rounded-lg py-2 font-semibold transition-opacity hover:opacity-80"
+					style="background-color: var(--bg-secondary); color: var(--text-primary);"
+				>
+					Close
+				</button>
+			{:else}
+				<div class="mb-4 rounded-lg border-l-4 p-3 text-sm" style="background-color: #fef3c7; border-color: #f59e0b; color: #92400e;">
+					<p class="font-semibold mb-1">⚠️ This action requires email confirmation</p>
+					<p>A confirmation link will be sent to your email address. You must click the link to complete the deletion.</p>
+				</div>
+
+				<div class="flex gap-3">
+					<button
+						type="button"
+						onclick={cancelDeleteBranch}
+						disabled={isRequestingDeletion}
+						class="flex-1 rounded-lg border-2 py-2 font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
+						style="border-color: var(--border-primary); color: var(--text-primary);"
+					>
+						Cancel
+					</button>
+					<button
+						type="button"
+						onclick={requestBranchDeletion}
+						disabled={isRequestingDeletion}
+						class="flex-1 rounded-lg py-2 font-semibold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
+						style="background-color: #dc2626;"
+					>
+						{#if isRequestingDeletion}
+							<span class="inline-flex items-center">
+								<svg class="mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+								</svg>
+								Sending...
+							</span>
+						{:else}
+							Request Deletion
+						{/if}
+					</button>
+				</div>
+			{/if}
+		</div>
+	</div>
+{/if}

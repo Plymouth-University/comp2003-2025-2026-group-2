@@ -64,6 +64,10 @@ pub struct BranchDto {
     pub name: String,
     pub address: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
+    #[serde(default)]
+    pub has_pending_deletion: bool,
+    #[serde(default)]
+    pub deletion_requested_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl From<db::Branch> for BranchDto {
@@ -74,6 +78,22 @@ impl From<db::Branch> for BranchDto {
             name: branch.name,
             address: branch.address,
             created_at: branch.created_at,
+            has_pending_deletion: false,
+            deletion_requested_at: None,
+        }
+    }
+}
+
+impl From<db::BranchWithDeletionStatus> for BranchDto {
+    fn from(branch_with_status: db::BranchWithDeletionStatus) -> Self {
+        Self {
+            id: branch_with_status.branch.id,
+            company_id: branch_with_status.branch.company_id,
+            name: branch_with_status.branch.name,
+            address: branch_with_status.branch.address,
+            created_at: branch_with_status.branch.created_at,
+            has_pending_deletion: branch_with_status.has_pending_deletion,
+            deletion_requested_at: branch_with_status.deletion_requested_at,
         }
     }
 }
@@ -94,6 +114,28 @@ pub struct UpdateBranchRequest {
     pub name: String,
     #[schema(example = "123 Regent St, London")]
     pub address: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct RequestBranchDeletionRequest {
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
+    pub branch_id: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct RequestBranchDeletionResponse {
+    pub message: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ConfirmBranchDeletionRequest {
+    #[schema(example = "deletion-token-here")]
+    pub token: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ConfirmBranchDeletionResponse {
+    pub message: String,
 }
 
 #[derive(Debug, Serialize, ToSchema)]

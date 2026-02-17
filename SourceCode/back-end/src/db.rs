@@ -1176,6 +1176,60 @@ pub async fn get_branches_by_company_id(pool: &PgPool, company_id: &str) -> Resu
     Ok(branches)
 }
 
+/// Branch with deletion status information
+pub struct BranchWithDeletionStatus {
+    pub branch: Branch,
+    pub has_pending_deletion: bool,
+    pub deletion_requested_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+/// Retrieves all branches for a company with their deletion status.
+///
+/// # Errors
+/// Returns an error if database query fails.
+pub async fn get_branches_by_company_id_with_deletion_status(
+    pool: &PgPool,
+    company_id: &str,
+) -> Result<Vec<BranchWithDeletionStatus>> {
+    let branches = sqlx::query_as::<_, Branch>(
+        r"
+        SELECT id, company_id, name, address, created_at
+        FROM branches
+        WHERE company_id = $1
+        ORDER BY name ASC
+        ",
+    )
+    .bind(company_id)
+    .fetch_all(pool)
+    .await?;
+
+    let mut result = Vec::new();
+    for branch in branches {
+        let deletion_info: Option<(bool, Option<chrono::DateTime<chrono::Utc>>)> = sqlx::query_as(
+            r"
+            SELECT 
+                CASE WHEN COUNT(*) > 0 THEN true ELSE false END as has_pending,
+                MIN(created_at) as requested_at
+            FROM branch_deletion_tokens
+            WHERE branch_id = $1 AND used_at IS NULL AND expires_at > now()
+            ",
+        )
+        .bind(&branch.id)
+        .fetch_optional(pool)
+        .await?;
+
+        let (has_pending_deletion, deletion_requested_at) = deletion_info.unwrap_or((false, None));
+
+        result.push(BranchWithDeletionStatus {
+            branch,
+            has_pending_deletion,
+            deletion_requested_at,
+        });
+    }
+
+    Ok(result)
+}
+
 /// Retrieves a branch by its ID.
 ///
 /// # Errors
@@ -1220,6 +1274,100 @@ pub async fn update_branch(
     .await?;
 
     Ok(updated_branch)
+}
+
+/// Deletes a branch by its ID.
+///
+/// # Errors
+/// Returns an error if database delete fails.
+pub async fn delete_branch(pool: &PgPool, branch_id: &str) -> Result<()> {
+    sqlx::query(
+        r"
+        DELETE FROM branches
+        WHERE id = $1
+        ",
+    )
+    .bind(branch_id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Creates a branch deletion token.
+///
+/// # Errors
+/// Returns an error if database insert fails.
+pub async fn create_branch_deletion_token(
+    pool: &PgPool,
+    user_id: String,
+    branch_id: String,
+    token: String,
+    expires_at: chrono::DateTime<chrono::Utc>,
+) -> Result<String> {
+    let id = Uuid::new_v4().to_string();
+    let now = chrono::Utc::now();
+
+    sqlx::query(
+        r"
+        INSERT INTO branch_deletion_tokens (id, user_id, branch_id, token, created_at, expires_at)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ",
+    )
+    .bind(&id)
+    .bind(&user_id)
+    .bind(&branch_id)
+    .bind(&token)
+    .bind(now)
+    .bind(expires_at)
+    .execute(pool)
+    .await?;
+
+    Ok(id)
+}
+
+/// Retrieves a branch deletion token record by its token.
+///
+/// # Errors
+/// Returns an error if database query fails.
+pub async fn get_branch_deletion_token(
+    pool: &PgPool,
+    token: &str,
+) -> Result<Option<(String, String, String)>> {
+    let result = sqlx::query_as::<_, (String, String, String)>(
+        r"
+        SELECT id, user_id, branch_id
+        FROM branch_deletion_tokens
+        WHERE token = $1 AND used_at IS NULL AND expires_at > now()
+        ",
+    )
+    .bind(token)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(result)
+}
+
+/// Marks a branch deletion token as used.
+///
+/// # Errors
+/// Returns an error if database update fails.
+pub async fn mark_branch_deletion_token_used(pool: &PgPool, token_id: &str) -> Result<()> {
+    let now = chrono::Utc::now();
+
+    sqlx::query(
+        r"
+        UPDATE branch_deletion_tokens
+        SET used_at = $1
+        WHERE id = $2
+        ",
+    )
+    .bind(now)
+    .bind(token_id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
 }
 
 /// Updates the branch association for a user.

@@ -218,6 +218,14 @@ async fn main() {
         .route("/auth/company/branches", get(handlers::list_branches))
         .route("/auth/company/branches", put(handlers::update_branch))
         .route(
+            "/auth/company/branches/request-deletion",
+            post(handlers::request_branch_deletion),
+        )
+        .route(
+            "/auth/company/branches/confirm-deletion",
+            post(handlers::confirm_branch_deletion),
+        )
+        .route(
             "/auth/admin/update-member",
             put(handlers::admin_update_member_profile),
         )
