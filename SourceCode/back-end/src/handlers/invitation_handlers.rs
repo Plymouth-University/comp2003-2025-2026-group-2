@@ -468,7 +468,7 @@ pub async fn get_pending_invitations(
                 inv_list
                     .into_iter()
                     .filter(|inv| {
-                        if user.is_company_manager() || user.is_logsmart_admin() {
+                        if user.can_manage_company() {
                             true
                         } else {
                             inv.branch_id == user.branch_id

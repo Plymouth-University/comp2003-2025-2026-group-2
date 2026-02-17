@@ -472,7 +472,7 @@ pub async fn list_company_log_entries(
     // Parse optional branch_ids parameter (comma-separated)
     let branch_ids_param = params.get("branch_ids");
 
-    let entries = if user.is_company_manager() || user.is_logsmart_admin() || user.is_readonly_hq()
+    let entries = if user.can_manage_company() || user.is_readonly_hq()
     {
         // Company manager/HQ - check if specific branches requested
         if let Some(branch_ids_str) = branch_ids_param {
