@@ -441,6 +441,7 @@ pub async fn delete_log_entry(
 pub async fn list_company_log_entries(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Result<Json<ListLogEntriesResponse>, (StatusCode, Json<serde_json::Value>)> {
     let user = db::get_user_by_id(&state.postgres, &claims.user_id)
         .await
@@ -468,9 +469,23 @@ pub async fn list_company_log_entries(
         Json(json!({ "error": "User is not associated with a company" })),
     ))?;
 
+    // Parse optional branch_ids parameter (comma-separated)
+    let branch_ids_param = params.get("branch_ids");
+    
     let entries = if user.is_company_manager() || user.is_logsmart_admin() || user.is_readonly_hq() {
-        logs_db::get_company_log_entries(&state.mongodb, &company_id).await
+        // Company manager/HQ - check if specific branches requested
+        if let Some(branch_ids_str) = branch_ids_param {
+            if !branch_ids_str.is_empty() {
+                let branch_ids: Vec<String> = branch_ids_str.split(',').map(|s| s.to_string()).collect();
+                logs_db::get_branches_log_entries(&state.mongodb, &company_id, &branch_ids).await
+            } else {
+                logs_db::get_company_log_entries(&state.mongodb, &company_id).await
+            }
+        } else {
+            logs_db::get_company_log_entries(&state.mongodb, &company_id).await
+        }
     } else {
+        // Branch manager - only their branch
         let branch_id = user.branch_id.as_ref().ok_or((
             StatusCode::FORBIDDEN,
             Json(json!({ "error": "Branch manager has no branch assigned" })),

@@ -7,9 +7,41 @@
 	// Get user data from parent layout
 	let { data } = $props();
 	let user = $derived(data?.user);
+	let branches = $derived(data?.branches || []);
 
 	// Check if user is readonly HQ (staff with no branch)
 	let isReadonlyHQ = $derived(user?.role === 'staff' && !user?.branch_id);
+	let isCompanyManager = $derived(user?.role === 'company_manager');
+
+	// Branch filter state
+	let selectedBranches = $state<string[]>([]);
+	let showBranchDropdown = $state(false);
+
+	function toggleBranchFilter(branchId: string) {
+		if (selectedBranches.includes(branchId)) {
+			selectedBranches = selectedBranches.filter(id => id !== branchId);
+		} else {
+			selectedBranches = [...selectedBranches, branchId];
+		}
+	}
+
+	function selectAllBranches() {
+		selectedBranches = branches.map((b: any) => b.id);
+	}
+
+	function clearBranchFilter() {
+		selectedBranches = [];
+	}
+
+	let selectedBranchesLabel = $derived(() => {
+		if (selectedBranches.length === 0) return 'All Branches';
+		if (selectedBranches.length === branches.length) return 'All Branches';
+		if (selectedBranches.length === 1) {
+			const branch = branches.find((b: any) => b.id === selectedBranches[0]);
+			return branch?.name || '1 Branch';
+		}
+		return `${selectedBranches.length} Branches`;
+	});
 
 	let logTypes = $state([
 		{ id: 'all', label: 'All', checked: true },
@@ -414,24 +446,20 @@
 
 	// Toggle date picker
 	function toggleDatePicker(isFrom: boolean) {
-		activePickerIsFrom = isFrom;
-		pickerView = 'day'; // Reset to day view when opening
 		if (isFrom) {
 			showDateFromPicker = !showDateFromPicker;
 			showDateToPicker = false;
-			// Set calendar to current date from value
-			const parts = dateFrom.split('/');
-			if (parts.length === 3) {
-				calendarDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-			}
 		} else {
 			showDateToPicker = !showDateToPicker;
 			showDateFromPicker = false;
-			// Set calendar to current date to value
-			const parts = dateTo.split('/');
-			if (parts.length === 3) {
-				calendarDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-			}
+		}
+		activePickerIsFrom = isFrom;
+	}
+
+	function handleClickOutside(event: MouseEvent) {
+		const target = event.target as HTMLElement;
+		if (!target.closest('.branch-filter-container')) {
+			showBranchDropdown = false;
 		}
 	}
 
@@ -666,9 +694,15 @@
 		reportGenerated = false;
 
 		try {
+			// Build query params for branch filter
+			let queryParams = '';
+			if ((isCompanyManager || isReadonlyHQ) && selectedBranches.length > 0 && selectedBranches.length < branches.length) {
+				queryParams = `?branch_ids=${selectedBranches.join(',')}`;
+			}
+
 			// Fetch log entries - use admin endpoint for readonly HQ to get all company logs
-			const response = isReadonlyHQ
-				? await api.GET('/logs/admin/entries')
+			const response = isReadonlyHQ || isCompanyManager
+				? await api.GET(`/logs/admin/entries${queryParams}`)
 				: await api.GET('/logs/entries');
 
 			if (!response.data) {
@@ -1665,6 +1699,71 @@
 						</div>
 					</fieldset>
 				</div>
+
+				<!-- Branch Filter (for company managers and HQ) -->
+				{#if (isCompanyManager || isReadonlyHQ) && branches.length > 0}
+					<div class="mb-8 branch-filter-container" style="position: relative;">
+						<legend class="mb-3 block text-lg font-bold" style="color: var(--text-primary);"
+							>Branches:</legend
+						>
+						<div class="relative">
+							<button
+								type="button"
+								onclick={() => showBranchDropdown = !showBranchDropdown}
+								class="flex w-full items-center justify-between border-2 px-4 py-2"
+								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+							>
+								<span>{selectedBranchesLabel()}</span>
+								<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+									<polyline points="4 6 8 10 12 6"></polyline>
+								</svg>
+							</button>
+							{#if showBranchDropdown}
+								<div
+									class="absolute top-full left-0 z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border-2 shadow-lg"
+									style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+								>
+									<button
+										type="button"
+										class="w-full px-4 py-2 text-left font-semibold hover:opacity-80"
+										style="color: var(--text-primary);"
+										onclick={() => { selectAllBranches(); showBranchDropdown = false; }}
+									>
+										All Branches
+									</button>
+									<button
+										type="button"
+										class="w-full px-4 py-2 text-left hover:opacity-80"
+										style="color: var(--text-primary);"
+										onclick={() => { clearBranchFilter(); showBranchDropdown = false; }}
+									>
+										Clear Selection
+									</button>
+									{#each branches as branch}
+										<button
+											type="button"
+											class="flex w-full items-center gap-2 px-4 py-2 text-left hover:opacity-80"
+											style="color: var(--text-primary);"
+											onclick={() => toggleBranchFilter(branch.id)}
+										>
+											<input
+												type="checkbox"
+												checked={selectedBranches.includes(branch.id)}
+												class="h-4 w-4"
+											/>
+											{branch.name}
+										</button>
+									{/each}
+								</div>
+							{/if}
+						</div>
+						{#if selectedBranches.length > 0 && selectedBranches.length < branches.length}
+							<p class="mt-1 text-xs" style="color: var(--text-secondary);">
+								Filtering by {selectedBranches.length} of {branches.length} branches
+							</p>
+						{/if}
+					</div>
+				{/if}
 
 				<!-- Arrange By Options -->
 				<div class="mb-8">

@@ -298,6 +298,33 @@ pub async fn get_company_log_entries(
     Ok(entries)
 }
 
+/// Retrieves log entries for specific branches in a company.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+pub async fn get_branches_log_entries(
+    client: &mongodb::Client,
+    company_id: &str,
+    branch_ids: &[String],
+) -> Result<Vec<LogEntry>> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "company_id": company_id,
+        "branch_id": mongodb::bson::doc! { "$in": branch_ids }
+    };
+
+    let mut cursor = collection.find(filter).await?;
+    let mut entries = Vec::new();
+
+    while let Some(entry) = cursor.try_next().await? {
+        entries.push(entry);
+    }
+
+    Ok(entries)
+}
+
 /// Updates an existing log template.
 ///
 /// # Errors
