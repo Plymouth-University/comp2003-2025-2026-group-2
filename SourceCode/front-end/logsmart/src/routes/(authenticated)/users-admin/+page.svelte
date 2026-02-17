@@ -134,7 +134,7 @@
 						</button>
 						<span class="m-3 mt-2 text-sm text-text-primary">Add New</span>
 					</div>
-					<InviteModal {showingCreateModel} {setShowingCreateModel} {branches} />
+					<InviteModal {showingCreateModel} {setShowingCreateModel} {branches} loggedInUserRole={user.role} />
 				</div>
 			</div>
 		</div>

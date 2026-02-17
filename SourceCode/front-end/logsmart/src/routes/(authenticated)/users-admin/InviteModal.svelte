@@ -5,10 +5,11 @@
 
 	type Branch = components['schemas']['BranchDto'];
 
-	const { showingCreateModel, setShowingCreateModel, branches } = $props<{
+	const { showingCreateModel, setShowingCreateModel, branches, loggedInUserRole } = $props<{
 		showingCreateModel: boolean;
 		setShowingCreateModel: (show: boolean) => void;
 		branches: any[];
+		loggedInUserRole: string;
 	}>();
 	let email = $state('');
 	let role = $state('staff');
@@ -77,8 +78,12 @@
 						class="rounded-base block w-full border-2 border-border-primary bg-bg-primary px-3 py-2.5 text-sm text-text-primary shadow-xs focus:ring-2 focus:outline-none"
 					>
 						<option value="staff">Staff</option>
-						<option value="branch_manager">Branch Manager</option>
-						<option value="company_manager">Company Manager</option>
+						<option value="branch_manager" disabled={loggedInUserRole == 'branch_manager'}
+							>Branch Manager</option
+						>
+						<option value="company_manager" disabled={loggedInUserRole == 'branch_manager'}
+							>Company Manager</option
+						>
 					</select>
 				</div>
 				<div class="mb-6">
@@ -90,10 +95,12 @@
 						bind:value={branchId}
 						class="rounded-base block w-full border-2 border-border-primary bg-bg-primary px-3 py-2.5 text-sm text-text-primary shadow-xs focus:ring-2 focus:outline-none"
 					>
-						<option value={null}>Company Wide / Headquarters</option>
 						{#each branches as branch}
 							<option value={branch.id}>{branch.name}</option>
 						{/each}
+						<option value={null} disabled={loggedInUserRole == 'branch_manager'}
+							>Company Wide / Headquarters</option
+						>
 					</select>
 				</div>
 				<button
