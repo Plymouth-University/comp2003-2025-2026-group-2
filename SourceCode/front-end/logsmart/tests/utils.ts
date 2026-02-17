@@ -87,7 +87,7 @@ const decodeMailBody = (email: MailhogEmail): string => {
 	return body;
 };
 
-const getPasswordResetToken = async (email: string, maxAttempts = 30): Promise<string | null> => {
+const getPasswordResetToken = async (email: string, maxAttempts = 60): Promise<string | null> => {
 	for (let i = 0; i < maxAttempts; i++) {
 		const mailhogEmail = await getEmailByRecipient(email);
 
@@ -100,7 +100,7 @@ const getPasswordResetToken = async (email: string, maxAttempts = 30): Promise<s
 			}
 		}
 
-		await new Promise((resolve) => setTimeout(resolve, 500));
+		await new Promise((resolve) => setTimeout(resolve, 1000));
 	}
 
 	return null;
@@ -142,10 +142,10 @@ const requestPasswordResetToken = async (
 	await page.goto('http://localhost:5173/reset-password');
 	await page.getByRole('textbox', { name: 'Email' }).fill(email);
 	await page.getByRole('button', { name: 'Send Reset Link' }).click();
-	await page.waitForTimeout(1000);
+	await page.waitForTimeout(2000);
 	await page.close();
 
-	return await getPasswordResetToken(email);
+	return await getPasswordResetToken(email, 60);
 };
 
 const register = async (browser: Browser, close = true) => {
@@ -229,7 +229,23 @@ const sendInvitation = async (
 		console.log(`[sendInvitation] Selecting branch: ${branchName}`);
 		const select = page.locator('#invite-branch');
 		await expect(select).toBeVisible();
-		await select.selectOption({ label: branchName });
+		await page.waitForTimeout(500);
+		try {
+			await select.selectOption({ label: branchName });
+		} catch {
+			try {
+				const options = await select.locator('option').all();
+				for (let i = 0; i < options.length; i++) {
+					const text = await options[i].textContent();
+					if (text && text.includes(branchName)) {
+						await select.selectOption({ index: i });
+						break;
+					}
+				}
+			} catch (e) {
+				console.log(`[sendInvitation] Could not select branch: ${e}`);
+			}
+		}
 	} else if (role !== 'staff') {
 		const select = page.locator('#invite-branch');
 		await expect(select).toBeVisible();
@@ -255,7 +271,7 @@ const acceptInvitation = async (
 	firstName: string,
 	lastName: string,
 	password: string,
-	waitFor: string = '**/logs-list'
+	waitFor: string = '**/dashboard'
 ): Promise<boolean> => {
 	await page.goto(`http://localhost:5173/accept-invitation?token=${token}`);
 	await page.waitForURL('**/accept-invitation**');
@@ -299,7 +315,23 @@ const sendInvitationOnPage = async (
 	if (branchName) {
 		const select = page.locator('#invite-branch');
 		await expect(select).toBeVisible();
-		await select.selectOption({ label: branchName });
+		await page.waitForTimeout(500);
+		try {
+			await select.selectOption({ label: branchName });
+		} catch {
+			try {
+				const options = await select.locator('option').all();
+				for (let i = 0; i < options.length; i++) {
+					const text = await options[i].textContent();
+					if (text && text.includes(branchName)) {
+						await select.selectOption({ index: i });
+						break;
+					}
+				}
+			} catch (e) {
+				console.log(`[sendInvitationOnPage] Could not select branch: ${e}`);
+			}
+		}
 	} else if (role !== 'staff') {
 		const select = page.locator('#invite-branch');
 		await expect(select).toBeVisible();

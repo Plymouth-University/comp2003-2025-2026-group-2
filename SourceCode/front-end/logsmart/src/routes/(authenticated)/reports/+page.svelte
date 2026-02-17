@@ -9,9 +9,11 @@
 	let user = $derived(data?.user);
 	let branches = $derived(data?.branches || []);
 
-	// Check if user is readonly HQ (staff with no branch)
+	// Check if user is readonly HQ (staff with no branch) or branch manager
 	let isReadonlyHQ = $derived(user?.role === 'staff' && !user?.branch_id);
 	let isCompanyManager = $derived(user?.role === 'company_manager');
+	let isBranchManager = $derived(user?.role === 'branch_manager');
+	let canSeeBranchFilter = $derived((isCompanyManager || isReadonlyHQ) && branches.length > 1);
 
 	// Branch filter state
 	let selectedBranches = $state<string[]>([]);
@@ -1705,8 +1707,8 @@
 					</fieldset>
 				</div>
 
-				<!-- Branch Filter (for company managers and HQ) -->
-				{#if (isCompanyManager || isReadonlyHQ) && branches.length > 0}
+				<!-- Branch Filter (for company managers and HQ, only if multiple branches) -->
+				{#if canSeeBranchFilter}
 					<div class="branch-filter-container mb-8" style="position: relative;">
 						<legend class="mb-3 block text-lg font-bold" style="color: var(--text-primary);"
 							>Branches:</legend

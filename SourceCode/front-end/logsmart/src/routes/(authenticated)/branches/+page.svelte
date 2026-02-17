@@ -4,6 +4,8 @@
 
 	const { data } = $props<{ data: PageData }>();
 	let branches = $state([...data.branches]);
+	const isHQStaff = $derived(data.isHQStaff === true);
+	const canEditBranches = $derived(!isHQStaff);
 	let newBranchName = $state('');
 	let newBranchAddress = $state('');
 	let isSubmitting = $state(false);
@@ -269,76 +271,80 @@
 	<h1 class="mb-8 text-3xl font-bold text-text-primary">BRANCH MANAGEMENT</h1>
 
 	<!-- Add Branch Form -->
-	<div class="rounded-base mb-12 border-2 border-border-primary bg-bg-primary p-6 shadow-sm">
-		<h2 class="mb-4 text-xl font-bold text-text-primary">ADD NEW BRANCH</h2>
-		<form
-			onsubmit={(e) => {
-				e.preventDefault();
-				handleAddBranch();
-			}}
-			class="flex flex-col gap-4 md:flex-row md:items-end"
-		>
-			<div class="flex-1">
-				<label for="name" class="mb-2 block text-sm font-medium text-text-primary"
-					>Branch Name</label
-				>
-				<input
-					type="text"
-					id="name"
-					bind:value={newBranchName}
-					class="rounded-base block w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary focus:ring-2 focus:outline-none"
-					placeholder="e.g. London Office"
-					required
-				/>
-			</div>
-			<div class="search-container relative flex-1">
-				<label for="address-search" class="mb-2 block text-sm font-medium text-text-primary">
-					Address <span class="text-xs text-text-secondary"
-						>(search for locations, POIs, or addresses)</span
-					>
-				</label>
-				<input
-					type="text"
-					id="address-search"
-					value={searchQuery}
-					oninput={handleSearchInput}
-					onfocus={() => {
-						if (searchResults.length > 0) showResults = true;
-					}}
-					class="rounded-base block w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary focus:ring-2 focus:outline-none"
-					placeholder="e.g. McDonald's London, 123 Regent St, or Tower Bridge"
-					autocomplete="off"
-				/>
-				{#if isSearching}
-					<div class="absolute top-[2.25rem] right-3 text-xs text-text-secondary">Searching...</div>
-				{/if}
-				{#if showResults && searchResults.length > 0}
-					<div
-						class="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border-2 border-border-primary bg-bg-primary shadow-lg"
-					>
-						{#each searchResults as result}
-							<button
-								type="button"
-								class="w-full px-4 py-2 text-left text-sm text-text-primary hover:bg-bg-secondary focus:bg-bg-secondary focus:outline-none"
-								onclick={() => selectLocation(result)}
-							>
-								<div class="font-medium">{result.display_name.split(',')[0]}</div>
-								<div class="truncate text-xs text-text-secondary">{result.display_name}</div>
-							</button>
-						{/each}
-					</div>
-				{/if}
-				<input type="hidden" bind:value={newBranchAddress} required />
-			</div>
-			<button
-				type="submit"
-				disabled={isSubmitting || !newBranchName || !newBranchAddress}
-				class="rounded-base border-2 border-border-primary bg-bg-secondary px-6 py-2 font-bold text-text-primary shadow-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50"
+	{#if canEditBranches}
+		<div class="rounded-base mb-12 border-2 border-border-primary bg-bg-primary p-6 shadow-sm">
+			<h2 class="mb-4 text-xl font-bold text-text-primary">ADD NEW BRANCH</h2>
+			<form
+				onsubmit={(e) => {
+					e.preventDefault();
+					handleAddBranch();
+				}}
+				class="flex flex-col gap-4 md:flex-row md:items-end"
 			>
-				{isSubmitting ? 'ADDING...' : 'ADD BRANCH'}
-			</button>
-		</form>
-	</div>
+				<div class="flex-1">
+					<label for="name" class="mb-2 block text-sm font-medium text-text-primary"
+						>Branch Name</label
+					>
+					<input
+						type="text"
+						id="name"
+						bind:value={newBranchName}
+						class="rounded-base block w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary focus:ring-2 focus:outline-none"
+						placeholder="e.g. London Office"
+						required
+					/>
+				</div>
+				<div class="search-container relative flex-1">
+					<label for="address-search" class="mb-2 block text-sm font-medium text-text-primary">
+						Address <span class="text-xs text-text-secondary"
+							>(search for locations, POIs, or addresses)</span
+						>
+					</label>
+					<input
+						type="text"
+						id="address-search"
+						value={searchQuery}
+						oninput={handleSearchInput}
+						onfocus={() => {
+							if (searchResults.length > 0) showResults = true;
+						}}
+						class="rounded-base block w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary focus:ring-2 focus:outline-none"
+						placeholder="e.g. McDonald's London, 123 Regent St, or Tower Bridge"
+						autocomplete="off"
+					/>
+					{#if isSearching}
+						<div class="absolute top-[2.25rem] right-3 text-xs text-text-secondary">
+							Searching...
+						</div>
+					{/if}
+					{#if showResults && searchResults.length > 0}
+						<div
+							class="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border-2 border-border-primary bg-bg-primary shadow-lg"
+						>
+							{#each searchResults as result}
+								<button
+									type="button"
+									class="w-full px-4 py-2 text-left text-sm text-text-primary hover:bg-bg-secondary focus:bg-bg-secondary focus:outline-none"
+									onclick={() => selectLocation(result)}
+								>
+									<div class="font-medium">{result.display_name.split(',')[0]}</div>
+									<div class="truncate text-xs text-text-secondary">{result.display_name}</div>
+								</button>
+							{/each}
+						</div>
+					{/if}
+					<input type="hidden" bind:value={newBranchAddress} required />
+				</div>
+				<button
+					type="submit"
+					disabled={isSubmitting || !newBranchName || !newBranchAddress}
+					class="rounded-base border-2 border-border-primary bg-bg-secondary px-6 py-2 font-bold text-text-primary shadow-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50"
+				>
+					{isSubmitting ? 'ADDING...' : 'ADD BRANCH'}
+				</button>
+			</form>
+		</div>
+	{/if}
 
 	<!-- Branches List -->
 	<div class="grid gap-6 md:grid-cols-2">
@@ -437,7 +443,7 @@
 						<span class="text-xs font-medium text-text-secondary"
 							>CREATED AT: {new Date(branch.created_at).toLocaleDateString()}</span
 						>
-						{#if !branch.has_pending_deletion}
+						{#if !branch.has_pending_deletion && canEditBranches}
 							<div class="flex gap-2">
 								<button
 									type="button"

@@ -216,7 +216,8 @@ test.describe('User Administration - Admin Access', () => {
 			invitationToken!,
 			'InvitedFirst',
 			'InvitedLast',
-			'Invited123!'
+			'Invited123!',
+			'**/logs-list'
 		);
 		await inviteePage.close();
 
@@ -425,7 +426,8 @@ test.describe('Templates Dashboard - Member Access Control', () => {
 			invitationToken!,
 			'Member',
 			'User',
-			'Member123!'
+			'Member123!',
+			'**/logs-list'
 		);
 		if (!success) throw new Error('Failed to accept invitation for member user');
 		memberCreds = { email: memberEmail, password: 'Member123!' };

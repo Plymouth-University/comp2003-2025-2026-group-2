@@ -14,7 +14,12 @@ test('hierarchical_access_control', async ({ browser }) => {
 	await cmPage.waitForURL('**/branches');
 	await cmPage.getByRole('textbox', { name: 'Branch Name' }).fill('North Branch');
 	await cmPage.getByRole('textbox', { name: 'Address' }).fill('North Pole');
+	await cmPage
+		.locator('form > div.search-container.relative.flex-1 > div > button')
+		.first()
+		.click();
 	await cmPage.getByRole('button', { name: 'ADD BRANCH' }).click();
+
 	await expect(cmPage.getByText('North Branch')).toBeVisible();
 	console.log('Branch created: North Branch');
 

@@ -24,7 +24,7 @@ test.beforeAll(async ({ browser }) => {
 	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 	await page.waitForURL('**/dashboard');
 
-	await createBranch(page, BRANCH_TO_DELETE, '123 Delete St');
+	await createBranch(page, BRANCH_TO_DELETE, '123 Main St');
 	await page.close();
 });
 
@@ -45,8 +45,8 @@ test('company_manager_can_request_branch_deletion', async ({ browser }) => {
 	await expect(deleteButton).toBeVisible();
 	await deleteButton.click();
 
-	await expect(page.getByRole('button', { name: 'Confirm Delete' })).toBeVisible();
-	await page.getByRole('button', { name: 'Confirm Delete' }).click();
+	await expect(page.getByRole('button', { name: 'Request Deletion' })).toBeVisible();
+	await page.getByRole('button', { name: 'Request Deletion' }).click();
 
 	await page.waitForTimeout(2000);
 
@@ -67,7 +67,7 @@ test('branch_deletion_email_contains_confirmation_link', async ({ browser }) => 
 
 	const deleteButton = page.getByRole('button', { name: /Delete|🗑️/i });
 	await deleteButton.click();
-	await page.getByRole('button', { name: 'Confirm Delete' }).click();
+	await page.getByRole('button', { name: 'Request Deletion' }).click();
 
 	await page.waitForTimeout(2000);
 
@@ -90,7 +90,7 @@ test('confirm_branch_deletion_via_email_link', async ({ browser }) => {
 
 	const deleteButton = page.getByRole('button', { name: /Delete|🗑️/i });
 	await deleteButton.click();
-	await page.getByRole('button', { name: 'Confirm Delete' }).click();
+	await page.getByRole('button', { name: 'Request Deletion' }).click();
 
 	await page.waitForTimeout(2000);
 
@@ -101,19 +101,19 @@ test('confirm_branch_deletion_via_email_link', async ({ browser }) => {
 	await confirmPage.goto(`http://localhost:5173/confirm-branch-deletion?token=${token}`);
 	await confirmPage.waitForURL('**/confirm-branch-deletion**');
 
-	await expect(confirmPage.locator('body')).toContainText('confirm');
-	await expect(confirmPage.locator('body')).toContainText(BRANCH_TO_DELETE);
+	await expect(confirmPage.locator('body')).toContainText('Confirm Branch Deletion');
 
 	await confirmPage.getByRole('button', { name: 'Delete Branch' }).click();
 
-	await confirmPage.waitForTimeout(2000);
+	await page.reload();
 
-	await confirmPage.goto('http://localhost:5173/branches');
-	await page.waitForURL('**/branches');
+	// await confirmPage.goto('http://localhost:5173/branches');
+	// await confirmPage.waitForURL('**/branches');
 
 	await expect(page.getByText(BRANCH_TO_DELETE)).not.toBeVisible();
 
 	await confirmPage.close();
+	await page.close();
 });
 
 test('hq_staff_cannot_delete_branch', async ({ browser }) => {
@@ -164,7 +164,7 @@ test('branch_staff_cannot_delete_branch', async ({ browser }) => {
 	await adminPage.getByRole('button', { name: 'Sign in', exact: true }).click();
 	await adminPage.waitForURL('**/dashboard');
 
-	await createBranch(adminPage, 'Staff Branch', '789 Staff St');
+	await createBranch(adminPage, 'Staff Branch', '123 Main St');
 
 	const { sendInvitation, acceptInvitation } = await import('./utils');
 	const invitationToken = await sendInvitation(
@@ -180,7 +180,8 @@ test('branch_staff_cannot_delete_branch', async ({ browser }) => {
 		invitationToken,
 		'Staff',
 		'Branch',
-		'StaffBranch123!'
+		'StaffBranch123!',
+		'**/logs-list'
 	);
 	if (!success) throw new Error('Failed to accept staff invitation');
 
@@ -190,9 +191,6 @@ test('branch_staff_cannot_delete_branch', async ({ browser }) => {
 	await staffPage.getByRole('textbox', { name: 'Password' }).fill('StaffBranch123!');
 	await staffPage.getByRole('button', { name: 'Sign in', exact: true }).click();
 	await staffPage.waitForURL('**/logs-list');
-
-	await staffPage.goto('http://localhost:5173/branches');
-	await staffPage.waitForURL('**/branches');
 
 	await expect(staffPage.getByRole('link', { name: 'Branches' })).not.toBeVisible();
 

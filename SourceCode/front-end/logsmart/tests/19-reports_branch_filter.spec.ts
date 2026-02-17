@@ -24,8 +24,8 @@ test.beforeAll(async ({ browser }) => {
 	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 	await page.waitForURL('**/dashboard');
 
-	await createBranch(page, BRANCH_A, '100 Alpha St');
-	await createBranch(page, BRANCH_B, '200 Beta St');
+	await createBranch(page, BRANCH_A, '100 Main St');
+	await createBranch(page, BRANCH_B, '200 Main St');
 	await page.close();
 });
 
@@ -41,7 +41,7 @@ test.describe('Company Manager - Reports Branch Filter', () => {
 		await page.getByRole('link', { name: 'Reports' }).click();
 		await page.waitForURL('**/reports');
 
-		await expect(page.getByText('Filter by Branch')).toBeVisible();
+		await expect(page.getByText('Branches:')).toBeVisible();
 	});
 
 	test('company_manager_can_filter_by_single_branch', async ({ page }) => {
@@ -55,7 +55,7 @@ test.describe('Company Manager - Reports Branch Filter', () => {
 		await page.getByRole('link', { name: 'Reports' }).click();
 		await page.waitForURL('**/reports');
 
-		await expect(page.getByText('Filter by Branch')).toBeVisible();
+		await expect(page.getByText('Branches:')).toBeVisible();
 
 		const branchFilterButton = page.getByRole('button', { name: /All Branches|Branch/i });
 		await branchFilterButton.click();
@@ -97,7 +97,7 @@ test.describe('HQ Staff - Reports Branch Filter', () => {
 		await page.getByRole('link', { name: 'Reports' }).click();
 		await page.waitForURL('**/reports');
 
-		await expect(page.getByText('Filter by Branch')).toBeVisible();
+		await expect(page.getByText('Branches:')).toBeVisible();
 	});
 
 	test('hq_staff_can_filter_reports_by_branch', async ({ page }) => {
@@ -111,7 +111,7 @@ test.describe('HQ Staff - Reports Branch Filter', () => {
 		await page.getByRole('link', { name: 'Reports' }).click();
 		await page.waitForURL('**/reports');
 
-		await expect(page.getByText('Filter by Branch')).toBeVisible();
+		await expect(page.getByText('Branches:')).toBeVisible();
 
 		const branchFilterButton = page.getByRole('button', { name: /All Branches|Branch/i });
 		await branchFilterButton.click();
@@ -142,24 +142,11 @@ test.describe('Branch Staff - No Reports Filter', () => {
 			invitationToken,
 			'Staff',
 			'Reports',
-			'StaffReports123!'
+			'StaffReports123!',
+			'**/logs-list'
 		);
 		if (!success) throw new Error('Failed to accept staff invitation');
 		branchStaffCreds = { email: staffEmail, password: 'StaffReports123!' };
-	});
-
-	test('branch_staff_cannot_see_branch_filter_on_reports', async ({ page }) => {
-		await page.goto('http://localhost:5173/');
-		await page.getByRole('link', { name: 'Login' }).click();
-		await page.getByRole('textbox', { name: 'Email' }).fill(branchStaffCreds.email);
-		await page.getByRole('textbox', { name: 'Password' }).fill(branchStaffCreds.password);
-		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-		await page.waitForURL('**/logs-list');
-
-		await page.getByRole('link', { name: 'Reports' }).click();
-		await page.waitForURL('**/reports');
-
-		await expect(page.getByText('Filter by Branch')).not.toBeVisible();
 	});
 
 	test('branch_staff_redirected_to_logs_not_reports', async ({ page }) => {
@@ -202,7 +189,7 @@ test.describe('Branch Manager - No Reports Filter', () => {
 		branchManagerCreds = { email: bmEmail, password: 'BMReports123!' };
 	});
 
-	test('branch_manager_cannot_see_branch_filter_on_reports', async ({ page }) => {
+	test('branch_manager_can_access_reports', async ({ page }) => {
 		await page.goto('http://localhost:5173/');
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(branchManagerCreds.email);
@@ -210,6 +197,11 @@ test.describe('Branch Manager - No Reports Filter', () => {
 		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 
-		await expect(page.getByRole('link', { name: 'Reports' })).not.toBeVisible();
+		await expect(page.getByRole('link', { name: 'Reports' })).toBeVisible();
+		await page.getByRole('link', { name: 'Reports' }).click();
+		await page.waitForURL('**/reports');
+
+		// Branch managers should not see the branch filter dropdown
+		await expect(page.getByText('Branches:')).not.toBeVisible();
 	});
 });

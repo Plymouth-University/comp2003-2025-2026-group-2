@@ -8,13 +8,11 @@
 
 	const currentPath = $derived(page.url.pathname);
 	const isReadonlyHQ = $derived(data?.user?.role === 'staff' && !data?.user?.branch_id);
-	const isAdmin = $derived(
-		data?.user?.role !== 'staff' ||
-			data?.user?.role === 'admin' ||
-			data?.user?.role === 'logsmart_admin' ||
-			isReadonlyHQ
-	);
+	const isBranchManager = $derived(data?.user?.role === 'branch_manager');
 	const isCompanyManager = $derived(data?.user?.role === 'company_manager');
+	const isAdmin = $derived(
+		isCompanyManager || data?.user?.role === 'logsmart_admin' || isReadonlyHQ || isBranchManager
+	);
 
 	async function handleLogout() {
 		await fetch('/api/logout', { method: 'POST' });
@@ -112,7 +110,7 @@
 								Templates Dashboard
 							</a>
 						{/if}
-						{#if isCompanyManager}
+						{#if isCompanyManager || isReadonlyHQ}
 							<a
 								href="/branches"
 								class="hover:opacity-80"
@@ -235,7 +233,7 @@
 							Templates Dashboard
 						</a>
 					{/if}
-					{#if isCompanyManager}
+					{#if isCompanyManager || isReadonlyHQ}
 						<a
 							href="/branches"
 							class="block hover:opacity-80"

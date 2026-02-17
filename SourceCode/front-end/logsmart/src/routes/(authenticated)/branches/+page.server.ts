@@ -4,7 +4,9 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 	const { user } = await parent();
 
-	if (user?.role !== 'company_manager' && user?.role !== 'logsmart_admin') {
+	const isHQStaff = user?.role === 'staff' && !user?.branch_id;
+
+	if (user?.role !== 'company_manager' && user?.role !== 'logsmart_admin' && !isHQStaff) {
 		throw redirect(303, '/dashboard');
 	}
 
@@ -25,7 +27,8 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 		const data = await response.json();
 		return {
 			branches: data.branches || [],
-			user
+			user,
+			isHQStaff
 		};
 	} catch (error) {
 		console.error('Error fetching branches:', error);

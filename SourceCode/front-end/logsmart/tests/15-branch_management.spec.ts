@@ -21,18 +21,20 @@ test('create_and_list_branches', async ({ browser }) => {
 	// Add Branch 1
 	await page.getByRole('textbox', { name: 'Branch Name' }).fill('London Office');
 	await page.getByRole('textbox', { name: 'Address' }).fill('123 Regent St, London');
+	await page.locator('form > div.search-container.relative.flex-1 > div > button').first().click();
 	await page.getByRole('button', { name: 'ADD BRANCH' }).click();
 
 	await expect(page.getByText('London Office')).toBeVisible();
-	await expect(page.getByText('123 Regent St, London')).toBeVisible();
+	await expect(page.getByText('123, Regent Street, London')).toBeVisible();
 
 	// Add Branch 2
 	await page.getByRole('textbox', { name: 'Branch Name' }).fill('Manchester Hub');
 	await page.getByRole('textbox', { name: 'Address' }).fill('45 High St, Manchester');
+	await page.locator('form > div.search-container.relative.flex-1 > div > button').first().click();
 	await page.getByRole('button', { name: 'ADD BRANCH' }).click();
 
 	await expect(page.getByText('Manchester Hub')).toBeVisible();
-	await expect(page.getByText('45 High St, Manchester')).toBeVisible();
+	await expect(page.getByText('45, High Street, Manchester')).toBeVisible();
 	await expect(page.getByText('London Office')).toBeVisible();
 
 	await page.close();

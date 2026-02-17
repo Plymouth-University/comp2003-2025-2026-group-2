@@ -43,7 +43,7 @@ test.describe('Integration Flow: Complete Company Onboarding to First Log', () =
 		await page.getByRole('button', { name: 'Create New Template' }).click();
 		await page.waitForURL('**/template-designer');
 
-		const nameInput = page.getByPlaceholder('Enter template title...');
+		const nameInput = page.getByPlaceholder('Template Name');
 		await nameInput.fill('Flow Test Temperature Log');
 		await page.waitForTimeout(500);
 
@@ -109,7 +109,8 @@ test.describe('Integration Flow: Admin Invites Member to Complete Log', () => {
 			inviteToken,
 			'Flow',
 			'Member',
-			'FlowMember123!'
+			'FlowMember123!',
+			'**/logs-list'
 		);
 
 		if (!success) {
@@ -190,7 +191,14 @@ test.describe('Integration Flow: Admin Reviews and Unsubmits Log', () => {
 		}
 
 		const memberPage = await context.newPage();
-		const success = await acceptInvitation(memberPage, inviteToken, 'Flow', 'Member', memberPass);
+		const success = await acceptInvitation(
+			memberPage,
+			inviteToken,
+			'Flow',
+			'Member',
+			memberPass,
+			'**/logs-list'
+		);
 
 		if (!success) {
 			console.log('Failed to accept invitation');
@@ -238,7 +246,7 @@ test.describe('Integration Flow: Template Lifecycle', () => {
 		await page.getByRole('button', { name: 'Create New Template' }).click();
 		await page.waitForURL('**/template-designer');
 
-		const nameInput = page.getByPlaceholder('Enter template title...');
+		const nameInput = page.getByPlaceholder('Template Name');
 		await nameInput.fill(templateName);
 		await page.waitForTimeout(500);
 
@@ -354,7 +362,8 @@ test.describe('Integration Flow: Multi-User Collaboration', () => {
 			inviteToken,
 			'Flow',
 			'Member',
-			'FlowMember123!'
+			'FlowMember123!',
+			'**/logs-list'
 		);
 
 		if (!success) {

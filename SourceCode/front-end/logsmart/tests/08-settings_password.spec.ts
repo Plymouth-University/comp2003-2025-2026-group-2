@@ -199,7 +199,7 @@ test.describe('Settings - Dark Mode', () => {
 			await darkModeToggle.check();
 			await page.waitForTimeout(500);
 			const htmlElement = page.locator('html');
-			const hasClass = await htmlElement.evaluate((el) => el.classList.contains('dark'));
+			await htmlElement.evaluate((el) => el.classList.contains('dark'));
 		}
 	});
 
@@ -234,7 +234,7 @@ test.describe('Settings - Dark Mode', () => {
 		}
 	});
 
-	test('dark_mode_persists_across_sessions', async ({ page, context }) => {
+	test('dark_mode_persists_across_sessions', async ({ page }) => {
 		await page.getByRole('link', { name: 'Settings' }).click();
 		await page.waitForURL('**/settings');
 		const darkModeToggle = page
@@ -284,7 +284,8 @@ test.describe('Settings - Member Access', () => {
 			invitationToken!,
 			'Member',
 			'User',
-			'Member123!'
+			'Member123!',
+			'**/logs-list'
 		);
 		if (!success) throw new Error('Failed to accept invitation for member user');
 		memberCreds = { email: memberEmail, password: 'Member123!' };

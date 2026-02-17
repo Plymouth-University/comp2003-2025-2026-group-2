@@ -7,13 +7,17 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 	// Allow readonly HQ users (staff with no branch) to access reports
 	const isReadonlyHQ = user?.role === 'staff' && !user?.branch_id;
 	const isCompanyManager = user?.role === 'company_manager';
+	const isBranchManager = user?.role === 'branch_manager';
 
-	if (user?.role == 'staff' && !isReadonlyHQ) {
+	// Branch managers can access reports, staff at branches cannot
+	if (user?.role === 'staff' && !isReadonlyHQ) {
 		throw redirect(303, '/logs-list');
 	}
 
-	// Fetch branches for company managers and HQ staff
+	// Fetch branches for company managers, HQ staff, and branch managers
 	let branches: Array<{ id: string; name: string; address: string; created_at: string }> = [];
+	let userBranchId = user?.branch_id;
+
 	if (isCompanyManager || isReadonlyHQ) {
 		const token = cookies.get('ls-token');
 		if (token) {
@@ -32,6 +36,9 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 				console.error('Error fetching branches:', error);
 			}
 		}
+	} else if (isBranchManager && userBranchId) {
+		// Branch managers can only see their own branch
+		branches = [{ id: userBranchId, name: 'Your Branch', address: '', created_at: '' }];
 	}
 
 	return {

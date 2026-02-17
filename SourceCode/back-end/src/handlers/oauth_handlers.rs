@@ -365,6 +365,8 @@ pub async fn confirm_google_link(
         .await
         .map_err(|(status, value)| (status, Json(value)))?;
 
+    state.user_cache.invalidate(&claims.user_id).await;
+
     let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
         .await
         .map_err(|e| {
@@ -444,6 +446,8 @@ pub async fn link_google_account(
         .link_google_account(&state.postgres, &claims.user_id, user_info)
         .await
         .map_err(|(status, value)| (status, Json(value)))?;
+
+    state.user_cache.invalidate(&claims.user_id).await;
 
     let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
         .await
@@ -527,6 +531,8 @@ pub async fn unlink_google_account(
                 Json(json!({ "error": "Failed to unlink account" })),
             )
         })?;
+
+    state.user_cache.invalidate(&claims.user_id).await;
 
     AuditLogger::log_oauth_account_unlinked(
         &state.postgres,

@@ -109,7 +109,8 @@ test.describe('Logs Management - Member', () => {
 			invitationToken!,
 			'Member',
 			'User',
-			'Member123!'
+			'Member123!',
+			'**/logs-list'
 		);
 		if (!success) throw new Error('Failed to accept invitation for member user');
 		memberCreds = { email: memberEmail, password: 'Member123!' };

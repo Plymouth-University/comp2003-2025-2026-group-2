@@ -42,7 +42,14 @@ test('accept_invitation_valid', async ({ page, browser }) => {
 	await page.waitForURL('**/accept-invitation**');
 	await expect(page.locator('body')).toContainText(adminCreds.companyName);
 
-	const success = await acceptInvitation(page, invitationToken!, 'Invited', 'User', 'Invited123!');
+	const success = await acceptInvitation(
+		page,
+		invitationToken!,
+		'Invited',
+		'User',
+		'Invited123!',
+		'**/logs-list'
+	);
 	expect(success).toBe(true);
 });
 

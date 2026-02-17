@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { register, createBranch, getInvitationToken, sendInvitation } from './utils';
 
 let adminCreds: {
@@ -7,14 +7,14 @@ let adminCreds: {
 	companyName: string;
 	firstName: string;
 	lastName: string;
-	page?: any;
+	page?: Page;
 };
 
 test.beforeAll(async ({ browser }) => {
 	const creds = await register(browser, false);
 	if (!creds) throw new Error('Failed to register admin user');
 	adminCreds = creds;
-	await createBranch(adminCreds.page, 'Main Branch', '123 Main St');
+	await createBranch(adminCreds.page!, 'Main Branch', '123 Main St');
 });
 
 test.beforeEach(async ({ browser }) => {
