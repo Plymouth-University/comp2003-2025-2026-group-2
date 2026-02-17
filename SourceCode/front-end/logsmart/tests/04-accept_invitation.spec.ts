@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { register, sendInvitation, acceptInvitation } from './utils';
+import { register, sendInvitation, acceptInvitation, createBranch } from './utils';
 
 let adminCreds: {
 	email: string;
@@ -9,15 +9,33 @@ let adminCreds: {
 	lastName: string;
 };
 
+const BRANCH_NAME = 'Test Branch';
+
 test.beforeAll(async ({ browser }) => {
 	const creds = await register(browser);
 	if (!creds) throw new Error('Failed to register admin user');
 	adminCreds = creds;
+
+	const page = await browser.newPage();
+	await page.goto('http://localhost:5173/login');
+	await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
+	await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
+	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+	await page.waitForURL('**/dashboard');
+
+	await createBranch(page, BRANCH_NAME, '123 Test St');
+	await page.close();
 });
 
 test('accept_invitation_valid', async ({ page, browser }) => {
 	const inviteeEmail = `invited-${Date.now()}@logsmart.app`;
-	const invitationToken = await sendInvitation(browser, adminCreds, inviteeEmail);
+	const invitationToken = await sendInvitation(
+		browser,
+		adminCreds,
+		inviteeEmail,
+		'staff',
+		BRANCH_NAME
+	);
 	expect(invitationToken).toBeTruthy();
 
 	await page.goto(`http://localhost:5173/accept-invitation?token=${invitationToken}`);
@@ -29,7 +47,13 @@ test('accept_invitation_valid', async ({ page, browser }) => {
 });
 
 test('accept_invitation_invalid_empty_first_name', async ({ page, browser }) => {
-	const token = await sendInvitation(browser, adminCreds, 'validation1@logsmart.app');
+	const token = await sendInvitation(
+		browser,
+		adminCreds,
+		'validation1@logsmart.app',
+		'staff',
+		BRANCH_NAME
+	);
 	expect(token).toBeTruthy();
 
 	await page.goto(`http://localhost:5173/accept-invitation?token=${token}`);
@@ -42,7 +66,13 @@ test('accept_invitation_invalid_empty_first_name', async ({ page, browser }) => 
 });
 
 test('accept_invitation_invalid_empty_last_name', async ({ page, browser }) => {
-	const token = await sendInvitation(browser, adminCreds, 'validation2@logsmart.app');
+	const token = await sendInvitation(
+		browser,
+		adminCreds,
+		'validation2@logsmart.app',
+		'staff',
+		BRANCH_NAME
+	);
 	expect(token).toBeTruthy();
 
 	await page.goto(`http://localhost:5173/accept-invitation?token=${token}`);
@@ -55,7 +85,13 @@ test('accept_invitation_invalid_empty_last_name', async ({ page, browser }) => {
 });
 
 test('accept_invitation_invalid_password_requirements', async ({ page, browser }) => {
-	const token = await sendInvitation(browser, adminCreds, 'validation3@logsmart.app');
+	const token = await sendInvitation(
+		browser,
+		adminCreds,
+		'validation3@logsmart.app',
+		'staff',
+		BRANCH_NAME
+	);
 	expect(token).toBeTruthy();
 
 	await page.goto(`http://localhost:5173/accept-invitation?token=${token}`);
@@ -69,7 +105,13 @@ test('accept_invitation_invalid_password_requirements', async ({ page, browser }
 });
 
 test('accept_invitation_invalid_password_mismatch', async ({ page, browser }) => {
-	const token = await sendInvitation(browser, adminCreds, 'validation4@logsmart.app');
+	const token = await sendInvitation(
+		browser,
+		adminCreds,
+		'validation4@logsmart.app',
+		'staff',
+		BRANCH_NAME
+	);
 	expect(token).toBeTruthy();
 
 	await page.goto(`http://localhost:5173/accept-invitation?token=${token}`);

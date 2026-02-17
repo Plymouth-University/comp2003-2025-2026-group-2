@@ -121,7 +121,7 @@ impl UserRecord {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, PartialEq)]
 pub struct Branch {
     pub id: String,
     pub company_id: String,

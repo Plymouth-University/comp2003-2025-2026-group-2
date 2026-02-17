@@ -106,6 +106,25 @@ const getPasswordResetToken = async (email: string, maxAttempts = 30): Promise<s
 	return null;
 };
 
+const getBranchDeletionToken = async (email: string, maxAttempts = 30): Promise<string | null> => {
+	for (let i = 0; i < maxAttempts; i++) {
+		const mailhogEmail = await getEmailByRecipient(email);
+
+		if (mailhogEmail) {
+			const body = decodeMailBody(mailhogEmail);
+
+			const tokenMatch = body.match(/token=([a-zA-Z0-9_-]+)/);
+			if (tokenMatch) {
+				return tokenMatch[1];
+			}
+		}
+
+		await new Promise((resolve) => setTimeout(resolve, 500));
+	}
+
+	return null;
+};
+
 const clearMailhogEmails = async (): Promise<void> => {
 	try {
 		await fetch(`${MAILHOG_API_URL}/v1/messages`, { method: 'DELETE' });
@@ -175,11 +194,21 @@ const register = async (browser: Browser, close = true) => {
 	return { companyName, firstName, lastName, email, password, page };
 };
 
+const createBranch = async (page: Page, name: string, address: string): Promise<void> => {
+	await page.getByRole('link', { name: 'Branches' }).click();
+	await page.waitForURL('**/branches');
+	await page.getByRole('textbox', { name: 'Branch Name' }).fill(name);
+	await page.getByRole('textbox', { name: 'Address' }).fill(address);
+	await page.locator('form > div.search-container.relative.flex-1 > div > button').first().click();
+	await page.getByRole('button', { name: 'ADD BRANCH' }).click();
+	await expect(page.getByText(name)).toBeVisible();
+};
+
 const sendInvitation = async (
 	browser: Browser,
 	admin: { email: string; password: string },
 	email: string,
-	role?: string,
+	role: string = 'staff',
 	branchName?: string
 ): Promise<string | null> => {
 	const page = await browser.newPage();
@@ -193,22 +222,26 @@ const sendInvitation = async (
 	await page.getByRole('button', { name: '➕' }).click();
 	await page.getByRole('textbox', { name: "New user's email" }).fill(email);
 
-	if (role) {
-		console.log(`[sendInvitation] Selecting role: ${role}`);
-		await page.locator('#invite-role').selectOption(role);
-	}
+	console.log(`[sendInvitation] Selecting role: ${role}`);
+	await page.locator('#invite-role').selectOption(role);
 
 	if (branchName) {
 		console.log(`[sendInvitation] Selecting branch: ${branchName}`);
 		const select = page.locator('#invite-branch');
 		await expect(select).toBeVisible();
 		await select.selectOption({ label: branchName });
+	} else if (role !== 'staff') {
+		const select = page.locator('#invite-branch');
+		await expect(select).toBeVisible();
+		const options = await select.locator('option').all();
+		if (options.length > 1) {
+			await select.selectOption({ index: 1 });
+		}
 	}
 
 	console.log(`[sendInvitation] Clicking Send Invite`);
 	await page.getByRole('button', { name: 'Send Invite' }).click();
 
-	// Wait for modal to close or some feedback
 	await page.waitForTimeout(1000);
 	await page.close();
 
@@ -251,7 +284,7 @@ const acceptInvitation = async (
 const sendInvitationOnPage = async (
 	page: Page,
 	email: string,
-	role?: string,
+	role: string = 'staff',
 	branchName?: string
 ): Promise<string | null> => {
 	await page.getByRole('link', { name: 'Users' }).click();
@@ -261,14 +294,19 @@ const sendInvitationOnPage = async (
 	await page.waitForLoadState('networkidle');
 	await page.getByRole('textbox', { name: "New user's email" }).fill(email);
 
-	if (role) {
-		await page.locator('#invite-role').selectOption(role);
-	}
+	await page.locator('#invite-role').selectOption(role);
 
 	if (branchName) {
 		const select = page.locator('#invite-branch');
 		await expect(select).toBeVisible();
 		await select.selectOption({ label: branchName });
+	} else if (role !== 'staff') {
+		const select = page.locator('#invite-branch');
+		await expect(select).toBeVisible();
+		const options = await select.locator('option').all();
+		if (options.length > 1) {
+			await select.selectOption({ index: 1 });
+		}
 	}
 
 	await page.getByRole('button', { name: 'Send Invite' }).click();
@@ -278,8 +316,10 @@ const sendInvitationOnPage = async (
 
 export {
 	register,
+	createBranch,
 	getEmailByRecipient,
 	getInvitationToken,
+	getBranchDeletionToken,
 	getPasswordResetToken,
 	clearMailhogEmails,
 	requestPasswordResetToken,

@@ -1,7 +1,8 @@
 use back_end::dto::AuthResponse;
 use back_end::dto::InvitationResponse;
+use back_end::dto::RequestBranchDeletionResponse;
 use back_end::dto::UserResponse;
-use back_end::dto::{AcceptInvitationRequest, InviteUserRequest, LoginRequest, RegisterRequest};
+use back_end::dto::{AcceptInvitationRequest, CreateBranchRequest, InviteUserRequest, LoginRequest, RegisterRequest, RequestBranchDeletionRequest, UpdateBranchRequest};
 use back_end::jwt_manager::JwtManager;
 
 #[test]
@@ -312,4 +313,42 @@ fn test_response_contains_token() {
         user: user_response,
     };
     assert!(auth_response.token.len() > 0);
+}
+
+#[test]
+fn test_create_branch_request_validation() {
+    let req = CreateBranchRequest {
+        name: "Main Office".to_string(),
+        address: "123 Main St".to_string(),
+    };
+    assert_eq!(req.name, "Main Office");
+    assert_eq!(req.address, "123 Main St");
+}
+
+#[test]
+fn test_update_branch_request_validation() {
+    let req = UpdateBranchRequest {
+        branch_id: "branch123".to_string(),
+        name: "Updated Office".to_string(),
+        address: "456 New St".to_string(),
+    };
+    assert_eq!(req.branch_id, "branch123");
+    assert_eq!(req.name, "Updated Office");
+    assert_eq!(req.address, "456 New St");
+}
+
+#[test]
+fn test_request_branch_deletion_request() {
+    let req = RequestBranchDeletionRequest {
+        branch_id: "branch123".to_string(),
+    };
+    assert_eq!(req.branch_id, "branch123");
+}
+
+#[test]
+fn test_branch_deletion_response_message() {
+    let resp = RequestBranchDeletionResponse {
+        message: "A confirmation email has been sent".to_string(),
+    };
+    assert!(resp.message.contains("confirmation"));
 }

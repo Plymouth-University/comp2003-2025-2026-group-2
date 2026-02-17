@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { register, sendInvitation, acceptInvitation } from './utils';
+import { register, sendInvitation, acceptInvitation, createBranch } from './utils';
 
 let adminCreds: {
 	email: string;
@@ -9,10 +9,22 @@ let adminCreds: {
 	lastName: string;
 };
 
+const BRANCH_NAME = 'Test Branch';
+
 test.beforeAll(async ({ browser }) => {
 	const creds = await register(browser);
 	if (!creds) throw new Error('Failed to register admin user');
 	adminCreds = creds;
+
+	const page = await browser.newPage();
+	await page.goto('http://localhost:5173/login');
+	await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
+	await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
+	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+	await page.waitForURL('**/dashboard');
+
+	await createBranch(page, BRANCH_NAME, '123 Test St');
+	await page.close();
 });
 
 test.describe('Integration Flow: Complete Company Onboarding to First Log', () => {
@@ -78,7 +90,13 @@ test.describe('Integration Flow: Admin Invites Member to Complete Log', () => {
 		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 
-		const inviteToken = await sendInvitation(browser, adminCreds, memberEmail);
+		const inviteToken = await sendInvitation(
+			browser,
+			adminCreds,
+			memberEmail,
+			'staff',
+			BRANCH_NAME
+		);
 
 		if (!inviteToken) {
 			console.log('Invitation token not found, skipping member acceptance');
@@ -158,7 +176,13 @@ test.describe('Integration Flow: Admin Reviews and Unsubmits Log', () => {
 
 		const memberEmail = `flowmember${Date.now()}@logsmart.app`;
 		const memberPass = 'FlowMember123!';
-		const inviteToken = await sendInvitation(browser, adminCreds, memberEmail);
+		const inviteToken = await sendInvitation(
+			browser,
+			adminCreds,
+			memberEmail,
+			'staff',
+			BRANCH_NAME
+		);
 
 		if (!inviteToken) {
 			console.log('Invitation token not found, skipping member acceptance');
@@ -311,7 +335,13 @@ test.describe('Integration Flow: Multi-User Collaboration', () => {
 		}
 
 		const memberEmail = `flowmember${Date.now()}@logsmart.app`;
-		const inviteToken = await sendInvitation(browser, adminCreds, memberEmail);
+		const inviteToken = await sendInvitation(
+			browser,
+			adminCreds,
+			memberEmail,
+			'staff',
+			BRANCH_NAME
+		);
 
 		if (!inviteToken) {
 			console.log('Invitation token not found, skipping member acceptance');

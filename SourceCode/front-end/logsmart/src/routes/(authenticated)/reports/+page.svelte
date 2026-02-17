@@ -19,7 +19,7 @@
 
 	function toggleBranchFilter(branchId: string) {
 		if (selectedBranches.includes(branchId)) {
-			selectedBranches = selectedBranches.filter(id => id !== branchId);
+			selectedBranches = selectedBranches.filter((id) => id !== branchId);
 		} else {
 			selectedBranches = [...selectedBranches, branchId];
 		}
@@ -696,14 +696,19 @@
 		try {
 			// Build query params for branch filter
 			let queryParams = '';
-			if ((isCompanyManager || isReadonlyHQ) && selectedBranches.length > 0 && selectedBranches.length < branches.length) {
+			if (
+				(isCompanyManager || isReadonlyHQ) &&
+				selectedBranches.length > 0 &&
+				selectedBranches.length < branches.length
+			) {
 				queryParams = `?branch_ids=${selectedBranches.join(',')}`;
 			}
 
 			// Fetch log entries - use admin endpoint for readonly HQ to get all company logs
-			const response = isReadonlyHQ || isCompanyManager
-				? await api.GET(`/logs/admin/entries${queryParams}`)
-				: await api.GET('/logs/entries');
+			const response =
+				isReadonlyHQ || isCompanyManager
+					? await api.GET(`/logs/admin/entries${queryParams}`)
+					: await api.GET('/logs/entries');
 
 			if (!response.data) {
 				throw new Error('Failed to fetch log entries');
@@ -1702,19 +1707,26 @@
 
 				<!-- Branch Filter (for company managers and HQ) -->
 				{#if (isCompanyManager || isReadonlyHQ) && branches.length > 0}
-					<div class="mb-8 branch-filter-container" style="position: relative;">
+					<div class="branch-filter-container mb-8" style="position: relative;">
 						<legend class="mb-3 block text-lg font-bold" style="color: var(--text-primary);"
 							>Branches:</legend
 						>
 						<div class="relative">
 							<button
 								type="button"
-								onclick={() => showBranchDropdown = !showBranchDropdown}
+								onclick={() => (showBranchDropdown = !showBranchDropdown)}
 								class="flex w-full items-center justify-between border-2 px-4 py-2"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 							>
 								<span>{selectedBranchesLabel()}</span>
-								<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+								<svg
+									width="16"
+									height="16"
+									viewBox="0 0 16 16"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+								>
 									<polyline points="4 6 8 10 12 6"></polyline>
 								</svg>
 							</button>
@@ -1727,7 +1739,10 @@
 										type="button"
 										class="w-full px-4 py-2 text-left font-semibold hover:opacity-80"
 										style="color: var(--text-primary);"
-										onclick={() => { selectAllBranches(); showBranchDropdown = false; }}
+										onclick={() => {
+											selectAllBranches();
+											showBranchDropdown = false;
+										}}
 									>
 										All Branches
 									</button>
@@ -1735,7 +1750,10 @@
 										type="button"
 										class="w-full px-4 py-2 text-left hover:opacity-80"
 										style="color: var(--text-primary);"
-										onclick={() => { clearBranchFilter(); showBranchDropdown = false; }}
+										onclick={() => {
+											clearBranchFilter();
+											showBranchDropdown = false;
+										}}
 									>
 										Clear Selection
 									</button>

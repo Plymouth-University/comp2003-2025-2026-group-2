@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { acceptInvitation, register, sendInvitation } from './utils';
+import { acceptInvitation, register, sendInvitation, createBranch } from './utils';
 
 let adminCreds: {
 	email: string;
@@ -9,10 +9,22 @@ let adminCreds: {
 	lastName: string;
 };
 
+const BRANCH_NAME = 'Test Branch';
+
 test.beforeAll(async ({ browser }) => {
 	const creds = await register(browser);
 	if (!creds) throw new Error('Failed to register admin user');
 	adminCreds = creds;
+
+	const page = await browser.newPage();
+	await page.goto('http://localhost:5173/login');
+	await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
+	await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
+	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+	await page.waitForURL('**/dashboard');
+
+	await createBranch(page, BRANCH_NAME, '123 Test St');
+	await page.close();
 });
 
 test.describe('Logs Management - Admin', () => {
@@ -84,7 +96,13 @@ test.describe('Logs Management - Member', () => {
 
 	test.beforeAll(async ({ browser }) => {
 		const memberEmail = `member-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}@logsmart.app`;
-		const invitationToken = await sendInvitation(browser, adminCreds, memberEmail);
+		const invitationToken = await sendInvitation(
+			browser,
+			adminCreds,
+			memberEmail,
+			'staff',
+			BRANCH_NAME
+		);
 		if (!invitationToken) throw new Error('Failed to get invitation token');
 		const success = await acceptInvitation(
 			await browser.newPage(),

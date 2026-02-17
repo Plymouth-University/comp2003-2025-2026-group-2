@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { acceptInvitation, register, sendInvitation } from './utils';
+import { acceptInvitation, register, sendInvitation, createBranch } from './utils';
 
 let adminCreds: {
 	email: string;
@@ -9,10 +9,22 @@ let adminCreds: {
 	lastName: string;
 };
 
+const BRANCH_NAME = 'Test Branch';
+
 test.beforeAll(async ({ browser }) => {
 	const creds = await register(browser);
 	if (!creds) throw new Error('Failed to register admin user');
 	adminCreds = creds;
+
+	const page = await browser.newPage();
+	await page.goto('http://localhost:5173/login');
+	await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
+	await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
+	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+	await page.waitForURL('**/dashboard');
+
+	await createBranch(page, BRANCH_NAME, '123 Test St');
+	await page.close();
 });
 
 test.describe('Template Designer - CRUD Operations', () => {
@@ -100,7 +112,11 @@ test.describe('Template Designer - CRUD Operations', () => {
 		await page.waitForLoadState('networkidle');
 
 		await page.getByRole('textbox', { name: 'Branch Name' }).fill('Visibility Branch');
-		await page.getByRole('textbox', { name: 'Address' }).fill('Some Address');
+		await page.getByRole('textbox', { name: 'Address' }).fill('123 Main St');
+		await page
+			.locator('form > div.search-container.relative.flex-1 > div > button')
+			.first()
+			.click();
 		await page.getByRole('button', { name: 'ADD BRANCH' }).click();
 		await expect(page.getByText('Visibility Branch')).toBeVisible();
 
@@ -477,7 +493,13 @@ test.describe('Template Designer - Member Access Control', () => {
 		await page.waitForLoadState('networkidle');
 
 		const memberEmail = `member-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}@logsmart.app`;
-		const invitationToken = await sendInvitation(browser, adminCreds, memberEmail);
+		const invitationToken = await sendInvitation(
+			browser,
+			adminCreds,
+			memberEmail,
+			'staff',
+			BRANCH_NAME
+		);
 		if (!invitationToken) throw new Error('Failed to get invitation token');
 		const success = await acceptInvitation(
 			await browser.newPage(),

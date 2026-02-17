@@ -13,7 +13,7 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 	}
 
 	// Fetch branches for company managers and HQ staff
-	let branches: Array<{id: string; name: string; address: string; created_at: string}> = [];
+	let branches: Array<{ id: string; name: string; address: string; created_at: string }> = [];
 	if (isCompanyManager || isReadonlyHQ) {
 		const token = cookies.get('ls-token');
 		if (token) {

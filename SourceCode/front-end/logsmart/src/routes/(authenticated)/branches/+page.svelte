@@ -201,7 +201,7 @@
 			if (error) {
 				alert(`Failed to update branch: ${error.error}`);
 			} else if (updatedBranch) {
-				branches = branches.map(b => b.id === editingBranchId ? updatedBranch : b);
+				branches = branches.map((b) => (b.id === editingBranchId ? updatedBranch : b));
 				cancelEditingBranch();
 			}
 		} catch (error) {
@@ -415,7 +415,9 @@
 					<div class="mb-2 flex items-center justify-between">
 						<h3 class="text-xl font-bold text-text-primary">{branch.name}</h3>
 						{#if branch.has_pending_deletion}
-							<span class="rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800">
+							<span
+								class="rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800"
+							>
 								Deletion Pending
 							</span>
 						{:else}
@@ -425,7 +427,8 @@
 					<p class="text-text-secondary">{branch.address}</p>
 					{#if branch.has_pending_deletion && branch.deletion_requested_at}
 						<div class="mt-2 rounded bg-yellow-50 p-2 text-xs text-yellow-800">
-							<span class="font-semibold">Deletion requested:</span> {new Date(branch.deletion_requested_at).toLocaleString()}
+							<span class="font-semibold">Deletion requested:</span>
+							{new Date(branch.deletion_requested_at).toLocaleString()}
 						</div>
 					{/if}
 					<div
@@ -470,11 +473,28 @@
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
 		onclick={(e) => e.target === e.currentTarget && cancelDeleteBranch()}
 	>
-		<div class="mx-4 w-full max-w-md rounded-lg border-2 p-6 shadow-xl" style="background-color: var(--bg-primary); border-color: var(--border-primary);">
+		<div
+			class="mx-4 w-full max-w-md rounded-lg border-2 p-6 shadow-xl"
+			style="background-color: var(--bg-primary); border-color: var(--border-primary);"
+		>
 			<div class="mb-4 text-center">
-				<div class="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full" style="background-color: #fee2e2;">
-					<svg class="h-6 w-6" style="color: #dc2626;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+				<div
+					class="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full"
+					style="background-color: #fee2e2;"
+				>
+					<svg
+						class="h-6 w-6"
+						style="color: #dc2626;"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+						/>
 					</svg>
 				</div>
 				<h3 class="mb-2 text-xl font-bold" style="color: var(--text-primary);">Delete Branch</h3>
@@ -484,7 +504,10 @@
 			</div>
 
 			{#if deletionMessage}
-				<div class="mb-4 rounded-lg p-3 text-center text-sm" style="background-color: #dcfce7; color: #166534;">
+				<div
+					class="mb-4 rounded-lg p-3 text-center text-sm"
+					style="background-color: #dcfce7; color: #166534;"
+				>
 					{deletionMessage}
 				</div>
 				<button
@@ -496,9 +519,15 @@
 					Close
 				</button>
 			{:else}
-				<div class="mb-4 rounded-lg border-l-4 p-3 text-sm" style="background-color: #fef3c7; border-color: #f59e0b; color: #92400e;">
-					<p class="font-semibold mb-1">⚠️ This action requires email confirmation</p>
-					<p>A confirmation link will be sent to your email address. You must click the link to complete the deletion.</p>
+				<div
+					class="mb-4 rounded-lg border-l-4 p-3 text-sm"
+					style="background-color: #fef3c7; border-color: #f59e0b; color: #92400e;"
+				>
+					<p class="mb-1 font-semibold">⚠️ This action requires email confirmation</p>
+					<p>
+						A confirmation link will be sent to your email address. You must click the link to
+						complete the deletion.
+					</p>
 				</div>
 
 				<div class="flex gap-3">
@@ -521,8 +550,19 @@
 						{#if isRequestingDeletion}
 							<span class="inline-flex items-center">
 								<svg class="mr-2 h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+									<circle
+										class="opacity-25"
+										cx="12"
+										cy="12"
+										r="10"
+										stroke="currentColor"
+										stroke-width="4"
+									></circle>
+									<path
+										class="opacity-75"
+										fill="currentColor"
+										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+									></path>
 								</svg>
 								Sending...
 							</span>
