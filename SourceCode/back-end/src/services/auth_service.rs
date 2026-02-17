@@ -95,11 +95,10 @@ impl AuthService {
             )
         })?;
 
-        let user_id = user.id.clone();
         user.company_name = Some(company_name.to_string());
 
         let token = JwtManager::get_config()
-            .generate_token(user_id.clone(), 24)
+            .generate_token(user.id.as_str(), 24)
             .map_err(|e| {
                 tracing::error!("Failed to generate JWT token: {:?}", e);
                 (
@@ -111,7 +110,7 @@ impl AuthService {
         // Log the registration event
         AuditLogger::log_registration(
             db_pool,
-            user_id.clone(),
+            user.id.clone(),
             email.to_string(),
             company_name.to_string(),
             ip_address,
@@ -192,7 +191,7 @@ impl AuthService {
         }
 
         let token = JwtManager::get_config()
-            .generate_token(user.id.clone(), 24)
+            .generate_token(user.id.as_str(), 24)
             .map_err(|e| {
                 tracing::error!("Failed to generate login JWT token: {:?}", e);
                 (
@@ -544,7 +543,7 @@ impl AuthService {
             }
 
             let token = JwtManager::get_config()
-                .generate_token(user.id.clone(), 24)
+                .generate_token(user.id.as_str(), 24)
                 .map_err(|e| {
                     tracing::error!("Failed to generate login JWT token: {:?}", e);
                     (

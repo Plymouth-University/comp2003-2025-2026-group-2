@@ -101,11 +101,6 @@ impl UserRecord {
     }
 
     #[must_use]
-    pub fn is_company_admin(&self) -> bool {
-        self.is_company_manager()
-    }
-
-    #[must_use]
     pub fn can_manage_company(&self) -> bool {
         self.is_company_manager() || self.is_logsmart_admin()
     }
@@ -118,6 +113,11 @@ impl UserRecord {
     #[must_use]
     pub fn is_readonly_hq(&self) -> bool {
         self.is_staff() && self.branch_id.is_none()
+    }
+
+    #[must_use]
+    pub fn can_read_manage_branch(&self) -> bool {
+        self.is_readonly_hq() || self.can_manage_branch()
     }
 }
 
@@ -1936,7 +1936,7 @@ mod db_model_tests {
 
         assert!(!user.is_branch_manager());
         assert!(!user.is_logsmart_admin());
-        assert!(user.is_company_admin());
+        assert!(user.is_company_manager());
         assert!(user.can_manage_company());
     }
 
@@ -1950,7 +1950,7 @@ mod db_model_tests {
         assert!(!user.is_branch_manager());
         assert!(user.is_staff());
         assert!(!user.is_logsmart_admin());
-        assert!(!user.is_company_admin());
+        assert!(!user.is_company_manager());
         assert!(!user.can_manage_company());
     }
 
@@ -1964,7 +1964,7 @@ mod db_model_tests {
         assert!(!user.is_branch_manager());
         assert!(!user.is_staff());
         assert!(user.is_logsmart_admin());
-        assert!(!user.is_company_admin());
+        assert!(!user.is_company_manager());
         assert!(user.can_manage_company());
     }
 

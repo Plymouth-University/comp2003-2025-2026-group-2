@@ -107,12 +107,13 @@ pub async fn invite_user(
             ));
         }
         if let Some(role) = &payload.role
-            && *role != db::UserRole::Staff {
-                return Err((
-                    StatusCode::FORBIDDEN,
-                    Json(json!({ "error": "Branch managers can only invite staff members" })),
-                ));
-            }
+            && *role != db::UserRole::Staff
+        {
+            return Err((
+                StatusCode::FORBIDDEN,
+                Json(json!({ "error": "Branch managers can only invite staff members" })),
+            ));
+        }
     }
 
     let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
@@ -283,7 +284,7 @@ pub async fn accept_invitation(
 
     let jwt_config = JwtManager::get_config();
     let token = jwt_config
-        .generate_token(user_id.clone(), 24)
+        .generate_token(user_id.as_str(), 24)
         .map_err(|e| {
             tracing::error!(
                 "Failed to generate JWT token for invitation acceptance: {:?}",
@@ -468,7 +469,7 @@ pub async fn get_pending_invitations(
                 inv_list
                     .into_iter()
                     .filter(|inv| {
-                        if user.is_company_manager() || user.is_logsmart_admin() {
+                        if user.can_manage_company() {
                             true
                         } else {
                             inv.branch_id == user.branch_id
