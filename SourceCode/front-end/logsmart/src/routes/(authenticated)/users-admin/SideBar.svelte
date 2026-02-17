@@ -2,7 +2,6 @@
 	import { api } from '$lib/api';
 	import type { Member } from './+page.svelte';
 	import PlaceHolderImage from '$lib/assets/placeholder.png';
-	import type { components } from '$lib/api-types';
 
 	const { setSelectedUser, selectedUser, loggedInUserRole, updateMember, branches } = $props<{
 		setSelectedUser: (email: string | null) => void;
@@ -94,7 +93,7 @@
 			>
 				<option value="staff">Staff</option>
 				<option value="branch_manager">Branch Manager</option>
-				<option value="company_manager">Company Manager</option>
+				<option value="company_manager" disabled={loggedInUserRole == "branch_manager"}>Company Manager</option>
 				{#if loggedInUserRole === 'logsmart_admin'}
 					<option id="logsmart_adminRole" value="logsmart_admin">Internal Admin</option>
 				{/if}
