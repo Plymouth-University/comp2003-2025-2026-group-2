@@ -1,6 +1,9 @@
 use crate::{
     AppState, db,
-    dto::{ClockEventResponse, ClockStatusResponse, CompanyClockEventResponse, CompanyClockEventsResponse, ErrorResponse},
+    dto::{
+        ClockEventResponse, ClockStatusResponse, CompanyClockEventResponse,
+        CompanyClockEventsResponse, ErrorResponse,
+    },
     middleware::{AdminUser, AuthToken},
     services,
 };
@@ -99,14 +102,11 @@ pub async fn get_clock_status(
     AuthToken(claims): AuthToken,
     State(state): State<AppState>,
 ) -> Result<Json<ClockStatusResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let (current, recent) =
-        services::ClockService::get_status(&state.postgres, &claims.user_id)
-            .await
-            .map_err(|(status, err)| (status, Json(err)))?;
+    let (current, recent) = services::ClockService::get_status(&state.postgres, &claims.user_id)
+        .await
+        .map_err(|(status, err)| (status, Json(err)))?;
 
-    let is_clocked_in = current
-        .as_ref()
-        .map_or(false, |e| e.status == "in");
+    let is_clocked_in = current.as_ref().is_some_and(|e| e.status == "in");
 
     let current_event = if is_clocked_in {
         current.map(ClockEventResponse::from)

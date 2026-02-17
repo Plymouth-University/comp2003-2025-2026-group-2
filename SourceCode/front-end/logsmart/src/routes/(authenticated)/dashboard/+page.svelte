@@ -17,47 +17,49 @@
 	};
 
 	// Get user data from server load
-	const user = $derived((() => {
-		if (!data.user) {
+	const user = $derived(
+		(() => {
+			if (!data.user) {
+				return {
+					name: 'Loading...',
+					email: '',
+					company: '',
+					role: '',
+					initials: '?'
+				};
+			}
+
+			const firstName = data.user.first_name || '';
+			const lastName = data.user.last_name || '';
+			const fullName = `${firstName} ${lastName}`.trim();
+			const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
+			let role = '';
+			switch (data.user.role) {
+				case 'logsmart_admin':
+					role = 'LogSmart Internal Administrator';
+					break;
+				case 'staff':
+					role = 'Staff Member';
+					break;
+				case 'company_manager':
+					role = 'Company Manager';
+					break;
+				case 'branch_manager':
+					role = 'Branch Manager';
+					break;
+				default:
+					break;
+			}
+
 			return {
-				name: 'Loading...',
-				email: '',
-				company: '',
-				role: '',
-				initials: '?'
+				name: fullName || 'User',
+				email: data.user.email || '',
+				company: data.user.company_name || 'N/A',
+				role: role,
+				initials: initials || '?'
 			};
-		}
-
-		const firstName = data.user.first_name || '';
-		const lastName = data.user.last_name || '';
-		const fullName = `${firstName} ${lastName}`.trim();
-		const initials = (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
-		let role = '';
-		switch (data.user.role) {
-			case 'logsmart_admin':
-				role = 'LogSmart Internal Administrator';
-				break;
-			case 'staff':
-				role = 'Staff Member';
-				break;
-			case 'company_manager':
-				role = 'Company Manager';
-				break;
-			case 'branch_manager':
-				role = 'Branch Manager';
-				break;
-			default:
-				break;
-		}
-
-		return {
-			name: fullName || 'User',
-			email: data.user.email || '',
-			company: data.user.company_name || 'N/A',
-			role: role,
-			initials: initials || '?'
-		};
-	})());
+		})()
+	);
 
 	// Draggable boxes state
 	type BoxId = 'logs' | 'clock' | 'actions';
@@ -161,7 +163,11 @@
 		</div>
 
 		<!-- Three Equal Draggable Boxes in Horizontal Row -->
-		<div class="grid grid-cols-1 gap-6 transition-opacity duration-200 lg:grid-cols-3" class:opacity-0={!mounted} class:opacity-100={mounted}>
+		<div
+			class="grid grid-cols-1 gap-6 transition-opacity duration-200 lg:grid-cols-3"
+			class:opacity-0={!mounted}
+			class:opacity-100={mounted}
+		>
 			{#each boxes as boxId, index (boxId)}
 				<div
 					role="button"
@@ -186,7 +192,10 @@
 							>
 								<h2 class="text-xl font-bold" style="color: var(--text-primary);">Today's Logs</h2>
 							</div>
-							<div class="flex-1 overflow-auto px-6 py-6" style="background-color: var(--bg-primary);">
+							<div
+								class="flex-1 overflow-auto px-6 py-6"
+								style="background-color: var(--bg-primary);"
+							>
 								{#if todaysLogs.length === 0}
 									<div style="color: var(--text-secondary);">No logs due today</div>
 								{:else}
@@ -216,7 +225,10 @@
 							>
 								<h2 class="text-xl font-bold" style="color: var(--text-primary);">Quick Actions</h2>
 							</div>
-							<div class="flex flex-1 flex-col px-6 py-6" style="background-color: var(--bg-primary);">
+							<div
+								class="flex flex-1 flex-col px-6 py-6"
+								style="background-color: var(--bg-primary);"
+							>
 								<div class="flex flex-col gap-3">
 									<button
 										onclick={handleCreateNewTemplate}

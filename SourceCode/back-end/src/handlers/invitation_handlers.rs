@@ -107,12 +107,13 @@ pub async fn invite_user(
             ));
         }
         if let Some(role) = &payload.role
-            && *role != db::UserRole::Staff {
-                return Err((
-                    StatusCode::FORBIDDEN,
-                    Json(json!({ "error": "Branch managers can only invite staff members" })),
-                ));
-            }
+            && *role != db::UserRole::Staff
+        {
+            return Err((
+                StatusCode::FORBIDDEN,
+                Json(json!({ "error": "Branch managers can only invite staff members" })),
+            ));
+        }
     }
 
     let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)

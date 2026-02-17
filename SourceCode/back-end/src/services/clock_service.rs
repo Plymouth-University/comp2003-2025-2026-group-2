@@ -25,14 +25,13 @@ impl ClockService {
             )
         })?;
 
-        if let Some(ref event) = current {
-            if event.status == "in" {
+        if let Some(ref event) = current
+            && event.status == "in" {
                 return Err((
                     StatusCode::CONFLICT,
                     json!({"error": "You are already clocked in"}),
                 ));
             }
-        }
 
         let event = db::clock_in(pool, user_id, company_id).await.map_err(|e| {
             tracing::error!("Database error clocking in: {:?}", e);
@@ -107,7 +106,10 @@ impl ClockService {
             .await
             .map_err(|e| {
                 tracing::error!("Database error fetching company clock events: {:?}", e);
-                (StatusCode::INTERNAL_SERVER_ERROR, json!({"error": "Database error"}))
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({"error": "Database error"}),
+                )
             })?;
         Ok(events)
     }
