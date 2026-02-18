@@ -22,7 +22,7 @@ fn test_generate_token_success() {
 fn test_generate_token_with_different_expiry() {
     let config = JwtConfig::new("test_secret".to_string());
     let token1 = config.generate_token("user123".to_string(), 1).unwrap();
-    let token2 = config.generate_token("user123".to_string(), 24).unwrap();
+    let token2 = config.generate_token("user123", 24).unwrap();
     assert_ne!(token1, token2);
 }
 

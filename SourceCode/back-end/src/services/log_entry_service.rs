@@ -58,12 +58,13 @@ impl LogEntryService {
 
         // Check if template is for the correct branch
         if let Some(template_branch_id) = &template.branch_id
-            && Some(template_branch_id) != user.branch_id.as_ref() {
-                return Err((
-                    StatusCode::FORBIDDEN,
-                    json!({ "error": "Template is not available for your branch" }),
-                ));
-            }
+            && Some(template_branch_id) != user.branch_id.as_ref()
+        {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "Template is not available for your branch" }),
+            ));
+        }
 
         let has_entry = logs_db::has_entry_for_current_period(
             &state.mongodb,
@@ -161,7 +162,7 @@ impl LogEntryService {
                 ))?;
 
             // Allow if user can manage branch or is readonly HQ
-            if !user.can_manage_branch() && !user.is_readonly_hq() {
+            if !user.can_read_manage_branch() {
                 return Err((
                     StatusCode::FORBIDDEN,
                     json!({ "error": "You do not have permission to view this entry" }),

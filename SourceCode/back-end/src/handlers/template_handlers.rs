@@ -175,7 +175,7 @@ pub async fn get_all_templates(
             Json(json!({ "error": "User not found" })),
         ))?;
 
-    if !user.can_manage_branch() && !user.is_readonly_hq() {
+    if !user.can_read_manage_branch() {
         return Err((
             StatusCode::FORBIDDEN,
             Json(json!({ "error": "Only managers can access templates" })),

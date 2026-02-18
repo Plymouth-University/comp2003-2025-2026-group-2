@@ -279,7 +279,7 @@ pub async fn google_callback(
         .map_err(|(status, value)| (status, Json(value)))?;
 
     let token = oauth_client
-        .generate_jwt_for_user(user.id.clone())
+        .generate_jwt_for_user(user.id.as_str())
         .map_err(|(status, value)| (status, Json(value)))?;
 
     let frontend_url =
