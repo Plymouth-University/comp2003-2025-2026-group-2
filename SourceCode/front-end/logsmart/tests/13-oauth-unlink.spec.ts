@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { register } from './utils';
 
-async function fillMockOAuthForm(page: any, email: string, firstName: string, lastName: string) {
+async function fillMockOAuthForm(page: Page, email: string, firstName: string, lastName: string) {
 	await page.fill('input[name="subject"], input#subject, input[type="text"]', email);
 	const claimsJson = JSON.stringify({
 		email: email,
