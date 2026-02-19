@@ -2004,7 +2004,7 @@ pub async fn get_company_clock_events(
     let mut query = sqlx::query_as::<_, CompanyClockEventRow>(&query_str).bind(company_id);
 
     if let Some(bid) = branch_id {
-        query = query.bind(&bid);
+        query = query.bind(bid);
     }
 
     if let Some(f) = from {
