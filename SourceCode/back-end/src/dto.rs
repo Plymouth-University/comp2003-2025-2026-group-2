@@ -419,6 +419,13 @@ pub struct ErrorResponse {
     pub error: String,
 }
 
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ImageUploadResponse {
+    pub filename: String,
+    pub object_id: String,
+    pub file_size: u64,
+}
+
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UpdateProfileRequest {
     #[schema(example = "John")]

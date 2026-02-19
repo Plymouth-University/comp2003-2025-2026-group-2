@@ -1,11 +1,12 @@
 <script lang="ts">
-	import { draggable } from '@neodrag/svelte';
-	import type { CanvasItem } from './types';
-	import TemperaturePicker from '$lib/components/temperature_picker.svelte';
-	import UserCheckbox from '$lib/components/user_checkbox.svelte';
-	import UserDropdown from '$lib/components/user_dropdown.svelte';
-	import UserTextInput from '$lib/components/user_text_input.svelte';
-	import UserTextLabel from '$lib/components/user_text_label.svelte';
+ 	import { draggable } from '@neodrag/svelte';
+ 	import type { CanvasItem } from './types';
+ 	import TemperaturePicker from '$lib/components/temperature_picker.svelte';
+ 	import UserCheckbox from '$lib/components/user_checkbox.svelte';
+ 	import UserDropdown from '$lib/components/user_dropdown.svelte';
+ 	import UserTextInput from '$lib/components/user_text_input.svelte';
+ 	import UserTextLabel from '$lib/components/user_text_label.svelte';
+ 	import ImageUpload from '$lib/components/image_upload.svelte';
 
 	let {
 		item = $bindable(),
@@ -78,13 +79,18 @@
 	{:else if item.type === 'dropdown'}
 		<UserDropdown bind:selected={item.props.selected} options={item.props.options} />
 	{:else if item.type === 'label'}
-		<UserTextLabel
-			editable={item.props.editable}
-			bind:text={item.props.text}
-			size={item.props.size}
-			weight={item.props.weight}
-		/>
-	{/if}
+ 		<UserTextLabel
+ 			editable={item.props.editable}
+ 			bind:text={item.props.text}
+ 			size={item.props.size}
+ 			weight={item.props.weight}
+ 		/>
+ 	{:else if item.type === 'image_upload'}
+ 		<ImageUpload
+ 			bind:upload={item.props.upload}
+ 			placeholder="Upload Image"
+ 		/>
+ 	{/if}
 </div>
 
 <style>

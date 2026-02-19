@@ -273,6 +273,9 @@ async fn main() {
         .route("/health/slow-queries", get(handlers::get_db_slow_queries))
         .route("/health/index-usage", get(handlers::get_db_index_usage))
         .route("/health/table-sizes", get(handlers::get_db_table_sizes))
+        .route("/api/images/upload", post(handlers::upload_image))
+        .route("/api/images/:id", get(handlers::get_image))
+        .route("/api/images/:id", delete(handlers::delete_image))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             rate_limit::rate_limit_middleware,

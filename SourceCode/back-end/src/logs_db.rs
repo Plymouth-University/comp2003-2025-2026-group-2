@@ -1121,3 +1121,163 @@ pub fn process_template_layout_with_period_string(
         })
         .collect()
 }
+
+#[derive(Debug, serde::Deserialize, serde::Serialize, ToSchema)]
+pub struct ImageMetadata {
+    pub object_id: String,
+    pub filename: String,
+    pub content_type: String,
+    pub file_size: u64,
+    pub uploaded_by: String,
+    pub company_id: String,
+    pub uploaded_at: chrono::DateTime<chrono::Utc>,
+}
+
+/// Stores an image in MongoDB GridFS.
+/// 
+/// # Errors
+/// Returns an error if the upload fails.
+pub async fn store_image(
+    client: &mongodb::Client,
+    data: Vec<u8>,
+    filename: &str,
+    content_type: &str,
+    uploaded_by: &str,
+    company_id: &str,
+) -> Result<mongodb::bson::oid::ObjectId> {
+    use futures_util::AsyncWriteExt;
+    
+    let db = client.database("logs_db");
+    let bucket = db.gridfs_bucket(None);
+    
+    // Create metadata document
+    let mut metadata = mongodb::bson::Document::new();
+    metadata.insert("contentType", content_type);
+    metadata.insert("uploadedBy", uploaded_by);
+    metadata.insert("companyId", company_id);
+    metadata.insert("uploadedAt", mongodb::bson::to_bson(&chrono::Utc::now())?);
+    
+    // Open upload stream and set metadata using the builder pattern
+    let mut upload_stream = bucket
+        .open_upload_stream(filename)
+        .metadata(metadata)
+        .await?;
+    
+    upload_stream.write_all(&data).await?;
+    upload_stream.close().await?;
+    
+    // Get the id from the upload stream
+    let file_id = upload_stream.id().clone();
+    if let mongodb::bson::Bson::ObjectId(oid) = file_id {
+        Ok(oid)
+    } else {
+        Err(anyhow::anyhow!("Failed to get ObjectId from upload stream"))
+    }
+}
+
+/// Retrieves an image from MongoDB GridFS.
+/// 
+/// # Errors
+/// Returns an error if the download fails.
+pub async fn get_image(
+    client: &mongodb::Client,
+    object_id: &mongodb::bson::oid::ObjectId,
+) -> Result<Option<(Vec<u8>, mongodb::gridfs::FilesCollectionDocument)>> {
+    use futures_util::AsyncReadExt;
+    
+    let db = client.database("logs_db");
+    let bucket = db.gridfs_bucket(None);
+    
+    let filter = mongodb::bson::doc! { "_id": object_id };
+    let mut cursor = bucket.find(filter).await?;
+    
+    if let Some(file) = cursor.try_next().await? {
+        let mut download_stream = bucket.open_download_stream(mongodb::bson::Bson::ObjectId(*object_id)).await?;
+        let mut buffer = Vec::new();
+        download_stream.read_to_end(&mut buffer).await?;
+        Ok(Some((buffer, file)))
+    } else {
+        Ok(None)
+    }
+}
+
+/// Deletes an image from MongoDB GridFS.
+/// 
+/// # Errors
+/// Returns an error if the deletion fails.
+pub async fn delete_image(
+    client: &mongodb::Client,
+    object_id: &mongodb::bson::oid::ObjectId,
+) -> Result<()> {
+    let db = client.database("logs_db");
+    let bucket = db.gridfs_bucket(None);
+    bucket.delete(mongodb::bson::Bson::ObjectId(*object_id)).await?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod gridfs_tests {
+    #[test]
+    fn test_object_id_generation() {
+        let id1 = mongodb::bson::oid::ObjectId::new();
+        let id2 = mongodb::bson::oid::ObjectId::new();
+        
+        // IDs should be unique
+        assert_ne!(id1, id2);
+        
+        // IDs should be valid 24-character hex strings
+        let id_str = id1.to_string();
+        assert_eq!(id_str.len(), 24);
+        assert!(id_str.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+    
+    #[test]
+    fn test_object_id_parsing() {
+        let original_id = mongodb::bson::oid::ObjectId::new();
+        let id_str = original_id.to_string();
+        
+        // Should parse back to the same ID
+        let parsed_id = mongodb::bson::oid::ObjectId::parse_str(&id_str)
+            .expect("Failed to parse ObjectId");
+        assert_eq!(original_id, parsed_id);
+    }
+    
+    #[test]
+    fn test_object_id_parsing_invalid() {
+        // Invalid hex string
+        let result = mongodb::bson::oid::ObjectId::parse_str("not-a-valid-id");
+        assert!(result.is_err());
+        
+        // Wrong length (too short)
+        let result = mongodb::bson::oid::ObjectId::parse_str("507f1f77bcf86cd79943901");
+        assert!(result.is_err());
+        
+        // Wrong length (too long)
+        let result = mongodb::bson::oid::ObjectId::parse_str("507f1f77bcf86cd7994390111");
+        assert!(result.is_err());
+        
+        // Empty string
+        let result = mongodb::bson::oid::ObjectId::parse_str("");
+        assert!(result.is_err());
+        
+        // Non-hex characters
+        let result = mongodb::bson::oid::ObjectId::parse_str("507f1f77bcf86cd79943901g");
+        assert!(result.is_err());
+    }
+    
+    #[test]
+    fn test_object_id_timestamp() {
+        let id = mongodb::bson::oid::ObjectId::new();
+        let timestamp = id.timestamp();
+        
+        // Timestamp should be reasonable (within last minute)
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as i64;
+        let id_time = timestamp.timestamp_millis();
+        
+        assert!(id_time <= now);
+        assert!(now - id_time < 60000); // Created within last minute
+    }
+}

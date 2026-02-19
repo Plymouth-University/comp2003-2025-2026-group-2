@@ -14,7 +14,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0"
-axum = { version = "0.8.7", features = ["macros"] }
+axum = { version = "0.8.7", features = ["macros", "multipart"] }
 base64 = "0.22"
 axum-extra = { version = "0.12.2", features = ["typed-header"] }
 async-trait = "0.1"
@@ -47,7 +47,7 @@ webauthn-rs = { version = "0.5", features = ["danger-allow-state-serialisation",
 url = "2.5.7"
 webauthn-rs-proto = "0.5.4"
 openidconnect = { version = "4.0.1", features = [ "reqwest" ] }
-reqwest = { version = "0.13.1", features = ["json"] }
+reqwest = { version = "0.13.1", features = ["json", "multipart"] }
 moka = { version = "0.12.13", features = ["future"] }
 
 [dev-dependencies]

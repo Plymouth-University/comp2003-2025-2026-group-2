@@ -21,7 +21,8 @@
 		{ type: 'checkbox', name: 'Checkbox', icon: '✓' },
 		{ type: 'temperature', name: 'Temperature Input', icon: '🌡' },
 		{ type: 'dropdown', name: 'Dropdown', icon: '≡' },
-		{ type: 'label', name: 'Text Label', icon: 'L' }
+		{ type: 'label', name: 'Text Label', icon: 'L' },
+		{ type: 'image_upload', name: 'Image Upload', icon: '📷' }
 	];
 
 	let canvasItems = $state<CanvasItem[]>([]);
@@ -75,7 +76,8 @@
 				value: field.props.value ?? '',
 				unit: field.props.unit ?? '°C',
 				options: field.props.options ?? [],
-				selected: field.props.selected ?? false
+				selected: field.props.selected ?? false,
+				upload: field.props.upload ?? ''
 			}
 		};
 	}
@@ -94,6 +96,7 @@
 		if (item.props.unit !== undefined) props.unit = item.props.unit;
 		if (item.props.options !== undefined) props.options = item.props.options;
 		if (item.props.selected !== undefined) props.selected = String(item.props.selected);
+		if (item.props.upload !== undefined) props.upload = item.props.upload;
 
 		return {
 			field_type: item.type,

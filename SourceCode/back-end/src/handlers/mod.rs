@@ -1,4 +1,5 @@
 pub mod auth_handlers;
+pub mod image_handlers;
 pub mod branch_handlers;
 pub mod health_handlers;
 pub mod invitation_handlers;
@@ -10,6 +11,7 @@ pub mod template_handlers;
 pub mod user_handlers;
 
 pub use auth_handlers::*;
+pub use image_handlers::*;
 pub use branch_handlers::*;
 pub use health_handlers::*;
 pub use invitation_handlers::*;

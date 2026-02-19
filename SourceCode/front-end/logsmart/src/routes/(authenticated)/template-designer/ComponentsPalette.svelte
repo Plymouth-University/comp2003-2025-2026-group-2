@@ -1,10 +1,11 @@
 <script lang="ts">
-	import TemperaturePicker from '$lib/components/temperature_picker.svelte';
-	import UserCheckbox from '$lib/components/user_checkbox.svelte';
-	import UserDropdown from '$lib/components/user_dropdown.svelte';
-	import UserTextInput from '$lib/components/user_text_input.svelte';
-	import UserTextLabel from '$lib/components/user_text_label.svelte';
-	import type { ComponentType } from './types';
+ 	import TemperaturePicker from '$lib/components/temperature_picker.svelte';
+ 	import UserCheckbox from '$lib/components/user_checkbox.svelte';
+ 	import UserDropdown from '$lib/components/user_dropdown.svelte';
+ 	import UserTextInput from '$lib/components/user_text_input.svelte';
+ 	import UserTextLabel from '$lib/components/user_text_label.svelte';
+ 	import ImageUpload from '$lib/components/image_upload.svelte';
+ 	import type { ComponentType } from './types';
 
 	let {
 		componentTypes,
@@ -38,7 +39,8 @@
 			checkbox: 'var(--component-checkbox)',
 			temperature: 'var(--component-temperature)',
 			dropdown: 'var(--component-dropdown)',
-			label: 'var(--component-label)'
+			label: 'var(--component-label)',
+			image_upload: 'var(--component-image-upload)'
 		};
 		return colorMap[type] || 'transparent';
 	}
@@ -112,6 +114,8 @@
 			<UserDropdown selected="" options={['Option 1', 'Option 2', 'Option 3']} />
 		{:else if draggingType === 'label'}
 			<UserTextLabel editable={false} text="Label Text" size={16} weight="normal" />
+		{:else if draggingType === 'image_upload'}
+			<ImageUpload upload="" placeholder="Upload Image" />
 		{/if}
 	</div>
 {/if}

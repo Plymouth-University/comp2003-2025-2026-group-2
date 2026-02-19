@@ -35,6 +35,7 @@
 	--component-temperature: #fef3c7;
 	--component-dropdown: #f3e8ff;
 	--component-label: #ffe4e6;
+	--component-image-upload: #e879fe;
 }
 
 .dark {
@@ -49,4 +50,5 @@
 	--component-temperature: #78350f;
 	--component-dropdown: #581c87;
 	--component-label: #881337;
+	--component-image-upload: #a855f7;
 }

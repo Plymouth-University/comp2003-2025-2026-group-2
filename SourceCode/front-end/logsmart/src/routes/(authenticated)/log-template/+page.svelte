@@ -6,6 +6,7 @@
 	import UserDropdown from '$lib/components/user_dropdown.svelte';
 	import UserTextInput from '$lib/components/user_text_input.svelte';
 	import UserTextLabel from '$lib/components/user_text_label.svelte';
+	import ImageUpload from '$lib/components/image_upload.svelte';
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -38,6 +39,8 @@
 					initialData[index] = field.props.value === 'true' || field.props.value === true;
 				} else if (field.field_type === 'dropdown') {
 					initialData[index] = field.props.selected || (field.props.options?.[0] ?? '');
+				} else if (field.field_type === 'image_upload') {
+					initialData[index] = field.props.upload ?? '';
 				}
 			});
 			entryData = initialData;
@@ -186,6 +189,12 @@
 							text={field.props.text || `Field ${index + 1}`}
 							size={field.props.size ?? 16}
 							weight={field.props.weight || 'normal'}
+						/>
+					{:else if field.field_type === 'image_upload' && entryData[index] !== undefined}
+						<ImageUpload
+							bind:upload={entryData[index]}
+							placeholder="Upload Image"
+							disabled={mode === 'view'}
 						/>
 					{/if}
 				{/each}
