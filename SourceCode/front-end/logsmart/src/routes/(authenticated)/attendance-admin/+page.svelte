@@ -26,6 +26,13 @@
 	const yyyy = today.getFullYear();
 	const currentDateFormatted = `${dd}/${mm}/${yyyy}`;
 
+	const tomorrow = new Date(today);
+	tomorrow.setDate(tomorrow.getDate() + 1);
+	const tomorrowDD = String(tomorrow.getDate()).padStart(2, '0');
+	const tomorrowMM = String(tomorrow.getMonth() + 1).padStart(2, '0');
+	const tomorrowYYYY = tomorrow.getFullYear();
+	const tomorrowDateFormatted = `${tomorrowDD}/${tomorrowMM}/${tomorrowYYYY}`;
+
 	// Initialise from URL params (convert ISO → DD/MM/YYYY)
 	function isoToDisplay(iso: string | null): string {
 		if (!iso) return '';
@@ -42,8 +49,8 @@
 		return '';
 	}
 
-	let dateFrom = $state(isoToDisplay(page.url.searchParams.get('from')) || '');
-	let dateTo = $state(isoToDisplay(page.url.searchParams.get('to')) || '');
+	let dateFrom = $state(isoToDisplay(page.url.searchParams.get('from')) || currentDateFormatted);
+	let dateTo = $state(isoToDisplay(page.url.searchParams.get('to')) || tomorrowDateFormatted);
 
 	// For branch_manager, auto-select their branch
 	let selectedBranchId = $state('');
