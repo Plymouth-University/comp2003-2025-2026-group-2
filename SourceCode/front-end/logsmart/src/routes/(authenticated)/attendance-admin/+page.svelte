@@ -3,9 +3,21 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 
-	let { data } = $props<{ data: PageData }>();
+	let { data} = $props<{ data: PageData }>();
 
 	const clockEvents = $derived(data?.clockEvents ?? []);
+	const branches = $derived(data?.branches ?? []);
+	const members = $derived(data?.members ?? []);
+	const userRole = $derived(data?.userRole ?? '');
+
+	// Create mapping from user_id to branch_id for client-side filtering
+	const userToBranchMap = $derived.by(() => {
+		const map = new Map<string, string | null>();
+		for (const member of members) {
+			map.set(member.id, member.branch_id);
+		}
+		return map;
+	});
 
 	// --- Date picker state (matches reports page) ---
 	const today = new Date();
@@ -33,6 +45,14 @@
 	let dateFrom = $state(isoToDisplay(page.url.searchParams.get('from')) || '');
 	let dateTo = $state(isoToDisplay(page.url.searchParams.get('to')) || '');
 
+	// For branch_manager, auto-select their branch
+	let selectedBranchId = $state('');
+	$effect(() => {
+		if (userRole === 'branch_manager' && data?.user?.branch_id) {
+			selectedBranchId = data.user.branch_id;
+		}
+	});
+
 	let showDateFromPicker = $state(false);
 	let showDateToPicker = $state(false);
 	let pickerView = $state<'day' | 'month' | 'year'>('day');
@@ -44,9 +64,20 @@
 	let searchQuery = $state('');
 
 	const filteredEvents = $derived(() => {
-		if (!searchQuery.trim()) return clockEvents;
+		let events = clockEvents;
+
+		// Filter by branch (client-side)
+		if (selectedBranchId && selectedBranchId.trim() !== '') {
+			events = events.filter((e: any) => {
+				const userBranchId = userToBranchMap.get(e.user_id);
+				return userBranchId === selectedBranchId;
+			});
+		}
+
+		// Filter by search query
+		if (!searchQuery.trim()) return events;
 		const q = searchQuery.toLowerCase();
-		return clockEvents.filter(
+		return events.filter(
 			(e: any) =>
 				e.first_name.toLowerCase().includes(q) ||
 				e.last_name.toLowerCase().includes(q) ||
@@ -202,6 +233,10 @@
 			end.setHours(23, 59, 59, 999);
 			params.set('to', end.toISOString());
 		}
+		// Only add branch_id if it's not empty
+		if (selectedBranchId && selectedBranchId.trim() !== '') {
+			params.set('branch_id', selectedBranchId.trim());
+		}
 		const qs = params.toString();
 		goto(`/attendance-admin${qs ? '?' + qs : ''}`, { invalidateAll: true });
 	}
@@ -210,6 +245,10 @@
 		dateFrom = '';
 		dateTo = '';
 		searchQuery = '';
+		// Don't clear branch filter for branch_manager  
+		if (userRole !== 'branch_manager') {
+			selectedBranchId = '';
+		}
 		goto('/attendance-admin', { invalidateAll: true });
 	}
 
@@ -309,6 +348,26 @@
 			class="mb-6 flex flex-wrap items-end gap-4 rounded border-2 p-4"
 			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 		>
+			<!-- Branch Filter (only for company_manager) -->
+			{#if userRole === 'company_manager' && branches.length > 0}
+				<div class="flex flex-col gap-1">
+					<label for="filter-branch" class="text-xs font-medium" style="color: var(--text-secondary);">
+						Branch
+					</label>
+					<select
+						id="filter-branch"
+						bind:value={selectedBranchId}
+						class="border-2 px-3 py-2 text-sm"
+						style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary); min-width: 180px;"
+					>
+						<option value="">All Branches</option>
+						{#each branches as branch}
+							<option value={branch.id}>{branch.name}</option>
+						{/each}
+					</select>
+				</div>
+			{/if}
+
 			<!-- Date From -->
 			<div class="flex flex-col gap-1">
 				<label for="filter-from" class="text-xs font-medium" style="color: var(--text-secondary);"

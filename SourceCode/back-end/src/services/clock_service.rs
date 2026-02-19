@@ -102,8 +102,9 @@ impl ClockService {
         company_id: &str,
         from: Option<DateTime<Utc>>,
         to: Option<DateTime<Utc>>,
+        branch_id: Option<String>,
     ) -> Result<Vec<db::CompanyClockEventRow>, (StatusCode, serde_json::Value)> {
-        let events = db::get_company_clock_events(pool, company_id, from, to)
+        let events = db::get_company_clock_events(pool, company_id, from, to, branch_id)
             .await
             .map_err(|e| {
                 tracing::error!("Database error fetching company clock events: {:?}", e);

@@ -1951,7 +1951,7 @@ pub struct CompanyClockEventRow {
 }
 
 /// Gets all clock events for a company, joined with user name/email.
-/// Optionally filtered by date range.
+/// Optionally filtered by date range and branch.
 ///
 /// # Errors
 /// Returns an error if the database query fails.
@@ -1960,8 +1960,12 @@ pub async fn get_company_clock_events(
     company_id: &str,
     from: Option<chrono::DateTime<chrono::Utc>>,
     to: Option<chrono::DateTime<chrono::Utc>>,
+    branch_id: Option<String>,
 ) -> Result<Vec<CompanyClockEventRow>> {
-    let events = sqlx::query_as::<_, CompanyClockEventRow>(
+    // Filter out empty strings from branch_id
+    let branch_id = branch_id.filter(|s| !s.is_empty());
+    
+    let mut query_str = String::from(
         r"
         SELECT ce.id, ce.user_id, ce.company_id, ce.clock_in, ce.clock_out,
                ce.status, ce.created_at,
@@ -1969,16 +1973,50 @@ pub async fn get_company_clock_events(
         FROM clock_events ce
         JOIN users u ON u.id = ce.user_id
         WHERE ce.company_id = $1
-          AND ($2::timestamptz IS NULL OR ce.clock_in >= $2)
-          AND ($3::timestamptz IS NULL OR ce.clock_in <= $3)
-        ORDER BY ce.clock_in DESC
-        ",
-    )
-    .bind(company_id)
-    .bind(from)
-    .bind(to)
-    .fetch_all(pool)
-    .await?;
+        "
+    );
+
+    let mut bind_count = 1;
+    
+    // Add branch filter if provided
+    if branch_id.is_some() {
+        bind_count += 1;
+        query_str.push_str(&format!("  AND u.branch_id = ${}\n", bind_count));
+    }
+
+    // Add date filters
+    if from.is_some() {
+        bind_count += 1;
+        query_str.push_str(&format!("  AND ce.clock_in >= ${}\n", bind_count));
+    }
+    
+    if to.is_some() {
+        bind_count += 1;
+        query_str.push_str(&format!("  AND ce.clock_in <= ${}\n", bind_count));
+    }
+
+    query_str.push_str("ORDER BY ce.clock_in DESC");
+
+    // Log the query for debugging
+    tracing::debug!("Clock events query: {}", query_str);
+    tracing::debug!("Branch ID filter: {:?}", branch_id);
+
+    let mut query = sqlx::query_as::<_, CompanyClockEventRow>(&query_str)
+        .bind(company_id);
+
+    if let Some(bid) = branch_id {
+        query = query.bind(&bid);
+    }
+    
+    if let Some(f) = from {
+        query = query.bind(f);
+    }
+    
+    if let Some(t) = to {
+        query = query.bind(t);
+    }
+
+    let events = query.fetch_all(pool).await?;
 
     Ok(events)
 }

@@ -129,6 +129,8 @@ pub struct CompanyClockQuery {
     pub from: Option<String>,
     /// ISO 8601 end date filter (inclusive)
     pub to: Option<String>,
+    /// Branch ID filter (optional, for company_manager to filter by specific branch)
+    pub branch_id: Option<String>,
 }
 
 #[utoipa::path(
@@ -167,6 +169,21 @@ pub async fn get_company_clock_events(
             Json(json!({ "error": "User is not associated with a company" })),
         ))?;
 
+    // Fetch user to get role and branch_id
+    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching user: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Database error" })),
+            )
+        })?
+        .ok_or((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "User not found" })),
+        ))?;
+
     let from = params
         .from
         .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
@@ -176,8 +193,15 @@ pub async fn get_company_clock_events(
         .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
         .map(|dt| dt.with_timezone(&chrono::Utc));
 
+    // If user is branch_manager, restrict to their branch only
+    let branch_id_filter = if user.role.to_string() == "branch_manager" {
+        user.branch_id
+    } else {
+        params.branch_id
+    };
+
     let events =
-        services::ClockService::get_company_clock_events(&state.postgres, &company_id, from, to)
+        services::ClockService::get_company_clock_events(&state.postgres, &company_id, from, to, branch_id_filter)
             .await
             .map_err(|(status, err)| (status, Json(err)))?;
 
