@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 
-	let { data} = $props<{ data: PageData }>();
+	let { data } = $props<{ data: PageData }>();
 
 	const clockEvents = $derived(data?.clockEvents ?? []);
 	const branches = $derived(data?.branches ?? []);
@@ -245,7 +245,7 @@
 		dateFrom = '';
 		dateTo = '';
 		searchQuery = '';
-		// Don't clear branch filter for branch_manager  
+		// Don't clear branch filter for branch_manager
 		if (userRole !== 'branch_manager') {
 			selectedBranchId = '';
 		}
@@ -351,7 +351,11 @@
 			<!-- Branch Filter (only for company_manager) -->
 			{#if userRole === 'company_manager' && branches.length > 0}
 				<div class="flex flex-col gap-1">
-					<label for="filter-branch" class="text-xs font-medium" style="color: var(--text-secondary);">
+					<label
+						for="filter-branch"
+						class="text-xs font-medium"
+						style="color: var(--text-secondary);"
+					>
 						Branch
 					</label>
 					<select

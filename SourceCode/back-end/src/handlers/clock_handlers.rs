@@ -200,10 +200,15 @@ pub async fn get_company_clock_events(
         params.branch_id
     };
 
-    let events =
-        services::ClockService::get_company_clock_events(&state.postgres, &company_id, from, to, branch_id_filter)
-            .await
-            .map_err(|(status, err)| (status, Json(err)))?;
+    let events = services::ClockService::get_company_clock_events(
+        &state.postgres,
+        &company_id,
+        from,
+        to,
+        branch_id_filter,
+    )
+    .await
+    .map_err(|(status, err)| (status, Json(err)))?;
 
     let events = events
         .into_iter()

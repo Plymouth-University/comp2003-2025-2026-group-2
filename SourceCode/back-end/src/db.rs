@@ -1964,7 +1964,7 @@ pub async fn get_company_clock_events(
 ) -> Result<Vec<CompanyClockEventRow>> {
     // Filter out empty strings from branch_id
     let branch_id = branch_id.filter(|s| !s.is_empty());
-    
+
     let mut query_str = String::from(
         r"
         SELECT ce.id, ce.user_id, ce.company_id, ce.clock_in, ce.clock_out,
@@ -1973,11 +1973,11 @@ pub async fn get_company_clock_events(
         FROM clock_events ce
         JOIN users u ON u.id = ce.user_id
         WHERE ce.company_id = $1
-        "
+        ",
     );
 
     let mut bind_count = 1;
-    
+
     // Add branch filter if provided
     if branch_id.is_some() {
         bind_count += 1;
@@ -1989,7 +1989,7 @@ pub async fn get_company_clock_events(
         bind_count += 1;
         query_str.push_str(&format!("  AND ce.clock_in >= ${}\n", bind_count));
     }
-    
+
     if to.is_some() {
         bind_count += 1;
         query_str.push_str(&format!("  AND ce.clock_in <= ${}\n", bind_count));
@@ -2001,17 +2001,16 @@ pub async fn get_company_clock_events(
     tracing::debug!("Clock events query: {}", query_str);
     tracing::debug!("Branch ID filter: {:?}", branch_id);
 
-    let mut query = sqlx::query_as::<_, CompanyClockEventRow>(&query_str)
-        .bind(company_id);
+    let mut query = sqlx::query_as::<_, CompanyClockEventRow>(&query_str).bind(company_id);
 
     if let Some(bid) = branch_id {
         query = query.bind(&bid);
     }
-    
+
     if let Some(f) = from {
         query = query.bind(f);
     }
-    
+
     if let Some(t) = to {
         query = query.bind(t);
     }
