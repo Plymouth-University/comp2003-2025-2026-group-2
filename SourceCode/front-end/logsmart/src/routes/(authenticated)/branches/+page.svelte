@@ -3,7 +3,7 @@
 	import type { PageData } from './$types';
 
 	const { data } = $props<{ data: PageData }>();
-	let branches = $state([...data.branches]);
+	let branches = $derived([...data.branches]);
 	const isHQStaff = $derived(data.isHQStaff === true);
 	const canEditBranches = $derived(!isHQStaff);
 	let newBranchName = $state('');
@@ -313,9 +313,7 @@
 						autocomplete="off"
 					/>
 					{#if isSearching}
-						<div class="absolute top-[2.25rem] right-3 text-xs text-text-secondary">
-							Searching...
-						</div>
+						<div class="absolute top-9 right-3 text-xs text-text-secondary">Searching...</div>
 					{/if}
 					{#if showResults && searchResults.length > 0}
 						<div
@@ -354,6 +352,7 @@
 					<!-- Edit Mode -->
 					<div class="space-y-4">
 						<div>
+							<!-- svelte-ignore a11y_label_has_associated_control -->
 							<label class="mb-1 block text-sm font-medium text-text-primary">Branch Name</label>
 							<input
 								type="text"
@@ -363,6 +362,7 @@
 							/>
 						</div>
 						<div class="search-container relative">
+							<!-- svelte-ignore a11y_label_has_associated_control -->
 							<label class="mb-1 block text-sm font-medium text-text-primary">Address</label>
 							<input
 								type="text"
@@ -376,9 +376,7 @@
 								autocomplete="off"
 							/>
 							{#if isEditSearching}
-								<div class="absolute top-[2.25rem] right-3 text-xs text-text-secondary">
-									Searching...
-								</div>
+								<div class="absolute top-9 right-3 text-xs text-text-secondary">Searching...</div>
 							{/if}
 							{#if showEditResults && editSearchResults.length > 0}
 								<div
@@ -475,6 +473,8 @@
 </div>
 
 {#if showDeleteModal && branchToDelete}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
 		onclick={(e) => e.target === e.currentTarget && cancelDeleteBranch()}

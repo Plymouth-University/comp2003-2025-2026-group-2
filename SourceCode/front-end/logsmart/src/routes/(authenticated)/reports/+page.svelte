@@ -209,7 +209,6 @@
 		if (!templateLayout || templateLayout.length === 0) return 'Text Logs';
 
 		const fieldTypes = templateLayout.map((field) => field.field_type).filter(Boolean);
-		console.log('Categorizing log with field types:', fieldTypes);
 
 		if (fieldTypes.includes('temperature')) return 'Temperature Logs';
 		if (fieldTypes.includes('checkbox')) return 'Checkbox Logs';
@@ -350,7 +349,6 @@
 			}
 		});
 
-		console.log('Excluded field types:', excludedTypes);
 		return excludedTypes;
 	}
 
@@ -362,36 +360,23 @@
 	): boolean {
 		if (!templateLayout || templateLayout.length === 0) return true;
 
-		// Debug logging
-		console.log('Checking fields for entry:', {
-			templateLayout: templateLayout?.map((f) => ({ type: f.field_type, id: f.field_id || f.id })),
-			excludedTypes: excludeFieldTypes
-		});
-
 		// Check if at least one field is not excluded AND has actual data
 		const result = templateLayout.some((field, index) => {
 			const fieldType = normalizeFieldType(field.field_type);
 
-			console.log(
-				`Checking field ${index}: type='${fieldType}', excluded=${excludeFieldTypes.includes(fieldType)}`
-			);
-
 			// Skip excluded field types
 			if (excludeFieldTypes.includes(fieldType)) {
-				console.log(`Field excluded (type: ${fieldType})`);
 				return false;
 			}
 
 			// If no entry data provided, just check field type existence
 			if (!entryData) {
-				console.log(`Field accepted (type: ${fieldType}) - no data check`);
 				return true;
 			}
 
 			// Check if this field actually has data
 			const fieldData = parseFieldData(entryData, field, index);
 			if (!fieldData) {
-				console.log(`Field rejected (type: ${fieldType}) - no data`);
 				return false;
 			}
 
@@ -404,13 +389,9 @@
 				dataStr !== 'undefined' &&
 				dataStr !== 'null';
 
-			console.log(
-				`Field ${hasValidData ? 'accepted' : 'rejected'} (type: ${fieldType}) - data: "${dataStr}"`
-			);
 			return hasValidData;
 		});
 
-		console.log('hasRemainingFields result:', result);
 		return result;
 	}
 
@@ -697,19 +678,19 @@
 
 		try {
 			// Build query params for branch filter
-			let queryParams = '';
+			let branchIds = '';
 			if (
 				(isCompanyManager || isReadonlyHQ) &&
 				selectedBranches.length > 0 &&
 				selectedBranches.length < branches.length
 			) {
-				queryParams = `?branch_ids=${selectedBranches.join(',')}`;
+				branchIds = selectedBranches.join(',');
 			}
 
 			// Fetch log entries - use admin endpoint for readonly HQ to get all company logs
 			const response =
 				isReadonlyHQ || isCompanyManager
-					? await api.GET(`/logs/admin/entries${queryParams}`)
+					? await api.GET(`/logs/admin/entries`, { params: { query: { branch_ids: branchIds } } })
 					: await api.GET('/logs/entries');
 
 			if (!response.data) {
@@ -717,18 +698,6 @@
 			}
 
 			logEntries = response.data.entries;
-
-			// DEBUG: Log first entry's template layout to see actual field types
-			if (logEntries.length > 0 && logEntries[0].template_layout) {
-				console.log('=== SAMPLE ENTRY TEMPLATE LAYOUT ===');
-				console.log('Template:', logEntries[0].template_name);
-				console.log('Layout:', JSON.stringify(logEntries[0].template_layout, null, 2));
-				logEntries[0].template_layout.forEach((field: any, idx: number) => {
-					console.log(
-						`Field ${idx}: field_type="${field.field_type}" (typeof: ${typeof field.field_type})`
-					);
-				});
-			}
 
 			// Collect available log types from actual data
 			const logTypesSet = new Set<string>();
@@ -766,16 +735,6 @@
 					excludedFieldTypes,
 					entry.entry_data
 				);
-
-				// Debug logging for troubleshooting
-				if (isInDateRange && !hasFields) {
-					console.log('Entry excluded due to no remaining fields:', {
-						entryId: entry.id.slice(0, 8),
-						templateName: entry.template_name,
-						excludedTypes: excludedFieldTypes,
-						templateLayout: entry.template_layout?.map((f) => f.field_type)
-					});
-				}
 
 				return isInDateRange && hasFields;
 			});

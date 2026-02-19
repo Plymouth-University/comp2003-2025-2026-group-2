@@ -48,6 +48,7 @@ use utoipa::OpenApi;
         handlers::unlink_google_account,
         handlers::create_branch,
         handlers::list_branches,
+        handlers::update_branch,
         handlers::list_company_log_entries,
         handlers::clock_in,
         handlers::clock_out,

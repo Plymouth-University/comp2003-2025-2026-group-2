@@ -83,7 +83,7 @@
 				const data = await res.json();
 				error = data.error || 'Failed to clock in';
 			}
-		} catch (e) {
+		} catch {
 			error = 'Network error. Please try again.';
 		} finally {
 			loading = false;
@@ -101,7 +101,7 @@
 				const data = await res.json();
 				error = data.error || 'Failed to clock out';
 			}
-		} catch (e) {
+		} catch {
 			error = 'Network error. Please try again.';
 		} finally {
 			loading = false;

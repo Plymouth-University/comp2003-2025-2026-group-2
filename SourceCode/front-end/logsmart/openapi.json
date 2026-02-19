@@ -136,6 +136,50 @@
 				},
 				"security": [{ "bearer_auth": [] }]
 			},
+			"put": {
+				"tags": ["Company Management"],
+				"summary": "Updates an existing branch for the user's company.",
+				"operationId": "update_branch",
+				"requestBody": {
+					"content": {
+						"application/json": { "schema": { "$ref": "#/components/schemas/UpdateBranchRequest" } }
+					},
+					"required": true
+				},
+				"responses": {
+					"200": {
+						"description": "Branch updated successfully",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/BranchDto" } }
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden - only company manager can update branches",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"404": {
+						"description": "Branch not found",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			},
 			"post": {
 				"tags": ["Company Management"],
 				"summary": "Creates a new branch for the user's company.",
@@ -851,6 +895,164 @@
 				}
 			}
 		},
+		"/clock/company": {
+			"get": {
+				"tags": ["Clock In/Out"],
+				"summary": "Gets all clock in/out events for the admin's company.",
+				"description": "# Errors\nReturns an error if the user is not an admin or if DB operations fail.",
+				"operationId": "get_company_clock_events",
+				"parameters": [
+					{
+						"name": "from",
+						"in": "query",
+						"description": "ISO 8601 start date filter (inclusive)",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "to",
+						"in": "query",
+						"description": "ISO 8601 end date filter (inclusive)",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "All company clock events",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/CompanyClockEventsResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden – admin only",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/clock/in": {
+			"post": {
+				"tags": ["Clock In/Out"],
+				"summary": "Clocks in the current user.",
+				"description": "# Errors\nReturns an error if the user is already clocked in or if DB operations fail.",
+				"operationId": "clock_in",
+				"responses": {
+					"200": {
+						"description": "Successfully clocked in",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ClockEventResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"409": {
+						"description": "Already clocked in",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/clock/out": {
+			"post": {
+				"tags": ["Clock In/Out"],
+				"summary": "Clocks out the current user.",
+				"description": "# Errors\nReturns an error if the user is not clocked in or if DB operations fail.",
+				"operationId": "clock_out",
+				"responses": {
+					"200": {
+						"description": "Successfully clocked out",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ClockEventResponse" }
+							}
+						}
+					},
+					"400": {
+						"description": "Not currently clocked in",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/clock/status": {
+			"get": {
+				"tags": ["Clock In/Out"],
+				"summary": "Gets the current clock status and last 5 events for the user.",
+				"description": "# Errors\nReturns an error if DB operations fail.",
+				"operationId": "get_clock_status",
+				"responses": {
+					"200": {
+						"description": "Current clock status and recent events",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ClockStatusResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
 		"/health/database": {
 			"get": {
 				"tags": ["Health Monitoring"],
@@ -968,6 +1170,15 @@
 				"tags": ["Log Entries"],
 				"summary": "Lists all log entries for the company or branch (managers only).",
 				"operationId": "list_company_log_entries",
+				"parameters": [
+					{
+						"name": "branch_ids",
+						"in": "query",
+						"description": "Optional comma-separated list of branch IDs to filter by (managers only)",
+						"required": true,
+						"schema": { "type": "string" }
+					}
+				],
 				"responses": {
 					"200": {
 						"description": "Company log entries retrieved successfully",
@@ -1742,6 +1953,8 @@
 					"address": { "type": "string" },
 					"company_id": { "type": "string" },
 					"created_at": { "type": "string", "format": "date-time" },
+					"deletion_requested_at": { "type": ["string", "null"], "format": "date-time" },
+					"has_pending_deletion": { "type": "boolean" },
 					"id": { "type": "string" },
 					"name": { "type": "string" }
 				}
@@ -1750,6 +1963,76 @@
 				"type": "object",
 				"required": ["invitation_id"],
 				"properties": { "invitation_id": { "type": "string", "example": "invitation-uuid-here" } }
+			},
+			"ClockEventResponse": {
+				"type": "object",
+				"required": ["id", "user_id", "clock_in", "status", "created_at"],
+				"properties": {
+					"clock_in": { "type": "string", "format": "date-time" },
+					"clock_out": { "type": ["string", "null"], "format": "date-time" },
+					"created_at": { "type": "string", "format": "date-time" },
+					"id": { "type": "string" },
+					"status": { "type": "string" },
+					"user_id": { "type": "string" }
+				}
+			},
+			"ClockStatusResponse": {
+				"type": "object",
+				"required": ["is_clocked_in", "recent_events"],
+				"properties": {
+					"current_event": {
+						"oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/ClockEventResponse" }]
+					},
+					"is_clocked_in": { "type": "boolean" },
+					"recent_events": {
+						"type": "array",
+						"items": { "$ref": "#/components/schemas/ClockEventResponse" }
+					}
+				}
+			},
+			"CompanyClockEventResponse": {
+				"type": "object",
+				"required": [
+					"id",
+					"user_id",
+					"first_name",
+					"last_name",
+					"email",
+					"clock_in",
+					"status",
+					"created_at"
+				],
+				"properties": {
+					"clock_in": { "type": "string", "format": "date-time" },
+					"clock_out": { "type": ["string", "null"], "format": "date-time" },
+					"created_at": { "type": "string", "format": "date-time" },
+					"email": { "type": "string" },
+					"first_name": { "type": "string" },
+					"id": { "type": "string" },
+					"last_name": { "type": "string" },
+					"status": { "type": "string" },
+					"user_id": { "type": "string" }
+				}
+			},
+			"CompanyClockEventsResponse": {
+				"type": "object",
+				"required": ["events"],
+				"properties": {
+					"events": {
+						"type": "array",
+						"items": { "$ref": "#/components/schemas/CompanyClockEventResponse" }
+					}
+				}
+			},
+			"ConfirmBranchDeletionRequest": {
+				"type": "object",
+				"required": ["token"],
+				"properties": { "token": { "type": "string", "example": "deletion-token-here" } }
+			},
+			"ConfirmBranchDeletionResponse": {
+				"type": "object",
+				"required": ["message"],
+				"properties": { "message": { "type": "string" } }
 			},
 			"CreateBranchRequest": {
 				"type": "object",
@@ -2066,6 +2349,18 @@
 				"required": ["message"],
 				"properties": { "message": { "type": "string" } }
 			},
+			"RequestBranchDeletionRequest": {
+				"type": "object",
+				"required": ["branch_id"],
+				"properties": {
+					"branch_id": { "type": "string", "example": "550e8400-e29b-41d4-a716-446655440000" }
+				}
+			},
+			"RequestBranchDeletionResponse": {
+				"type": "object",
+				"required": ["message"],
+				"properties": { "message": { "type": "string" } }
+			},
 			"RequestPasswordResetRequest": {
 				"type": "object",
 				"required": ["email"],
@@ -2300,6 +2595,7 @@
 		{
 			"name": "Health Monitoring",
 			"description": "Database health and performance monitoring (LogSmart Admin only)"
-		}
+		},
+		{ "name": "Clock In/Out", "description": "Employee clock in and clock out tracking" }
 	]
 }

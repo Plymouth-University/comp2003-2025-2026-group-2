@@ -428,6 +428,9 @@ pub async fn delete_log_entry(
 #[utoipa::path(
     get,
     path = "/logs/admin/entries",
+    params(
+        ("branch_ids" = String, Query, description = "Optional comma-separated list of branch IDs to filter by (managers only)"),
+    ),
     responses(
         (status = 200, description = "Company log entries retrieved successfully", body = ListLogEntriesResponse),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
