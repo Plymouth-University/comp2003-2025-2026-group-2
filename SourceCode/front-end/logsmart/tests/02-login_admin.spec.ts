@@ -24,7 +24,7 @@ test('login_admin_valid', async ({ page }) => {
 	await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
 	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 	await page.waitForURL('**/dashboard');
-	await expect(page.locator('span')).toContainText(adminCreds.email);
+	await expect(page.locator('span.text-sm')).toContainText(adminCreds.email);
 	await expect(page.locator('body')).toContainText(adminCreds.firstName.split('-')[0]);
 	await expect(page.locator('body')).toContainText(adminCreds.email);
 	await expect(page.locator('body')).toContainText(adminCreds.companyName);
