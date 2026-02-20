@@ -16,6 +16,22 @@
 		goto('/reports');
 	};
 
+	function formatTemplateName(templateName: string, period?: string): string {
+		if (period && templateName.includes('{period}')) {
+			return templateName.replace('{period}', period);
+		}
+		return templateName;
+	}
+
+	function handleFillLog(templateName: string, period?: string, status?: string | null) {
+		if (status === 'draft' && period) {
+			// Would need to find the draft entry ID - for now just navigate to template
+			goto(`/log-template?template=${encodeURIComponent(templateName)}`);
+		} else {
+			goto(`/log-template?template=${encodeURIComponent(templateName)}`);
+		}
+	}
+
 	// Get user data from server load
 	const user = $derived(
 		(() => {
@@ -199,17 +215,40 @@
 								{#if todaysLogs.length === 0}
 									<div style="color: var(--text-secondary);">No logs due today</div>
 								{:else}
-									<ul class="space-y-2">
+									<div class="space-y-3">
 										{#each todaysLogs as log}
-											<li style="color: var(--text-primary); overflow: hidden;">
-												- <span
-													class="inline-block max-w-full overflow-hidden text-ellipsis whitespace-nowrap"
-													title={log.template_name}>{log.template_name}</span
+											<div
+												class="flex items-center justify-between gap-3 rounded border-2 p-3"
+												style="border-color: var(--border-primary); background-color: var(--bg-secondary);"
+											>
+												<div class="min-w-0 flex-1">
+													<div
+														class="overflow-hidden text-ellipsis whitespace-nowrap font-semibold"
+														style="color: var(--text-primary);"
+														title={formatTemplateName(log.template_name, log.period)}
+													>
+														{formatTemplateName(log.template_name, log.period)}
+													</div>
+													{#if log.status}
+														<div class="mt-1 text-sm" style="color: var(--text-secondary);">
+															Status: {log.status}
+														</div>
+													{:else}
+														<div class="mt-1 text-sm" style="color: var(--text-secondary);">
+															Not yet started
+														</div>
+													{/if}
+												</div>
+												<button
+													onclick={() => handleFillLog(log.template_name, log.period, log.status)}
+													class="shrink-0 cursor-pointer rounded px-4 py-2 text-sm font-semibold hover:opacity-80"
+													style="background-color: #3D7A82; color: white;"
 												>
-												{log.period ? `(${log.period})` : ''}
-											</li>
+													Fill Out
+												</button>
+											</div>
 										{/each}
-									</ul>
+									</div>
 								{/if}
 							</div>
 						</div>
