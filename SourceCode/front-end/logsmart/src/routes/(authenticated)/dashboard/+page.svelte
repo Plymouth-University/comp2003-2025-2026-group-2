@@ -223,7 +223,7 @@
 											>
 												<div class="min-w-0 flex-1">
 													<div
-														class="overflow-hidden text-ellipsis whitespace-nowrap font-semibold"
+														class="overflow-hidden font-semibold text-ellipsis whitespace-nowrap"
 														style="color: var(--text-primary);"
 														title={formatTemplateName(log.template_name, log.period)}
 													>
