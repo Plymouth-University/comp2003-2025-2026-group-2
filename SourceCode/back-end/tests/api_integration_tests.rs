@@ -151,7 +151,7 @@ async fn test_jwt_token_generation_and_validation() {
     let user_id = "user123";
 
     let token = config
-        .generate_token(user_id.to_string(), 24)
+        .generate_token(user_id.as_str(), 24)
         .expect("Failed to generate token");
 
     let claims = config
@@ -343,7 +343,7 @@ async fn test_token_expiration_validation() {
     let config = JwtConfig::new("test_secret".to_string());
 
     let token = config
-        .generate_token("user123".to_string(), -1)
+        .generate_token("user123", -1)
         .expect("Failed to generate token");
 
     let result = config.validate_token(&token);

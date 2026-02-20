@@ -162,7 +162,7 @@ impl LogEntryService {
                 ))?;
 
             // Allow if user can manage branch or is readonly HQ
-            if !user.can_manage_branch() && !user.is_readonly_hq() {
+            if !user.can_read_manage_branch() {
                 return Err((
                     StatusCode::FORBIDDEN,
                     json!({ "error": "You do not have permission to view this entry" }),

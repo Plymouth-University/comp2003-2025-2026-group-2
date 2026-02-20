@@ -284,7 +284,7 @@ pub async fn accept_invitation(
 
     let jwt_config = JwtManager::get_config();
     let token = jwt_config
-        .generate_token(user_id.clone(), 24)
+        .generate_token(user_id.as_str(), 24)
         .map_err(|e| {
             tracing::error!(
                 "Failed to generate JWT token for invitation acceptance: {:?}",

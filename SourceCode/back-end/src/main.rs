@@ -115,7 +115,7 @@ async fn main() {
 
     let user_cache = moka::future::Cache::builder()
         .max_capacity(10_000)
-        .time_to_live(std::time::Duration::from_secs(300)) // 5 minutes
+        .time_to_live(std::time::Duration::from_secs(900)) // 15 minutes
         .build();
 
     let state = AppState {
