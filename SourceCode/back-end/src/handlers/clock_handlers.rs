@@ -183,7 +183,7 @@ pub async fn get_company_clock_events(
             StatusCode::NOT_FOUND,
             Json(json!({ "error": "User not found" })),
         ))?;
-    
+
     if !user.can_manage_branch() && !user.is_readonly_hq() {
         return Err((
             StatusCode::FORBIDDEN,

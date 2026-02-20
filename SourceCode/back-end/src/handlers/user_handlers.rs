@@ -43,7 +43,6 @@ pub async fn get_company_members(
             StatusCode::UNAUTHORIZED,
             Json(json!({ "error": "User not found" })),
         ))?;
-    
 
     if !user.can_manage_branch() && !user.is_readonly_hq() {
         return Err((
@@ -73,13 +72,11 @@ pub async fn get_company_members(
         if user.is_company_manager() || user.is_logsmart_admin() || user.is_readonly_hq() {
             members
         } else if user.is_branch_manager() {
-            let filtered = members
+            
+            members
                 .into_iter()
-                .filter(|m| {
-                    m.branch_id == user.branch_id
-                })
-                .collect::<Vec<_>>();
-            filtered
+                .filter(|m| m.branch_id == user.branch_id)
+                .collect::<Vec<_>>()
         } else {
             members.into_iter().filter(|m| m.id == user.id).collect()
         };
