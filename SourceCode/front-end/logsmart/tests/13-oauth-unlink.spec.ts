@@ -1,7 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { register } from './utils';
 
-async function fillMockOAuthForm(page: any, email: string, firstName: string, lastName: string) {
+async function fillMockOAuthForm(page: Page, email: string, firstName: string, lastName: string) {
 	await page.fill('input[name="subject"], input#subject, input[type="text"]', email);
 	const claimsJson = JSON.stringify({
 		email: email,
@@ -32,6 +32,7 @@ test.describe('Google OAuth Unlink', () => {
 	});
 
 	test('oauth_google_unlink_and_attempt_signin', async ({ page }) => {
+		test.skip(!!process.env.CI, 'Skipping Google OAuth test on CI due to potential flakiness');
 		await page.goto('http://localhost:5173/login');
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);

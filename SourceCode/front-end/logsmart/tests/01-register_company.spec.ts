@@ -6,11 +6,12 @@ test('register_company', async ({ browser }) => {
 	if (!result || !result.page) throw new Error('Registration failed');
 	const { page, companyName, firstName, lastName, email } = result;
 	await page.goto('http://localhost:5173/dashboard');
-	await expect(page.locator('span')).toContainText(email);
+	await expect(page.locator('span.text-sm')).toContainText(email);
 	await expect(page.locator('body')).toContainText(`${firstName} ${lastName}`);
 	await expect(page.locator('body')).toContainText(email);
 	await expect(page.locator('body')).toContainText(companyName);
 	await expect(page.locator('body')).toContainText('Company Manager');
+	await page.close();
 });
 
 test('register_company_invalid_empty_company_name', async ({ page }) => {

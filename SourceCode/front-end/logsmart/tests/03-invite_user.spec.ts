@@ -91,5 +91,5 @@ test('accept_invitation', async ({ page, browser }) => {
 
 	await page.waitForURL('**/logs-list');
 	expect(page.url()).toContain('/logs-list');
-	await expect(page.locator('span')).toContainText(inviteeEmail);
+	await expect(page.locator('span.text-sm')).toContainText(inviteeEmail);
 });

@@ -19,7 +19,8 @@
 			page.url.pathname.startsWith('/users-admin') ||
 			page.url.pathname.startsWith('/template-designer') ||
 			page.url.pathname.startsWith('/admin-dashboard') ||
-			page.url.pathname.startsWith('/branches')
+			page.url.pathname.startsWith('/branches') ||
+			page.url.pathname.startsWith('/attendance-admin')
 	);
 
 	async function handleLogout() {

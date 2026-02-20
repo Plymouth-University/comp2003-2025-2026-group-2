@@ -9,8 +9,7 @@ test.describe('Passkey Management', () => {
 		expect(userData).toBeTruthy();
 	});
 
-	test('should register a passkey and login with it', async ({ browser }) => {
-		const page = await browser.newPage();
+	test('should register a passkey and login with it', async ({ page }) => {
 		// Disable Conditional UI (autofill) to prevent it from interfering with explicit button click
 		await page.addInitScript(() => {
 			if (window.PublicKeyCredential) {
@@ -78,8 +77,7 @@ test.describe('Passkey Management', () => {
 		await page.close();
 	});
 
-	test('should delete a passkey', async ({ browser }) => {
-		const page = await browser.newPage();
+	test('should delete a passkey', async ({ page }) => {
 		page.on('dialog', (dialog) => dialog.accept());
 
 		// 1. Enable Authenticator
@@ -124,8 +122,7 @@ test.describe('Passkey Management', () => {
 		await page.close();
 	});
 
-	test('should register multiple passkeys', async ({ browser }) => {
-		const page = await browser.newPage();
+	test('should register multiple passkeys', async ({ page }) => {
 		// Disable Conditional UI to prevent interference
 		await page.addInitScript(() => {
 			if (window.PublicKeyCredential) {
@@ -222,8 +219,7 @@ test.describe('Passkey Management', () => {
 		await page.close();
 	});
 
-	test('should login with one-click passkey (discoverable)', async ({ browser }) => {
-		const page = await browser.newPage();
+	test('should login with one-click passkey (discoverable)', async ({ page }) => {
 		// Disable Conditional UI to prevent interference with manual button click
 		await page.addInitScript(() => {
 			if (window.PublicKeyCredential) {

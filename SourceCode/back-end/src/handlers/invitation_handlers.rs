@@ -441,7 +441,7 @@ pub async fn get_pending_invitations(
             Json(json!({ "error": "User not found" })),
         ))?;
 
-    if !user.can_manage_branch() {
+    if !user.can_manage_branch() && !user.is_readonly_hq() {
         return Err((
             StatusCode::FORBIDDEN,
             Json(json!({ "error": "Only managers can view invitations" })),
@@ -469,7 +469,7 @@ pub async fn get_pending_invitations(
                 inv_list
                     .into_iter()
                     .filter(|inv| {
-                        if user.can_manage_company() {
+                        if user.can_manage_company() || user.is_readonly_hq() {
                             true
                         } else {
                             inv.branch_id == user.branch_id

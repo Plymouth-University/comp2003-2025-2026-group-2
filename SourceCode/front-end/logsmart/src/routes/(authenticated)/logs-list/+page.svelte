@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import ClockInOut from '$lib/components/ClockInOut.svelte';
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -148,6 +149,11 @@
 			{/if}
 
 			{#if isMember}
+				<!-- Clock In / Out Section -->
+				<div class="mb-8">
+					<ClockInOut initialStatus={data.clockStatus ?? null} />
+				</div>
+
 				<div class="mb-8">
 					<h2 class="mb-4 text-3xl font-bold" style="color: var(--text-primary);">
 						Logs Due Today

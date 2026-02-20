@@ -55,7 +55,8 @@ export interface paths {
 		};
 		/** Lists all branches for the user's company. */
 		get: operations['list_branches'];
-		put?: never;
+		/** Updates an existing branch for the user's company. */
+		put: operations['update_branch'];
 		/** Creates a new branch for the user's company. */
 		post: operations['create_branch'];
 		delete?: never;
@@ -442,6 +443,90 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/clock/company': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Gets all clock in/out events for the admin's company.
+		 * @description # Errors
+		 *     Returns an error if the user is not an admin or if DB operations fail.
+		 */
+		get: operations['get_company_clock_events'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/clock/in': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Clocks in the current user.
+		 * @description # Errors
+		 *     Returns an error if the user is already clocked in or if DB operations fail.
+		 */
+		post: operations['clock_in'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/clock/out': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/**
+		 * Clocks out the current user.
+		 * @description # Errors
+		 *     Returns an error if the user is not clocked in or if DB operations fail.
+		 */
+		post: operations['clock_out'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/clock/status': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/**
+		 * Gets the current clock status and last 5 events for the user.
+		 * @description # Errors
+		 *     Returns an error if DB operations fail.
+		 */
+		get: operations['get_clock_status'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	'/health/database': {
 		parameters: {
 			query?: never;
@@ -817,12 +902,55 @@ export interface components {
 			company_id: string;
 			/** Format: date-time */
 			created_at: string;
+			/** Format: date-time */
+			deletion_requested_at?: string | null;
+			has_pending_deletion?: boolean;
 			id: string;
 			name: string;
 		};
 		CancelInvitationRequest: {
 			/** @example invitation-uuid-here */
 			invitation_id: string;
+		};
+		ClockEventResponse: {
+			/** Format: date-time */
+			clock_in: string;
+			/** Format: date-time */
+			clock_out?: string | null;
+			/** Format: date-time */
+			created_at: string;
+			id: string;
+			status: string;
+			user_id: string;
+		};
+		ClockStatusResponse: {
+			current_event?: null | components['schemas']['ClockEventResponse'];
+			is_clocked_in: boolean;
+			recent_events: components['schemas']['ClockEventResponse'][];
+		};
+		CompanyClockEventResponse: {
+			/** Format: date-time */
+			clock_in: string;
+			/** Format: date-time */
+			clock_out?: string | null;
+			/** Format: date-time */
+			created_at: string;
+			email: string;
+			first_name: string;
+			id: string;
+			last_name: string;
+			status: string;
+			user_id: string;
+		};
+		CompanyClockEventsResponse: {
+			events: components['schemas']['CompanyClockEventResponse'][];
+		};
+		ConfirmBranchDeletionRequest: {
+			/** @example deletion-token-here */
+			token: string;
+		};
+		ConfirmBranchDeletionResponse: {
+			message: string;
 		};
 		CreateBranchRequest: {
 			/** @example 123 Regent St, London */
@@ -1014,6 +1142,13 @@ export interface components {
 			old_template_name: string;
 		};
 		RenameTemplateResponse: {
+			message: string;
+		};
+		RequestBranchDeletionRequest: {
+			/** @example 550e8400-e29b-41d4-a716-446655440000 */
+			branch_id: string;
+		};
+		RequestBranchDeletionResponse: {
 			message: string;
 		};
 		RequestPasswordResetRequest: {
@@ -1339,6 +1474,66 @@ export interface operations {
 			};
 			/** @description Unauthorized */
 			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	update_branch: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['UpdateBranchRequest'];
+			};
+		};
+		responses: {
+			/** @description Branch updated successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['BranchDto'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden - only company manager can update branches */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Branch not found */
+			404: {
 				headers: {
 					[name: string]: unknown;
 				};
@@ -2226,6 +2421,190 @@ export interface operations {
 			};
 		};
 	};
+	get_company_clock_events: {
+		parameters: {
+			query?: {
+				/** @description ISO 8601 start date filter (inclusive) */
+				from?: string | null;
+				/** @description ISO 8601 end date filter (inclusive) */
+				to?: string | null;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description All company clock events */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['CompanyClockEventsResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden – admin only */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	clock_in: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successfully clocked in */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ClockEventResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Already clocked in */
+			409: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	clock_out: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Successfully clocked out */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ClockEventResponse'];
+				};
+			};
+			/** @description Not currently clocked in */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	get_clock_status: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Current clock status and recent events */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ClockStatusResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
 	get_db_health: {
 		parameters: {
 			query?: never;
@@ -2433,7 +2812,10 @@ export interface operations {
 	};
 	list_company_log_entries: {
 		parameters: {
-			query?: never;
+			query: {
+				/** @description Optional comma-separated list of branch IDs to filter by (managers only) */
+				branch_ids: string;
+			};
 			header?: never;
 			path?: never;
 			cookie?: never;

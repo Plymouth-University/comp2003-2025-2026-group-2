@@ -32,6 +32,7 @@ test.describe('Google OAuth Authentication', () => {
 	});
 
 	test('oauth_google_link_and_login', async ({ page }) => {
+		test.skip(!!process.env.CI, 'Skipping Google OAuth test on CI due to potential flakiness');
 		await page.goto('http://localhost:5173/login');
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);

@@ -15,7 +15,8 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 	if (!token) {
 		return {
 			user: null,
-			todaysLogs: []
+			todaysLogs: [],
+			clockStatus: null
 		};
 	}
 
@@ -30,7 +31,8 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 		if (!response.ok) {
 			return {
 				user: null,
-				todaysLogs: []
+				todaysLogs: [],
+				clockStatus: null
 			};
 		}
 
@@ -38,7 +40,7 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 
 		let todaysLogs = [];
 		try {
-			const logsResponse = await fetch('/api/log-entries/due-today', {
+			const logsResponse = await fetch('/api/logs/entries/due', {
 				method: 'GET',
 				headers: {
 					Authorization: `Bearer ${token}`
@@ -46,21 +48,40 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 			});
 
 			if (logsResponse.ok) {
-				todaysLogs = await logsResponse.json();
+				const response = await logsResponse.json();
+				todaysLogs = response.forms || [];
 			}
 		} catch (err) {
 			console.error('Error fetching due logs:', err);
 		}
 
+		let clockStatus = null;
+		try {
+			const clockResponse = await fetch('/api/clock/status', {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${token}`
+				}
+			});
+
+			if (clockResponse.ok) {
+				clockStatus = await clockResponse.json();
+			}
+		} catch (err) {
+			console.error('Error fetching clock status:', err);
+		}
+
 		return {
 			user: userData,
-			todaysLogs
+			todaysLogs,
+			clockStatus
 		};
 	} catch (error) {
 		console.error('Error fetching user data:', error);
 		return {
 			user: null,
-			todaysLogs: []
+			todaysLogs: [],
+			clockStatus: null
 		};
 	}
 };
