@@ -12,19 +12,12 @@ let adminCreds: {
 const BRANCH_NAME = 'Test Branch';
 
 test.beforeAll(async ({ browser }) => {
-	const creds = await register(browser);
+	const creds = await register(browser, false);
 	if (!creds) throw new Error('Failed to register admin user');
 	adminCreds = creds;
 
-	const page = await browser.newPage();
-	await page.goto('http://localhost:5173/login');
-	await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
-	await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-	await page.waitForURL('**/dashboard');
-
-	await createBranch(page, BRANCH_NAME, '123 Test St');
-	await page.close();
+	await createBranch(creds.page!, BRANCH_NAME, '123 Test St');
+	await creds.page!.close();
 });
 
 test('accept_invitation_valid', async ({ page, browser }) => {

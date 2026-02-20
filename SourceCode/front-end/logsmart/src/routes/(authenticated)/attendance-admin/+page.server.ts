@@ -96,8 +96,6 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 			members
 		};
 
-		console.log('Loaded attendance data:', d);
-
 		return d;
 	} catch (error) {
 		console.error('Error fetching attendance data:', error);

@@ -11,6 +11,7 @@ test('register_company', async ({ browser }) => {
 	await expect(page.locator('body')).toContainText(email);
 	await expect(page.locator('body')).toContainText(companyName);
 	await expect(page.locator('body')).toContainText('Company Manager');
+	await page.close();
 });
 
 test('register_company_invalid_empty_company_name', async ({ page }) => {

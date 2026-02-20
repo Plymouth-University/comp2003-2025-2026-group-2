@@ -19,19 +19,18 @@ const BRANCH_NAME = 'Test Branch';
 
 test.beforeAll(async ({ browser }) => {
 	await clearMailhogEmails();
-	const creds = await register(browser);
+	const creds = await register(browser, false);
 	if (!creds) throw new Error('Failed to register admin user');
 	adminCreds = creds;
 
-	const page = await browser.newPage();
-	await page.goto('http://localhost:5173/login');
-	await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
-	await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-	await page.waitForURL('**/dashboard');
+	await creds.page!.goto('http://localhost:5173/login');
+	await creds.page!.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
+	await creds.page!.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
+	await creds.page!.getByRole('button', { name: 'Sign in', exact: true }).click();
+	await creds.page!.waitForURL('**/dashboard');
 
-	await createBranch(page, BRANCH_NAME, '123 Test St');
-	await page.close();
+	await createBranch(creds.page!, BRANCH_NAME, '123 Test St');
+	await creds.page!.close();
 });
 
 test.describe('HQ Readonly Staff - User Management', () => {
@@ -44,13 +43,9 @@ test.describe('HQ Readonly Staff - User Management', () => {
 		const hqEmail = `hqstaff-${Date.now()}@logsmart.app`;
 		const invitationToken = await sendInvitation(browser, adminCreds, hqEmail, 'staff');
 		if (!invitationToken) throw new Error('Failed to get HQ staff invitation token');
-		const success = await acceptInvitation(
-			await browser.newPage(),
-			invitationToken,
-			'HQ',
-			'Staff',
-			'HQStaff123!'
-		);
+		const page = await browser.newPage();
+		const success = await acceptInvitation(page, invitationToken, 'HQ', 'Staff', 'HQStaff123!');
+		await page.close();
 		if (!success) throw new Error('Failed to accept HQ staff invitation');
 		hqStaffCreds = { email: hqEmail, password: 'HQStaff123!' };
 	});
@@ -110,13 +105,9 @@ test.describe('HQ Readonly Staff - Branch Management', () => {
 		const hqEmail = `hqbranch-${Date.now()}@logsmart.app`;
 		const invitationToken = await sendInvitation(browser, adminCreds, hqEmail, 'staff');
 		if (!invitationToken) throw new Error('Failed to get HQ staff invitation token');
-		const success = await acceptInvitation(
-			await browser.newPage(),
-			invitationToken,
-			'HQ',
-			'Branch',
-			'HQBranch123!'
-		);
+		const page = await browser.newPage();
+		const success = await acceptInvitation(page, invitationToken, 'HQ', 'Branch', 'HQBranch123!');
+		await page.close();
 		if (!success) throw new Error('Failed to accept HQ staff invitation');
 		hqStaffCreds = { email: hqEmail, password: 'HQBranch123!' };
 	});
@@ -175,13 +166,15 @@ test.describe('HQ Readonly Staff - Template Dashboard', () => {
 		const hqEmail = `hqtemplates-${Date.now()}@logsmart.app`;
 		const invitationToken = await sendInvitation(browser, adminCreds, hqEmail, 'staff');
 		if (!invitationToken) throw new Error('Failed to get HQ staff invitation token');
+		const page = await browser.newPage();
 		const success = await acceptInvitation(
-			await browser.newPage(),
+			page,
 			invitationToken,
 			'HQ',
 			'Templates',
 			'HQTemplates123!'
 		);
+		await page.close();
 		if (!success) throw new Error('Failed to accept HQ staff invitation');
 		hqStaffCreds = { email: hqEmail, password: 'HQTemplates123!' };
 	});
@@ -223,6 +216,7 @@ test.describe('HQ Readonly Staff - Logs', () => {
 		const hqEmail = `hqlogs-${Date.now()}@logsmart.app`;
 		const invitationToken = await sendInvitation(browser, adminCreds, hqEmail, 'staff');
 		if (!invitationToken) throw new Error('Failed to get HQ staff invitation token');
+		const page = await browser.newPage();
 		const success = await acceptInvitation(
 			await browser.newPage(),
 			invitationToken,
@@ -230,6 +224,7 @@ test.describe('HQ Readonly Staff - Logs', () => {
 			'Logs',
 			'HQLogs123!'
 		);
+		await page.close();
 		if (!success) throw new Error('Failed to accept HQ staff invitation');
 		hqStaffCreds = { email: hqEmail, password: 'HQLogs123!' };
 	});

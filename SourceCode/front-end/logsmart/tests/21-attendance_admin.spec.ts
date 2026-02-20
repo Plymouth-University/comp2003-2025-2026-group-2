@@ -57,7 +57,7 @@ test.beforeAll(async ({ browser }) => {
 		'Manager',
 		'BMAttendance123!'
 	);
-	bmPage.close();
+	await bmPage.close();
 	if (!bmSuccess) throw new Error('Failed to accept branch manager invitation');
 	branchManagerCreds = { email: bmEmail, password: 'BMAttendance123!' };
 
@@ -66,7 +66,7 @@ test.beforeAll(async ({ browser }) => {
 	if (!hqToken) throw new Error('Failed to get HQ staff invitation token');
 	const hqPage = await browser.newPage();
 	const hqSuccess = await acceptInvitation(hqPage, hqToken, 'HQ', 'Staff', 'HQAttendance123!');
-	hqPage.close();
+	await hqPage.close();
 	if (!hqSuccess) throw new Error('Failed to accept HQ staff invitation');
 	hqStaffCreds = { email: hqEmail, password: 'HQAttendance123!' };
 
@@ -82,7 +82,7 @@ test.beforeAll(async ({ browser }) => {
 		'BranchAttendance123!',
 		'**/logs-list'
 	);
-	bsPage.close();
+	await bsPage.close();
 	if (!branchSuccess) throw new Error('Failed to accept branch staff invitation');
 	branchStaffCreds = { email: branchEmail, password: 'BranchAttendance123!' };
 });

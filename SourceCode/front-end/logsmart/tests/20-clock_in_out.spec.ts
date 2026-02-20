@@ -51,7 +51,7 @@ test.beforeAll(async ({ browser }) => {
 		'ClockStaff123!',
 		'**/logs-list'
 	);
-	scPage.close();
+	await scPage.close();
 	if (!success) throw new Error('Failed to accept staff invitation');
 	staffCreds = { email: staffEmail, password: 'ClockStaff123!' };
 });
