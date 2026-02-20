@@ -169,13 +169,13 @@ async function startFrontendProcess(): Promise<void> {
 		env: { ...process.env, PUBLIC_API_URL: BACKEND_URL }
 	});
 
-	// frontendProcess.stdout?.on('data', (data: Buffer) => {
-	// 	console.log(`[Frontend] ${data.toString().trim()}`);
-	// });
+	frontendProcess.stdout?.on('data', (data: Buffer) => {
+		console.log(`[Frontend] ${data.toString().trim()}`);
+	});
 
-	// frontendProcess.stderr?.on('data', (data: Buffer) => {
-	// 	console.log(`[Frontend Error] ${data.toString().trim()}`);
-	// });
+	frontendProcess.stderr?.on('data', (data: Buffer) => {
+		console.log(`[Frontend Error] ${data.toString().trim()}`);
+	});
 
 	frontendProcess.on('error', (error: Error) => {
 		console.error(`Failed to start frontend: ${error.message}`);

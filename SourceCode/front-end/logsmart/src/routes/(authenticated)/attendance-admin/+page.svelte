@@ -9,6 +9,7 @@
 	const branches = $derived(data?.branches ?? []);
 	const members = $derived(data?.members ?? []);
 	const userRole = $derived(data?.userRole ?? '');
+	const isHQStaff = $derived(data?.isHQStaff ?? false);
 
 	// Create mapping from user_id to branch_id for client-side filtering
 	const userToBranchMap = $derived.by(() => {
@@ -355,8 +356,8 @@
 			class="mb-6 flex flex-wrap items-end gap-4 rounded border-2 p-4"
 			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 		>
-			<!-- Branch Filter (only for company_manager) -->
-			{#if userRole === 'company_manager' && branches.length > 0}
+			<!-- Branch Filter (only for company_manager or hq staff) -->
+			{#if (userRole === 'company_manager' || isHQStaff) && branches.length > 0}
 				<div class="flex flex-col gap-1">
 					<label
 						for="filter-branch"

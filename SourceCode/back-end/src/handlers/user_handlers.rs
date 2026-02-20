@@ -43,13 +43,14 @@ pub async fn get_company_members(
             StatusCode::UNAUTHORIZED,
             Json(json!({ "error": "User not found" })),
         ))?;
+    
 
-    tracing::info!(
-        "User found: email={}, role={:?}, branch_id={:?}",
-        user.email,
-        user.role,
-        user.branch_id
-    );
+    if !user.can_manage_branch() && !user.is_readonly_hq() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "User does not have permission to view company members" })),
+        ));
+    }
 
     let members = db::get_company_members_for_user(&state.postgres, &claims.user_id)
         .await
@@ -60,8 +61,6 @@ pub async fn get_company_members(
                 Json(json!({ "error": "Database error" })),
             )
         })?;
-
-    tracing::info!("Total members found in company: {}", members.len());
 
     if members.is_empty() {
         return Err((
@@ -77,15 +76,9 @@ pub async fn get_company_members(
             let filtered = members
                 .into_iter()
                 .filter(|m| {
-                    tracing::info!(
-                        "Checking member: email={}, branch_id={:?}",
-                        m.email,
-                        m.branch_id
-                    );
                     m.branch_id == user.branch_id
                 })
                 .collect::<Vec<_>>();
-            tracing::info!("Filtered members for branch manager: {}", filtered.len());
             filtered
         } else {
             members.into_iter().filter(|m| m.id == user.id).collect()

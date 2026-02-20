@@ -42,14 +42,16 @@ test.beforeAll(async ({ browser }) => {
 		BRANCH_NAME
 	);
 	if (!invitationToken) throw new Error('Failed to get staff invitation token');
+	const scPage = await browser.newPage();
 	const success = await acceptInvitation(
-		await browser.newPage(),
+		scPage,
 		invitationToken,
 		'Clock',
 		'Staff',
 		'ClockStaff123!',
 		'**/logs-list'
 	);
+	scPage.close();
 	if (!success) throw new Error('Failed to accept staff invitation');
 	staffCreds = { email: staffEmail, password: 'ClockStaff123!' };
 });

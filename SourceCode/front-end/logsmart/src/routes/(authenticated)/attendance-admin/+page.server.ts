@@ -4,8 +4,12 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 	const { user } = await parent();
 
-	// Only allow company_manager, branch_manager, and logsmart_admin
-	if (!user || !['company_manager', 'branch_manager', 'logsmart_admin'].includes(user.role)) {
+	// Only allow company_manager, branch_manager, logsmart_admin, and HQ staff (staff without branch_id)
+	const isHQStaff = user?.role === 'staff' && !user?.branch_id;
+	if (
+		!user ||
+		(!['company_manager', 'branch_manager', 'logsmart_admin'].includes(user.role) && !isHQStaff)
+	) {
 		throw redirect(303, '/dashboard');
 	}
 
@@ -54,7 +58,7 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 
 		// Fetch branches if user is company_manager
 		let branches: Array<{ id: string; name: string; address: string }> = [];
-		if (user.role === 'company_manager') {
+		if (user.role === 'company_manager' || isHQStaff) {
 			const branchesResponse = await fetch('/api/auth/company/branches', {
 				method: 'GET',
 				headers: {
@@ -83,13 +87,18 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 			}));
 		}
 
-		return {
+		const d = {
 			clockEvents: data.events ?? [],
 			user,
 			branches,
 			userRole: user.role,
+			isHQStaff,
 			members
 		};
+
+		console.log('Loaded attendance data:', d);
+
+		return d;
 	} catch (error) {
 		console.error('Error fetching attendance data:', error);
 		return {

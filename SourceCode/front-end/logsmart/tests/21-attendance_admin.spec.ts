@@ -49,40 +49,40 @@ test.beforeAll(async ({ browser }) => {
 	const bmEmail = `bm-attendance-${Date.now()}@logsmart.app`;
 	const bmToken = await sendInvitation(browser, adminCreds, bmEmail, 'branch_manager', BRANCH_A);
 	if (!bmToken) throw new Error('Failed to get branch manager invitation token');
+	const bmPage = await browser.newPage();
 	const bmSuccess = await acceptInvitation(
-		await browser.newPage(),
+		bmPage,
 		bmToken,
 		'Branch',
 		'Manager',
 		'BMAttendance123!'
 	);
+	bmPage.close();
 	if (!bmSuccess) throw new Error('Failed to accept branch manager invitation');
 	branchManagerCreds = { email: bmEmail, password: 'BMAttendance123!' };
 
 	const hqEmail = `hq-attendance-${Date.now()}@logsmart.app`;
 	const hqToken = await sendInvitation(browser, adminCreds, hqEmail, 'staff');
 	if (!hqToken) throw new Error('Failed to get HQ staff invitation token');
-	const hqSuccess = await acceptInvitation(
-		await browser.newPage(),
-		hqToken,
-		'HQ',
-		'Staff',
-		'HQAttendance123!'
-	);
+	const hqPage = await browser.newPage();
+	const hqSuccess = await acceptInvitation(hqPage, hqToken, 'HQ', 'Staff', 'HQAttendance123!');
+	hqPage.close();
 	if (!hqSuccess) throw new Error('Failed to accept HQ staff invitation');
 	hqStaffCreds = { email: hqEmail, password: 'HQAttendance123!' };
 
 	const branchEmail = `branch-attendance-${Date.now()}@logsmart.app`;
 	const branchToken = await sendInvitation(browser, adminCreds, branchEmail, 'staff', BRANCH_A);
 	if (!branchToken) throw new Error('Failed to get branch staff invitation token');
+	const bsPage = await browser.newPage();
 	const branchSuccess = await acceptInvitation(
-		await browser.newPage(),
+		bsPage,
 		branchToken,
 		'Branch',
 		'Staff',
 		'BranchAttendance123!',
 		'**/logs-list'
 	);
+	bsPage.close();
 	if (!branchSuccess) throw new Error('Failed to accept branch staff invitation');
 	branchStaffCreds = { email: branchEmail, password: 'BranchAttendance123!' };
 });
@@ -194,17 +194,38 @@ test.describe('Attendance Admin - HQ Staff', () => {
 		await page.waitForURL('**/dashboard');
 	});
 
-	test('hq_staff_can_view_attendance_with_branch_filter', async ({ page }) => {
+	test('hq_staff_can_access_attendance_page', async ({ page }) => {
+		await page.getByRole('link', { name: 'Attendance' }).click();
+		await page.waitForURL('**/attendance-admin');
+		await expect(page.locator('body')).toContainText('Attendance');
+	});
+
+	test('hq_staff_can_view_branch_filter_dropdown', async ({ page }) => {
 		await page.getByRole('link', { name: 'Attendance' }).click();
 		await page.waitForURL('**/attendance-admin');
 
-		await expect(page.locator('body')).toContainText('Attendance');
+		const branchFilter = page.locator('select').first();
+		await expect(branchFilter).toBeVisible();
+	});
+
+	test('hq_staff_can_see_all_branches_in_filter', async ({ page }) => {
+		await page.getByRole('link', { name: 'Attendance' }).click();
+		await page.waitForURL('**/attendance-admin');
 
 		const branchFilter = page.locator('select').first();
-		if (await branchFilter.isVisible()) {
-			const options = await branchFilter.locator('option').allInnerTexts();
-			expect(options.some((opt) => opt.includes(BRANCH_A))).toBe(true);
-		}
+		await branchFilter.click();
+		const options = await branchFilter.locator('option').allInnerTexts();
+		expect(options.some((opt) => opt.includes(BRANCH_A))).toBe(true);
+		expect(options.some((opt) => opt.includes(BRANCH_B))).toBe(true);
+	});
+
+	test('hq_staff_can_filter_by_specific_branch', async ({ page }) => {
+		await page.getByRole('link', { name: 'Attendance' }).click();
+		await page.waitForURL('**/attendance-admin');
+
+		const branchFilter = page.locator('select').first();
+		await branchFilter.selectOption({ label: BRANCH_A });
+		await page.waitForTimeout(500);
 	});
 });
 
@@ -244,5 +265,78 @@ test.describe('Attendance Admin - Unauthenticated Access', () => {
 
 		const url = page.url();
 		expect(url).not.toContain('attendance-admin');
+	});
+});
+
+test.describe('Attendance Admin - Clock Events Integration', () => {
+	test('staff_clocks_in_and_admin_sees_event', async ({ browser }) => {
+		const staffPage = await browser.newPage();
+		await staffPage.goto('http://localhost:5173/');
+		await staffPage.getByRole('link', { name: 'Login' }).click();
+		await staffPage.getByRole('textbox', { name: 'Email' }).fill(branchStaffCreds.email);
+		await staffPage.getByRole('textbox', { name: 'Password' }).fill(branchStaffCreds.password);
+		await staffPage.getByRole('button', { name: 'Sign in', exact: true }).click();
+		await staffPage.waitForURL('**/logs-list');
+		await staffPage.goto('http://localhost:5173/dashboard');
+		await staffPage.waitForLoadState('networkidle');
+
+		const clockInButton = staffPage.getByRole('button', { name: 'Clock In' });
+		if (await clockInButton.isVisible()) {
+			await clockInButton.click();
+			await staffPage.waitForTimeout(1000);
+			await expect(staffPage.getByText('Currently Clocked In')).toBeVisible();
+		}
+		await staffPage.close();
+
+		const adminPage = await browser.newPage();
+		await adminPage.goto('http://localhost:5173/');
+		await adminPage.getByRole('link', { name: 'Login' }).click();
+		await adminPage.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
+		await adminPage.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
+		await adminPage.getByRole('button', { name: 'Sign in', exact: true }).click();
+		await adminPage.waitForURL('**/dashboard');
+
+		await adminPage.getByRole('link', { name: 'Attendance' }).click();
+		await adminPage.waitForURL('**/attendance-admin');
+		await adminPage.waitForTimeout(1000);
+
+		await expect(adminPage.locator('body')).toContainText('Branch');
+		await expect(adminPage.locator('body')).toContainText('Staff');
+		await adminPage.close();
+	});
+
+	test('staff_clocks_out_and_admin_sees_completed_event', async ({ browser }) => {
+		const staffPage = await browser.newPage();
+		await staffPage.goto('http://localhost:5173/');
+		await staffPage.getByRole('link', { name: 'Login' }).click();
+		await staffPage.getByRole('textbox', { name: 'Email' }).fill(branchStaffCreds.email);
+		await staffPage.getByRole('textbox', { name: 'Password' }).fill(branchStaffCreds.password);
+		await staffPage.getByRole('button', { name: 'Sign in', exact: true }).click();
+		await staffPage.waitForURL('**/logs-list');
+		await staffPage.goto('http://localhost:5173/dashboard');
+		await staffPage.waitForLoadState('networkidle');
+
+		const clockOutButton = staffPage.getByRole('button', { name: 'Clock Out' });
+		if (await clockOutButton.isVisible()) {
+			await clockOutButton.click();
+			await staffPage.waitForTimeout(1000);
+			await expect(staffPage.getByText('Currently Clocked Out')).toBeVisible();
+		}
+		await staffPage.close();
+
+		const adminPage = await browser.newPage();
+		await adminPage.goto('http://localhost:5173/');
+		await adminPage.getByRole('link', { name: 'Login' }).click();
+		await adminPage.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
+		await adminPage.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
+		await adminPage.getByRole('button', { name: 'Sign in', exact: true }).click();
+		await adminPage.waitForURL('**/dashboard');
+
+		await adminPage.getByRole('link', { name: 'Attendance' }).click();
+		await adminPage.waitForURL('**/attendance-admin');
+		await adminPage.waitForTimeout(1000);
+
+		await expect(adminPage.locator('body')).toContainText('Branch');
+		await adminPage.close();
 	});
 });

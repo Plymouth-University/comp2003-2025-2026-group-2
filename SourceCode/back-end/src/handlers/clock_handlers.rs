@@ -4,7 +4,7 @@ use crate::{
         ClockEventResponse, ClockStatusResponse, CompanyClockEventResponse,
         CompanyClockEventsResponse, ErrorResponse,
     },
-    middleware::{AdminUser, AuthToken},
+    middleware::AuthToken,
     services,
 };
 use axum::{
@@ -151,7 +151,7 @@ pub struct CompanyClockQuery {
 /// # Errors
 /// Returns an error if the user is not an admin or if DB operations fail.
 pub async fn get_company_clock_events(
-    AdminUser(claims): AdminUser,
+    AuthToken(claims): AuthToken,
     State(state): State<AppState>,
     Query(params): Query<CompanyClockQuery>,
 ) -> Result<Json<CompanyClockEventsResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -183,6 +183,13 @@ pub async fn get_company_clock_events(
             StatusCode::NOT_FOUND,
             Json(json!({ "error": "User not found" })),
         ))?;
+    
+    if !user.can_manage_branch() && !user.is_readonly_hq() {
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Insufficient permissions for this operation" })),
+        ));
+    }
 
     let from = params
         .from
