@@ -8,7 +8,7 @@ use crate::{
         RequestBranchDeletionResponse, UpdateBranchRequest,
     },
     email,
-    middleware::ManageCompanyUser,
+    middleware::{ManageCompanyUser, ReadCompanyUser},
 };
 use axum::{Json, extract::State, http::StatusCode};
 use serde_json::json;
@@ -63,7 +63,7 @@ pub async fn create_branch(
 )]
 /// Lists all branches for the user's company.
 pub async fn list_branches(
-    ManageCompanyUser(_claims, user): ManageCompanyUser,
+    ReadCompanyUser(_claims, user): ReadCompanyUser,
     State(state): State<AppState>,
 ) -> Result<Json<ListBranchesResponse>, (StatusCode, Json<serde_json::Value>)> {
     let company_id = user.company_id.ok_or((
