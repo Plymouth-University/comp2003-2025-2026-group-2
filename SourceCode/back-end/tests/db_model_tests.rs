@@ -1,4 +1,6 @@
-use back_end::db::{Company, Invitation, Passkey, PasskeySession, SecurityLog, UserRecord, UserRole};
+use back_end::db::{
+    Company, Invitation, Passkey, PasskeySession, SecurityLog, UserRecord, UserRole,
+};
 use chrono::{Duration, Utc};
 
 fn create_test_user_record() -> UserRecord {
@@ -214,7 +216,10 @@ fn test_user_record_oauth_user() {
     assert!(user.password_hash.is_none());
     assert_eq!(user.oauth_provider, Some("google".to_string()));
     assert_eq!(user.oauth_subject, Some("google_subject_123".to_string()));
-    assert_eq!(user.oauth_picture, Some("https://example.com/pic.jpg".to_string()));
+    assert_eq!(
+        user.oauth_picture,
+        Some("https://example.com/pic.jpg".to_string())
+    );
 }
 
 #[test]
@@ -530,8 +535,14 @@ fn test_oauth_user_conversion_flow() {
 
     assert!(oauth_user.password_hash.is_none());
     assert_eq!(oauth_user.oauth_provider, Some("google".to_string()));
-    assert_eq!(oauth_user.oauth_subject, Some("google_user_123".to_string()));
-    assert_eq!(oauth_user.oauth_picture, Some("https://example.com/avatar.jpg".to_string()));
+    assert_eq!(
+        oauth_user.oauth_subject,
+        Some("google_user_123".to_string())
+    );
+    assert_eq!(
+        oauth_user.oauth_picture,
+        Some("https://example.com/avatar.jpg".to_string())
+    );
 }
 
 #[test]
@@ -574,8 +585,13 @@ fn test_user_email_format_validation() {
     ];
 
     for email in valid_emails {
-        let email_regex = regex::Regex::new(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$").unwrap();
-        assert!(email_regex.is_match(email), "Email {} should match regex", email);
+        let email_regex =
+            regex::Regex::new(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$").unwrap();
+        assert!(
+            email_regex.is_match(email),
+            "Email {} should match regex",
+            email
+        );
     }
 }
 
@@ -593,8 +609,13 @@ fn test_user_email_invalid_formats() {
     ];
 
     for email in invalid_emails {
-        let email_regex = regex::Regex::new(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$").unwrap();
-        assert!(!email_regex.is_match(email), "Email {} should not match regex", email);
+        let email_regex =
+            regex::Regex::new(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$").unwrap();
+        assert!(
+            !email_regex.is_match(email),
+            "Email {} should not match regex",
+            email
+        );
     }
 }
 
@@ -607,7 +628,12 @@ fn test_invitation_email_format_validation() {
     ];
 
     for email in valid_invitation_emails {
-        let email_regex = regex::Regex::new(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$").unwrap();
-        assert!(email_regex.is_match(email), "Invitation email {} should match regex", email);
+        let email_regex =
+            regex::Regex::new(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$").unwrap();
+        assert!(
+            email_regex.is_match(email),
+            "Invitation email {} should match regex",
+            email
+        );
     }
 }

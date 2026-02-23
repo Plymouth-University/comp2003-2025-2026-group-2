@@ -1,6 +1,9 @@
 use crate::middleware::AnyAuthUser;
 use crate::services::UserService;
-use crate::utils::{err_bad_request, err_conflict, err_internal, err_not_found, err_unauthorized, extract_ip_from_headers_and_addr, extract_user_agent};
+use crate::utils::{
+    err_bad_request, err_conflict, err_internal, err_not_found, err_unauthorized,
+    extract_ip_from_headers_and_addr, extract_user_agent,
+};
 use crate::{
     AppState,
     auth::{validate_email, validate_password_policy},

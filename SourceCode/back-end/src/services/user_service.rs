@@ -1,5 +1,7 @@
 use crate::db;
-use crate::utils::{ServiceError, svc_err_bad_request, svc_err_forbidden, svc_err_internal, svc_err_not_found};
+use crate::utils::{
+    ServiceError, svc_err_bad_request, svc_err_forbidden, svc_err_internal, svc_err_not_found,
+};
 use sqlx::PgPool;
 
 #[cfg(test)]
@@ -112,29 +114,41 @@ impl UserService {
         branch_id: Option<String>,
     ) -> Result<db::UserRecord, ServiceError> {
         if !admin_user.can_manage_branch() || admin_user.is_readonly_hq() {
-            return Err(svc_err_forbidden("Only managers can update member profiles"));
+            return Err(svc_err_forbidden(
+                "Only managers can update member profiles",
+            ));
         }
 
         let target_user = Self::get_user_by_email(db_pool, target_email).await?;
 
         if admin_user.is_company_manager() && admin_user.company_id != target_user.company_id {
-            return Err(svc_err_forbidden("Cannot update users from other companies"));
+            return Err(svc_err_forbidden(
+                "Cannot update users from other companies",
+            ));
         }
 
         if admin_user.is_branch_manager() {
             if admin_user.branch_id != target_user.branch_id {
-                return Err(svc_err_forbidden("Branch managers can only manage users in their branch"));
+                return Err(svc_err_forbidden(
+                    "Branch managers can only manage users in their branch",
+                ));
             }
             if branch_id != admin_user.branch_id {
-                return Err(svc_err_forbidden("Branch managers can only assign users to their own branch"));
+                return Err(svc_err_forbidden(
+                    "Branch managers can only assign users to their own branch",
+                ));
             }
             if role != db::UserRole::Staff {
-                return Err(svc_err_forbidden("Branch managers can only manage staff members"));
+                return Err(svc_err_forbidden(
+                    "Branch managers can only manage staff members",
+                ));
             }
         }
 
         if target_user.is_logsmart_admin() && !admin_user.is_logsmart_admin() {
-            return Err(svc_err_forbidden("Cannot modify LogSmart internal admin users"));
+            return Err(svc_err_forbidden(
+                "Cannot modify LogSmart internal admin users",
+            ));
         }
 
         db::update_user_profile_full(
@@ -164,15 +178,21 @@ impl UserService {
         let target_user = Self::get_user_by_email(db_pool, target_email).await?;
 
         if admin_user.is_company_manager() && admin_user.company_id != target_user.company_id {
-            return Err(svc_err_forbidden("Cannot delete users from other companies"));
+            return Err(svc_err_forbidden(
+                "Cannot delete users from other companies",
+            ));
         }
 
         if admin_user.is_branch_manager() && admin_user.branch_id != target_user.branch_id {
-            return Err(svc_err_forbidden("Branch managers can only delete users in their branch"));
+            return Err(svc_err_forbidden(
+                "Branch managers can only delete users in their branch",
+            ));
         }
 
         if target_user.is_logsmart_admin() && !admin_user.is_logsmart_admin() {
-            return Err(svc_err_forbidden("Cannot delete LogSmart internal admin users"));
+            return Err(svc_err_forbidden(
+                "Cannot delete LogSmart internal admin users",
+            ));
         }
 
         if target_user.email == admin_user.email {

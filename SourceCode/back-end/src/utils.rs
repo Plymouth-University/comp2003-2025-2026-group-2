@@ -314,8 +314,13 @@ pub fn err_too_many_requests(msg: &str) -> HandlerError {
     err(axum::http::StatusCode::TOO_MANY_REQUESTS, msg)
 }
 
-pub fn err_created<T: serde::Serialize>(msg: &str) -> (axum::http::StatusCode, axum::Json<serde_json::Value>) {
-    (axum::http::StatusCode::CREATED, axum::Json(serde_json::json!({ "message": msg })))
+pub fn err_created<T: serde::Serialize>(
+    msg: &str,
+) -> (axum::http::StatusCode, axum::Json<serde_json::Value>) {
+    (
+        axum::http::StatusCode::CREATED,
+        axum::Json(serde_json::json!({ "message": msg })),
+    )
 }
 
 pub type ServiceError = (axum::http::StatusCode, serde_json::Value);

@@ -306,7 +306,7 @@ pub async fn get_user_by_email(pool: &PgPool, email: &str) -> Result<Option<User
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.email = $1 AND users.deleted_at IS NULL
-        "
+        ",
     )
     .bind(email)
     .fetch_optional(pool)
@@ -328,7 +328,7 @@ pub async fn get_user_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRecord
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.id = $1 AND users.deleted_at IS NULL
-        "
+        ",
     )
     .bind(id)
     .fetch_optional(pool)
@@ -365,7 +365,7 @@ pub async fn get_user_by_oauth(
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.oauth_provider = $1 AND users.oauth_subject = $2 AND users.deleted_at IS NULL
-        "
+        ",
     )
     .bind(provider)
     .bind(subject)
@@ -651,7 +651,7 @@ pub async fn cancel_invitation(pool: &PgPool, invitation_id: &str) -> Result<Inv
         UPDATE invitations
         SET cancelled_at = $1
         WHERE id = $2 AND accepted_at IS NULL AND cancelled_at IS NULL
-        RETURNING id, company_id, email, token, created_at, expires_at, accepted_at, cancelled_at
+        RETURNING id, company_id, email, token, role, branch_id, created_at, expires_at, accepted_at, cancelled_at
         ",
     )
     .bind(now)

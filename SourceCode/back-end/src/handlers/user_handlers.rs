@@ -5,7 +5,7 @@ use crate::{
     },
     middleware::{BranchManagerUser, ReadBranchUser},
     services::user_service::UserService,
-    utils::{err_bad_request, err_forbidden, err_internal, AuditLogger},
+    utils::{AuditLogger, err_bad_request, err_forbidden, err_internal},
 };
 use axum::{Json, extract::State, http::StatusCode};
 use serde_json::json;
@@ -89,7 +89,9 @@ pub async fn admin_update_member_profile(
         "branch_manager" => db::UserRole::BranchManager,
         "staff" => db::UserRole::Staff,
         _ => {
-            return Err(err_bad_request("Invalid role. Must be 'company_manager', 'branch_manager', or 'staff'"));
+            return Err(err_bad_request(
+                "Invalid role. Must be 'company_manager', 'branch_manager', or 'staff'",
+            ));
         }
     };
 

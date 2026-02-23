@@ -1,5 +1,7 @@
 use axum::response::IntoResponse;
-use back_end::security::{AdminValidator, LogSmartAdminValidator, MemberValidator, RoleError, RoleValidator};
+use back_end::security::{
+    AdminValidator, LogSmartAdminValidator, MemberValidator, RoleError, RoleValidator,
+};
 
 #[test]
 fn test_role_error_into_response_missing_token() {

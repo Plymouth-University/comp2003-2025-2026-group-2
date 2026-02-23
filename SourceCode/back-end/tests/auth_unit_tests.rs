@@ -1,4 +1,4 @@
-use back_end::auth::{validate_email, validate_password_policy, verify_password, JwtConfig};
+use back_end::auth::{JwtConfig, validate_email, validate_password_policy, verify_password};
 
 #[test]
 fn test_jwt_config_new() {
@@ -283,7 +283,11 @@ fn test_validate_password_policy_no_uppercase() {
     let passwords = vec!["password123!", "lowercase1!", "alllowercase"];
     for password in passwords {
         let result = validate_password_policy(password);
-        assert!(result.is_err(), "Password {} should fail (no uppercase)", password);
+        assert!(
+            result.is_err(),
+            "Password {} should fail (no uppercase)",
+            password
+        );
     }
 }
 
@@ -292,7 +296,11 @@ fn test_validate_password_policy_no_lowercase() {
     let passwords = vec!["PASSWORD123!", "UPPERCASE1!", "ALLUPPERCASE"];
     for password in passwords {
         let result = validate_password_policy(password);
-        assert!(result.is_err(), "Password {} should fail (no lowercase)", password);
+        assert!(
+            result.is_err(),
+            "Password {} should fail (no lowercase)",
+            password
+        );
     }
 }
 
@@ -301,7 +309,11 @@ fn test_validate_password_policy_no_digit() {
     let passwords = vec!["Password!", "NoDigitsHere!", "allletters"];
     for password in passwords {
         let result = validate_password_policy(password);
-        assert!(result.is_err(), "Password {} should fail (no digit)", password);
+        assert!(
+            result.is_err(),
+            "Password {} should fail (no digit)",
+            password
+        );
     }
 }
 
@@ -310,7 +322,11 @@ fn test_validate_password_policy_no_special() {
     let passwords = vec!["Password123", "NoSpecialChars123", "allalphanumeric"];
     for password in passwords {
         let result = validate_password_policy(password);
-        assert!(result.is_err(), "Password {} should fail (no special)", password);
+        assert!(
+            result.is_err(),
+            "Password {} should fail (no special)",
+            password
+        );
     }
 }
 
@@ -376,8 +392,16 @@ fn test_email_and_password_validation_combination() {
     ];
 
     for (email, password) in valid_combinations {
-        assert!(validate_email(email).is_ok(), "Email {} should be valid", email);
-        assert!(validate_password_policy(password).is_ok(), "Password {} should be valid", password);
+        assert!(
+            validate_email(email).is_ok(),
+            "Email {} should be valid",
+            email
+        );
+        assert!(
+            validate_password_policy(password).is_ok(),
+            "Password {} should be valid",
+            password
+        );
     }
 }
 
@@ -403,10 +427,7 @@ fn test_password_with_emoji() {
 
 #[test]
 fn test_email_with_international_domain() {
-    let international_emails = vec![
-        "test@xn--example.com",
-        "user@münchen.de",
-    ];
+    let international_emails = vec!["test@xn--example.com", "user@münchen.de"];
 
     for email in international_emails {
         let result = validate_email(email);
