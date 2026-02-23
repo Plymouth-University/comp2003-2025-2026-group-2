@@ -123,16 +123,15 @@ impl UserService {
     /// Returns an error if the caller is not an admin, target is in another company, or update fails.
     pub async fn admin_update_member_profile(
         db_pool: &PgPool,
-        admin_user_id: &str,
+        admin_user: &db::UserRecord,
         target_email: &str,
         first_name: String,
         last_name: String,
         role: db::UserRole,
         branch_id: Option<String>,
     ) -> Result<db::UserRecord, (StatusCode, serde_json::Value)> {
-        let admin = Self::get_user_by_id(db_pool, admin_user_id).await?;
 
-        if !admin.can_manage_branch() || admin.is_readonly_hq() {
+        if !admin_user.can_manage_branch() || admin_user.is_readonly_hq() {
             return Err((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "Only managers can update member profiles" }),
@@ -142,7 +141,7 @@ impl UserService {
         let target_user = Self::get_user_by_email(db_pool, target_email).await?;
 
         // Company admins can only manage users in their company, but logsmart_admin can manage any company
-        if admin.is_company_manager() && admin.company_id != target_user.company_id {
+        if admin_user.is_company_manager() && admin_user.company_id != target_user.company_id {
             return Err((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "Cannot update users from other companies" }),
@@ -150,14 +149,14 @@ impl UserService {
         }
 
         // Branch managers can only update users in their branch
-        if admin.is_branch_manager() {
-            if admin.branch_id != target_user.branch_id {
+        if admin_user.is_branch_manager() {
+            if admin_user.branch_id != target_user.branch_id {
                 return Err((
                     StatusCode::FORBIDDEN,
                     json!({ "error": "Branch managers can only manage users in their branch" }),
                 ));
             }
-            if branch_id != admin.branch_id {
+            if branch_id != admin_user.branch_id {
                 return Err((
                     StatusCode::FORBIDDEN,
                     json!({ "error": "Branch managers can only assign users to their own branch" }),
@@ -171,7 +170,7 @@ impl UserService {
             }
         }
 
-        if target_user.is_logsmart_admin() && !admin.is_logsmart_admin() {
+        if target_user.is_logsmart_admin() && !admin_user.is_logsmart_admin() {
             return Err((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "Cannot modify LogSmart internal admin users" }),
@@ -202,22 +201,13 @@ impl UserService {
     /// Returns an error if the caller is not an admin, target is in another company, or deletion fails.
     pub async fn admin_delete_member(
         db_pool: &PgPool,
-        admin_user_id: &str,
+        admin_user: &db::UserRecord,
         target_email: &str,
     ) -> Result<String, (StatusCode, serde_json::Value)> {
-        let admin = Self::get_user_by_id(db_pool, admin_user_id).await?;
-
-        if !admin.can_manage_branch() || admin.is_readonly_hq() {
-            return Err((
-                StatusCode::FORBIDDEN,
-                json!({ "error": "Only managers can delete members" }),
-            ));
-        }
-
         let target_user = Self::get_user_by_email(db_pool, target_email).await?;
 
         // Company admins can only delete users in their company, but logsmart_admin can delete from any company
-        if admin.is_company_manager() && admin.company_id != target_user.company_id {
+        if admin_user.is_company_manager() && admin_user.company_id != target_user.company_id {
             return Err((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "Cannot delete users from other companies" }),
@@ -225,21 +215,21 @@ impl UserService {
         }
 
         // Branch managers can only delete users in their branch
-        if admin.is_branch_manager() && admin.branch_id != target_user.branch_id {
+        if admin_user.is_branch_manager() && admin_user.branch_id != target_user.branch_id {
             return Err((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "Branch managers can only delete users in their branch" }),
             ));
         }
 
-        if target_user.is_logsmart_admin() && !admin.is_logsmart_admin() {
+        if target_user.is_logsmart_admin() && !admin_user.is_logsmart_admin() {
             return Err((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "Cannot delete LogSmart internal admin users" }),
             ));
         }
 
-        if target_user.email == admin.email {
+        if target_user.email == admin_user.email {
             return Err((
                 StatusCode::BAD_REQUEST,
                 json!({ "error": "Cannot delete your own account" }),

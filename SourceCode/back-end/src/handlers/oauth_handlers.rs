@@ -1,7 +1,7 @@
 use crate::{
     AppState,
     dto::{ErrorResponse, OAuthCallbackRequest, OAuthInitiateResponse},
-    middleware::AuthToken,
+    middleware::AnyAuthUser,
     services::oauth_service::OAuthUserInfo,
     utils::{AuditLogger, extract_ip_from_headers_and_addr, extract_user_agent},
 };
@@ -338,7 +338,7 @@ pub struct OAuthLinkConfirmRequest {
 /// Returns an error if the link token is invalid/expired or if the linking operation fails.
 pub async fn confirm_google_link(
     State(state): State<AppState>,
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     Json(payload): Json<OAuthLinkConfirmRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
     let oauth_client = state.google_oauth.as_ref().ok_or_else(|| {
@@ -361,13 +361,13 @@ pub async fn confirm_google_link(
         })?;
 
     oauth_client
-        .link_google_account(&state.postgres, &claims.user_id, user_info)
+        .link_google_account(&state.postgres, &user.id, user_info)
         .await
         .map_err(|(status, value)| (status, Json(value)))?;
 
-    state.user_cache.invalidate(&claims.user_id).await;
+    state.user_cache.invalidate(&user.id).await;
 
-    let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
+    let user = crate::db::get_user_by_id(&state.postgres, &user.id)
         .await
         .map_err(|e| {
             tracing::error!("Failed to fetch user: {:?}", e);
@@ -385,7 +385,7 @@ pub async fn confirm_google_link(
 
     AuditLogger::log_oauth_account_linked(
         &state.postgres,
-        claims.user_id.clone(),
+        user.id.clone(),
         user.email.clone(),
         "google".to_string(),
     )
@@ -415,7 +415,7 @@ pub async fn confirm_google_link(
 /// Returns an error if the state is invalid, code exchange fails, or linking fails.
 pub async fn link_google_account(
     State(state): State<AppState>,
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     Json(payload): Json<OAuthCallbackRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
     let oauth_client = state.google_oauth.as_ref().ok_or_else(|| {
@@ -443,13 +443,13 @@ pub async fn link_google_account(
         .map_err(|(status, value)| (status, Json(value)))?;
 
     oauth_client
-        .link_google_account(&state.postgres, &claims.user_id, user_info)
+        .link_google_account(&state.postgres, &user.id, user_info)
         .await
         .map_err(|(status, value)| (status, Json(value)))?;
 
-    state.user_cache.invalidate(&claims.user_id).await;
+    state.user_cache.invalidate(&user.id).await;
 
-    let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
+    let user = crate::db::get_user_by_id(&state.postgres, &user.id)
         .await
         .map_err(|e| {
             tracing::error!("Failed to fetch user: {:?}", e);
@@ -467,7 +467,7 @@ pub async fn link_google_account(
 
     AuditLogger::log_oauth_account_linked(
         &state.postgres,
-        claims.user_id.clone(),
+        user.id.clone(),
         user.email.clone(),
         "google".to_string(),
     )
@@ -495,24 +495,8 @@ pub async fn link_google_account(
 /// Returns an error if the user has no password set (cannot unlink last auth method) or if unlinking fails.
 pub async fn unlink_google_account(
     State(state): State<AppState>,
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to fetch user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or_else(|| {
-            (
-                StatusCode::NOT_FOUND,
-                Json(json!({ "error": "User not found" })),
-            )
-        })?;
-
     if user.password_hash.is_none() {
         return Err((
             StatusCode::BAD_REQUEST,
@@ -522,7 +506,7 @@ pub async fn unlink_google_account(
         ));
     }
 
-    crate::db::unlink_oauth_from_user(&state.postgres, &claims.user_id)
+    crate::db::unlink_oauth_from_user(&state.postgres, &user.id)
         .await
         .map_err(|e| {
             tracing::error!("Failed to unlink OAuth account: {:?}", e);
@@ -532,12 +516,12 @@ pub async fn unlink_google_account(
             )
         })?;
 
-    state.user_cache.invalidate(&claims.user_id).await;
+    state.user_cache.invalidate(&user.id).await;
 
     AuditLogger::log_oauth_account_unlinked(
         &state.postgres,
         "oauth_unlink".to_string(),
-        Some(claims.user_id.clone()),
+        Some(user.id.clone()),
         Some(user.email.clone()),
         None,
         None,

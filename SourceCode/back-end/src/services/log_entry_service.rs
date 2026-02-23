@@ -1,4 +1,4 @@
-use crate::{AppState, db, logs_db};
+use crate::{AppState, db::{self, UserRecord}, logs_db};
 use axum::http::StatusCode;
 use serde_json::json;
 use uuid::Uuid;
@@ -131,7 +131,7 @@ impl LogEntryService {
     /// Returns an error if the entry is not found or if the user doesn't have permission to view it.
     pub async fn get_log_entry(
         state: &AppState,
-        user_id: &str,
+        user: &UserRecord,
         entry_id: &str,
     ) -> Result<logs_db::LogEntry, (StatusCode, serde_json::Value)> {
         let entry = logs_db::get_log_entry(&state.mongodb, entry_id)
@@ -146,21 +146,7 @@ impl LogEntryService {
             .ok_or((StatusCode::NOT_FOUND, json!({ "error": "Entry not found" })))?;
 
         // Check if user owns the entry or has management permissions (including readonly HQ)
-        if entry.user_id != user_id {
-            let user = db::get_user_by_id(&state.postgres, user_id)
-                .await
-                .map_err(|e| {
-                    tracing::error!("Database error fetching user: {:?}", e);
-                    (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        json!({ "error": "Database error" }),
-                    )
-                })?
-                .ok_or((
-                    StatusCode::UNAUTHORIZED,
-                    json!({ "error": "User not found" }),
-                ))?;
-
+        if entry.user_id != user.id {
             // Allow if user can manage branch or is readonly HQ
             if !user.can_read_manage_branch() {
                 return Err((
@@ -170,12 +156,12 @@ impl LogEntryService {
             }
 
             // Additional check: ensure entry belongs to same company
-            let user_company_id = user.company_id.ok_or((
+            let user_company_id = user.company_id.as_ref().ok_or((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "User is not associated with a company" }),
             ))?;
 
-            if entry.company_id != user_company_id {
+            if &entry.company_id != user_company_id {
                 return Err((
                     StatusCode::FORBIDDEN,
                     json!({ "error": "You do not have permission to view this entry" }),
@@ -284,31 +270,10 @@ impl LogEntryService {
     /// Returns an error if the user is not an admin, entry is not found, or operation fails.
     pub async fn unsubmit_log_entry(
         state: &AppState,
-        user_id: &str,
+        user: &UserRecord,
         entry_id: &str,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
-        let user = db::get_user_by_id(&state.postgres, user_id)
-            .await
-            .map_err(|e| {
-                tracing::error!("Database error fetching user: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Database error" }),
-                )
-            })?
-            .ok_or((
-                StatusCode::UNAUTHORIZED,
-                json!({ "error": "User not found" }),
-            ))?;
-
-        if !user.can_manage_company() {
-            return Err((
-                StatusCode::FORBIDDEN,
-                json!({ "error": "Only admin users can unsubmit log entries" }),
-            ));
-        }
-
-        let entry = logs_db::get_log_entry(&state.mongodb, entry_id)
+            let entry = logs_db::get_log_entry(&state.mongodb, entry_id)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to get log entry: {:?}", e);
@@ -319,7 +284,7 @@ impl LogEntryService {
             })?
             .ok_or((StatusCode::NOT_FOUND, json!({ "error": "Entry not found" })))?;
 
-        let user_company_id = db::get_user_company_id(&state.postgres, user_id)
+        let user_company_id = db::get_user_company_id(&state.postgres, &user.id)
             .await
             .map_err(|e| {
                 tracing::error!("Database error fetching user company ID: {:?}", e);
@@ -362,9 +327,8 @@ impl LogEntryService {
     /// Returns an error if the entry is not found, user is not authorized, or deletion fails.
     pub async fn delete_log_entry(
         state: &AppState,
-        user_id: &str,
-        entry_id: &str,
-        is_company_admin: bool,
+        user: &UserRecord,
+        entry_id: &str
     ) -> Result<(), (StatusCode, serde_json::Value)> {
         let entry = logs_db::get_log_entry(&state.mongodb, entry_id)
             .await
@@ -376,13 +340,27 @@ impl LogEntryService {
                 )
             })?
             .ok_or((StatusCode::NOT_FOUND, json!({ "error": "Entry not found" })))?;
-
-        if entry.user_id != user_id && !is_company_admin {
+        
+        if user.is_staff() && entry.user_id != user.id {
             return Err((
                 StatusCode::FORBIDDEN,
-                json!({ "error": "You do not have permission to delete this entry" }),
+                json!({ "error": "You may not delete log entries created by other users" }),
             ));
         }
+
+        if user.is_branch_manager() && entry.branch_id != user.branch_id {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "You do not have permission to delete entries from another branch" }),
+            ));
+        }
+
+        if user.is_company_manager() && Some(entry.company_id) != user.company_id {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "You do not have permission to delete entries from another company" }),
+            ));
+        }        
 
         logs_db::delete_log_entry(&state.mongodb, entry_id)
             .await

@@ -1,4 +1,5 @@
-use crate::{AppState, db, middleware::AuthToken};
+use crate::middleware::LogSmartAdminUser;
+use crate::{AppState, db};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Json};
@@ -59,35 +60,9 @@ pub async fn basic_health_check() -> impl IntoResponse {
     tag = "Health Monitoring"
 )]
 pub async fn get_db_health(
-    AuthToken(claims): AuthToken,
+    LogSmartAdminUser(_claims, _user): LogSmartAdminUser,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let user = match db::get_user_by_id(&state.postgres, &claims.user_id).await {
-        Ok(Some(u)) => u,
-        Ok(None) => {
-            return (
-                StatusCode::UNAUTHORIZED,
-                Json(json!({"error": "User not found"})),
-            )
-                .into_response();
-        }
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": format!("Database error: {e}")})),
-            )
-                .into_response();
-        }
-    };
-
-    if !user.is_logsmart_admin() {
-        return (
-            StatusCode::FORBIDDEN,
-            Json(json!({"error": "Only LogSmart admins can view database health"})),
-        )
-            .into_response();
-    }
-
     match db::get_database_health(&state.postgres).await {
         Ok(metrics) => Json(HealthResponse {
             status: "healthy".to_string(),
@@ -119,36 +94,10 @@ pub async fn get_db_health(
 )]
 #[allow(clippy::implicit_hasher)]
 pub async fn get_db_slow_queries(
-    AuthToken(claims): AuthToken,
+    LogSmartAdminUser(_claims, _user): LogSmartAdminUser,
     State(state): State<AppState>,
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
 ) -> impl IntoResponse {
-    let user = match db::get_user_by_id(&state.postgres, &claims.user_id).await {
-        Ok(Some(u)) => u,
-        Ok(None) => {
-            return (
-                StatusCode::UNAUTHORIZED,
-                Json(json!({"error": "User not found"})),
-            )
-                .into_response();
-        }
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": format!("Database error: {e}")})),
-            )
-                .into_response();
-        }
-    };
-
-    if !user.is_logsmart_admin() {
-        return (
-            StatusCode::FORBIDDEN,
-            Json(json!({"error": "Only LogSmart admins can view slow queries"})),
-        )
-            .into_response();
-    }
-
     let limit = params
         .get("limit")
         .and_then(|l| l.parse::<i64>().ok())
@@ -177,34 +126,9 @@ pub async fn get_db_slow_queries(
     tag = "Health Monitoring"
 )]
 pub async fn get_db_index_usage(
-    AuthToken(claims): AuthToken,
+    LogSmartAdminUser(_claims, _user): LogSmartAdminUser,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let user = match db::get_user_by_id(&state.postgres, &claims.user_id).await {
-        Ok(Some(u)) => u,
-        Ok(None) => {
-            return (
-                StatusCode::UNAUTHORIZED,
-                Json(json!({"error": "User not found"})),
-            )
-                .into_response();
-        }
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": format!("Database error: {e}")})),
-            )
-                .into_response();
-        }
-    };
-
-    if !user.is_logsmart_admin() {
-        return (
-            StatusCode::FORBIDDEN,
-            Json(json!({"error": "Only LogSmart admins can view index usage"})),
-        )
-            .into_response();
-    }
 
     let indexes = match db::get_index_usage(&state.postgres).await {
         Ok(idx) => idx,
@@ -248,35 +172,9 @@ pub async fn get_db_index_usage(
     tag = "Health Monitoring"
 )]
 pub async fn get_db_table_sizes(
-    AuthToken(claims): AuthToken,
+    LogSmartAdminUser(_claims, _user): LogSmartAdminUser,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let user = match db::get_user_by_id(&state.postgres, &claims.user_id).await {
-        Ok(Some(u)) => u,
-        Ok(None) => {
-            return (
-                StatusCode::UNAUTHORIZED,
-                Json(json!({"error": "User not found"})),
-            )
-                .into_response();
-        }
-        Err(e) => {
-            return (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": format!("Database error: {e}")})),
-            )
-                .into_response();
-        }
-    };
-
-    if !user.is_logsmart_admin() {
-        return (
-            StatusCode::FORBIDDEN,
-            Json(json!({"error": "Only LogSmart admins can view table sizes"})),
-        )
-            .into_response();
-    }
-
     match db::get_table_sizes(&state.postgres).await {
         Ok(tables) => Json(TableSizesResponse { tables }).into_response(),
         Err(e) => (

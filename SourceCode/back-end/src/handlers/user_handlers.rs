@@ -3,7 +3,7 @@ use crate::{
     dto::{
         AdminUpdateMemberRequest, ErrorResponse, GetCompanyMembersResponse, RemoveMemberRequest,
     },
-    middleware::AuthToken,
+    middleware::{BranchManagerUser, ReadBranchUser},
     services::user_service::UserService,
     utils::AuditLogger,
 };
@@ -26,32 +26,12 @@ use serde_json::json;
 /// # Errors
 /// Returns an error if the user is not associated with a company or if the database query fails.
 pub async fn get_company_members(
-    AuthToken(claims): AuthToken,
+    ReadBranchUser(_claims, user): ReadBranchUser,
     State(state): State<AppState>,
 ) -> Result<Json<GetCompanyMembersResponse>, (StatusCode, Json<serde_json::Value>)> {
-    tracing::info!("get_company_members called for user_id: {}", claims.user_id);
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "User not found" })),
-        ))?;
+    tracing::info!("get_company_members called for user_id: {}", user.id);
 
-    if !user.can_manage_branch() && !user.is_readonly_hq() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "User does not have permission to view company members" })),
-        ));
-    }
-
-    let members = db::get_company_members_for_user(&state.postgres, &claims.user_id)
+    let members = db::get_company_members_for_user(&state.postgres, &user.id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching company members: {:?}", e);
@@ -69,10 +49,9 @@ pub async fn get_company_members(
     }
 
     let filtered_members =
-        if user.is_company_manager() || user.is_logsmart_admin() || user.is_readonly_hq() {
+        if user.can_manage_company() || user.is_readonly_hq() {
             members
         } else if user.is_branch_manager() {
-            
             members
                 .into_iter()
                 .filter(|m| m.branch_id == user.branch_id)
@@ -104,7 +83,7 @@ pub async fn get_company_members(
 /// # Errors
 /// Returns an error if the user is not an admin, the request is invalid, or the update fails.
 pub async fn admin_update_member_profile(
-    AuthToken(claims): AuthToken,
+    BranchManagerUser(_claims, user): BranchManagerUser,
     State(state): State<AppState>,
     Json(payload): Json<AdminUpdateMemberRequest>,
 ) -> Result<Json<GetCompanyMembersResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -131,7 +110,7 @@ pub async fn admin_update_member_profile(
 
     let updated_user = UserService::admin_update_member_profile(
         &state.postgres,
-        &claims.user_id,
+        &user,
         &payload.email,
         payload.first_name.clone(),
         payload.last_name.clone(),
@@ -146,7 +125,7 @@ pub async fn admin_update_member_profile(
 
     AuditLogger::log_admin_action(
         &state.postgres,
-        claims.user_id,
+        user.id,
         format!("Updated member profile: {}", updated_user.email),
     )
     .await;
@@ -173,12 +152,12 @@ pub async fn admin_update_member_profile(
 /// # Errors
 /// Returns an error if the user is not an admin or if the deletion fails.
 pub async fn admin_delete_member(
-    AuthToken(claims): AuthToken,
+    BranchManagerUser(_claims, user): BranchManagerUser,
     State(state): State<AppState>,
     Json(payload): Json<RemoveMemberRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
     let deleted_user_id =
-        UserService::admin_delete_member(&state.postgres, &claims.user_id, &payload.email)
+        UserService::admin_delete_member(&state.postgres, &user, &payload.email)
             .await
             .map_err(|(status, error)| (status, Json(error)))?;
 
@@ -187,7 +166,7 @@ pub async fn admin_delete_member(
 
     AuditLogger::log_admin_action(
         &state.postgres,
-        claims.user_id,
+        user.id,
         format!("Deleted member: {}", payload.email),
     )
     .await;

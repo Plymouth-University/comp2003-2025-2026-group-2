@@ -1,3 +1,4 @@
+use crate::middleware::AnyAuthUser;
 use crate::services::UserService;
 use crate::utils::{extract_ip_from_headers_and_addr, extract_user_agent};
 use crate::{
@@ -10,7 +11,6 @@ use crate::{
         UserResponse, VerifyTokenRequest,
     },
     jwt_manager::JwtManager,
-    middleware::AuthToken,
     services,
     utils::AuditLogger,
 };
@@ -316,32 +316,8 @@ pub async fn login(
 /// # Errors
 /// Returns an error if the user is not found or if there's a database error.
 pub async fn get_current_user(
-    AuthToken(claims): AuthToken,
-    State(state): State<AppState>,
+    AnyAuthUser(_claims, user): AnyAuthUser,
 ) -> Result<Json<UserResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = if let Some(user) = state.user_cache.get(&claims.user_id).await {
-        user
-    } else {
-        let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-            .await
-            .map_err(|e| {
-                tracing::error!("Database error fetching current user: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({ "error": "Database error" })),
-                )
-            })?
-            .ok_or((
-                StatusCode::NOT_FOUND,
-                Json(json!({ "error": "User not found" })),
-            ))?;
-        state
-            .user_cache
-            .insert(claims.user_id.clone(), user.clone())
-            .await;
-        user
-    };
-
     Ok(Json(user.into()))
 }
 
@@ -362,7 +338,7 @@ pub async fn get_current_user(
 /// # Errors
 /// Returns an error if validation fails or the update operation fails.
 pub async fn update_profile(
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(claims, _user): AnyAuthUser,
     State(state): State<AppState>,
     Json(payload): Json<UpdateProfileRequest>,
 ) -> Result<Json<UserResponse>, (StatusCode, Json<serde_json::Value>)> {

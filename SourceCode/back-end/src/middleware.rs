@@ -1,4 +1,4 @@
-use crate::{AppState, auth::Claims, db::UserRole, jwt_manager::JwtManager};
+use crate::{AppState, auth::Claims, db::{UserRecord, UserRole}, jwt_manager::JwtManager};
 use axum::{
     Json,
     extract::FromRequestParts,
@@ -97,9 +97,10 @@ impl IntoResponse for RoleError {
     }
 }
 
-pub struct AdminUser(pub Claims);
+/// Extractor for CompanyManager and above
+pub struct ManageCompanyUser(pub Claims, pub UserRecord);
 
-impl FromRequestParts<crate::AppState> for AdminUser {
+impl FromRequestParts<crate::AppState> for ManageCompanyUser {
     type Rejection = RoleError;
 
     fn from_request_parts(
@@ -110,7 +111,7 @@ impl FromRequestParts<crate::AppState> for AdminUser {
             let jwt_config = JwtManager::get_config();
 
             let TypedHeader(Authorization::<Bearer>(bearer)) =
-                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, &())
+                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
                     .await
                     .map_err(|_| RoleError::MissingToken)?;
 
@@ -137,14 +138,15 @@ impl FromRequestParts<crate::AppState> for AdminUser {
                 return Err(RoleError::InsufficientPermissions);
             }
 
-            Ok(AdminUser(claims))
+            Ok(ManageCompanyUser(claims, user))
         })
     }
 }
 
-pub struct MemberUser(pub Claims);
+/// Extractor for Staff and above
+pub struct AnyAuthUser(pub Claims, pub UserRecord);
 
-impl FromRequestParts<crate::AppState> for MemberUser {
+impl FromRequestParts<crate::AppState> for AnyAuthUser {
     type Rejection = RoleError;
 
     fn from_request_parts(
@@ -155,7 +157,7 @@ impl FromRequestParts<crate::AppState> for MemberUser {
             let jwt_config = JwtManager::get_config();
 
             let TypedHeader(Authorization::<Bearer>(bearer)) =
-                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, &())
+                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
                     .await
                     .map_err(|_| RoleError::MissingToken)?;
 
@@ -188,12 +190,59 @@ impl FromRequestParts<crate::AppState> for MemberUser {
                 return Err(RoleError::InsufficientPermissions);
             }
 
-            Ok(MemberUser(claims))
+            Ok(AnyAuthUser(claims, user))
         })
     }
 }
 
-pub struct LogSmartAdminUser(pub Claims);
+/// Extractor for BranchManager and above
+pub struct BranchManagerUser(pub Claims, pub UserRecord);
+impl FromRequestParts<crate::AppState> for BranchManagerUser {
+    type Rejection = RoleError;
+
+    fn from_request_parts(
+        parts: &mut Parts,
+        state: &crate::AppState,
+    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
+        Box::pin(async move {
+            let jwt_config = JwtManager::get_config();
+
+            let TypedHeader(Authorization::<Bearer>(bearer)) =
+                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
+                    .await
+                    .map_err(|_| RoleError::MissingToken)?;
+
+            let token = bearer.token();
+            let claims = jwt_config
+                .validate_token(token)
+                .map_err(|_| RoleError::InvalidToken)?;
+
+            let user = if let Some(user) = state.user_cache.get(&claims.user_id).await {
+                user
+            } else {
+                let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
+                    .await
+                    .map_err(|_| RoleError::InvalidToken)?
+                    .ok_or(RoleError::InvalidToken)?;
+                state
+                    .user_cache
+                    .insert(claims.user_id.clone(), user.clone())
+                    .await;
+                user
+            };
+
+            if !user.can_manage_branch() {
+                return Err(RoleError::InsufficientPermissions);
+            }
+
+            Ok(BranchManagerUser(claims, user))
+        })
+    }
+}
+
+
+/// Extractor for LogSmartAdmin only
+pub struct LogSmartAdminUser(pub Claims, pub UserRecord);
 
 impl FromRequestParts<crate::AppState> for LogSmartAdminUser {
     type Rejection = RoleError;
@@ -206,7 +255,7 @@ impl FromRequestParts<crate::AppState> for LogSmartAdminUser {
             let jwt_config = JwtManager::get_config();
 
             let TypedHeader(Authorization::<Bearer>(bearer)) =
-                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, &())
+                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
                     .await
                     .map_err(|_| RoleError::MissingToken)?;
 
@@ -233,7 +282,97 @@ impl FromRequestParts<crate::AppState> for LogSmartAdminUser {
                 return Err(RoleError::InsufficientPermissions);
             }
 
-            Ok(LogSmartAdminUser(claims))
+            Ok(LogSmartAdminUser(claims, user))
+        })
+    }
+}
+
+/// Extractor for company admin and hq staff
+pub struct ReadCompanyUser(pub Claims, pub UserRecord);
+impl FromRequestParts<crate::AppState> for ReadCompanyUser {
+    type Rejection = RoleError;
+
+    fn from_request_parts(
+        parts: &mut Parts,
+        state: &crate::AppState,
+    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
+        Box::pin(async move {
+            let jwt_config = JwtManager::get_config();
+
+            let TypedHeader(Authorization::<Bearer>(bearer)) =
+                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
+                    .await
+                    .map_err(|_| RoleError::MissingToken)?;
+
+            let token = bearer.token();
+            let claims = jwt_config
+                .validate_token(token)
+                .map_err(|_| RoleError::InvalidToken)?;
+
+            let user = if let Some(user) = state.user_cache.get(&claims.user_id).await {
+                user
+            } else {
+                let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
+                    .await
+                    .map_err(|_| RoleError::InvalidToken)?
+                    .ok_or(RoleError::InvalidToken)?;
+                state
+                    .user_cache
+                    .insert(claims.user_id.clone(), user.clone())
+                    .await;
+                user
+            };
+
+            if !(user.can_manage_company() || user.is_readonly_hq()) {
+                return Err(RoleError::InsufficientPermissions);
+            }
+
+            Ok(ReadCompanyUser(claims, user))
+        })
+    }
+}
+
+/// Extractor for branch admin and hq staff
+pub struct ReadBranchUser(pub Claims, pub UserRecord);
+impl FromRequestParts<crate::AppState> for ReadBranchUser {
+    type Rejection = RoleError;
+
+    fn from_request_parts(
+        parts: &mut Parts,
+        state: &crate::AppState,
+    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
+        Box::pin(async move {
+            let jwt_config = JwtManager::get_config();
+
+            let TypedHeader(Authorization::<Bearer>(bearer)) =
+                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
+                    .await
+                    .map_err(|_| RoleError::MissingToken)?;
+
+            let token = bearer.token();
+            let claims = jwt_config
+                .validate_token(token)
+                .map_err(|_| RoleError::InvalidToken)?;
+
+            let user = if let Some(user) = state.user_cache.get(&claims.user_id).await {
+                user
+            } else {
+                let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
+                    .await
+                    .map_err(|_| RoleError::InvalidToken)?
+                    .ok_or(RoleError::InvalidToken)?;
+                state
+                    .user_cache
+                    .insert(claims.user_id.clone(), user.clone())
+                    .await;
+                user
+            };
+
+            if !(user.can_manage_branch() || user.is_readonly_hq()) {
+                return Err(RoleError::InsufficientPermissions);
+            }
+
+            Ok(ReadBranchUser(claims, user))
         })
     }
 }

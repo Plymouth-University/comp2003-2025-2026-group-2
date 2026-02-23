@@ -7,7 +7,7 @@ use crate::{
         PasskeyRegistrationStartRequest, PasskeyRegistrationStartResponse,
     },
     jwt_manager::JwtManager,
-    middleware::AuthToken,
+    middleware::AnyAuthUser,
     utils::{extract_ip_from_headers_and_addr, extract_user_agent},
 };
 use axum::{
@@ -38,24 +38,10 @@ use webauthn_rs::prelude::*;
 /// # Errors
 /// Returns an error if the user is not found, or if WebAuthn/database operations fail.
 pub async fn start_passkey_registration(
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
     Json(payload): Json<PasskeyRegistrationStartRequest>,
 ) -> Result<Json<PasskeyRegistrationStartResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::NOT_FOUND,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
     let user_unique_id = Uuid::parse_str(&user.id).map_err(|e| {
         tracing::error!(
             "Invalid user UUID in database: {:?}, error: {:?}",
@@ -176,7 +162,7 @@ pub async fn start_passkey_registration(
 /// # Errors
 /// Returns an error if the session is invalid, `WebAuthn` verification fails, or database update fails.
 pub async fn finish_passkey_registration(
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
     Json(payload): Json<PasskeyRegistrationFinishRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
@@ -261,7 +247,7 @@ pub async fn finish_passkey_registration(
 
     db::create_passkey(
         &state.postgres,
-        &claims.user_id,
+        &user.id,
         credential_id_str.clone(),
         public_key_json,
         passkey_name,
@@ -835,10 +821,10 @@ pub async fn finish_discoverable_passkey_login(
 /// # Errors
 /// Returns an error if the database query fails.
 pub async fn list_passkeys(
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
 ) -> Result<Json<ListPasskeysResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let passkeys = db::get_passkeys_by_user(&state.postgres, &claims.user_id)
+    let passkeys = db::get_passkeys_by_user(&state.postgres, &user.id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching passkeys: {:?}", e);
@@ -873,10 +859,10 @@ pub async fn list_passkeys(
 /// Returns an error if the database deletion fails.
 pub async fn delete_passkey(
     Path(passkey_id): Path<String>,
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    db::delete_passkey(&state.postgres, &passkey_id, &claims.user_id)
+    db::delete_passkey(&state.postgres, &passkey_id, &user.id)
         .await
         .map_err(|e| {
             tracing::error!("Database error deleting passkey: {:?}", e);
