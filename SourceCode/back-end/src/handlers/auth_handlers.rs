@@ -1,6 +1,6 @@
 use crate::middleware::AnyAuthUser;
 use crate::services::UserService;
-use crate::utils::{extract_ip_from_headers_and_addr, extract_user_agent};
+use crate::utils::{err_bad_request, err_conflict, err_internal, err_not_found, err_unauthorized, extract_ip_from_headers_and_addr, extract_user_agent};
 use crate::{
     AppState,
     auth::{validate_email, validate_password_policy},
@@ -20,7 +20,6 @@ use axum::{
     http::{self, HeaderMap, StatusCode, header::SET_COOKIE},
     response::IntoResponse,
 };
-use serde_json::json;
 
 #[utoipa::path(
     post,
@@ -44,10 +43,7 @@ pub async fn verify_token(
     let jwt_config = JwtManager::get_config();
     let claims = jwt_config.validate_token(&payload.token).map_err(|e| {
         tracing::error!("Token verification failed: {:?}", e);
-        (
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "Invalid or expired token" })),
-        )
+        err_unauthorized("Invalid or expired token")
     })?;
 
     let user = if let Some(user) = state.user_cache.get(&claims.user_id).await {
@@ -60,15 +56,9 @@ pub async fn verify_token(
                     "Database error fetching user during token verification: {:?}",
                     e
                 );
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({ "error": "Database error" })),
-                )
+                err_internal("Database error")
             })?
-            .ok_or((
-                StatusCode::NOT_FOUND,
-                Json(json!({ "error": "User not found" })),
-            ))?;
+            .ok_or(err_not_found("User not found"))?;
         state
             .user_cache
             .insert(claims.user_id.clone(), user.clone())
@@ -114,41 +104,26 @@ pub async fn register_company_admin(
         || payload.company_name.is_empty()
         || payload.company_address.is_empty()
     {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": "Missing required fields" })),
-        ));
+        return Err(err_bad_request("Missing required fields"));
     }
 
     if let Err(e) = validate_email(&payload.email) {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": e.to_string() })),
-        ));
+        return Err(err_bad_request(&e.to_string()));
     }
 
     if let Err(e) = validate_password_policy(&payload.password) {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": e.to_string() })),
-        ));
+        return Err(err_bad_request(&e.to_string()));
     }
 
     if db::get_user_by_email(&state.postgres, &payload.email)
         .await
         .map_err(|e| {
             tracing::error!("Database error checking existing user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
+            err_internal("Database error")
         })?
         .is_some()
     {
-        return Err((
-            StatusCode::CONFLICT,
-            Json(json!({ "error": "Email already exists" })),
-        ));
+        return Err(err_conflict("Email already exists"));
     }
 
     let (user_record, token) = services::AuthService::register_admin(
@@ -200,10 +175,7 @@ pub async fn register_company_admin(
         SET_COOKIE,
         http::HeaderValue::from_str(&cookie).map_err(|e| {
             tracing::error!("Failed to set registration cookie: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Failed to set authentication cookie" })),
-            )
+            err_internal("Failed to set authentication cookie")
         })?,
     );
 
@@ -240,10 +212,7 @@ pub async fn login(
     let user_agent = extract_user_agent(&headers);
 
     if payload.email.is_empty() || payload.password.is_empty() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": "Missing email or password" })),
-        ));
+        return Err(err_bad_request("Missing email or password"));
     }
 
     let (token, user) = services::AuthService::verify_credentials(
@@ -286,12 +255,9 @@ pub async fn login(
 
     response.headers_mut().insert(
         SET_COOKIE,
-        http::header::HeaderValue::from_str(&cookie).map_err(|e| {
+        http::HeaderValue::from_str(&cookie).map_err(|e| {
             tracing::error!("Failed to set login cookie: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Failed to set authentication cookie" })),
-            )
+            err_internal("Failed to set authentication cookie")
         })?,
     );
 
@@ -343,10 +309,7 @@ pub async fn update_profile(
     Json(payload): Json<UpdateProfileRequest>,
 ) -> Result<Json<UserResponse>, (StatusCode, Json<serde_json::Value>)> {
     if payload.first_name.is_empty() || payload.last_name.is_empty() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": "First name and last name cannot be empty" })),
-        ));
+        return Err(err_bad_request("First name and last name cannot be empty"));
     }
     let user = UserService::update_profile(
         &state.postgres,
@@ -393,17 +356,11 @@ pub async fn request_password_reset(
     state.metrics.increment_total_requests();
 
     if payload.email.is_empty() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": "Email is required" })),
-        ));
+        return Err(err_bad_request("Email is required"));
     }
 
     if let Err(e) = validate_email(&payload.email) {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": e.to_string() })),
-        ));
+        return Err(err_bad_request(&e.to_string()));
     }
 
     let ip_address = extract_ip_from_headers_and_addr(&headers, &addr);

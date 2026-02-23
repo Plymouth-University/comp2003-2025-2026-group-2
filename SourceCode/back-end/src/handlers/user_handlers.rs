@@ -5,7 +5,7 @@ use crate::{
     },
     middleware::{BranchManagerUser, ReadBranchUser},
     services::user_service::UserService,
-    utils::AuditLogger,
+    utils::{err_bad_request, err_forbidden, err_internal, AuditLogger},
 };
 use axum::{Json, extract::State, http::StatusCode};
 use serde_json::json;
@@ -35,17 +35,11 @@ pub async fn get_company_members(
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching company members: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
+            err_internal("Database error")
         })?;
 
     if members.is_empty() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "User is not associated with a company" })),
-        ));
+        return Err(err_forbidden("User is not associated with a company"));
     }
 
     let filtered_members = if user.can_manage_company() || user.is_readonly_hq() {
@@ -87,10 +81,7 @@ pub async fn admin_update_member_profile(
     Json(payload): Json<AdminUpdateMemberRequest>,
 ) -> Result<Json<GetCompanyMembersResponse>, (StatusCode, Json<serde_json::Value>)> {
     if payload.first_name.is_empty() || payload.last_name.is_empty() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(json!({ "error": "First name and last name cannot be empty" })),
-        ));
+        return Err(err_bad_request("First name and last name cannot be empty"));
     }
 
     let role = match payload.role.as_str() {
@@ -98,12 +89,7 @@ pub async fn admin_update_member_profile(
         "branch_manager" => db::UserRole::BranchManager,
         "staff" => db::UserRole::Staff,
         _ => {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(
-                    json!({ "error": "Invalid role. Must be 'company_manager', 'branch_manager', or 'staff'" }),
-                ),
-            ));
+            return Err(err_bad_request("Invalid role. Must be 'company_manager', 'branch_manager', or 'staff'"));
         }
     };
 

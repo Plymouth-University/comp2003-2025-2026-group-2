@@ -279,3 +279,63 @@ pub fn extract_user_agent(headers: &HeaderMap) -> Option<String> {
         .and_then(|h| h.to_str().ok())
         .map(std::string::ToString::to_string)
 }
+
+pub type HandlerError = (axum::http::StatusCode, axum::Json<serde_json::Value>);
+
+pub fn err(status: axum::http::StatusCode, message: &str) -> HandlerError {
+    (status, axum::Json(serde_json::json!({ "error": message })))
+}
+
+pub fn err_internal(msg: &str) -> HandlerError {
+    err(axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg)
+}
+
+pub fn err_not_found(msg: &str) -> HandlerError {
+    err(axum::http::StatusCode::NOT_FOUND, msg)
+}
+
+pub fn err_forbidden(msg: &str) -> HandlerError {
+    err(axum::http::StatusCode::FORBIDDEN, msg)
+}
+
+pub fn err_bad_request(msg: &str) -> HandlerError {
+    err(axum::http::StatusCode::BAD_REQUEST, msg)
+}
+
+pub fn err_unauthorized(msg: &str) -> HandlerError {
+    err(axum::http::StatusCode::UNAUTHORIZED, msg)
+}
+
+pub fn err_conflict(msg: &str) -> HandlerError {
+    err(axum::http::StatusCode::CONFLICT, msg)
+}
+
+pub fn err_too_many_requests(msg: &str) -> HandlerError {
+    err(axum::http::StatusCode::TOO_MANY_REQUESTS, msg)
+}
+
+pub fn err_created<T: serde::Serialize>(msg: &str) -> (axum::http::StatusCode, axum::Json<serde_json::Value>) {
+    (axum::http::StatusCode::CREATED, axum::Json(serde_json::json!({ "message": msg })))
+}
+
+pub type ServiceError = (axum::http::StatusCode, serde_json::Value);
+
+pub fn svc_err(status: axum::http::StatusCode, message: &str) -> ServiceError {
+    (status, serde_json::json!({ "error": message }))
+}
+
+pub fn svc_err_internal(msg: &str) -> ServiceError {
+    svc_err(axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg)
+}
+
+pub fn svc_err_not_found(msg: &str) -> ServiceError {
+    svc_err(axum::http::StatusCode::NOT_FOUND, msg)
+}
+
+pub fn svc_err_forbidden(msg: &str) -> ServiceError {
+    svc_err(axum::http::StatusCode::FORBIDDEN, msg)
+}
+
+pub fn svc_err_bad_request(msg: &str) -> ServiceError {
+    svc_err(axum::http::StatusCode::BAD_REQUEST, msg)
+}

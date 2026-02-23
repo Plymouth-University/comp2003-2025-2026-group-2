@@ -1,6 +1,5 @@
 use crate::db;
-use axum::http::StatusCode;
-use serde_json::json;
+use crate::utils::{ServiceError, svc_err_bad_request, svc_err_forbidden, svc_err_internal, svc_err_not_found};
 use sqlx::PgPool;
 
 #[cfg(test)]
@@ -21,17 +20,14 @@ impl UserService {
     pub async fn get_user_by_email(
         db_pool: &PgPool,
         email: &str,
-    ) -> Result<db::UserRecord, (StatusCode, serde_json::Value)> {
+    ) -> Result<db::UserRecord, ServiceError> {
         db::get_user_by_email(db_pool, email)
             .await
             .map_err(|e| {
                 tracing::error!("Database error fetching user: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Database error" }),
-                )
+                svc_err_internal("Database error")
             })?
-            .ok_or((StatusCode::NOT_FOUND, json!({ "error": "User not found" })))
+            .ok_or(svc_err_not_found("User not found"))
     }
 
     /// Retrieves a user by their ID.
@@ -41,17 +37,14 @@ impl UserService {
     pub async fn get_user_by_id(
         db_pool: &PgPool,
         user_id: &str,
-    ) -> Result<db::UserRecord, (StatusCode, serde_json::Value)> {
+    ) -> Result<db::UserRecord, ServiceError> {
         db::get_user_by_id(db_pool, user_id)
             .await
             .map_err(|e| {
                 tracing::error!("Database error fetching user: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Database error" }),
-                )
+                svc_err_internal("Database error")
             })?
-            .ok_or((StatusCode::NOT_FOUND, json!({ "error": "User not found" })))
+            .ok_or(svc_err_not_found("User not found"))
     }
 
     /// Updates a user's profile information.
@@ -63,15 +56,12 @@ impl UserService {
         user_id: &str,
         first_name: String,
         last_name: String,
-    ) -> Result<db::UserRecord, (StatusCode, serde_json::Value)> {
+    ) -> Result<db::UserRecord, ServiceError> {
         db::update_user_profile(db_pool, user_id, first_name, last_name)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to update profile: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Failed to update profile" }),
-                )
+                svc_err_internal("Failed to update profile")
             })
     }
 
@@ -82,15 +72,12 @@ impl UserService {
     pub async fn get_company_members(
         db_pool: &PgPool,
         company_id: &str,
-    ) -> Result<Vec<db::UserRecord>, (StatusCode, serde_json::Value)> {
+    ) -> Result<Vec<db::UserRecord>, ServiceError> {
         db::get_users_by_company_id(db_pool, company_id)
             .await
             .map_err(|e| {
                 tracing::error!("Database error fetching company members: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Database error" }),
-                )
+                svc_err_internal("Database error")
             })
     }
 
@@ -101,20 +88,14 @@ impl UserService {
     pub async fn get_user_company_id(
         db_pool: &PgPool,
         user_id: &str,
-    ) -> Result<String, (StatusCode, serde_json::Value)> {
+    ) -> Result<String, ServiceError> {
         db::get_user_company_id(db_pool, user_id)
             .await
             .map_err(|e| {
                 tracing::error!("Database error fetching user company ID: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Database error" }),
-                )
+                svc_err_internal("Database error")
             })?
-            .ok_or((
-                StatusCode::FORBIDDEN,
-                json!({ "error": "User is not associated with a company" }),
-            ))
+            .ok_or(svc_err_forbidden("User is not associated with a company"))
     }
 
     /// Updates a company member's profile (admin only).
@@ -129,51 +110,31 @@ impl UserService {
         last_name: String,
         role: db::UserRole,
         branch_id: Option<String>,
-    ) -> Result<db::UserRecord, (StatusCode, serde_json::Value)> {
+    ) -> Result<db::UserRecord, ServiceError> {
         if !admin_user.can_manage_branch() || admin_user.is_readonly_hq() {
-            return Err((
-                StatusCode::FORBIDDEN,
-                json!({ "error": "Only managers can update member profiles" }),
-            ));
+            return Err(svc_err_forbidden("Only managers can update member profiles"));
         }
 
         let target_user = Self::get_user_by_email(db_pool, target_email).await?;
 
-        // Company admins can only manage users in their company, but logsmart_admin can manage any company
         if admin_user.is_company_manager() && admin_user.company_id != target_user.company_id {
-            return Err((
-                StatusCode::FORBIDDEN,
-                json!({ "error": "Cannot update users from other companies" }),
-            ));
+            return Err(svc_err_forbidden("Cannot update users from other companies"));
         }
 
-        // Branch managers can only update users in their branch
         if admin_user.is_branch_manager() {
             if admin_user.branch_id != target_user.branch_id {
-                return Err((
-                    StatusCode::FORBIDDEN,
-                    json!({ "error": "Branch managers can only manage users in their branch" }),
-                ));
+                return Err(svc_err_forbidden("Branch managers can only manage users in their branch"));
             }
             if branch_id != admin_user.branch_id {
-                return Err((
-                    StatusCode::FORBIDDEN,
-                    json!({ "error": "Branch managers can only assign users to their own branch" }),
-                ));
+                return Err(svc_err_forbidden("Branch managers can only assign users to their own branch"));
             }
             if role != db::UserRole::Staff {
-                return Err((
-                    StatusCode::FORBIDDEN,
-                    json!({ "error": "Branch managers can only manage staff members" }),
-                ));
+                return Err(svc_err_forbidden("Branch managers can only manage staff members"));
             }
         }
 
         if target_user.is_logsmart_admin() && !admin_user.is_logsmart_admin() {
-            return Err((
-                StatusCode::FORBIDDEN,
-                json!({ "error": "Cannot modify LogSmart internal admin users" }),
-            ));
+            return Err(svc_err_forbidden("Cannot modify LogSmart internal admin users"));
         }
 
         db::update_user_profile_full(
@@ -187,10 +148,7 @@ impl UserService {
         .await
         .map_err(|e| {
             tracing::error!("Failed to update member profile: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                json!({ "error": "Failed to update member profile" }),
-            )
+            svc_err_internal("Failed to update member profile")
         })
     }
 
@@ -202,47 +160,30 @@ impl UserService {
         db_pool: &PgPool,
         admin_user: &db::UserRecord,
         target_email: &str,
-    ) -> Result<String, (StatusCode, serde_json::Value)> {
+    ) -> Result<String, ServiceError> {
         let target_user = Self::get_user_by_email(db_pool, target_email).await?;
 
-        // Company admins can only delete users in their company, but logsmart_admin can delete from any company
         if admin_user.is_company_manager() && admin_user.company_id != target_user.company_id {
-            return Err((
-                StatusCode::FORBIDDEN,
-                json!({ "error": "Cannot delete users from other companies" }),
-            ));
+            return Err(svc_err_forbidden("Cannot delete users from other companies"));
         }
 
-        // Branch managers can only delete users in their branch
         if admin_user.is_branch_manager() && admin_user.branch_id != target_user.branch_id {
-            return Err((
-                StatusCode::FORBIDDEN,
-                json!({ "error": "Branch managers can only delete users in their branch" }),
-            ));
+            return Err(svc_err_forbidden("Branch managers can only delete users in their branch"));
         }
 
         if target_user.is_logsmart_admin() && !admin_user.is_logsmart_admin() {
-            return Err((
-                StatusCode::FORBIDDEN,
-                json!({ "error": "Cannot delete LogSmart internal admin users" }),
-            ));
+            return Err(svc_err_forbidden("Cannot delete LogSmart internal admin users"));
         }
 
         if target_user.email == admin_user.email {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                json!({ "error": "Cannot delete your own account" }),
-            ));
+            return Err(svc_err_bad_request("Cannot delete your own account"));
         }
 
         db::delete_user_by_email(db_pool, target_email)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to delete member: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Failed to delete member" }),
-                )
+                svc_err_internal("Failed to delete member")
             })?;
 
         Ok(target_user.id)
