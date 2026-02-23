@@ -12,7 +12,7 @@ fn test_jwt_config_new() {
 #[test]
 fn test_generate_token_success() {
     let config = JwtConfig::new("test_secret".to_string());
-    let token = config.generate_token("user123".to_string(), 1);
+    let token = config.generate_token("user123", 1);
     assert!(token.is_ok());
     let token = token.unwrap();
     assert!(!token.is_empty());
@@ -21,7 +21,7 @@ fn test_generate_token_success() {
 #[test]
 fn test_generate_token_with_different_expiry() {
     let config = JwtConfig::new("test_secret".to_string());
-    let token1 = config.generate_token("user123".to_string(), 1).unwrap();
+    let token1 = config.generate_token("user123", 1).unwrap();
     let token2 = config.generate_token("user123", 24).unwrap();
     assert_ne!(token1, token2);
 }
@@ -30,7 +30,7 @@ fn test_generate_token_with_different_expiry() {
 fn test_validate_token_success() {
     let config = JwtConfig::new("test_secret".to_string());
     let user_id = "user123".to_string();
-    let token = config.generate_token(user_id.clone(), 24).unwrap();
+    let token = config.generate_token(&user_id, 24).unwrap();
     let claims = config.validate_token(&token);
     assert!(claims.is_ok());
     let claims = claims.unwrap();
@@ -49,7 +49,7 @@ fn test_validate_token_invalid_token() {
 fn test_validate_token_with_wrong_secret() {
     let config1 = JwtConfig::new("secret1".to_string());
     let config2 = JwtConfig::new("secret2".to_string());
-    let token = config1.generate_token("user123".to_string(), 24).unwrap();
+    let token = config1.generate_token("user123", 24).unwrap();
     let result = config2.validate_token(&token);
     assert!(result.is_err());
 }

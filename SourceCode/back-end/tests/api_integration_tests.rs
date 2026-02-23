@@ -151,7 +151,7 @@ async fn test_jwt_token_generation_and_validation() {
     let user_id = "user123";
 
     let token = config
-        .generate_token(user_id.as_str(), 24)
+        .generate_token(user_id, 24)
         .expect("Failed to generate token");
 
     let claims = config
