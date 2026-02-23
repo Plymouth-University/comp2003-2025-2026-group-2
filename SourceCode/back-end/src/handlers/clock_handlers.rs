@@ -1,5 +1,6 @@
 use crate::{
-    AppState, db::{self, UserRole},
+    AppState,
+    db::{self, UserRole},
     dto::{
         ClockEventResponse, ClockStatusResponse, CompanyClockEventResponse,
         CompanyClockEventsResponse, ErrorResponse,
@@ -129,7 +130,7 @@ pub struct CompanyClockQuery {
     pub from: Option<String>,
     /// ISO 8601 end date filter (inclusive)
     pub to: Option<String>,
-    /// Branch ID filter (optional, for company_manager to filter by specific branch)
+    /// Branch ID filter (optional, for `company_manager` to filter by specific branch)
     pub branch_id: Option<String>,
 }
 
@@ -155,12 +156,10 @@ pub async fn get_company_clock_events(
     State(state): State<AppState>,
     Query(params): Query<CompanyClockQuery>,
 ) -> Result<Json<CompanyClockEventsResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = user
-        .company_id
-        .ok_or((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "User is not associated with a company" })),
-        ))?;
+    let company_id = user.company_id.ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
 
     let from = params
         .from

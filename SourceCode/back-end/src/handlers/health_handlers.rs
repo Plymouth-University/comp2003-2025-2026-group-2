@@ -129,7 +129,6 @@ pub async fn get_db_index_usage(
     LogSmartAdminUser(_claims, _user): LogSmartAdminUser,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-
     let indexes = match db::get_index_usage(&state.postgres).await {
         Ok(idx) => idx,
         Err(e) => {

@@ -313,6 +313,6 @@ pub async fn confirm_branch_deletion(
     }
 
     Ok(Json(ConfirmBranchDeletionResponse {
-        message: format!("Branch '{}' has been successfully deleted.", branch_name),
+        message: format!("Branch '{branch_name}' has been successfully deleted."),
     }))
 }

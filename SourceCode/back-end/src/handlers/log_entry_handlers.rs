@@ -132,13 +132,10 @@ pub async fn create_log_entry(
         ));
     }
 
-    let entry_id = services::LogEntryService::create_log_entry(
-        &state,
-        &user.id,
-        &payload.template_name,
-    )
-    .await
-    .map_err(|(status, err)| (status, Json(err)))?;
+    let entry_id =
+        services::LogEntryService::create_log_entry(&state, &user.id, &payload.template_name)
+            .await
+            .map_err(|(status, err)| (status, Json(err)))?;
 
     Ok((
         StatusCode::CREATED,
@@ -367,13 +364,9 @@ pub async fn delete_log_entry(
     State(state): State<AppState>,
     axum::extract::Path(entry_id): axum::extract::Path<String>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    services::LogEntryService::delete_log_entry(
-        &state,
-        &user,
-        &entry_id
-    )
-    .await
-    .map_err(|(status, err)| (status, Json(err)))?;
+    services::LogEntryService::delete_log_entry(&state, &user, &entry_id)
+        .await
+        .map_err(|(status, err)| (status, Json(err)))?;
 
     Ok(Json(json!({ "message": "Log entry deleted successfully" })))
 }
@@ -410,12 +403,14 @@ pub async fn list_company_log_entries(
     let entries = if user.can_manage_company() || user.is_readonly_hq() {
         // Company manager/HQ - check if specific branches requested
         if let Some(branch_ids_str) = branch_ids_param {
-            if !branch_ids_str.is_empty() {
-                let branch_ids: Vec<String> =
-                    branch_ids_str.split(',').map(|s| s.to_string()).collect();
-                logs_db::get_branches_log_entries(&state.mongodb, &company_id, &branch_ids).await
-            } else {
+            if branch_ids_str.is_empty() {
                 logs_db::get_company_log_entries(&state.mongodb, &company_id).await
+            } else {
+                let branch_ids: Vec<String> = branch_ids_str
+                    .split(',')
+                    .map(std::string::ToString::to_string)
+                    .collect();
+                logs_db::get_branches_log_entries(&state.mongodb, &company_id, &branch_ids).await
             }
         } else {
             logs_db::get_company_log_entries(&state.mongodb, &company_id).await

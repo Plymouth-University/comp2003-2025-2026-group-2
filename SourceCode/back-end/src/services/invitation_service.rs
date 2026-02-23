@@ -296,7 +296,7 @@ impl InvitationService {
 
         AuditLogger::log_admin_action(
             db_pool,
-            calling_user.id.to_string(),
+            calling_user.id.clone(),
             format!("Cancelled invitation for: {}", cancelled_invitation.email),
         )
         .await;

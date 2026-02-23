@@ -334,7 +334,7 @@ pub async fn rename_template(
 
     services::TemplateService::rename_template(
         &state,
-        &company_id,
+        company_id,
         &payload.old_template_name,
         &payload.new_template_name,
         user.branch_id.as_deref(),

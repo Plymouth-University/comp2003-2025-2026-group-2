@@ -6,7 +6,7 @@ use axum::{
     response::IntoResponse,
     routing::{get, post},
 };
-use back_end::{AppState, db, dto, handlers, middleware::{BranchManagerUser}};
+use back_end::{AppState, db, dto, handlers, middleware::BranchManagerUser};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use std::net::SocketAddr;

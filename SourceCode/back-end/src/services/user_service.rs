@@ -130,7 +130,6 @@ impl UserService {
         role: db::UserRole,
         branch_id: Option<String>,
     ) -> Result<db::UserRecord, (StatusCode, serde_json::Value)> {
-
         if !admin_user.can_manage_branch() || admin_user.is_readonly_hq() {
             return Err((
                 StatusCode::FORBIDDEN,

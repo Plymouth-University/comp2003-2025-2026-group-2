@@ -191,15 +191,14 @@ pub async fn send_branch_deletion_confirmation_email(
     let subject = "Confirm Branch Deletion - LogSmart";
     let body = format!(
         "Hello,\n\n\
-        We received a request to delete the branch '{}'.\n\n\
+        We received a request to delete the branch '{branch_name}'.\n\n\
         This is a sensitive operation that will permanently remove the branch and disassociate any users currently assigned to it.\n\n\
         Please click the link below to confirm and proceed with the deletion:\n\n\
         {confirmation_link}\n\n\
         This link will expire in 1 hour.\n\n\
         If you did not request this deletion, please ignore this email and contact your system administrator immediately.\n\n\
         Best regards,\n\
-        The LogSmart Team",
-        branch_name
+        The LogSmart Team"
     );
 
     send_email(to_email, subject, &body).await?;
@@ -218,12 +217,11 @@ pub async fn send_branch_deleted_notification_email(
     let subject = "Branch Deleted - LogSmart";
     let body = format!(
         "Hello,\n\n\
-        The branch '{}' has been successfully deleted from your LogSmart account.\n\n\
+        The branch '{branch_name}' has been successfully deleted from your LogSmart account.\n\n\
         Any users previously assigned to this branch have been disassociated and will need to be reassigned to other branches if needed.\n\n\
         If you have any questions, please contact your system administrator.\n\n\
         Best regards,\n\
-        The LogSmart Team",
-        branch_name
+        The LogSmart Team"
     );
 
     send_email(to_email, subject, &body).await?;

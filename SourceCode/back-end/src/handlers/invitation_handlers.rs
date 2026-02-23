@@ -95,12 +95,10 @@ pub async fn invite_user(
         }
     }
 
-    let company_id = user
-        .company_id
-        .ok_or((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "User is not associated with a company" })),
-        ))?;
+    let company_id = user.company_id.ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
 
     let (invitation_id, expires_at) = services::InvitationService::send_invitation(
         &state.postgres,
@@ -399,13 +397,10 @@ pub async fn get_pending_invitations(
     ReadBranchUser(_claims, user): ReadBranchUser,
     State(state): State<AppState>,
 ) -> Result<Json<GetPendingInvitationsResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = user
-        .company_id
-        .as_ref()
-        .ok_or((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "User is not associated with a company" })),
-        ))?;
+    let company_id = user.company_id.as_ref().ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
 
     let invitations =
         services::InvitationService::get_pending_invitations(&state.postgres, company_id)
@@ -455,13 +450,9 @@ pub async fn cancel_invitation(
     State(state): State<AppState>,
     Json(payload): Json<crate::dto::CancelInvitationRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    services::InvitationService::cancel_invitation(
-        &state.postgres,
-        &user,
-        &payload.invitation_id,
-    )
-    .await
-    .map_err(|(status, err)| (status, Json(err)))?;
+    services::InvitationService::cancel_invitation(&state.postgres, &user, &payload.invitation_id)
+        .await
+        .map_err(|(status, err)| (status, Json(err)))?;
 
     Ok(Json(
         json!({ "message": "Invitation cancelled successfully" }),

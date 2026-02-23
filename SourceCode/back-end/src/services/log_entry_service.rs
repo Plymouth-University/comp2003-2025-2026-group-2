@@ -1,4 +1,8 @@
-use crate::{AppState, db::{self, UserRecord}, logs_db};
+use crate::{
+    AppState,
+    db::{self, UserRecord},
+    logs_db,
+};
 use axum::http::StatusCode;
 use serde_json::json;
 use uuid::Uuid;
@@ -273,7 +277,7 @@ impl LogEntryService {
         user: &UserRecord,
         entry_id: &str,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
-            let entry = logs_db::get_log_entry(&state.mongodb, entry_id)
+        let entry = logs_db::get_log_entry(&state.mongodb, entry_id)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to get log entry: {:?}", e);
@@ -328,7 +332,7 @@ impl LogEntryService {
     pub async fn delete_log_entry(
         state: &AppState,
         user: &UserRecord,
-        entry_id: &str
+        entry_id: &str,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
         let entry = logs_db::get_log_entry(&state.mongodb, entry_id)
             .await
@@ -340,7 +344,7 @@ impl LogEntryService {
                 )
             })?
             .ok_or((StatusCode::NOT_FOUND, json!({ "error": "Entry not found" })))?;
-        
+
         if user.is_staff() && entry.user_id != user.id {
             return Err((
                 StatusCode::FORBIDDEN,
@@ -360,7 +364,7 @@ impl LogEntryService {
                 StatusCode::FORBIDDEN,
                 json!({ "error": "You do not have permission to delete entries from another company" }),
             ));
-        }        
+        }
 
         logs_db::delete_log_entry(&state.mongodb, entry_id)
             .await

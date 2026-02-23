@@ -48,17 +48,16 @@ pub async fn get_company_members(
         ));
     }
 
-    let filtered_members =
-        if user.can_manage_company() || user.is_readonly_hq() {
-            members
-        } else if user.is_branch_manager() {
-            members
-                .into_iter()
-                .filter(|m| m.branch_id == user.branch_id)
-                .collect::<Vec<_>>()
-        } else {
-            members.into_iter().filter(|m| m.id == user.id).collect()
-        };
+    let filtered_members = if user.can_manage_company() || user.is_readonly_hq() {
+        members
+    } else if user.is_branch_manager() {
+        members
+            .into_iter()
+            .filter(|m| m.branch_id == user.branch_id)
+            .collect::<Vec<_>>()
+    } else {
+        members.into_iter().filter(|m| m.id == user.id).collect()
+    };
 
     Ok(Json(filtered_members.into()))
 }
@@ -156,10 +155,9 @@ pub async fn admin_delete_member(
     State(state): State<AppState>,
     Json(payload): Json<RemoveMemberRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    let deleted_user_id =
-        UserService::admin_delete_member(&state.postgres, &user, &payload.email)
-            .await
-            .map_err(|(status, error)| (status, Json(error)))?;
+    let deleted_user_id = UserService::admin_delete_member(&state.postgres, &user, &payload.email)
+        .await
+        .map_err(|(status, error)| (status, Json(error)))?;
 
     // Invalidate cache for the deleted user
     state.user_cache.invalidate(&deleted_user_id).await;

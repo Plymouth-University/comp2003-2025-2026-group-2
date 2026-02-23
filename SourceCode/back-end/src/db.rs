@@ -1981,18 +1981,18 @@ pub async fn get_company_clock_events(
     // Add branch filter if provided
     if branch_id.is_some() {
         bind_count += 1;
-        query_str.push_str(&format!("  AND u.branch_id = ${}\n", bind_count));
+        query_str.push_str(&format!("  AND u.branch_id = ${bind_count}\n"));
     }
 
     // Add date filters
     if from.is_some() {
         bind_count += 1;
-        query_str.push_str(&format!("  AND ce.clock_in >= ${}\n", bind_count));
+        query_str.push_str(&format!("  AND ce.clock_in >= ${bind_count}\n"));
     }
 
     if to.is_some() {
         bind_count += 1;
-        query_str.push_str(&format!("  AND ce.clock_in <= ${}\n", bind_count));
+        query_str.push_str(&format!("  AND ce.clock_in <= ${bind_count}\n"));
     }
 
     query_str.push_str("ORDER BY ce.clock_in DESC");
