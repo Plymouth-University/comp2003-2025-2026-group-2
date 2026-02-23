@@ -1,0 +1,96 @@
+========================================
+MEETING MINUTES
+========================================
+
+PROJECT: LogSmart
+COURSE:  COMP2003
+DATE:    23-Feb-2026
+TIME:    11:00 AM - 11:30 AM
+LOCATION: SMB 105
+
+---
+ATTENDEES
+---
+* Lilla Radek
+* Ben Daffada
+* Daniel Kern
+
+---
+ABSENTEES
+---
+* NONE
+
+-----------------------------
+DISCUSSION & DECISIONS
+-----------------------------
+
+1. Sprint 4 Review (PWA & Polish)
+   - Confirmed that the application now meets PWA criteria (Offline capability and "Add to Home Screen" are functional).
+   - Rate limiting has been applied to the API to prevent abuse.
+   - User manuals and help documentation are drafted and integrated.
+
+2. Sprint 5 Planning (Final Submission)
+   - This is the penultimate  sprint. Focus shifts slightly from development to submission artifacts.
+   - The Final Report needs to be compiled from the documentation drafts.
+
+3. Submission Logistics
+   - Discussed the structure of the final video presentation.
+   - Confirmed the deadline for the Final Submission to the DLE.
+
+-----------------------------
+PAST ITEMS (COMPLETED - SPRINT 4)
+-----------------------------
+
+* [TASK: PWA Features]
+  - Add to home screen functionality (Completed)
+  - Offline capability / Service Workers (Completed)
+
+* [TASK: Documentation]
+  - Create User Manual (Completed)
+  - Write Help Documentation (Completed)
+
+* [TASK: Code Quality & Security]
+  - Code refactoring & commenting (Completed)
+  - Implement Rate limiting on API (Completed)
+
+* [TASK: Usability Study]
+  - Conduct Usability Study
+
+* [TASK: Add Reports]
+  - Add Printable reports
+
+* [TASK: Add backup and passkeys/oath]
+
+-----------------------------
+NEW ACTION ITEMS (FOR SPRINT 5)
+-----------------------------
+
+* [TASK 1: Final Deliverables]
+  - Compile and Edit Final Report
+  - Record and Edit Project Video
+  - Create Presentation Slides
+  - OWNER: Whole Group
+
+* [TASK 2: Usability Study Changes]
+  - Changes based on the usability study.
+  - OWNER: Lilla
+
+* [TASK 3: Attendance System]
+  - Add Clock In Clock out and attendance reporting.
+  - OWNER: Ben
+
+* [TASK 4: Tiered Permissions]
+  - Add branches and tiered permissions in a company
+  - OWNER: Daniel
+
+* [TASK 2: Other Log Types]
+  - Add other log types, and their respective reports functionality.
+  - OWNER: WHOLE GROUP
+-----------------------------
+NEXT MEETING
+-----------------------------
+
+DATE:  16-Mar-2026
+TIME:  11:00 AM
+LOCATION: SMB 105
+GOAL:  Sprint 5 Review
