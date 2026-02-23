@@ -1,7 +1,12 @@
+import { redirect } from '@sveltejs/kit';
+
 export const load = async ({ parent, fetch, cookies }: any) => {
 	const { user } = await parent();
 	const token = cookies.get('ls-token');
 
+	if (!user || user.role !== 'logsmart_admin') {
+		redirect(303, '/dashboard');
+	}
 	if (!token) {
 		return {
 			user,
@@ -39,15 +44,11 @@ export const load = async ({ parent, fetch, cookies }: any) => {
 		let dbHealth = null;
 		if (dbHealthResponse.ok) {
 			dbHealth = await dbHealthResponse.json();
-		} else {
-			const errorText = await dbHealthResponse.text();
 		}
 
 		let tableSizes = null;
 		if (tableSizesResponse.ok) {
 			tableSizes = await tableSizesResponse.json();
-		} else {
-			const errorText = await tableSizesResponse.text();
 		}
 
 		const slowQueries = slowQueriesResponse.ok ? await slowQueriesResponse.json() : null;

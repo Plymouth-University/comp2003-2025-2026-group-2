@@ -24,7 +24,7 @@
 		style="border-color: var(--border-secondary); background-color: var(--bg-primary);"
 		class="shrink-0 border-b shadow-sm"
 	>
-		<div class="mx-auto max-w-7xl px-6 py-4">
+		<div class="max-w-8xl mx-auto px-6 py-4 lg:px-50">
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-8">
 					<a
@@ -47,16 +47,6 @@
 							>
 								Admin Dashboard
 							</a>
-							<a
-								href="/dashboard"
-								class="hover:opacity-80"
-								style="color: var(--text-secondary);"
-								class:font-bold={currentPath === '/dashboard'}
-								class:underline={currentPath === '/dashboard'}
-							>
-								Dashboard
-							</a>
-						{:else if isAdmin}
 							<a
 								href="/dashboard"
 								class="hover:opacity-80"
@@ -112,6 +102,15 @@
 								class:underline={currentPath === '/templates-dashboard'}
 							>
 								Templates Dashboard
+							</a>
+							<a
+								href="/branches"
+								class="hover:opacity-80"
+								style="color: var(--text-secondary);"
+								class:font-bold={currentPath === '/branches'}
+								class:underline={currentPath === '/branches'}
+							>
+								Branches
 							</a>
 						{/if}
 					</nav>
