@@ -1,4 +1,4 @@
-use crate::{AppState, auth::Claims, db::{UserRecord, UserRole}, jwt_manager::JwtManager};
+use crate::{AppState, auth::Claims, db::UserRecord, jwt_manager::JwtManager};
 use axum::{
     Json,
     extract::FromRequestParts,
@@ -8,6 +8,38 @@ use axum::{
 use axum_extra::TypedHeader;
 use axum_extra::headers::{Authorization, authorization::Bearer};
 use serde_json::json;
+
+async fn extract_claims(parts: &mut Parts) -> Result<Claims, AuthError> {
+    let jwt_config = JwtManager::get_config();
+
+    let TypedHeader(Authorization::<Bearer>(bearer)) =
+        TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, &())
+            .await
+            .map_err(|_| AuthError::MissingToken)?;
+
+    let token = bearer.token();
+    jwt_config
+        .validate_token(token)
+        .map_err(|_| AuthError::InvalidToken)
+}
+
+async fn get_authenticated_user(
+    state: &AppState,
+    claims: &Claims,
+) -> Result<UserRecord, RoleError> {
+    let user_id = &claims.user_id;
+    if let Some(user) = state.user_cache.get(user_id).await {
+        return Ok(user);
+    }
+
+    let user = crate::db::get_user_by_id(&state.postgres, user_id)
+        .await
+        .map_err(|_| RoleError::InvalidToken)?
+        .ok_or(RoleError::InvalidToken)?;
+
+    state.user_cache.insert(user_id.clone(), user.clone()).await;
+    Ok(user)
+}
 
 pub struct AuthToken(pub Claims);
 
@@ -21,18 +53,7 @@ impl FromRequestParts<crate::AppState> for AuthToken {
         Output = Result<Self, <Self as FromRequestParts<AppState>>::Rejection>,
     > + Send {
         Box::pin(async move {
-            let jwt_config = JwtManager::get_config();
-
-            let TypedHeader(Authorization::<Bearer>(bearer)) =
-                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, &())
-                    .await
-                    .map_err(|_| AuthError::MissingToken)?;
-
-            let token = bearer.token();
-            let claims = jwt_config
-                .validate_token(token)
-                .map_err(|_| AuthError::InvalidToken)?;
-
+            let claims = extract_claims(parts).await?;
             Ok(AuthToken(claims))
         })
     }
@@ -72,6 +93,15 @@ pub enum RoleError {
     InsufficientPermissions,
 }
 
+impl From<AuthError> for RoleError {
+    fn from(e: AuthError) -> Self {
+        match e {
+            AuthError::MissingToken => RoleError::MissingToken,
+            AuthError::InvalidToken => RoleError::InvalidToken,
+        }
+    }
+}
+
 impl IntoResponse for RoleError {
     fn into_response(self) -> Response {
         let (status, error_message) = match self {
@@ -97,7 +127,7 @@ impl IntoResponse for RoleError {
     }
 }
 
-/// Extractor for CompanyManager and above
+/// Extractor for `CompanyManager` and above
 pub struct ManageCompanyUser(pub Claims, pub UserRecord);
 
 impl FromRequestParts<crate::AppState> for ManageCompanyUser {
@@ -108,31 +138,9 @@ impl FromRequestParts<crate::AppState> for ManageCompanyUser {
         state: &crate::AppState,
     ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
         Box::pin(async move {
-            let jwt_config = JwtManager::get_config();
+            let claims = extract_claims(parts).await?;
 
-            let TypedHeader(Authorization::<Bearer>(bearer)) =
-                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
-                    .await
-                    .map_err(|_| RoleError::MissingToken)?;
-
-            let token = bearer.token();
-            let claims = jwt_config
-                .validate_token(token)
-                .map_err(|_| RoleError::InvalidToken)?;
-
-            let user = if let Some(user) = state.user_cache.get(&claims.user_id).await {
-                user
-            } else {
-                let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
-                    .await
-                    .map_err(|_| RoleError::InvalidToken)?
-                    .ok_or(RoleError::InvalidToken)?;
-                state
-                    .user_cache
-                    .insert(claims.user_id.clone(), user.clone())
-                    .await;
-                user
-            };
+            let user = get_authenticated_user(state, &claims).await?;
 
             if !user.can_manage_company() {
                 return Err(RoleError::InsufficientPermissions);
@@ -154,38 +162,16 @@ impl FromRequestParts<crate::AppState> for AnyAuthUser {
         state: &crate::AppState,
     ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
         Box::pin(async move {
-            let jwt_config = JwtManager::get_config();
+            let claims = extract_claims(parts).await?;
 
-            let TypedHeader(Authorization::<Bearer>(bearer)) =
-                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
-                    .await
-                    .map_err(|_| RoleError::MissingToken)?;
-
-            let token = bearer.token();
-            let claims = jwt_config
-                .validate_token(token)
-                .map_err(|_| RoleError::InvalidToken)?;
-
-            let user = if let Some(user) = state.user_cache.get(&claims.user_id).await {
-                user
-            } else {
-                let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
-                    .await
-                    .map_err(|_| RoleError::InvalidToken)?
-                    .ok_or(RoleError::InvalidToken)?;
-                state
-                    .user_cache
-                    .insert(claims.user_id.clone(), user.clone())
-                    .await;
-                user
-            };
+            let user = get_authenticated_user(state, &claims).await?;
 
             if !matches!(
                 user.get_role(),
-                UserRole::Staff
-                    | UserRole::CompanyManager
-                    | UserRole::BranchManager
-                    | UserRole::LogSmartAdmin
+                crate::db::UserRole::Staff
+                    | crate::db::UserRole::CompanyManager
+                    | crate::db::UserRole::BranchManager
+                    | crate::db::UserRole::LogSmartAdmin
             ) {
                 return Err(RoleError::InsufficientPermissions);
             }
@@ -195,7 +181,7 @@ impl FromRequestParts<crate::AppState> for AnyAuthUser {
     }
 }
 
-/// Extractor for BranchManager and above
+/// Extractor for `BranchManager` and above
 pub struct BranchManagerUser(pub Claims, pub UserRecord);
 impl FromRequestParts<crate::AppState> for BranchManagerUser {
     type Rejection = RoleError;
@@ -205,31 +191,9 @@ impl FromRequestParts<crate::AppState> for BranchManagerUser {
         state: &crate::AppState,
     ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
         Box::pin(async move {
-            let jwt_config = JwtManager::get_config();
+            let claims = extract_claims(parts).await?;
 
-            let TypedHeader(Authorization::<Bearer>(bearer)) =
-                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
-                    .await
-                    .map_err(|_| RoleError::MissingToken)?;
-
-            let token = bearer.token();
-            let claims = jwt_config
-                .validate_token(token)
-                .map_err(|_| RoleError::InvalidToken)?;
-
-            let user = if let Some(user) = state.user_cache.get(&claims.user_id).await {
-                user
-            } else {
-                let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
-                    .await
-                    .map_err(|_| RoleError::InvalidToken)?
-                    .ok_or(RoleError::InvalidToken)?;
-                state
-                    .user_cache
-                    .insert(claims.user_id.clone(), user.clone())
-                    .await;
-                user
-            };
+            let user = get_authenticated_user(state, &claims).await?;
 
             if !user.can_manage_branch() {
                 return Err(RoleError::InsufficientPermissions);
@@ -240,8 +204,7 @@ impl FromRequestParts<crate::AppState> for BranchManagerUser {
     }
 }
 
-
-/// Extractor for LogSmartAdmin only
+/// Extractor for `LogSmartAdmin` only
 pub struct LogSmartAdminUser(pub Claims, pub UserRecord);
 
 impl FromRequestParts<crate::AppState> for LogSmartAdminUser {
@@ -252,31 +215,9 @@ impl FromRequestParts<crate::AppState> for LogSmartAdminUser {
         state: &crate::AppState,
     ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
         Box::pin(async move {
-            let jwt_config = JwtManager::get_config();
+            let claims = extract_claims(parts).await?;
 
-            let TypedHeader(Authorization::<Bearer>(bearer)) =
-                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
-                    .await
-                    .map_err(|_| RoleError::MissingToken)?;
-
-            let token = bearer.token();
-            let claims = jwt_config
-                .validate_token(token)
-                .map_err(|_| RoleError::InvalidToken)?;
-
-            let user = if let Some(user) = state.user_cache.get(&claims.user_id).await {
-                user
-            } else {
-                let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
-                    .await
-                    .map_err(|_| RoleError::InvalidToken)?
-                    .ok_or(RoleError::InvalidToken)?;
-                state
-                    .user_cache
-                    .insert(claims.user_id.clone(), user.clone())
-                    .await;
-                user
-            };
+            let user = get_authenticated_user(state, &claims).await?;
 
             if !user.is_logsmart_admin() {
                 return Err(RoleError::InsufficientPermissions);
@@ -297,31 +238,9 @@ impl FromRequestParts<crate::AppState> for ReadCompanyUser {
         state: &crate::AppState,
     ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
         Box::pin(async move {
-            let jwt_config = JwtManager::get_config();
+            let claims = extract_claims(parts).await?;
 
-            let TypedHeader(Authorization::<Bearer>(bearer)) =
-                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
-                    .await
-                    .map_err(|_| RoleError::MissingToken)?;
-
-            let token = bearer.token();
-            let claims = jwt_config
-                .validate_token(token)
-                .map_err(|_| RoleError::InvalidToken)?;
-
-            let user = if let Some(user) = state.user_cache.get(&claims.user_id).await {
-                user
-            } else {
-                let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
-                    .await
-                    .map_err(|_| RoleError::InvalidToken)?
-                    .ok_or(RoleError::InvalidToken)?;
-                state
-                    .user_cache
-                    .insert(claims.user_id.clone(), user.clone())
-                    .await;
-                user
-            };
+            let user = get_authenticated_user(state, &claims).await?;
 
             if !(user.can_manage_company() || user.is_readonly_hq()) {
                 return Err(RoleError::InsufficientPermissions);
@@ -342,31 +261,9 @@ impl FromRequestParts<crate::AppState> for ReadBranchUser {
         state: &crate::AppState,
     ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
         Box::pin(async move {
-            let jwt_config = JwtManager::get_config();
+            let claims = extract_claims(parts).await?;
 
-            let TypedHeader(Authorization::<Bearer>(bearer)) =
-                TypedHeader::<Authorization<Bearer>>::from_request_parts(parts, state)
-                    .await
-                    .map_err(|_| RoleError::MissingToken)?;
-
-            let token = bearer.token();
-            let claims = jwt_config
-                .validate_token(token)
-                .map_err(|_| RoleError::InvalidToken)?;
-
-            let user = if let Some(user) = state.user_cache.get(&claims.user_id).await {
-                user
-            } else {
-                let user = crate::db::get_user_by_id(&state.postgres, &claims.user_id)
-                    .await
-                    .map_err(|_| RoleError::InvalidToken)?
-                    .ok_or(RoleError::InvalidToken)?;
-                state
-                    .user_cache
-                    .insert(claims.user_id.clone(), user.clone())
-                    .await;
-                user
-            };
+            let user = get_authenticated_user(state, &claims).await?;
 
             if !(user.can_manage_branch() || user.is_readonly_hq()) {
                 return Err(RoleError::InsufficientPermissions);
