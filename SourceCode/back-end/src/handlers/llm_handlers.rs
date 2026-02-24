@@ -1,7 +1,7 @@
 use crate::AppState;
 use crate::dto::LayoutGenerationRequest;
 use crate::llm::{self};
-use crate::middleware::AuthToken;
+use crate::middleware::AnyAuthUser;
 use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
 use serde_json::json;
 
@@ -22,7 +22,7 @@ use serde_json::json;
 /// # Errors
 /// Returns an error if the user prompt is empty or if LLM generation fails.
 pub async fn generate_layout(
-    AuthToken(_claims): AuthToken,
+    AnyAuthUser(_claims, _user): AnyAuthUser,
     State(_state): State<AppState>,
     Json(req): Json<LayoutGenerationRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
@@ -31,6 +31,15 @@ pub async fn generate_layout(
             StatusCode::BAD_REQUEST,
             Json(json!({
                 "error": "User prompt cannot be empty"
+            })),
+        ));
+    }
+
+    if req.user_prompt.len() > 1000 {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "error": "User prompt is too long (max 1000 characters)"
             })),
         ));
     }

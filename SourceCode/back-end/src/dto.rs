@@ -5,6 +5,19 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
+#[macro_export]
+macro_rules! derive_from {
+    ($from:ty, $to:ident, [$($field:ident),* $(,)?]) => {
+        impl From<$from> for $to {
+            fn from(source: $from) -> Self {
+                Self {
+                    $($field: source.$field),*
+                }
+            }
+        }
+    };
+}
+
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct AdminUpdateMemberRequest {
     #[schema(example = "user@example.com")]
@@ -42,20 +55,13 @@ pub struct UserDto {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-impl From<crate::db::UserRecord> for UserDto {
-    fn from(user: crate::db::UserRecord) -> Self {
-        Self {
-            id: user.id,
-            email: user.email,
-            first_name: user.first_name,
-            last_name: user.last_name,
-            company_id: user.company_id,
-            branch_id: user.branch_id,
-            role: user.role,
-            created_at: user.created_at,
-        }
-    }
-}
+derive_from!(
+    crate::db::UserRecord,
+    UserDto,
+    [
+        id, email, first_name, last_name, company_id, branch_id, role, created_at
+    ]
+);
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct BranchDto {
@@ -151,16 +157,25 @@ pub struct CompanyDto {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-impl From<crate::db::Company> for CompanyDto {
-    fn from(company: crate::db::Company) -> Self {
-        Self {
-            id: company.id,
-            name: company.name,
-            address: company.address,
-            created_at: company.created_at,
-        }
-    }
-}
+derive_from!(
+    crate::db::Company,
+    CompanyDto,
+    [id, name, address, created_at]
+);
+
+derive_from!(
+    crate::db::Invitation,
+    InvitationDto,
+    [
+        id,
+        company_id,
+        email,
+        token,
+        created_at,
+        expires_at,
+        accepted_at
+    ]
+);
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct InvitationDto {
@@ -178,20 +193,6 @@ pub struct GetPendingInvitationsResponse {
     pub invitations: Vec<InvitationResponse>,
 }
 
-impl From<crate::db::Invitation> for InvitationDto {
-    fn from(invitation: crate::db::Invitation) -> Self {
-        Self {
-            id: invitation.id,
-            company_id: invitation.company_id,
-            email: invitation.email,
-            token: invitation.token,
-            created_at: invitation.created_at,
-            expires_at: invitation.expires_at,
-            accepted_at: invitation.accepted_at,
-        }
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SecurityLogDto {
     pub id: String,
@@ -205,21 +206,13 @@ pub struct SecurityLogDto {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-impl From<crate::db::SecurityLog> for SecurityLogDto {
-    fn from(log: crate::db::SecurityLog) -> Self {
-        Self {
-            id: log.id,
-            event_type: log.event_type,
-            user_id: log.user_id,
-            email: log.email,
-            ip_address: log.ip_address,
-            user_agent: log.user_agent,
-            details: log.details,
-            success: log.success,
-            created_at: log.created_at,
-        }
-    }
-}
+derive_from!(
+    crate::db::SecurityLog,
+    SecurityLogDto,
+    [
+        id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
+    ]
+);
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct RegisterRequest {
@@ -378,22 +371,22 @@ pub struct UserResponse {
     pub oauth_provider: Option<String>,
 }
 
-impl From<db::UserRecord> for UserResponse {
-    fn from(user: db::UserRecord) -> Self {
-        Self {
-            id: user.id,
-            email: user.email,
-            first_name: user.first_name,
-            last_name: user.last_name,
-            company_id: user.company_id,
-            company_name: user.company_name,
-            branch_id: user.branch_id,
-            role: user.role,
-            created_at: user.created_at,
-            oauth_provider: user.oauth_provider,
-        }
-    }
-}
+derive_from!(
+    db::UserRecord,
+    UserResponse,
+    [
+        id,
+        email,
+        first_name,
+        last_name,
+        company_id,
+        company_name,
+        branch_id,
+        role,
+        created_at,
+        oauth_provider
+    ]
+);
 
 #[derive(Debug, Deserialize, ToSchema, IntoParams)]
 pub struct GetInvitationDetailsRequest {
@@ -614,16 +607,11 @@ pub struct PasskeyDto {
     pub last_used_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-impl From<db::Passkey> for PasskeyDto {
-    fn from(passkey: db::Passkey) -> Self {
-        Self {
-            id: passkey.id,
-            name: passkey.name,
-            created_at: passkey.created_at,
-            last_used_at: passkey.last_used_at,
-        }
-    }
-}
+derive_from!(
+    db::Passkey,
+    PasskeyDto,
+    [id, name, created_at, last_used_at]
+);
 
 // Clock In/Out DTOs
 
@@ -637,18 +625,11 @@ pub struct ClockEventResponse {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-impl From<db::ClockEvent> for ClockEventResponse {
-    fn from(event: db::ClockEvent) -> Self {
-        Self {
-            id: event.id,
-            user_id: event.user_id,
-            clock_in: event.clock_in,
-            clock_out: event.clock_out,
-            status: event.status,
-            created_at: event.created_at,
-        }
-    }
-}
+derive_from!(
+    db::ClockEvent,
+    ClockEventResponse,
+    [id, user_id, clock_in, clock_out, status, created_at]
+);
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ClockStatusResponse {
@@ -670,21 +651,13 @@ pub struct CompanyClockEventResponse {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-impl From<db::CompanyClockEventRow> for CompanyClockEventResponse {
-    fn from(row: db::CompanyClockEventRow) -> Self {
-        Self {
-            id: row.id,
-            user_id: row.user_id,
-            first_name: row.first_name,
-            last_name: row.last_name,
-            email: row.email,
-            clock_in: row.clock_in,
-            clock_out: row.clock_out,
-            status: row.status,
-            created_at: row.created_at,
-        }
-    }
-}
+derive_from!(
+    db::CompanyClockEventRow,
+    CompanyClockEventResponse,
+    [
+        id, user_id, first_name, last_name, email, clock_in, clock_out, status, created_at
+    ]
+);
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct CompanyClockEventsResponse {

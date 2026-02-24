@@ -8,7 +8,7 @@ use crate::{
         RequestBranchDeletionResponse, UpdateBranchRequest,
     },
     email,
-    middleware::AuthToken,
+    middleware::{ManageCompanyUser, ReadCompanyUser},
 };
 use axum::{Json, extract::State, http::StatusCode};
 use serde_json::json;
@@ -28,31 +28,10 @@ use serde_json::json;
 )]
 /// Creates a new branch for the user's company.
 pub async fn create_branch(
-    AuthToken(claims): AuthToken,
+    ManageCompanyUser(_claims, user): ManageCompanyUser,
     State(state): State<AppState>,
     Json(payload): Json<CreateBranchRequest>,
 ) -> Result<(StatusCode, Json<BranchDto>), (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
-    if !user.is_company_manager() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Only company managers can create branches" })),
-        ));
-    }
-
     let company_id = user.company_id.ok_or((
         StatusCode::FORBIDDEN,
         Json(json!({ "error": "User is not associated with a company" })),
@@ -84,23 +63,13 @@ pub async fn create_branch(
 )]
 /// Lists all branches for the user's company.
 pub async fn list_branches(
-    AuthToken(claims): AuthToken,
+    ReadCompanyUser(_claims, user): ReadCompanyUser,
     State(state): State<AppState>,
 ) -> Result<Json<ListBranchesResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user company ID: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "User is not associated with a company" })),
-        ))?;
-
+    let company_id = user.company_id.ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
     let branches =
         db::get_branches_by_company_id_with_deletion_status(&state.postgres, &company_id)
             .await
@@ -133,31 +102,10 @@ pub async fn list_branches(
 )]
 /// Updates an existing branch for the user's company.
 pub async fn update_branch(
-    AuthToken(claims): AuthToken,
+    ManageCompanyUser(_claims, user): ManageCompanyUser,
     State(state): State<AppState>,
     Json(payload): Json<UpdateBranchRequest>,
 ) -> Result<Json<BranchDto>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
-    if !user.is_company_manager() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Only company managers can update branches" })),
-        ));
-    }
-
     let company_id = user.company_id.ok_or((
         StatusCode::FORBIDDEN,
         Json(json!({ "error": "User is not associated with a company" })),
@@ -219,35 +167,14 @@ pub async fn update_branch(
 )]
 /// Requests branch deletion by sending a confirmation email.
 pub async fn request_branch_deletion(
-    AuthToken(claims): AuthToken,
+    ManageCompanyUser(_claims, user): ManageCompanyUser,
     State(state): State<AppState>,
     Json(payload): Json<RequestBranchDeletionRequest>,
 ) -> Result<Json<RequestBranchDeletionResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
     let company_id = user.company_id.as_ref().ok_or((
         StatusCode::FORBIDDEN,
         Json(json!({ "error": "User is not associated with a company" })),
     ))?;
-
-    if !user.can_manage_company() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Only company managers can delete branches" })),
-        ));
-    }
 
     let branch = db::get_branch_by_id(&state.postgres, &payload.branch_id)
         .await
@@ -386,6 +313,6 @@ pub async fn confirm_branch_deletion(
     }
 
     Ok(Json(ConfirmBranchDeletionResponse {
-        message: format!("Branch '{}' has been successfully deleted.", branch_name),
+        message: format!("Branch '{branch_name}' has been successfully deleted."),
     }))
 }

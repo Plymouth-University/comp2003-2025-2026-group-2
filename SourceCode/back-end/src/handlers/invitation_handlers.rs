@@ -1,4 +1,5 @@
 use crate::dto::GetPendingInvitationsResponse;
+use crate::middleware::{BranchManagerUser, ManageCompanyUser, ReadBranchUser};
 use crate::utils::{extract_ip_from_headers_and_addr, extract_user_agent};
 use crate::{
     AppState,
@@ -10,7 +11,6 @@ use crate::{
         InviteUserRequest,
     },
     jwt_manager::JwtManager,
-    middleware::AuthToken,
     services,
     utils::AuditLogger,
 };
@@ -43,7 +43,7 @@ use serde_json::json;
 /// # Errors
 /// Returns an error if the user is not authorized, the email is invalid, or the invitation fails to send.
 pub async fn invite_user(
-    AuthToken(claims): AuthToken,
+    BranchManagerUser(_claims, user): BranchManagerUser,
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<std::net::SocketAddr>,
     headers: HeaderMap,
@@ -66,27 +66,6 @@ pub async fn invite_user(
         return Err((
             StatusCode::BAD_REQUEST,
             Json(json!({ "error": e.to_string() })),
-        ));
-    }
-
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
-    if !user.can_manage_branch() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Only managers can invite users" })),
         ));
     }
 
@@ -116,23 +95,14 @@ pub async fn invite_user(
         }
     }
 
-    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user company ID: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "User is not associated with a company" })),
-        ))?;
+    let company_id = user.company_id.ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
 
     let (invitation_id, expires_at) = services::InvitationService::send_invitation(
         &state.postgres,
-        claims.user_id,
+        user.id,
         user.email,
         payload.email.clone(),
         company_id,
@@ -424,46 +394,16 @@ pub async fn get_invitation_details(
 /// # Errors
 /// Returns an error if the user is not authorized or if the query fails.
 pub async fn get_pending_invitations(
-    AuthToken(claims): AuthToken,
+    ReadBranchUser(_claims, user): ReadBranchUser,
     State(state): State<AppState>,
 ) -> Result<Json<GetPendingInvitationsResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
-    if !user.can_manage_branch() && !user.is_readonly_hq() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Only managers can view invitations" })),
-        ));
-    }
-
-    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user company ID: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "User is not associated with a company" })),
-        ))?;
+    let company_id = user.company_id.as_ref().ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
 
     let invitations =
-        services::InvitationService::get_pending_invitations(&state.postgres, &company_id)
+        services::InvitationService::get_pending_invitations(&state.postgres, company_id)
             .await
             .map(|inv_list| {
                 inv_list
@@ -506,17 +446,13 @@ pub async fn get_pending_invitations(
 /// # Errors
 /// Returns an error if the user is not authorized or if the cancellation fails.
 pub async fn cancel_invitation(
-    AuthToken(claims): AuthToken,
+    ManageCompanyUser(_claims, user): ManageCompanyUser,
     State(state): State<AppState>,
     Json(payload): Json<crate::dto::CancelInvitationRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    services::InvitationService::cancel_invitation(
-        &state.postgres,
-        &claims.user_id,
-        &payload.invitation_id,
-    )
-    .await
-    .map_err(|(status, err)| (status, Json(err)))?;
+    services::InvitationService::cancel_invitation(&state.postgres, &user, &payload.invitation_id)
+        .await
+        .map_err(|(status, err)| (status, Json(err)))?;
 
     Ok(Json(
         json!({ "message": "Invitation cancelled successfully" }),

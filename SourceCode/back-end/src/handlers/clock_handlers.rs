@@ -1,10 +1,11 @@
 use crate::{
-    AppState, db,
+    AppState,
+    db::{self, UserRole},
     dto::{
         ClockEventResponse, ClockStatusResponse, CompanyClockEventResponse,
         CompanyClockEventsResponse, ErrorResponse,
     },
-    middleware::AuthToken,
+    middleware::{AnyAuthUser, ReadCompanyUser},
     services,
 };
 use axum::{
@@ -32,10 +33,10 @@ use serde_json::json;
 /// # Errors
 /// Returns an error if the user is already clocked in or if DB operations fail.
 pub async fn clock_in(
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
 ) -> Result<Json<ClockEventResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
+    let company_id = db::get_user_company_id(&state.postgres, &user.id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user company ID: {:?}", e);
@@ -49,7 +50,7 @@ pub async fn clock_in(
             Json(json!({ "error": "User is not associated with a company" })),
         ))?;
 
-    let event = services::ClockService::clock_in(&state.postgres, &claims.user_id, &company_id)
+    let event = services::ClockService::clock_in(&state.postgres, &user.id, &company_id)
         .await
         .map_err(|(status, err)| (status, Json(err)))?;
 
@@ -73,10 +74,10 @@ pub async fn clock_in(
 /// # Errors
 /// Returns an error if the user is not clocked in or if DB operations fail.
 pub async fn clock_out(
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
 ) -> Result<Json<ClockEventResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let event = services::ClockService::clock_out(&state.postgres, &claims.user_id)
+    let event = services::ClockService::clock_out(&state.postgres, &user.id)
         .await
         .map_err(|(status, err)| (status, Json(err)))?;
 
@@ -99,10 +100,10 @@ pub async fn clock_out(
 /// # Errors
 /// Returns an error if DB operations fail.
 pub async fn get_clock_status(
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
 ) -> Result<Json<ClockStatusResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let (current, recent) = services::ClockService::get_status(&state.postgres, &claims.user_id)
+    let (current, recent) = services::ClockService::get_status(&state.postgres, &user.id)
         .await
         .map_err(|(status, err)| (status, Json(err)))?;
 
@@ -129,7 +130,7 @@ pub struct CompanyClockQuery {
     pub from: Option<String>,
     /// ISO 8601 end date filter (inclusive)
     pub to: Option<String>,
-    /// Branch ID filter (optional, for company_manager to filter by specific branch)
+    /// Branch ID filter (optional, for `company_manager` to filter by specific branch)
     pub branch_id: Option<String>,
 }
 
@@ -151,45 +152,14 @@ pub struct CompanyClockQuery {
 /// # Errors
 /// Returns an error if the user is not an admin or if DB operations fail.
 pub async fn get_company_clock_events(
-    AuthToken(claims): AuthToken,
+    ReadCompanyUser(_claims, user): ReadCompanyUser,
     State(state): State<AppState>,
     Query(params): Query<CompanyClockQuery>,
 ) -> Result<Json<CompanyClockEventsResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user company ID: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "User is not associated with a company" })),
-        ))?;
-
-    // Fetch user to get role and branch_id
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::NOT_FOUND,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
-    if !user.can_manage_branch() && !user.is_readonly_hq() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Insufficient permissions for this operation" })),
-        ));
-    }
+    let company_id = user.company_id.ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
 
     let from = params
         .from
@@ -201,7 +171,7 @@ pub async fn get_company_clock_events(
         .map(|dt| dt.with_timezone(&chrono::Utc));
 
     // If user is branch_manager, restrict to their branch only
-    let branch_id_filter = if user.role.to_string() == "branch_manager" {
+    let branch_id_filter = if user.role == UserRole::BranchManager {
         user.branch_id
     } else {
         params.branch_id

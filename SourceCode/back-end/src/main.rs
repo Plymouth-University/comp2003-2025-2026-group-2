@@ -57,9 +57,12 @@ async fn main() {
                 .parse()
                 .unwrap_or(5432),
         )
-        .username(&std::env::var("POSTGRES_USER").unwrap_or_else(|_| "admin".to_string()))
+        .username(
+            &std::env::var("POSTGRES_USER").expect("Required variable: POSTGRES_USER not set"),
+        )
         .password(
-            &std::env::var("POSTGRES_PASSWORD").unwrap_or_else(|_| "adminpassword".to_string()),
+            &std::env::var("POSTGRES_PASSWORD")
+                .expect("Required variable: POSTGRES_PASSWORD not set"),
         )
         .database(&std::env::var("POSTGRES_DB").unwrap_or_else(|_| "logsmartdb".to_string()));
 

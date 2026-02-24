@@ -6,7 +6,7 @@ use crate::{
         GetTemplateVersionsResponse, RenameTemplateRequest, RenameTemplateResponse,
         RestoreTemplateVersionRequest, TemplateInfo, UpdateTemplateRequest, UpdateTemplateResponse,
     },
-    middleware::AuthToken,
+    middleware::{AnyAuthUser, BranchManagerUser, ReadBranchUser},
     services,
 };
 use axum::{
@@ -31,31 +31,10 @@ use serde_json::json;
 )]
 /// Adds a new log template for the current company.
 pub async fn add_template(
-    AuthToken(claims): AuthToken,
+    BranchManagerUser(_claims, user): BranchManagerUser,
     State(state): State<AppState>,
     Json(payload): Json<AddTemplateRequest>,
 ) -> Result<Json<AddTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
-    if !user.can_manage_branch() || user.is_readonly_hq() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Only managers can create templates" })),
-        ));
-    }
-
     // Branch managers can only create templates for their own branch
     if user.is_branch_manager() {
         if payload.branch_id.is_none() {
@@ -85,7 +64,7 @@ pub async fn add_template(
         payload.template_name,
         payload.template_layout,
         payload.schedule,
-        &claims.user_id,
+        &user.id,
         payload.branch_id,
     )
     .await
@@ -113,11 +92,11 @@ pub async fn add_template(
 )]
 /// Retrieves a specific log template by name.
 pub async fn get_template(
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
     Query(payload): Query<GetTemplateRequest>,
 ) -> Result<Json<GetTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
+    let company_id = db::get_user_company_id(&state.postgres, &user.id)
         .await
         .map_err(|e| {
             tracing::error!("Database error fetching user company ID: {:?}", e);
@@ -158,30 +137,9 @@ pub async fn get_template(
 )]
 /// Retrieves all log templates for the current company/branch.
 pub async fn get_all_templates(
-    AuthToken(claims): AuthToken,
+    ReadBranchUser(_claims, user): ReadBranchUser,
     State(state): State<AppState>,
 ) -> Result<Json<GetAllTemplatesResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
-    if !user.can_read_manage_branch() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Only managers can access templates" })),
-        ));
-    }
-
     let company_id = user.company_id.as_deref().ok_or((
         StatusCode::FORBIDDEN,
         Json(json!({ "error": "User is not associated with a company" })),
@@ -232,31 +190,10 @@ pub async fn get_all_templates(
 )]
 /// Updates an existing log template.
 pub async fn update_template(
-    AuthToken(claims): AuthToken,
+    BranchManagerUser(_claims, user): BranchManagerUser,
     State(state): State<AppState>,
     Json(payload): Json<UpdateTemplateRequest>,
 ) -> Result<Json<UpdateTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
-    if !user.can_manage_branch() || user.is_readonly_hq() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Only managers can update templates" })),
-        ));
-    }
-
     let company_id = user.company_id.clone().ok_or((
         StatusCode::FORBIDDEN,
         Json(json!({ "error": "User is not associated with a company" })),
@@ -268,7 +205,7 @@ pub async fn update_template(
         &payload.template_name,
         payload.template_layout.as_ref(),
         payload.schedule.as_ref(),
-        &claims.user_id,
+        &user.id,
         payload.version_name.clone(),
         user.branch_id.as_deref(),
         user.is_company_manager(),
@@ -296,23 +233,14 @@ pub async fn update_template(
 )]
 /// Retrieves the version history of a log template.
 pub async fn get_template_versions(
-    AuthToken(claims): AuthToken,
+    BranchManagerUser(_claims, user): BranchManagerUser,
     State(state): State<AppState>,
     Query(payload): Query<GetTemplateRequest>,
 ) -> Result<Json<crate::dto::GetTemplateVersionsResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user company ID: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "User is not associated with a company" })),
-        ))?;
+    let company_id = user.company_id.ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
 
     let versions =
         services::TemplateService::get_versions(&state, &company_id, &payload.template_name)
@@ -353,43 +281,22 @@ pub async fn get_template_versions(
 )]
 /// Restores a specific version of a log template.
 pub async fn restore_template_version(
-    AuthToken(claims): AuthToken,
+    BranchManagerUser(_claims, user): BranchManagerUser,
     State(state): State<AppState>,
     Query(query): Query<GetTemplateRequest>,
     Json(payload): Json<crate::dto::RestoreTemplateVersionRequest>,
 ) -> Result<Json<UpdateTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
-    if !user.can_manage_branch() || user.is_readonly_hq() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Only managers can restore templates" })),
-        ));
-    }
-
-    let company_id = user.company_id.clone().ok_or((
+    let company_id = user.company_id.as_ref().ok_or((
         StatusCode::FORBIDDEN,
         Json(json!({ "error": "User is not associated with a company" })),
     ))?;
 
     services::TemplateService::restore_version(
         &state,
-        &company_id,
+        company_id,
         &query.template_name,
         payload.version,
-        &claims.user_id,
+        &user.id,
         user.branch_id.as_deref(),
         user.is_company_manager(),
     )
@@ -416,39 +323,18 @@ pub async fn restore_template_version(
 )]
 /// Renames an existing log template.
 pub async fn rename_template(
-    AuthToken(claims): AuthToken,
+    BranchManagerUser(_claims, user): BranchManagerUser,
     State(state): State<AppState>,
     Json(payload): Json<RenameTemplateRequest>,
 ) -> Result<Json<RenameTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
-    if !user.can_manage_branch() || user.is_readonly_hq() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Only managers can rename templates" })),
-        ));
-    }
-
-    let company_id = user.company_id.clone().ok_or((
+    let company_id = user.company_id.as_ref().ok_or((
         StatusCode::FORBIDDEN,
         Json(json!({ "error": "User is not associated with a company" })),
     ))?;
 
     services::TemplateService::rename_template(
         &state,
-        &company_id,
+        company_id,
         &payload.old_template_name,
         &payload.new_template_name,
         user.branch_id.as_deref(),
@@ -478,39 +364,18 @@ pub async fn rename_template(
 )]
 /// Deletes a specific log template.
 pub async fn delete_template(
-    AuthToken(claims): AuthToken,
+    BranchManagerUser(_claims, user): BranchManagerUser,
     State(state): State<AppState>,
     Query(payload): Query<DeleteTemplateRequest>,
 ) -> Result<Json<DeleteTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
-    if !user.can_manage_branch() || user.is_readonly_hq() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Only managers can delete templates" })),
-        ));
-    }
-
-    let company_id = user.company_id.clone().ok_or((
+    let company_id = user.company_id.as_ref().ok_or((
         StatusCode::FORBIDDEN,
         Json(json!({ "error": "User is not associated with a company" })),
     ))?;
 
     services::TemplateService::delete_template(
         &state,
-        &company_id,
+        company_id,
         &payload.template_name,
         user.branch_id.as_deref(),
         user.is_company_manager(),

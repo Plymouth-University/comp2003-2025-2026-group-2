@@ -6,7 +6,7 @@ use axum::{
     response::IntoResponse,
     routing::{get, post},
 };
-use back_end::{AppState, db, dto, handlers, middleware::AuthToken};
+use back_end::{AppState, db, dto, handlers, middleware::BranchManagerUser};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use std::net::SocketAddr;
@@ -50,14 +50,14 @@ async fn test_login_handler(
 }
 
 async fn test_invite_handler(
-    AuthToken(claims): AuthToken,
+    BranchManagerUser(claims, user): BranchManagerUser,
     State(state): State<AppState>,
     Json(payload): Json<dto::InviteUserRequest>,
 ) -> Result<(StatusCode, Json<dto::InvitationResponse>), (StatusCode, Json<Value>)> {
     let mock_addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
     let headers = HeaderMap::new();
     handlers::invite_user(
-        AuthToken(claims),
+        BranchManagerUser(claims, user),
         State(state),
         ConnectInfo(mock_addr),
         headers,

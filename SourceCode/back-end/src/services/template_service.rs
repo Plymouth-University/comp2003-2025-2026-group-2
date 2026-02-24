@@ -306,7 +306,7 @@ impl TemplateService {
             Some(&target_version.template_layout),
             Some(&target_version.schedule),
             user_id,
-            Some(format!("Restored from version {}", version)),
+            Some(format!("Restored from version {version}")),
             branch_id,
             is_company_manager,
         )

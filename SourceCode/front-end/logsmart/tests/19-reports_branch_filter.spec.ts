@@ -9,8 +9,8 @@ let adminCreds: {
 	lastName: string;
 };
 
-const BRANCH_A = 'Branch Alpha';
-const BRANCH_B = 'Branch Beta';
+const BRANCH_A = 'Oxford Street';
+const BRANCH_B = 'High Street';
 
 test.beforeAll(async ({ browser }) => {
 	const creds = await register(browser);

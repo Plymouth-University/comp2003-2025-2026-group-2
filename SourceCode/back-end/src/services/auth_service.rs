@@ -470,8 +470,7 @@ impl AuthService {
                 )
             })?;
 
-        // Password change logging not yet implemented in AuditLogger
-        // TODO: Implement log_password_changed function in AuditLogger
+        AuditLogger::log_password_changed(db_pool, user_id.to_string(), user.email).await;
 
         Ok(())
     }

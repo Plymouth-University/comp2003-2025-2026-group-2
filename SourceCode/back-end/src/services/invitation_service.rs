@@ -239,30 +239,9 @@ impl InvitationService {
     /// Returns an error if the caller is not an admin, invitation is not found, or if the operation fails.
     pub async fn cancel_invitation(
         db_pool: &PgPool,
-        admin_user_id: &str,
+        calling_user: &db::UserRecord,
         invitation_id: &str,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
-        let admin = db::get_user_by_id(db_pool, admin_user_id)
-            .await
-            .map_err(|e| {
-                tracing::error!("Database error fetching admin user: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Database error" }),
-                )
-            })?
-            .ok_or((
-                StatusCode::NOT_FOUND,
-                json!({ "error": "Admin user not found" }),
-            ))?;
-
-        if !admin.can_manage_company() {
-            return Err((
-                StatusCode::FORBIDDEN,
-                json!({ "error": "Only company admins can cancel invitations" }),
-            ));
-        }
-
         let invitation = db::get_invitation_by_id(db_pool, invitation_id)
             .await
             .map_err(|e| {
@@ -277,7 +256,7 @@ impl InvitationService {
                 json!({ "error": "Invitation not found" }),
             ))?;
 
-        if admin.company_id != Some(invitation.company_id.clone()) {
+        if calling_user.company_id.as_ref() != Some(&invitation.company_id) {
             return Err((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "Cannot cancel invitations from other companies" }),
@@ -317,7 +296,7 @@ impl InvitationService {
 
         AuditLogger::log_admin_action(
             db_pool,
-            admin_user_id.to_string(),
+            calling_user.id.clone(),
             format!("Cancelled invitation for: {}", cancelled_invitation.email),
         )
         .await;

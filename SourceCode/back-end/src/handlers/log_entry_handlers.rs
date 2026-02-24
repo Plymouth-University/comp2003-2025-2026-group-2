@@ -1,12 +1,12 @@
 use crate::{
-    AppState, db,
+    AppState,
     dto::{
         CreateLogEntryRequest, CreateLogEntryResponse, DueFormInfo, DueFormsResponse,
         ErrorResponse, ListLogEntriesResponse, LogEntryResponse, SubmitLogEntryResponse,
         UpdateLogEntryRequest,
     },
     logs_db,
-    middleware::AuthToken,
+    middleware::{AnyAuthUser, BranchManagerUser, ReadBranchUser},
     services,
 };
 use axum::{
@@ -32,24 +32,10 @@ use serde_json::json;
 /// # Errors
 /// Returns an error if the user is not authorized or if the query fails.
 pub async fn list_due_forms_today(
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
 ) -> Result<Json<DueFormsResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
-    let company_id = user.company_id.clone().ok_or((
+    let company_id = user.company_id.ok_or((
         StatusCode::FORBIDDEN,
         Json(json!({ "error": "User is not associated with a company" })),
     ))?;
@@ -75,7 +61,7 @@ pub async fn list_due_forms_today(
             if !has_submitted_entry {
                 let last_submitted = logs_db::get_latest_submitted_entry(
                     &state.mongodb,
-                    &claims.user_id,
+                    &user.id,
                     &company_id,
                     &template.template_name,
                 )
@@ -85,7 +71,7 @@ pub async fn list_due_forms_today(
 
                 let draft_entry = logs_db::get_draft_entry_for_current_period(
                     &state.mongodb,
-                    &claims.user_id,
+                    &user.id,
                     &company_id,
                     &template.template_name,
                     &template.schedule.frequency,
@@ -135,7 +121,7 @@ pub async fn list_due_forms_today(
 /// # Errors
 /// Returns an error if the template name is empty or if entry creation fails.
 pub async fn create_log_entry(
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
     Json(payload): Json<CreateLogEntryRequest>,
 ) -> Result<(StatusCode, Json<CreateLogEntryResponse>), (StatusCode, Json<serde_json::Value>)> {
@@ -146,13 +132,10 @@ pub async fn create_log_entry(
         ));
     }
 
-    let entry_id = services::LogEntryService::create_log_entry(
-        &state,
-        &claims.user_id,
-        &payload.template_name,
-    )
-    .await
-    .map_err(|(status, err)| (status, Json(err)))?;
+    let entry_id =
+        services::LogEntryService::create_log_entry(&state, &user.id, &payload.template_name)
+            .await
+            .map_err(|(status, err)| (status, Json(err)))?;
 
     Ok((
         StatusCode::CREATED,
@@ -181,27 +164,18 @@ pub async fn create_log_entry(
 /// # Errors
 /// Returns an error if the entry is not found or if the user is not authorized.
 pub async fn get_log_entry(
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
     axum::extract::Path(entry_id): axum::extract::Path<String>,
 ) -> Result<Json<LogEntryResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let entry = services::LogEntryService::get_log_entry(&state, &claims.user_id, &entry_id)
+    let entry = services::LogEntryService::get_log_entry(&state, &user, &entry_id)
         .await
         .map_err(|(status, err)| (status, Json(err)))?;
 
-    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user company ID: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "User is not associated with a company" })),
-        ))?;
+    let company_id = user.company_id.ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
 
     let template = logs_db::get_template_by_name(&state.mongodb, &entry.template_name, &company_id)
         .await
@@ -254,33 +228,24 @@ pub async fn get_log_entry(
 /// # Errors
 /// Returns an error if the entry is not found or if the update fails.
 pub async fn update_log_entry(
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
     axum::extract::Path(entry_id): axum::extract::Path<String>,
     Json(payload): Json<UpdateLogEntryRequest>,
 ) -> Result<Json<LogEntryResponse>, (StatusCode, Json<serde_json::Value>)> {
     let updated_entry = services::LogEntryService::update_log_entry(
         &state,
-        &claims.user_id,
+        &user.id,
         &entry_id,
         &payload.entry_data,
     )
     .await
     .map_err(|(status, err)| (status, Json(err)))?;
 
-    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user company ID: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "User is not associated with a company" })),
-        ))?;
+    let company_id = user.company_id.ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
 
     let template =
         logs_db::get_template_by_name(&state.mongodb, &updated_entry.template_name, &company_id)
@@ -333,11 +298,11 @@ pub async fn update_log_entry(
 /// # Errors
 /// Returns an error if the entry is not found or if submission fails.
 pub async fn submit_log_entry(
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
     axum::extract::Path(entry_id): axum::extract::Path<String>,
 ) -> Result<Json<SubmitLogEntryResponse>, (StatusCode, Json<serde_json::Value>)> {
-    services::LogEntryService::submit_log_entry(&state, &claims.user_id, &entry_id)
+    services::LogEntryService::submit_log_entry(&state, &user.id, &entry_id)
         .await
         .map_err(|(status, err)| (status, Json(err)))?;
 
@@ -364,11 +329,11 @@ pub async fn submit_log_entry(
 /// # Errors
 /// Returns an error if the entry is not found or if the operation fails.
 pub async fn unsubmit_log_entry(
-    AuthToken(claims): AuthToken,
+    BranchManagerUser(_claims, user): BranchManagerUser,
     State(state): State<AppState>,
     axum::extract::Path(entry_id): axum::extract::Path<String>,
 ) -> Result<Json<SubmitLogEntryResponse>, (StatusCode, Json<serde_json::Value>)> {
-    services::LogEntryService::unsubmit_log_entry(&state, &claims.user_id, &entry_id)
+    services::LogEntryService::unsubmit_log_entry(&state, &user, &entry_id)
         .await
         .map_err(|(status, err)| (status, Json(err)))?;
 
@@ -395,32 +360,13 @@ pub async fn unsubmit_log_entry(
 /// # Errors
 /// Returns an error if the user is not authorized or if deletion fails.
 pub async fn delete_log_entry(
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
     axum::extract::Path(entry_id): axum::extract::Path<String>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
+    services::LogEntryService::delete_log_entry(&state, &user, &entry_id)
         .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
-    services::LogEntryService::delete_log_entry(
-        &state,
-        &claims.user_id,
-        &entry_id,
-        user.can_manage_company(),
-    )
-    .await
-    .map_err(|(status, err)| (status, Json(err)))?;
+        .map_err(|(status, err)| (status, Json(err)))?;
 
     Ok(Json(json!({ "message": "Log entry deleted successfully" })))
 }
@@ -442,31 +388,10 @@ pub async fn delete_log_entry(
 )]
 /// Lists all log entries for the company or branch (managers only).
 pub async fn list_company_log_entries(
-    AuthToken(claims): AuthToken,
+    ReadBranchUser(_claims, user): ReadBranchUser,
     State(state): State<AppState>,
     Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Result<Json<ListLogEntriesResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let user = db::get_user_by_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::UNAUTHORIZED,
-            Json(json!({ "error": "User not found" })),
-        ))?;
-
-    if !user.can_manage_branch() && !user.is_readonly_hq() {
-        return Err((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "Only managers can view these logs" })),
-        ));
-    }
-
     let company_id = user.company_id.clone().ok_or((
         StatusCode::FORBIDDEN,
         Json(json!({ "error": "User is not associated with a company" })),
@@ -478,12 +403,14 @@ pub async fn list_company_log_entries(
     let entries = if user.can_manage_company() || user.is_readonly_hq() {
         // Company manager/HQ - check if specific branches requested
         if let Some(branch_ids_str) = branch_ids_param {
-            if !branch_ids_str.is_empty() {
-                let branch_ids: Vec<String> =
-                    branch_ids_str.split(',').map(|s| s.to_string()).collect();
-                logs_db::get_branches_log_entries(&state.mongodb, &company_id, &branch_ids).await
-            } else {
+            if branch_ids_str.is_empty() {
                 logs_db::get_company_log_entries(&state.mongodb, &company_id).await
+            } else {
+                let branch_ids: Vec<String> = branch_ids_str
+                    .split(',')
+                    .map(std::string::ToString::to_string)
+                    .collect();
+                logs_db::get_branches_log_entries(&state.mongodb, &company_id, &branch_ids).await
             }
         } else {
             logs_db::get_company_log_entries(&state.mongodb, &company_id).await
@@ -560,26 +487,17 @@ pub async fn list_company_log_entries(
 /// # Errors
 /// Returns an error if the user is not authorized or if the query fails.
 pub async fn list_user_log_entries(
-    AuthToken(claims): AuthToken,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
     Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Result<Json<ListLogEntriesResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = db::get_user_company_id(&state.postgres, &claims.user_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user company ID: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "User is not associated with a company" })),
-        ))?;
+    let company_id = user.company_id.ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
 
     let mut entries =
-        services::LogEntryService::get_user_log_entries(&state, &claims.user_id, &company_id)
+        services::LogEntryService::get_user_log_entries(&state, &user.id, &company_id)
             .await
             .map_err(|(status, err)| (status, Json(err)))?;
 

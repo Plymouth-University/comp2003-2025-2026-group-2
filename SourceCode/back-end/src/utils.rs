@@ -2,6 +2,16 @@ use crate::db;
 use axum::http::HeaderMap;
 use sqlx::PgPool;
 
+#[macro_export]
+macro_rules! try_db {
+    ($expr:expr, $context:literal) => {
+        $expr.await.map_err(|e| {
+            tracing::error!(error = ?e, context = $context, "Database error");
+            $crate::utils::svc_err_internal($context)
+        })
+    };
+}
+
 pub struct AuditLogger;
 
 impl AuditLogger {
@@ -15,7 +25,7 @@ impl AuditLogger {
         details: Option<String>,
         success: bool,
     ) {
-        let _ = db::log_security_event(
+        if let Err(e) = db::log_security_event(
             db,
             event_type.to_string(),
             user_id,
@@ -25,7 +35,10 @@ impl AuditLogger {
             details,
             success,
         )
-        .await;
+        .await
+        {
+            tracing::error!("Failed to log security event: {:?}", e);
+        }
     }
 
     pub async fn log_registration(
@@ -196,6 +209,20 @@ impl AuditLogger {
         .await;
     }
 
+    pub async fn log_password_changed(db: &PgPool, user_id: String, email: String) {
+        Self::log(
+            db,
+            "password_changed",
+            Some(user_id),
+            Some(email),
+            None,
+            None,
+            Some("User changed their password".to_string()),
+            true,
+        )
+        .await;
+    }
+
     pub async fn log_oauth_login(
         db: &PgPool,
         user_id: String,
@@ -278,4 +305,74 @@ pub fn extract_user_agent(headers: &HeaderMap) -> Option<String> {
         .get("user-agent")
         .and_then(|h| h.to_str().ok())
         .map(std::string::ToString::to_string)
+}
+
+pub type HandlerError = (axum::http::StatusCode, axum::Json<serde_json::Value>);
+
+pub fn err(status: axum::http::StatusCode, message: &str) -> HandlerError {
+    (status, axum::Json(serde_json::json!({ "error": message })))
+}
+
+pub fn err_internal(msg: &str) -> HandlerError {
+    err(axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg)
+}
+
+pub fn err_not_found(msg: &str) -> HandlerError {
+    err(axum::http::StatusCode::NOT_FOUND, msg)
+}
+
+pub fn err_forbidden(msg: &str) -> HandlerError {
+    err(axum::http::StatusCode::FORBIDDEN, msg)
+}
+
+pub fn err_bad_request(msg: &str) -> HandlerError {
+    err(axum::http::StatusCode::BAD_REQUEST, msg)
+}
+
+pub fn err_unauthorized(msg: &str) -> HandlerError {
+    err(axum::http::StatusCode::UNAUTHORIZED, msg)
+}
+
+pub fn err_conflict(msg: &str) -> HandlerError {
+    err(axum::http::StatusCode::CONFLICT, msg)
+}
+
+pub fn err_too_many_requests(msg: &str) -> HandlerError {
+    err(axum::http::StatusCode::TOO_MANY_REQUESTS, msg)
+}
+
+pub fn err_created<T: serde::Serialize>(
+    msg: &str,
+) -> (axum::http::StatusCode, axum::Json<serde_json::Value>) {
+    (
+        axum::http::StatusCode::CREATED,
+        axum::Json(serde_json::json!({ "message": msg })),
+    )
+}
+
+pub type ServiceError = (axum::http::StatusCode, serde_json::Value);
+
+#[must_use]
+pub fn svc_err(status: axum::http::StatusCode, message: &str) -> ServiceError {
+    (status, serde_json::json!({ "error": message }))
+}
+
+#[must_use]
+pub fn svc_err_internal(msg: &str) -> ServiceError {
+    svc_err(axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg)
+}
+
+#[must_use]
+pub fn svc_err_not_found(msg: &str) -> ServiceError {
+    svc_err(axum::http::StatusCode::NOT_FOUND, msg)
+}
+
+#[must_use]
+pub fn svc_err_forbidden(msg: &str) -> ServiceError {
+    svc_err(axum::http::StatusCode::FORBIDDEN, msg)
+}
+
+#[must_use]
+pub fn svc_err_bad_request(msg: &str) -> ServiceError {
+    svc_err(axum::http::StatusCode::BAD_REQUEST, msg)
 }
