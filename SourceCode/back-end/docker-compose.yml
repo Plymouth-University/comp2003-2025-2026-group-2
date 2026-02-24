@@ -29,6 +29,7 @@ services:
       - RP_ORIGIN=https://logsmart.app
       - COOKIE_DOMAIN=logsmart.app
       - FRONTEND_URL=https://logsmart.app
+      - DISABLE_RATE_LIMIT=1
     secrets:
       - source: jwt_secret_v1
         target: jwt_secret
@@ -46,12 +47,6 @@ services:
         target: POSTGRES_USER
       - source: postgres_password_v2
         target: POSTGRES_PASSWORD
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6767/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     deploy:
       replicas: 1
       update_config:
@@ -60,7 +55,8 @@ services:
     depends_on:
       - postgres
       - mongodb
-
+    volumes:
+      - /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt:ro
   mongodb:
     image: mongo:latest
     hostname: mongodb
@@ -83,6 +79,8 @@ services:
   postgres:
     image: postgres:latest
     hostname: postgres
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
       - ./postgresql.conf:/etc/postgresql/postgresql.conf

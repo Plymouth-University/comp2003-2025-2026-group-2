@@ -50,9 +50,13 @@ impl GoogleOAuthClient {
             .map_err(|e| anyhow::anyhow!("Failed to create issuer URL: {e}"))?;
 
         let http_client = openidconnect::reqwest::Client::new();
+        tracing::info!("Discovering Google OAuth metadata from: {}", issuer_url);
         let provider_metadata = CoreProviderMetadata::discover_async(issuer_url, &http_client)
             .await
-            .map_err(|e| anyhow::anyhow!("Failed to discover Google metadata: {e}"))?;
+            .map_err(|e| {
+                tracing::error!("OAuth metadata discovery failed: {:?}", e);
+                anyhow::anyhow!("Failed to discover Google metadata: {e}")
+            })?;
 
         let redirect_uri_validated = RedirectUrl::new(redirect_uri.clone())
             .map_err(|e| anyhow::anyhow!("Invalid redirect URI: {e}"))?;

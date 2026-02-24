@@ -191,6 +191,7 @@
             targetPkgsAarch64.openssl
             targetPkgsAarch64.cacert
             targetPkgsAarch64.curl
+            targetPkgsAarch64.bash
             targetPkgsAarch64.fakeNss
           ];
           config.Cmd = [ "${targetPkgAarch64}/bin/logsmart-srv" ];
