@@ -1,8 +1,6 @@
 use crate::db;
-use crate::utils::{
-    ServiceError, svc_err_bad_request, svc_err_forbidden, svc_err_not_found,
-};
 use crate::try_db;
+use crate::utils::{ServiceError, svc_err_bad_request, svc_err_forbidden, svc_err_not_found};
 use sqlx::PgPool;
 
 #[cfg(test)]
@@ -24,8 +22,11 @@ impl UserService {
         db_pool: &PgPool,
         email: &str,
     ) -> Result<db::UserRecord, ServiceError> {
-        let user = try_db!(db::get_user_by_email(db_pool, email), "fetching user by email")?
-            .ok_or(svc_err_not_found("User not found"))?;
+        let user = try_db!(
+            db::get_user_by_email(db_pool, email),
+            "fetching user by email"
+        )?
+        .ok_or(svc_err_not_found("User not found"))?;
         Ok(user)
     }
 

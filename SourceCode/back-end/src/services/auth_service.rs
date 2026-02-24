@@ -470,12 +470,7 @@ impl AuthService {
                 )
             })?;
 
-        AuditLogger::log_password_changed(
-            db_pool,
-            user_id.to_string(),
-            user.email,
-        )
-        .await;
+        AuditLogger::log_password_changed(db_pool, user_id.to_string(), user.email).await;
 
         Ok(())
     }

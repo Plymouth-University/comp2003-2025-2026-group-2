@@ -352,22 +352,27 @@ pub fn err_created<T: serde::Serialize>(
 
 pub type ServiceError = (axum::http::StatusCode, serde_json::Value);
 
+#[must_use] 
 pub fn svc_err(status: axum::http::StatusCode, message: &str) -> ServiceError {
     (status, serde_json::json!({ "error": message }))
 }
 
+#[must_use] 
 pub fn svc_err_internal(msg: &str) -> ServiceError {
     svc_err(axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg)
 }
 
+#[must_use] 
 pub fn svc_err_not_found(msg: &str) -> ServiceError {
     svc_err(axum::http::StatusCode::NOT_FOUND, msg)
 }
 
+#[must_use] 
 pub fn svc_err_forbidden(msg: &str) -> ServiceError {
     svc_err(axum::http::StatusCode::FORBIDDEN, msg)
 }
 
+#[must_use] 
 pub fn svc_err_bad_request(msg: &str) -> ServiceError {
     svc_err(axum::http::StatusCode::BAD_REQUEST, msg)
 }

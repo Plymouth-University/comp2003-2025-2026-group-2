@@ -58,7 +58,9 @@ pub struct UserDto {
 derive_from!(
     crate::db::UserRecord,
     UserDto,
-    [id, email, first_name, last_name, company_id, branch_id, role, created_at]
+    [
+        id, email, first_name, last_name, company_id, branch_id, role, created_at
+    ]
 );
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -207,7 +209,9 @@ pub struct SecurityLogDto {
 derive_from!(
     crate::db::SecurityLog,
     SecurityLogDto,
-    [id, event_type, user_id, email, ip_address, user_agent, details, success, created_at]
+    [
+        id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
+    ]
 );
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -650,7 +654,9 @@ pub struct CompanyClockEventResponse {
 derive_from!(
     db::CompanyClockEventRow,
     CompanyClockEventResponse,
-    [id, user_id, first_name, last_name, email, clock_in, clock_out, status, created_at]
+    [
+        id, user_id, first_name, last_name, email, clock_in, clock_out, status, created_at
+    ]
 );
 
 #[derive(Debug, Serialize, ToSchema)]
