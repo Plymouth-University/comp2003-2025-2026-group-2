@@ -2,6 +2,16 @@ use crate::db;
 use axum::http::HeaderMap;
 use sqlx::PgPool;
 
+#[macro_export]
+macro_rules! try_db {
+    ($expr:expr, $context:literal) => {
+        $expr.await.map_err(|e| {
+            tracing::error!(error = ?e, context = $context, "Database error");
+            $crate::utils::svc_err_internal($context)
+        })
+    };
+}
+
 pub struct AuditLogger;
 
 impl AuditLogger {
@@ -15,7 +25,7 @@ impl AuditLogger {
         details: Option<String>,
         success: bool,
     ) {
-        let _ = db::log_security_event(
+        if let Err(e) = db::log_security_event(
             db,
             event_type.to_string(),
             user_id,
@@ -25,7 +35,10 @@ impl AuditLogger {
             details,
             success,
         )
-        .await;
+        .await
+        {
+            tracing::error!("Failed to log security event: {:?}", e);
+        }
     }
 
     pub async fn log_registration(
@@ -191,6 +204,20 @@ impl AuditLogger {
             None,
             None,
             None,
+            true,
+        )
+        .await;
+    }
+
+    pub async fn log_password_changed(db: &PgPool, user_id: String, email: String) {
+        Self::log(
+            db,
+            "password_changed",
+            Some(user_id),
+            Some(email),
+            None,
+            None,
+            Some("User changed their password".to_string()),
             true,
         )
         .await;

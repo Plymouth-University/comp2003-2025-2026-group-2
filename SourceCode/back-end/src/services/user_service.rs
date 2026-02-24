@@ -1,7 +1,8 @@
 use crate::db;
 use crate::utils::{
-    ServiceError, svc_err_bad_request, svc_err_forbidden, svc_err_internal, svc_err_not_found,
+    ServiceError, svc_err_bad_request, svc_err_forbidden, svc_err_not_found,
 };
+use crate::try_db;
 use sqlx::PgPool;
 
 #[cfg(test)]
@@ -23,13 +24,9 @@ impl UserService {
         db_pool: &PgPool,
         email: &str,
     ) -> Result<db::UserRecord, ServiceError> {
-        db::get_user_by_email(db_pool, email)
-            .await
-            .map_err(|e| {
-                tracing::error!("Database error fetching user: {:?}", e);
-                svc_err_internal("Database error")
-            })?
-            .ok_or(svc_err_not_found("User not found"))
+        let user = try_db!(db::get_user_by_email(db_pool, email), "fetching user by email")?
+            .ok_or(svc_err_not_found("User not found"))?;
+        Ok(user)
     }
 
     /// Retrieves a user by their ID.
@@ -40,13 +37,9 @@ impl UserService {
         db_pool: &PgPool,
         user_id: &str,
     ) -> Result<db::UserRecord, ServiceError> {
-        db::get_user_by_id(db_pool, user_id)
-            .await
-            .map_err(|e| {
-                tracing::error!("Database error fetching user: {:?}", e);
-                svc_err_internal("Database error")
-            })?
-            .ok_or(svc_err_not_found("User not found"))
+        let user = try_db!(db::get_user_by_id(db_pool, user_id), "fetching user by id")?
+            .ok_or(svc_err_not_found("User not found"))?;
+        Ok(user)
     }
 
     /// Updates a user's profile information.
@@ -59,12 +52,10 @@ impl UserService {
         first_name: String,
         last_name: String,
     ) -> Result<db::UserRecord, ServiceError> {
-        db::update_user_profile(db_pool, user_id, first_name, last_name)
-            .await
-            .map_err(|e| {
-                tracing::error!("Failed to update profile: {:?}", e);
-                svc_err_internal("Failed to update profile")
-            })
+        try_db!(
+            db::update_user_profile(db_pool, user_id, first_name, last_name),
+            "updating user profile"
+        )
     }
 
     /// Retrieves all members of a specific company.
@@ -75,12 +66,10 @@ impl UserService {
         db_pool: &PgPool,
         company_id: &str,
     ) -> Result<Vec<db::UserRecord>, ServiceError> {
-        db::get_users_by_company_id(db_pool, company_id)
-            .await
-            .map_err(|e| {
-                tracing::error!("Database error fetching company members: {:?}", e);
-                svc_err_internal("Database error")
-            })
+        try_db!(
+            db::get_users_by_company_id(db_pool, company_id),
+            "fetching company members"
+        )
     }
 
     /// Retrieves the company ID for a specific user.
@@ -91,13 +80,12 @@ impl UserService {
         db_pool: &PgPool,
         user_id: &str,
     ) -> Result<String, ServiceError> {
-        db::get_user_company_id(db_pool, user_id)
-            .await
-            .map_err(|e| {
-                tracing::error!("Database error fetching user company ID: {:?}", e);
-                svc_err_internal("Database error")
-            })?
-            .ok_or(svc_err_forbidden("User is not associated with a company"))
+        let company_id = try_db!(
+            db::get_user_company_id(db_pool, user_id),
+            "fetching user company ID"
+        )?
+        .ok_or(svc_err_forbidden("User is not associated with a company"))?;
+        Ok(company_id)
     }
 
     /// Updates a company member's profile (admin only).
@@ -151,19 +139,17 @@ impl UserService {
             ));
         }
 
-        db::update_user_profile_full(
-            db_pool,
-            &target_user.id,
-            first_name,
-            last_name,
-            role,
-            branch_id,
+        try_db!(
+            db::update_user_profile_full(
+                db_pool,
+                &target_user.id,
+                first_name,
+                last_name,
+                role,
+                branch_id,
+            ),
+            "updating member profile"
         )
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to update member profile: {:?}", e);
-            svc_err_internal("Failed to update member profile")
-        })
     }
 
     /// Deletes a company member (admin only).
@@ -199,12 +185,10 @@ impl UserService {
             return Err(svc_err_bad_request("Cannot delete your own account"));
         }
 
-        db::delete_user_by_email(db_pool, target_email)
-            .await
-            .map_err(|e| {
-                tracing::error!("Failed to delete member: {:?}", e);
-                svc_err_internal("Failed to delete member")
-            })?;
+        try_db!(
+            db::delete_user_by_email(db_pool, target_email),
+            "deleting member"
+        )?;
 
         Ok(target_user.id)
     }
