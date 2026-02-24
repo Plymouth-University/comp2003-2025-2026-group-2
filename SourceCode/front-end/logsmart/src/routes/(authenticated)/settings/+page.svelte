@@ -72,7 +72,7 @@
 			if (!startResp.ok) throw new Error('Failed to start registration');
 			const startData = await startResp.json();
 
-			const attResp = await startRegistration(startData.options);
+			const attResp = await startRegistration({optionsJSON: startData.options});
 
 			const finishResp = await fetch('/api/auth/passkey/register/finish', {
 				method: 'POST',
