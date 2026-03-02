@@ -33,7 +33,7 @@
 					View Policy
 				</a>
 				<button
-					on:click={dismissNotice}
+					onclick={dismissNotice}
 					class="bg-primary-color rounded-lg border-none px-6 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
 				>
 					Dismiss
