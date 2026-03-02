@@ -99,7 +99,7 @@
 {#if draggingType}
 	<div
 		bind:this={ghostRef}
-		class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 rounded border-2 bg-white p-2 shadow-lg"
+		class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 rounded border-2 bg-bg-primary p-2 shadow-lg"
 		style="left: {ghostPosition.x}px; top: {ghostPosition.y}px; border-color: var(--border-primary);"
 	>
 		{#if draggingType === 'text_input'}

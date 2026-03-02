@@ -658,7 +658,7 @@
 			</div>
 			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 			<div
-				class="h-2 cursor-row-resize border-y-2 hover:bg-gray-200"
+				class="h-2 cursor-row-resize border-y-2 hover:bg-gray-100 dark:hover:bg-gray-700"
 				style="border-color: var(--border-primary); flex-shrink: 0;"
 				onmousedown={handleResizeStart}
 				ondblclick={() => (paletteHeight = null)}
@@ -713,7 +713,7 @@
 			</div>
 			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 			<div
-				class="h-2 cursor-row-resize border-y-2 hover:bg-gray-200"
+				class="h-2 cursor-row-resize border-y-2 hover:bg-gray-100 dark:hover:bg-gray-700"
 				style="border-color: var(--border-primary); flex-shrink: 0;"
 				onmousedown={handleResizeStart}
 				ondblclick={() => (paletteHeight = null)}
