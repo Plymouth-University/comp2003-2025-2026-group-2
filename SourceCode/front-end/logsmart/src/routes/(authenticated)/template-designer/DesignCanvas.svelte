@@ -279,6 +279,11 @@
 	.btn-delete:active {
 		background-color: #ac2925;
 	}
+	@media (prefers-color-scheme: dark) {
+		.btn-delete:hover {
+			background-color: #c12e2a;
+		}
+	}
 
 	.btn-save {
 		background-color: #337ab7;
@@ -289,6 +294,11 @@
 	}
 	.btn-save:active:not(:disabled) {
 		background-color: #204d74;
+	}
+	@media (prefers-color-scheme: dark) {
+		.btn-save:hover:not(:disabled) {
+			background-color: #275f8c;
+		}
 	}
 
 	.btn-snap-on {
@@ -302,6 +312,11 @@
 	.btn-snap-on:active {
 		background-color: #1a5a1a;
 	}
+	@media (prefers-color-scheme: dark) {
+		.btn-snap-on:hover {
+			background-color: #226a22;
+		}
+	}
 
 	.btn-snap-off {
 		background-color: #6c757d;
@@ -314,6 +329,11 @@
 	.btn-snap-off:active {
 		background-color: #4e555b;
 	}
+	@media (prefers-color-scheme: dark) {
+		.btn-snap-off:hover {
+			background-color: #596167;
+		}
+	}
 
 	.btn-history {
 		background-color: #607d8b;
@@ -324,5 +344,10 @@
 	}
 	.btn-history:active {
 		background-color: #455a64;
+	}
+	@media (prefers-color-scheme: dark) {
+		.btn-history:hover {
+			background-color: #536d79;
+		}
 	}
 </style>
