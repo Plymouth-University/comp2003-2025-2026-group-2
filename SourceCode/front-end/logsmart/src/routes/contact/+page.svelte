@@ -133,10 +133,4 @@
 			</div>
 		</div>
 	</div>
-
-	<footer class="border-t border-border-primary bg-bg-primary px-6 py-12">
-		<div class="mx-auto max-w-7xl text-center">
-			<p class="text-text-secondary">© 2025 LogSmart. All rights reserved.</p>
-		</div>
-	</footer>
 </div>

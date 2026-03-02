@@ -6,6 +6,7 @@
 	import Icon from '$lib/assets/icon.svelte';
 	import { isDarkMode } from '$lib/stores/theme';
 	import PwaInstallPrompt from '$lib/components/pwa_install_prompt.svelte';
+	import CookieConsent from '$lib/components/CookieConsent.svelte';
 
 	let { children, data } = $props<{ children: any; data: LayoutData }>();
 
@@ -22,6 +23,22 @@
 			page.url.pathname.startsWith('/branches') ||
 			page.url.pathname.startsWith('/attendance-admin')
 	);
+
+	const legalRoutes = ['/privacy', '/terms', '/cookie-policy'];
+	const isLegalRoute = $derived(legalRoutes.includes(page.url.pathname));
+
+	let showCookieConsent = $state(false);
+
+	$effect(() => {
+		if (isLegalRoute) return;
+
+		const cookies = document.cookie.split(';');
+		const hasAccepted = cookies.some((cookie) => cookie.trim().startsWith('cookies_accepted=true'));
+		const hasDismissed = cookies.some((cookie) =>
+			cookie.trim().startsWith('cookies_notice_dismissed=true')
+		);
+		showCookieConsent = !(hasAccepted || hasDismissed);
+	});
 
 	async function handleLogout() {
 		await fetch('/api/logout', { method: 'POST' });
@@ -151,5 +168,28 @@
 		{@render children()}
 	</main>
 
+	<footer class="border-t border-border-secondary bg-bg-secondary py-6">
+		<div class="mx-auto max-w-7xl px-6">
+			<div class="flex flex-col items-center justify-between gap-4 md:flex-row">
+				<div class="flex items-center gap-2">
+					<div class="h-8 w-8">
+						<Icon />
+					</div>
+					<span class="text-lg font-bold text-text-primary">LogSmart</span>
+				</div>
+				<div class="flex flex-wrap justify-center gap-4 text-sm">
+					<a href="/privacy" class="text-text-secondary hover:opacity-80">Privacy Policy</a>
+					<a href="/terms" class="text-text-secondary hover:opacity-80">Terms and Conditions</a>
+					<a href="/cookie-policy" class="text-text-secondary hover:opacity-80">Cookie Policy</a>
+					<a href="/contact" class="text-text-secondary hover:opacity-80">Contact</a>
+				</div>
+				<p class="text-sm text-text-secondary">© 2026 LogSmart.app. All rights reserved.</p>
+			</div>
+		</div>
+	</footer>
+
 	<PwaInstallPrompt />
+	{#if !isLegalRoute}
+		<CookieConsent show={showCookieConsent} />
+	{/if}
 </div>
