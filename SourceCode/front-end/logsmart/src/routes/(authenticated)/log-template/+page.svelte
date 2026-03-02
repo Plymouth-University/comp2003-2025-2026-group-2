@@ -25,19 +25,23 @@
 	let entryData = $state<Record<number, string | number | boolean>>({});
 
 	$effect(() => {
-		if (data.entry?.entry_data) {
+		// Check if entry_data exists and has actual data
+		const hasEntryData = data.entry?.entry_data && Object.keys(data.entry.entry_data).length > 0;
+		
+		if (hasEntryData) {
 			entryData = { ...data.entry.entry_data };
 		} else if (templateLayout.length > 0) {
 			const initialData: Record<number, string | number | boolean> = {};
 			templateLayout.forEach((field: any, index: number) => {
+				const props = field.props || {};
 				if (field.field_type === 'temperature') {
-					initialData[index] = field.props.value !== undefined ? parseFloat(field.props.value) : 0;
+					initialData[index] = props.value !== undefined ? parseFloat(props.value) : 0;
 				} else if (field.field_type === 'text' || field.field_type === 'text_input') {
-					initialData[index] = field.props.value || '';
+					initialData[index] = props.value || '';
 				} else if (field.field_type === 'checkbox') {
-					initialData[index] = field.props.value === 'true' || field.props.value === true;
+					initialData[index] = props.value === 'true' || props.value === true;
 				} else if (field.field_type === 'dropdown') {
-					initialData[index] = field.props.selected || (field.props.options?.[0] ?? '');
+					initialData[index] = props.selected || (props.options?.[0] ?? '');
 				}
 			});
 			entryData = initialData;

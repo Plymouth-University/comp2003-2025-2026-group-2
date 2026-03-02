@@ -94,6 +94,210 @@
 	let error = $state<string | null>(null);
 	let logEntries = $state<LogEntry[]>([]);
 	let filteredEntries = $state<LogEntry[]>([]);
+	let availableLogTypes = $state<Set<string>>(new Set());
+	let includeTemperatureGraphs = $state(false);
+
+	// Temperature graph data types
+	type TemperatureDataPoint = {
+		value: number;
+		date: string;
+		entryId: string;
+		period: string;
+	};
+
+	type TemperatureGraphData = {
+		templateName: string;
+		fieldLabel: string;
+		unit: string;
+		dataPoints: TemperatureDataPoint[];
+	};
+
+	let temperatureGraphs = $state<TemperatureGraphData[]>([]);
+
+	// Extract temperature graph data from filtered entries
+	function extractTemperatureGraphData(entries: LogEntry[]): TemperatureGraphData[] {
+		// Group entries by template name
+		const templateGroups = new Map<string, LogEntry[]>();
+		entries.forEach((entry) => {
+			if (!templateGroups.has(entry.template_name)) {
+				templateGroups.set(entry.template_name, []);
+			}
+			templateGroups.get(entry.template_name)!.push(entry);
+		});
+
+		const graphs: TemperatureGraphData[] = [];
+
+		templateGroups.forEach((groupEntries, templateName) => {
+			// Only process templates that have 2+ entries (need multiple data points for a graph)
+			if (groupEntries.length < 2) return;
+
+			// Find temperature fields in the template layout
+			const firstEntry = groupEntries[0];
+			if (!firstEntry.template_layout) return;
+
+			firstEntry.template_layout.forEach((field: any, fieldIndex: number) => {
+				if (field.field_type !== 'temperature') return;
+
+				const fieldLabel =
+					field.props?.label || field.label || field.name || `Temperature ${fieldIndex + 1}`;
+				const unit = field.props?.unit || '°C';
+
+				const dataPoints: TemperatureDataPoint[] = [];
+
+				groupEntries.forEach((entry) => {
+					let data: any;
+					if (typeof entry.entry_data === 'string') {
+						try {
+							data = JSON.parse(entry.entry_data);
+						} catch {
+							return;
+						}
+					} else if (typeof entry.entry_data === 'object') {
+						data = entry.entry_data;
+					} else {
+						return;
+					}
+
+					if (!data) return;
+
+					// Try various field identifiers
+					const possibleIds = [
+						field.field_id,
+						field.id,
+						field.name,
+						field.props?.name,
+						field.props?.id,
+						`field_${fieldIndex}`,
+						fieldIndex.toString()
+					].filter(Boolean);
+
+					let fieldValue: any;
+					for (const id of possibleIds) {
+						if (data[id] !== undefined && data[id] !== null && data[id] !== '') {
+							fieldValue = data[id];
+							break;
+						}
+					}
+
+					if (
+						fieldValue !== undefined &&
+						typeof Number(fieldValue) === 'number' &&
+						!isNaN(Number(fieldValue))
+					) {
+						dataPoints.push({
+							value: Number(fieldValue),
+							date: entry.created_at,
+							entryId: entry.id,
+							period: entry.period
+						});
+					}
+				});
+
+				// Sort by date ascending
+				dataPoints.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+				if (dataPoints.length >= 2) {
+					graphs.push({ templateName, fieldLabel, unit, dataPoints });
+				}
+			});
+		});
+
+		return graphs;
+	}
+
+	// SVG chart helper functions
+	function buildChartPath(
+		points: TemperatureDataPoint[],
+		chartWidth: number,
+		chartHeight: number,
+		minVal: number,
+		maxVal: number
+	): string {
+		const range = maxVal - minVal || 1;
+		const padding = range * 0.1;
+		const adjMin = minVal - padding;
+		const adjMax = maxVal + padding;
+		const adjRange = adjMax - adjMin;
+
+		return points
+			.map((p, i) => {
+				const x = points.length === 1 ? chartWidth / 2 : (i / (points.length - 1)) * chartWidth;
+				const y = chartHeight - ((p.value - adjMin) / adjRange) * chartHeight;
+				return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+			})
+			.join(' ');
+	}
+
+	function buildAreaPath(
+		points: TemperatureDataPoint[],
+		chartWidth: number,
+		chartHeight: number,
+		minVal: number,
+		maxVal: number
+	): string {
+		const range = maxVal - minVal || 1;
+		const padding = range * 0.1;
+		const adjMin = minVal - padding;
+		const adjMax = maxVal + padding;
+		const adjRange = adjMax - adjMin;
+
+		const linePath = points
+			.map((p, i) => {
+				const x = points.length === 1 ? chartWidth / 2 : (i / (points.length - 1)) * chartWidth;
+				const y = chartHeight - ((p.value - adjMin) / adjRange) * chartHeight;
+				return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+			})
+			.join(' ');
+
+		const lastX = points.length === 1 ? chartWidth / 2 : chartWidth;
+		const firstX = points.length === 1 ? chartWidth / 2 : 0;
+
+		return `${linePath} L ${lastX.toFixed(1)} ${chartHeight} L ${firstX.toFixed(1)} ${chartHeight} Z`;
+	}
+
+	function getChartPoints(
+		points: TemperatureDataPoint[],
+		chartWidth: number,
+		chartHeight: number,
+		minVal: number,
+		maxVal: number
+	): Array<{ x: number; y: number; value: number; date: string; period: string }> {
+		const range = maxVal - minVal || 1;
+		const padding = range * 0.1;
+		const adjMin = minVal - padding;
+		const adjMax = maxVal + padding;
+		const adjRange = adjMax - adjMin;
+
+		return points.map((p, i) => ({
+			x: points.length === 1 ? chartWidth / 2 : (i / (points.length - 1)) * chartWidth,
+			y: chartHeight - ((p.value - adjMin) / adjRange) * chartHeight,
+			value: p.value,
+			date: new Date(p.date).toLocaleDateString(),
+			period: p.period
+		}));
+	}
+
+	function getYAxisTicks(
+		minVal: number,
+		maxVal: number,
+		chartHeight: number
+	): Array<{ value: number; y: number }> {
+		const range = maxVal - minVal || 1;
+		const padding = range * 0.1;
+		const adjMin = minVal - padding;
+		const adjMax = maxVal + padding;
+		const adjRange = adjMax - adjMin;
+		const tickCount = 5;
+		const ticks: Array<{ value: number; y: number }> = [];
+
+		for (let i = 0; i <= tickCount; i++) {
+			const value = adjMin + (i / tickCount) * adjRange;
+			const y = chartHeight - (i / tickCount) * chartHeight;
+			ticks.push({ value: Math.round(value * 10) / 10, y });
+		}
+
+		return ticks;
+	}
 
 	// Function to normalize field type (handle all text field variants as 'text')
 	function normalizeFieldType(fieldType: unknown): string {
@@ -671,6 +875,11 @@
 				return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
 			});
 		}
+
+		// Re-extract temperature graphs if enabled
+		if (includeTemperatureGraphs) {
+			temperatureGraphs = extractTemperatureGraphData(filteredEntries);
+		}
 	}
 
 	async function generateReport() {
@@ -754,6 +963,13 @@
 					// If same template, sort by date
 					return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
 				});
+			}
+
+			// Extract temperature graph data if enabled
+			if (includeTemperatureGraphs) {
+				temperatureGraphs = extractTemperatureGraphData(filteredEntries);
+			} else {
+				temperatureGraphs = [];
 			}
 
 			reportGenerated = true;
@@ -886,17 +1102,21 @@
 		let content = '';
 
 		if (arrangeBy === 'logType') {
-			const groupedEntries = filteredEntries.reduce((acc: Record<string, LogEntry[]>, entry) => {
-				const category = categorizeLogType(entry.template_layout);
-				if (!acc[category]) acc[category] = [];
-				acc[category].push(entry);
-				return acc;
-			}, {});
+			const excludedFieldTypes = getExcludedFieldTypes();
+			const components = extractComponents(filteredEntries, excludedFieldTypes);
+			const groupedComponents = components.reduce(
+				(acc: Record<string, typeof components>, component) => {
+					if (!acc[component.fieldType]) acc[component.fieldType] = [];
+					acc[component.fieldType].push(component);
+					return acc;
+				},
+				{}
+			);
 
-			Object.entries(groupedEntries).forEach(([category, entries]) => {
-				content += `<h2>${category} (${entries.length} entries)</h2>`;
-				entries.forEach((entry) => {
-					content += generateWordEntryHTML(entry);
+			Object.entries(groupedComponents).forEach(([fieldType, componentGroup]) => {
+				content += `<h2>${fieldType} (${componentGroup.length} components)</h2>`;
+				componentGroup.forEach((component) => {
+					content += generateWordComponentHTML(component);
 				});
 			});
 		} else {
@@ -906,6 +1126,33 @@
 		}
 
 		return content;
+	}
+
+	function generateWordComponentHTML(component: any): string {
+		const statusBg = component.entry.status === 'submitted' ? '#10B981' : '#F59E0B';
+
+		return `
+		<div class="entry-box" style="page-break-inside: avoid; page-break-after: auto;">
+			<p class="entry-title" style="page-break-after: avoid; keep-with-next: always;">${component.entry.template_name}</p>
+			<p class="entry-id" style="page-break-after: avoid; keep-with-next: always;">ID: ${component.entry.id.slice(0, 8)}...</p>
+			<p class="status-badge" style="background-color: ${statusBg}; page-break-after: avoid; keep-with-next: always;">${component.entry.status}</p>
+			
+			<div class="entry-data-box" style="page-break-inside: avoid; keep-with-next: always;">
+				<span class="field-label">Component Data:</span> ${component.fieldData}
+			</div>
+			
+			<p class="field-row" style="page-break-after: avoid; keep-with-next: always;">
+				<span class="field-label">Created:</span> ${new Date(component.entry.created_at).toLocaleString()}
+			</p>
+			
+			${component.entry.submitted_at ? `<p class="field-row" style="page-break-after: avoid; keep-with-next: always;"><span class="field-label">Submitted:</span> ${new Date(component.entry.submitted_at).toLocaleString()}</p>` : ''}
+			
+			<p class="field-row" style="keep-with-next: avoid;">
+				<span class="field-label">Period:</span> ${component.entry.period}
+			</p>
+		</div>
+		<p style="page-break-after: auto; margin-bottom: 0;">&nbsp;</p>
+		`;
 	}
 
 	function generateWordEntryHTML(entry: LogEntry): string {
@@ -953,17 +1200,21 @@
 		rtfContent += `\\par\\pard\\brdrb\\brdrs\\brdrw10\\par\\par`;
 
 		if (arrangeBy === 'logType') {
-			const groupedEntries = filteredEntries.reduce((acc: Record<string, LogEntry[]>, entry) => {
-				const category = categorizeLogType(entry.template_layout);
-				if (!acc[category]) acc[category] = [];
-				acc[category].push(entry);
-				return acc;
-			}, {});
+			const excludedFieldTypes = getExcludedFieldTypes();
+			const components = extractComponents(filteredEntries, excludedFieldTypes);
+			const groupedComponents = components.reduce(
+				(acc: Record<string, typeof components>, component) => {
+					if (!acc[component.fieldType]) acc[component.fieldType] = [];
+					acc[component.fieldType].push(component);
+					return acc;
+				},
+				{}
+			);
 
-			Object.entries(groupedEntries).forEach(([category, entries]) => {
-				rtfContent += `\\b\\fs26 ${category} (${entries.length} entries)\\b0\\fs24\\par\\par`;
-				entries.forEach((entry) => {
-					rtfContent += generateRTFEntry(entry);
+			Object.entries(groupedComponents).forEach(([fieldType, componentGroup]) => {
+				rtfContent += `\\b\\fs26 ${fieldType} (${componentGroup.length} components)\\b0\\fs24\\par\\par`;
+				componentGroup.forEach((component) => {
+					rtfContent += generateRTFComponent(component);
 				});
 			});
 		} else {
@@ -974,6 +1225,24 @@
 
 		rtfContent += '}';
 		return rtfContent;
+	}
+
+	function generateRTFComponent(component: any): string {
+		const statusColor = component.entry.status === 'submitted' ? '\\cf2' : '\\cf3';
+
+		let rtf = `\\pard\\box\\brdrs\\brdrw10\\brdrcf1\\par`;
+		rtf += `\\b ${component.entry.template_name}\\b0\\par`;
+		rtf += `\\i ID: ${component.entry.id.slice(0, 8)}...\\i0\\par`;
+		rtf += `${statusColor}\\b ${component.entry.status}\\b0\\cf1\\par\\par`;
+		rtf += `\\b Component Data:\\b0 ${component.fieldData}\\par\\par`;
+		rtf += `\\b Created:\\b0 ${new Date(component.entry.created_at).toLocaleString()}\\par`;
+		if (component.entry.submitted_at) {
+			rtf += `\\b Submitted:\\b0 ${new Date(component.entry.submitted_at).toLocaleString()}\\par`;
+		}
+		rtf += `\\b Period:\\b0 ${component.entry.period}\\par`;
+		rtf += `\\par\\pard\\par`;
+
+		return rtf;
 	}
 
 	function generateRTFEntry(entry: LogEntry): string {
@@ -1008,17 +1277,21 @@
 		`;
 
 		if (arrangeBy === 'logType') {
-			const groupedEntries = filteredEntries.reduce((acc: Record<string, LogEntry[]>, entry) => {
-				const category = categorizeLogType(entry.template_layout);
-				if (!acc[category]) acc[category] = [];
-				acc[category].push(entry);
-				return acc;
-			}, {});
+			const excludedFieldTypes = getExcludedFieldTypes();
+			const components = extractComponents(filteredEntries, excludedFieldTypes);
+			const groupedComponents = components.reduce(
+				(acc: Record<string, typeof components>, component) => {
+					if (!acc[component.fieldType]) acc[component.fieldType] = [];
+					acc[component.fieldType].push(component);
+					return acc;
+				},
+				{}
+			);
 
-			Object.entries(groupedEntries).forEach(([category, entries]) => {
-				content += `<div class="group-header">${category} (${entries.length} entries)</div>`;
-				entries.forEach((entry) => {
-					content += generateEntryHTML(entry);
+			Object.entries(groupedComponents).forEach(([fieldType, componentGroup]) => {
+				content += `<div class="group-header">${fieldType} (${componentGroup.length} components)</div>`;
+				componentGroup.forEach((component) => {
+					content += generateComponentHTML(component);
 				});
 			});
 		} else {
@@ -1028,6 +1301,64 @@
 		}
 
 		return content;
+	}
+
+	function generateReportContent(): string {
+		let content = `
+			<div class="header">
+				<h1>Log Report</h1>
+				<p><strong>Date Range:</strong> ${dateFrom} - ${dateTo}</p>
+				<p><strong>Arranged by:</strong> ${arrangeBy === 'date' ? 'Date' : 'Log Type'}</p>
+				<p><strong>Total Entries:</strong> ${filteredEntries.length}</p>
+				<p><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
+			</div>
+		`;
+
+		if (arrangeBy === 'logType') {
+			const excludedFieldTypes = getExcludedFieldTypes();
+			const components = extractComponents(filteredEntries, excludedFieldTypes);
+			const groupedComponents = components.reduce(
+				(acc: Record<string, typeof components>, component) => {
+					if (!acc[component.fieldType]) acc[component.fieldType] = [];
+					acc[component.fieldType].push(component);
+					return acc;
+				},
+				{}
+			);
+
+			Object.entries(groupedComponents).forEach(([fieldType, componentGroup]) => {
+				content += `<div class="group-header">${fieldType} (${componentGroup.length} components)</div>`;
+				componentGroup.forEach((component) => {
+					content += generateComponentHTML(component);
+				});
+			});
+		} else {
+			filteredEntries.forEach((entry) => {
+				content += generateEntryHTML(entry);
+			});
+		}
+
+		return content;
+	}
+
+	function generateComponentHTML(component: any): string {
+		return `
+			<div class="entry">
+				<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+					<div>
+						<strong>${component.entry.template_name}</strong>
+						<small style="color: #666; margin-left: 10px;">ID: ${component.entry.id.slice(0, 8)}...</small>
+					</div>
+					<span class="status ${component.entry.status === 'submitted' ? 'submitted' : 'draft'}">${component.entry.status}</span>
+				</div>
+				<div class="entry-data">
+					<strong>Component Data:</strong> ${component.fieldData}
+				</div>
+				<p><strong>Created:</strong> ${new Date(component.entry.created_at).toLocaleString()}</p>
+				${component.entry.submitted_at ? `<p><strong>Submitted:</strong> ${new Date(component.entry.submitted_at).toLocaleString()}</p>` : ''}
+				<p><strong>Period:</strong> ${component.entry.period}</p>
+			</div>
+		`;
 	}
 
 	function generateEntryHTML(entry: LogEntry): string {
@@ -1741,6 +2072,34 @@
 					</div>
 				</div>
 
+				<!-- Temperature Graphs Toggle -->
+				<div class="mb-8">
+					<label class="flex cursor-pointer items-center gap-3">
+						<input
+							type="checkbox"
+							bind:checked={includeTemperatureGraphs}
+							onchange={() => {
+								if (reportGenerated) {
+									// Re-extract graphs if report is already generated
+									if (includeTemperatureGraphs) {
+										temperatureGraphs = extractTemperatureGraphData(filteredEntries);
+									} else {
+										temperatureGraphs = [];
+									}
+								}
+							}}
+							class="h-5 w-5 cursor-pointer"
+							style="accent-color: #3D7A82;"
+						/>
+						<span class="text-base font-medium" style="color: var(--text-primary);">
+							Include Temperature Graphs
+						</span>
+					</label>
+					<p class="ml-8 mt-1 text-xs" style="color: var(--text-secondary);">
+						Generates line graphs for temperature fields (requires 2+ entries)
+					</p>
+				</div>
+
 				<!-- Generate Button -->
 				<div class="flex justify-center">
 					<button
@@ -1837,6 +2196,213 @@
 										: 'Log Type'} | Total Entries: {filteredEntries.length}
 								</p>
 							</div>
+
+							<!-- Temperature Graphs (shown above entries when enabled) -->
+							{#if includeTemperatureGraphs && temperatureGraphs.length > 0}
+								<div class="mb-8">
+									<h3
+										class="mb-4 border-b-2 pb-2 text-lg font-bold"
+										style="color: var(--text-primary); border-color: var(--border-primary);"
+									>
+										📈 Temperature Graphs
+									</h3>
+									{#each temperatureGraphs as graph}
+										{@const values = graph.dataPoints.map((p) => p.value)}
+										{@const minVal = Math.min(...values)}
+										{@const maxVal = Math.max(...values)}
+										{@const avgVal =
+											Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10}
+										{@const chartWidth = 500}
+										{@const chartHeight = 200}
+										{@const chartPoints = getChartPoints(
+											graph.dataPoints,
+											chartWidth,
+											chartHeight,
+											minVal,
+											maxVal
+										)}
+										{@const yTicks = getYAxisTicks(minVal, maxVal, chartHeight)}
+										<div
+											class="mb-6 rounded-lg border p-4"
+											style="border-color: var(--border-primary); background-color: var(--bg-secondary);"
+										>
+											<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+												<div>
+													<h4 class="font-bold" style="color: var(--text-primary);">
+														{graph.templateName}
+													</h4>
+													<p class="text-sm" style="color: var(--text-secondary);">
+														{graph.fieldLabel} ({graph.unit})
+													</p>
+												</div>
+												<div
+													class="flex flex-wrap gap-4 text-xs"
+													style="color: var(--text-secondary);"
+												>
+													<span>Min: <strong>{minVal}{graph.unit}</strong></span>
+													<span>Max: <strong>{maxVal}{graph.unit}</strong></span>
+													<span>Avg: <strong>{avgVal}{graph.unit}</strong></span>
+													<span>Entries: <strong>{graph.dataPoints.length}</strong></span>
+												</div>
+											</div>
+											<div
+												class="overflow-x-auto rounded"
+												style="background-color: var(--bg-primary);"
+											>
+												<svg
+													viewBox="-60 -10 {chartWidth + 80} {chartHeight + 60}"
+													class="w-full"
+													style="min-width: 400px; max-height: 300px;"
+													xmlns="http://www.w3.org/2000/svg"
+												>
+													<!-- Grid lines -->
+													{#each yTicks as tick}
+														<line
+															x1="0"
+															y1={tick.y}
+															x2={chartWidth}
+															y2={tick.y}
+															stroke="var(--border-primary)"
+															stroke-width="0.5"
+															stroke-dasharray="4,4"
+															opacity="0.5"
+														/>
+														<text
+															x="-8"
+															y={tick.y + 4}
+															text-anchor="end"
+															fill="var(--text-secondary)"
+															font-size="11">{tick.value}</text
+														>
+													{/each}
+
+													<!-- Area fill -->
+													<path
+														d={buildAreaPath(
+															graph.dataPoints,
+															chartWidth,
+															chartHeight,
+															minVal,
+															maxVal
+														)}
+														fill="#3D7A82"
+														opacity="0.1"
+													/>
+
+													<!-- Line -->
+													<path
+														d={buildChartPath(
+															graph.dataPoints,
+															chartWidth,
+															chartHeight,
+															minVal,
+															maxVal
+														)}
+														fill="none"
+														stroke="#3D7A82"
+														stroke-width="2.5"
+														stroke-linejoin="round"
+														stroke-linecap="round"
+													/>
+
+													<!-- Data points -->
+													{#each chartPoints as point, i}
+														<g class="chart-point">
+															<circle
+																cx={point.x}
+																cy={point.y}
+																r="4"
+																fill="#3D7A82"
+																stroke="white"
+																stroke-width="2"
+															/>
+															<!-- Hover target -->
+															<circle
+																cx={point.x}
+																cy={point.y}
+																r="12"
+																fill="transparent"
+																class="cursor-pointer"
+															/>
+															<!-- Tooltip -->
+															<g class="chart-tooltip" opacity="0">
+																<rect
+																	x={point.x - 50}
+																	y={point.y - 48}
+																	width="100"
+																	height="36"
+																	rx="4"
+																	fill="var(--bg-primary)"
+																	stroke="var(--border-primary)"
+																	stroke-width="1"
+																/>
+																<text
+																	x={point.x}
+																	y={point.y - 34}
+																	text-anchor="middle"
+																	fill="var(--text-primary)"
+																	font-size="11"
+																	font-weight="bold">{point.value}{graph.unit}</text
+																>
+																<text
+																	x={point.x}
+																	y={point.y - 20}
+																	text-anchor="middle"
+																	fill="var(--text-secondary)"
+																	font-size="9">{point.date}</text
+																>
+															</g>
+														</g>
+													{/each}
+
+													<!-- X-axis labels -->
+													{#each chartPoints as point, i}
+														{#if i === 0 || i === chartPoints.length - 1 || chartPoints.length <= 10 || i % Math.ceil(chartPoints.length / 8) === 0}
+															<text
+																x={point.x}
+																y={chartHeight + 20}
+																text-anchor="middle"
+																fill="var(--text-secondary)"
+																font-size="9"
+																transform="rotate(-30, {point.x}, {chartHeight + 20})"
+																>{point.date}</text
+															>
+														{/if}
+													{/each}
+
+													<!-- Axes -->
+													<line
+														x1="0"
+														y1={chartHeight}
+														x2={chartWidth}
+														y2={chartHeight}
+														stroke="var(--border-primary)"
+														stroke-width="1"
+													/>
+													<line
+														x1="0"
+														y1="0"
+														x2="0"
+														y2={chartHeight}
+														stroke="var(--border-primary)"
+														stroke-width="1"
+													/>
+												</svg>
+											</div>
+										</div>
+									{/each}
+								</div>
+							{:else if includeTemperatureGraphs && filteredEntries.length > 0}
+								<div
+									class="mb-6 rounded-lg border border-dashed p-4 text-center"
+									style="border-color: var(--border-primary);"
+								>
+									<p class="text-sm" style="color: var(--text-secondary);">
+										No temperature graph data available. Graphs require at least 2 entries of the
+										same log type with temperature fields.
+									</p>
+								</div>
+							{/if}
 
 							{#if filteredEntries.length === 0}
 								<div class="py-8 text-center">
@@ -2036,5 +2602,16 @@
 
 	.slide-right {
 		animation: slideInFromRight 0.3s ease-out;
+	}
+
+	/* Temperature graph chart styles */
+	.chart-point:hover .chart-tooltip {
+		opacity: 1 !important;
+		transition: opacity 0.2s ease-in-out;
+	}
+
+	.chart-tooltip {
+		pointer-events: none;
+		transition: opacity 0.2s ease-in-out;
 	}
 </style>
