@@ -1,6 +1,22 @@
 /// <reference types="node" />
 import { defineConfig, devices } from '@playwright/test';
 
+const COOKIE_BANNER_DISMISSED_STATE = {
+	cookies: [
+		{
+			name: 'cookies_notice_dismissed',
+			value: 'true',
+			domain: 'localhost',
+			path: '/',
+			expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365,
+			httpOnly: false,
+			secure: false,
+			sameSite: 'Lax' as const
+		}
+	],
+	origins: []
+};
+
 export default defineConfig({
 	testDir: './tests',
 	fullyParallel: true,
@@ -10,7 +26,8 @@ export default defineConfig({
 	reporter: 'list',
 	use: {
 		baseURL: process.env.FRONTEND_URL || 'http://localhost:5173',
-		trace: 'on-first-retry'
+		trace: 'on-first-retry',
+		storageState: COOKIE_BANNER_DISMISSED_STATE
 	},
 
 	projects: [
