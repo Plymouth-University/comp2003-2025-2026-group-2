@@ -1,6 +1,21 @@
 import { type Browser, expect, type Page } from '@playwright/test';
 
 const MAILHOG_API_URL = process.env.MAILHOG_API_URL || 'http://localhost:8025/api';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+const dismissCookieBannerInTests = async (page: Page): Promise<void> => {
+	await page.context().addCookies([
+		{
+			name: 'cookies_notice_dismissed',
+			value: 'true',
+			url: FRONTEND_URL,
+			expires: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365,
+			httpOnly: false,
+			secure: false,
+			sameSite: 'Lax'
+		}
+	]);
+};
 
 interface MailhogEmail {
 	ID: string;
@@ -139,6 +154,7 @@ const requestPasswordResetToken = async (
 ): Promise<string | null> => {
 	await clearMailhogEmails();
 	const page = await browser.newPage();
+	await dismissCookieBannerInTests(page);
 	await page.goto('http://localhost:5173/reset-password');
 	await page.getByRole('textbox', { name: 'Email' }).fill(email);
 	await page.getByRole('button', { name: 'Send Reset Link' }).click();
@@ -156,6 +172,7 @@ const register = async (browser: Browser, close = true) => {
 	const email = `testuser+${slug}@logsmart.app`;
 	const password = `Test${slug}!A`;
 	const page = await browser.newPage();
+	await dismissCookieBannerInTests(page);
 	await page.goto('http://localhost:5173/');
 	await page.getByRole('link', { name: 'Register Company' }).click();
 	await page.waitForURL('**/register-company');
@@ -212,13 +229,14 @@ const sendInvitation = async (
 	branchName?: string
 ): Promise<string | null> => {
 	const page = await browser.newPage();
+	await dismissCookieBannerInTests(page);
 	await page.goto('http://localhost:5173/login');
 	await page.getByRole('textbox', { name: 'Email' }).fill(admin.email);
 	await page.getByRole('textbox', { name: 'Password' }).fill(admin.password);
 	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-	await page.waitForURL('**/dashboard');
+	await page.waitForURL('**/dashboard**');
 	await page.getByRole('link', { name: 'Users' }).click();
-	await page.waitForURL('**/users-admin');
+	await page.waitForURL('**/users-admin**');
 	await page.getByRole('button', { name: '➕' }).click();
 	await page.getByRole('textbox', { name: "New user's email" }).fill(email);
 
@@ -273,6 +291,7 @@ const acceptInvitation = async (
 	password: string,
 	waitFor: string = '**/dashboard'
 ): Promise<boolean> => {
+	await dismissCookieBannerInTests(page);
 	await page.goto(`http://localhost:5173/accept-invitation?token=${token}`);
 	await page.waitForURL('**/accept-invitation**');
 
@@ -293,8 +312,9 @@ const acceptInvitation = async (
 	await page.getByRole('textbox', { name: 'Confirm Password' }).fill(password);
 	await page.getByRole('button', { name: 'Create Account' }).click();
 
-	await page.waitForURL(waitFor, { timeout: 10000 });
-	return page.url().includes(waitFor.replace('**', ''));
+	const expectedPath = waitFor.replace(/\*/g, '');
+	await page.waitForURL((url) => url.pathname.startsWith(expectedPath), { timeout: 10000 });
+	return new URL(page.url()).pathname.startsWith(expectedPath);
 };
 
 const sendInvitationOnPage = async (
@@ -303,8 +323,9 @@ const sendInvitationOnPage = async (
 	role: string = 'staff',
 	branchName?: string
 ): Promise<string | null> => {
+	await dismissCookieBannerInTests(page);
 	await page.getByRole('link', { name: 'Users' }).click();
-	await page.waitForURL('**/users-admin');
+	await page.waitForURL('**/users-admin**');
 
 	await page.getByRole('button', { name: '➕' }).click();
 	await page.waitForLoadState('networkidle');
@@ -355,6 +376,7 @@ export {
 	getPasswordResetToken,
 	clearMailhogEmails,
 	requestPasswordResetToken,
+	dismissCookieBannerInTests,
 	sendInvitation,
 	sendInvitationOnPage,
 	acceptInvitation
