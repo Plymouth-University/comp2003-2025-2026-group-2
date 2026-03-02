@@ -165,8 +165,8 @@
 					closure
 				</li>
 				<li>
-					<strong>Food safety logs and compliance records:</strong> Kept for up to 6 years to meet
-					regulatory record-keeping requirements
+					<strong>Food safety logs and compliance records:</strong> Kept for up to 6 years to meet regulatory
+					record-keeping requirements
 				</li>
 				<li>
 					<strong>Support communications:</strong> Kept for up to 24 months for service quality and dispute

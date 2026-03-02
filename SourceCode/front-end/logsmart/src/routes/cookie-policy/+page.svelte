@@ -48,8 +48,8 @@
 
 			<h3 class="my-6 text-base font-semibold text-text-primary">3.1 Essential Cookies</h3>
 			<p class="mb-4 leading-relaxed text-text-secondary">
-				We use a single essential authentication cookie. This cookie is required for the Service
-				to function and keeps you logged in securely.
+				We use a single essential authentication cookie. This cookie is required for the Service to
+				function and keeps you logged in securely.
 			</p>
 			<div class="overflow-x-auto">
 				<table class="w-full border border-border-primary text-sm text-text-secondary">
