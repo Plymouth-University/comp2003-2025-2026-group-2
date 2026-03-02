@@ -217,11 +217,19 @@ test.describe('User Administration - Admin Access', () => {
 		await page.goto('http://localhost:5173/dashboard');
 
 		await page.getByRole('link', { name: 'Users' }).click();
-		await page.waitForURL('**/users-admin');
-
-		await page.locator(`button:has-text("${invitedEmail}")`).click();
+		await page.waitForURL('**/users-admin**');
 
 		const sidebar = page.locator('#userSidebar');
+		for (let i = 0; i < 5; i++) {
+			await page.locator(`button:has-text("${invitedEmail}")`).first().click();
+			if (await sidebar.isVisible()) {
+				break;
+			}
+			if (i === 4) {
+				throw new Error('User sidebar did not open after selecting invited user');
+			}
+			await page.waitForTimeout(300);
+		}
 		await expect(sidebar).toBeVisible();
 
 		const roleSelect = page.locator('#sidebar-role');
@@ -234,7 +242,7 @@ test.describe('User Administration - Admin Access', () => {
 		for (let i = 0; i < 5; i++) {
 			try {
 				await page.reload();
-				await page.waitForURL('**/users-admin');
+				await page.waitForURL('**/users-admin**');
 				await page.waitForTimeout(500);
 				await page.locator(`button:has-text("${invitedEmail}")`).click();
 				const updatedSidebar = page.locator('#userSidebar');
