@@ -133,7 +133,7 @@ pub async fn create_log_entry(
     }
 
     let entry_id =
-        services::LogEntryService::create_log_entry(&state, &user.id, &payload.template_name)
+        services::LogEntryService::create_log_entry(&state, &user, &payload.template_name)
             .await
             .map_err(|(status, err)| (status, Json(err)))?;
 

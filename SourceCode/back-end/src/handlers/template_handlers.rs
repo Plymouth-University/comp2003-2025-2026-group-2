@@ -1,5 +1,5 @@
 use crate::{
-    AppState, db,
+    AppState,
     dto::{
         AddTemplateRequest, AddTemplateResponse, DeleteTemplateRequest, DeleteTemplateResponse,
         ErrorResponse, GetAllTemplatesResponse, GetTemplateRequest, GetTemplateResponse,
@@ -96,22 +96,13 @@ pub async fn get_template(
     State(state): State<AppState>,
     Query(payload): Query<GetTemplateRequest>,
 ) -> Result<Json<GetTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = db::get_user_company_id(&state.postgres, &user.id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching user company ID: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
-        })?
-        .ok_or((
-            StatusCode::FORBIDDEN,
-            Json(json!({ "error": "User is not associated with a company" })),
-        ))?;
+    let company_id = user.company_id.as_deref().ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
 
     let (template_name, template_layout, version, version_name) =
-        services::TemplateService::get_template(&state, &company_id, &payload.template_name)
+        services::TemplateService::get_template(&state, company_id, &payload.template_name)
             .await
             .map_err(|(status, err)| (status, Json(err)))?;
 
