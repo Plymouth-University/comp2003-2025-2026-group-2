@@ -3,9 +3,6 @@
 	import { startAuthentication } from '@simplewebauthn/browser';
 	import { api } from '$lib/api';
 
-	import { onMount } from 'svelte';
-	import { browser } from '$app/environment';
-
 	let email = $state('');
 	let password = $state('');
 	let loading = $state(false);
@@ -148,9 +145,9 @@
 			} else {
 				await goto('/dashboard');
 			}
-		} catch (e: any) {
+		} catch (e: unknown) {
 			console.error(e);
-			error = e.message || 'Passkey login failed';
+			error = (e as Error)?.message || 'Passkey login failed';
 		} finally {
 			loading = false;
 		}

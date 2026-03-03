@@ -171,7 +171,7 @@
 					Recent Activity
 				</h3>
 				<div class="space-y-2">
-					{#each recentEvents as event}
+					{#each recentEvents as event (event.id)}
 						<div
 							class="flex items-center justify-between gap-4 border-b py-2 text-sm"
 							style="border-color: var(--border-primary);"

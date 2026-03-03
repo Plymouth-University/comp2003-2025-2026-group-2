@@ -7,7 +7,7 @@
 		onAlign
 	}: {
 		selectedItem: CanvasItem | undefined;
-		onUpdateProp: (itemId: string, propKey: string, value: any) => void;
+		onUpdateProp: (itemId: string, propKey: string, value: unknown) => void;
 		onAlign: (
 			itemId: string,
 			horizontal: 'left' | 'center' | 'right' | null,
@@ -28,10 +28,9 @@
 			<div class="grid grid-cols-3 gap-1">
 				<div></div>
 				<button
-					class="flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
+					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
 					class:opacity-50={selectedItem.lockY}
 					class:cursor-not-allowed={selectedItem.lockY}
-					class:hover:bg-gray-100={!selectedItem.lockY}
 					style="border-color: var(--border-primary); color: var(--text-primary);"
 					onclick={() => onAlign(selectedItem.id, null, 'top')}
 					disabled={selectedItem.lockY}
@@ -42,10 +41,9 @@
 				<div></div>
 
 				<button
-					class="flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
+					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
 					class:opacity-50={selectedItem.lockX}
 					class:cursor-not-allowed={selectedItem.lockX}
-					class:hover:bg-gray-100={!selectedItem.lockX}
 					style="border-color: var(--border-primary); color: var(--text-primary);"
 					onclick={() => onAlign(selectedItem.id, 'left', null)}
 					disabled={selectedItem.lockX}
@@ -54,10 +52,9 @@
 					<span>⬅</span><span>Left</span>
 				</button>
 				<button
-					class="flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
+					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
 					class:opacity-50={selectedItem.lockX && selectedItem.lockY}
 					class:cursor-not-allowed={selectedItem.lockX && selectedItem.lockY}
-					class:hover:bg-gray-100={!(selectedItem.lockX && selectedItem.lockY)}
 					style="border-color: var(--border-primary); color: var(--text-primary);"
 					onclick={() => onAlign(selectedItem.id, 'center', 'center')}
 					disabled={selectedItem.lockX && selectedItem.lockY}
@@ -68,10 +65,9 @@
 					<span>⊕</span><span>Center</span>
 				</button>
 				<button
-					class="flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
+					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
 					class:opacity-50={selectedItem.lockX}
 					class:cursor-not-allowed={selectedItem.lockX}
-					class:hover:bg-gray-100={!selectedItem.lockX}
 					style="border-color: var(--border-primary); color: var(--text-primary);"
 					onclick={() => onAlign(selectedItem.id, 'right', null)}
 					disabled={selectedItem.lockX}
@@ -82,10 +78,9 @@
 
 				<div></div>
 				<button
-					class="flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
+					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
 					class:opacity-50={selectedItem.lockY}
 					class:cursor-not-allowed={selectedItem.lockY}
-					class:hover:bg-gray-100={!selectedItem.lockY}
 					style="border-color: var(--border-primary); color: var(--text-primary);"
 					onclick={() => onAlign(selectedItem.id, null, 'bottom')}
 					disabled={selectedItem.lockY}
@@ -110,13 +105,13 @@
 					oninput={(e) => onUpdateProp(selectedItem.id, 'x', parseInt(e.currentTarget.value) || 0)}
 					class="w-20 border-2 px-2 py-1 text-sm"
 					class:opacity-50={selectedItem.lockX}
-					style="border-color: var(--border-primary); color: var(--text-primary);"
+					style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					disabled={selectedItem.lockX}
 				/>
 				<button
-					class="flex h-8 w-8 items-center justify-center rounded border-2 text-sm transition-colors"
-					class:bg-blue-100={selectedItem.lockX}
-					class:hover:bg-gray-100={!selectedItem.lockX}
+					class={`lock-button flex h-8 w-8 items-center justify-center rounded border-2 text-sm transition-colors ${
+						selectedItem.lockX ? 'bg-blue-100 dark:bg-blue-900/30' : ''
+					}`}
 					style="border-color: var(--border-primary); color: var(--text-primary);"
 					onclick={() => onUpdateProp(selectedItem.id, 'lockX', !selectedItem.lockX)}
 					title={selectedItem.lockX ? 'Unlock X position' : 'Lock X position'}
@@ -132,13 +127,13 @@
 					oninput={(e) => onUpdateProp(selectedItem.id, 'y', parseInt(e.currentTarget.value) || 0)}
 					class="w-20 border-2 px-2 py-1 text-sm"
 					class:opacity-50={selectedItem.lockY}
-					style="border-color: var(--border-primary); color: var(--text-primary);"
+					style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					disabled={selectedItem.lockY}
 				/>
 				<button
-					class="flex h-8 w-8 items-center justify-center rounded border-2 text-sm transition-colors"
-					class:bg-blue-100={selectedItem.lockY}
-					class:hover:bg-gray-100={!selectedItem.lockY}
+					class={`lock-button flex h-8 w-8 items-center justify-center rounded border-2 text-sm transition-colors ${
+						selectedItem.lockY ? 'bg-blue-100 dark:bg-blue-900/30' : ''
+					}`}
 					style="border-color: var(--border-primary); color: var(--text-primary);"
 					onclick={() => onUpdateProp(selectedItem.id, 'lockY', !selectedItem.lockY)}
 					title={selectedItem.lockY ? 'Unlock Y position' : 'Lock Y position'}
@@ -158,7 +153,7 @@
 							value={selectedItem.props.placeholder}
 							oninput={(e) => onUpdateProp(selectedItem.id, 'placeholder', e.currentTarget.value)}
 							class="mt-1 w-full border-2 px-3 py-2"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 						/>
 					</label>
 				</div>
@@ -170,9 +165,9 @@
 							onchange={(e) =>
 								onUpdateProp(selectedItem.id, 'size', parseInt(e.currentTarget.value))}
 							class="mt-1 w-full border-2 px-3 py-2"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 						>
-							{#each [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48] as s}
+							{#each [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48] as s (s)}
 								<option value={s}>{s}px</option>
 							{/each}
 						</select>
@@ -185,7 +180,7 @@
 							value={selectedItem.props.weight}
 							onchange={(e) => onUpdateProp(selectedItem.id, 'weight', e.currentTarget.value)}
 							class="mt-1 w-full border-2 px-3 py-2"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 						>
 							<option value="light">Light</option>
 							<option value="normal">Normal</option>
@@ -205,7 +200,7 @@
 						value={selectedItem.props.text}
 						oninput={(e) => onUpdateProp(selectedItem.id, 'text', e.currentTarget.value)}
 						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
+						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					/>
 				</div>
 				<div>
@@ -216,9 +211,9 @@
 						value={selectedItem.props.size}
 						onchange={(e) => onUpdateProp(selectedItem.id, 'size', parseInt(e.currentTarget.value))}
 						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
+						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
-						{#each [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48] as s}
+						{#each [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48] as s (s)}
 							<option value={s}>{s}px</option>
 						{/each}
 					</select>
@@ -231,7 +226,7 @@
 						value={selectedItem.props.weight}
 						onchange={(e) => onUpdateProp(selectedItem.id, 'weight', e.currentTarget.value)}
 						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
+						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						<option value="light">Light</option>
 						<option value="normal">Normal</option>
@@ -250,7 +245,7 @@
 						value={selectedItem.props.text}
 						oninput={(e) => onUpdateProp(selectedItem.id, 'text', e.currentTarget.value)}
 						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
+						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					/>
 				</div>
 			</div>
@@ -265,7 +260,7 @@
 						value={selectedItem.props.label}
 						oninput={(e) => onUpdateProp(selectedItem.id, 'label', e.currentTarget.value)}
 						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
+						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					/>
 				</div>
 				<div>
@@ -276,7 +271,7 @@
 						value={selectedItem.props.unit}
 						onchange={(e) => onUpdateProp(selectedItem.id, 'unit', e.currentTarget.value)}
 						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
+						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
 						<option value="°C">°C (Celsius)</option>
 						<option value="°F">°F (Fahrenheit)</option>
@@ -291,7 +286,7 @@
 						value={selectedItem.props.min}
 						oninput={(e) => onUpdateProp(selectedItem.id, 'min', parseInt(e.currentTarget.value))}
 						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
+						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					/>
 				</div>
 				<div>
@@ -303,7 +298,7 @@
 						value={selectedItem.props.max}
 						oninput={(e) => onUpdateProp(selectedItem.id, 'max', parseInt(e.currentTarget.value))}
 						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
+						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					/>
 				</div>
 			</div>
@@ -322,10 +317,28 @@
 								e.currentTarget.value.split('\n').filter((o: string) => o.trim())
 							)}
 						class="h-32 w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
+						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					></textarea>
 				</div>
 			</div>
 		{/if}
 	</div>
 {/if}
+
+<style>
+	.alignment-button {
+		background-color: var(--bg-primary);
+	}
+
+	.alignment-button:hover:not(:disabled) {
+		background-color: var(--bg-secondary);
+	}
+
+	.lock-button {
+		background-color: var(--bg-primary);
+	}
+
+	.lock-button:hover:not(:disabled) {
+		background-color: var(--bg-secondary);
+	}
+</style>

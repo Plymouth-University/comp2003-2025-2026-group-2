@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import type { LayoutData } from './$types';
 
-	let { data, children } = $props<{ data: LayoutData; children: any }>();
+	let { data, children } = $props<{ data: LayoutData; children: import('svelte').Snippet }>();
 
 	let mobileMenuOpen = $state(false);
 

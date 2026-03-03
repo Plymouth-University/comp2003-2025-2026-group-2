@@ -7,7 +7,7 @@
 		if (!/[A-Z]/.test(pwd)) errors.push('an uppercase letter');
 		if (!/[a-z]/.test(pwd)) errors.push('a lowercase letter');
 		if (!/\d/.test(pwd)) errors.push('a digit');
-		if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(pwd)) errors.push('a special character');
+		if (!/[!@#$%^&*()_+\-={};':"\\|,.<>/?]/.test(pwd)) errors.push('a special character');
 		return { valid: errors.length === 0, errors };
 	}
 
@@ -192,11 +192,11 @@
 								{!/\d/.test(newPassword) ? '✗' : '✓'} Digit (0-9)
 							</div>
 							<div
-								class={!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(newPassword)
+								class={!/[!@#$%^&*()_+\-={};':"\\|,.<>/?]/.test(newPassword)
 									? 'text-red-600'
 									: 'text-green-600'}
 							>
-								{!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(newPassword) ? '✗' : '✓'} Special character
+								{!/[!@#$%^&*()_+\-={};':"\\|,.<>/?]/.test(newPassword) ? '✗' : '✓'} Special character
 								(!@#$%^&* etc)
 							</div>
 							<div class={newPassword.length < 8 ? 'text-red-600' : 'text-green-600'}>

@@ -103,7 +103,7 @@ async function proxyRequest(event: RequestEvent) {
 				headers: { 'content-type': contentType || 'text/plain' }
 			});
 		}
-	} catch (error: any) {
+	} catch (error: unknown) {
 		if (error?.status && error?.location) {
 			throw error;
 		}

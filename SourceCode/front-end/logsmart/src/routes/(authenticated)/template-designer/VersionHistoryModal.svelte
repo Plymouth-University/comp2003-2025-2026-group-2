@@ -53,7 +53,7 @@
 				{#if currentVersion && versions.length === 0}
 					<div class="mb-4 rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
 						<div class="flex items-center">
-							<div class="flex-shrink-0">
+							<div class="shrink-0">
 								<svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
 									<path
 										fill-rule="evenodd"
@@ -129,7 +129,7 @@
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
-							{#each versions as version}
+							{#each versions as version (version.version)}
 								<tr>
 									<td
 										class="px-6 py-4 text-sm font-medium whitespace-nowrap text-gray-900 dark:text-white"

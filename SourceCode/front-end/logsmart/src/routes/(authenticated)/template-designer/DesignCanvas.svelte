@@ -31,7 +31,7 @@
 		selectedItemId: string | null;
 		canvasRef: HTMLDivElement | null;
 		branchId?: string | null;
-		branches?: any[];
+		branches?: { id: string; name: string }[];
 		canManageCompany?: boolean;
 		onSave: () => void;
 		onDeleteSelected: () => void;
@@ -159,23 +159,22 @@
 								class="h-full w-full border-2 border-l-0 border-border-primary bg-bg-primary px-4 py-2 text-sm text-text-primary italic"
 							/>
 						</div>
-					{:else}
-						<div class="mb-4 grow">
-							<label for="branch-select" class="sr-only">Branch visibility</label>
-							<select
-								id="branch-select"
-								bind:value={branchId}
-								class="h-full w-full border-2 border-l-0 border-border-primary bg-bg-primary px-4 py-2 text-sm text-text-primary"
-							>
-								{#if canManageCompany}
-									<option value={null}>Company Wide Visibility</option>
-								{/if}
-								{#each branches as branch}
-									<option value={branch.id}>{branch.name}</option>
-								{/each}
-							</select>
-						</div>
 					{/if}
+					<div class="mb-4 grow">
+						<label for="branch-select" class="sr-only">Branch visibility</label>
+						<select
+							id="branch-select"
+							bind:value={branchId}
+							class="h-full w-full border-2 border-l-0 border-border-primary bg-bg-primary px-4 py-2 text-sm text-text-primary"
+						>
+							{#if canManageCompany}
+								<option value="company">Company Wide Visibility</option>
+							{/if}
+							{#each branches as branch (branch.id)}
+								<option value={branch.id}>{branch.name}</option>
+							{/each}
+						</select>
+					</div>
 				</div>
 
 				<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -243,13 +242,13 @@
 					{/each}
 
 					{#if isDragging}
-						{#each snapLines.x as lineX}
+						{#each snapLines.x as lineX (lineX)}
 							<div
 								class="snap-line-vertical pointer-events-none absolute top-0 bottom-0 w-px"
 								style="left: {lineX}px; background-color: #3b82f6;"
 							></div>
 						{/each}
-						{#each snapLines.y as lineY}
+						{#each snapLines.y as lineY (lineY)}
 							<div
 								class="snap-line-horizontal pointer-events-none absolute right-0 left-0 h-px"
 								style="top: {lineY}px; background-color: #3b82f6;"
@@ -279,6 +278,11 @@
 	.btn-delete:active {
 		background-color: #ac2925;
 	}
+	@media (prefers-color-scheme: dark) {
+		.btn-delete:hover {
+			background-color: #c12e2a;
+		}
+	}
 
 	.btn-save {
 		background-color: #337ab7;
@@ -289,6 +293,11 @@
 	}
 	.btn-save:active:not(:disabled) {
 		background-color: #204d74;
+	}
+	@media (prefers-color-scheme: dark) {
+		.btn-save:hover:not(:disabled) {
+			background-color: #275f8c;
+		}
 	}
 
 	.btn-snap-on {
@@ -302,6 +311,11 @@
 	.btn-snap-on:active {
 		background-color: #1a5a1a;
 	}
+	@media (prefers-color-scheme: dark) {
+		.btn-snap-on:hover {
+			background-color: #226a22;
+		}
+	}
 
 	.btn-snap-off {
 		background-color: #6c757d;
@@ -314,6 +328,11 @@
 	.btn-snap-off:active {
 		background-color: #4e555b;
 	}
+	@media (prefers-color-scheme: dark) {
+		.btn-snap-off:hover {
+			background-color: #596167;
+		}
+	}
 
 	.btn-history {
 		background-color: #607d8b;
@@ -324,5 +343,10 @@
 	}
 	.btn-history:active {
 		background-color: #455a64;
+	}
+	@media (prefers-color-scheme: dark) {
+		.btn-history:hover {
+			background-color: #536d79;
+		}
 	}
 </style>

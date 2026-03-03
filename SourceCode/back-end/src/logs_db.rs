@@ -336,8 +336,9 @@ pub async fn update_template(
     schedule: Option<&Schedule>,
     layout: Option<&TemplateLayout>,
     version_name: Option<String>,
+    branch_id: Option<Option<&str>>,
 ) -> Result<()> {
-    if schedule.is_none() && layout.is_none() && version_name.is_none() {
+    if schedule.is_none() && layout.is_none() && version_name.is_none() && branch_id.is_none() {
         return Ok(());
     }
     let db = client.database("logs_db");
@@ -358,6 +359,13 @@ pub async fn update_template(
     }
     if let Some(name) = version_name {
         set_doc.insert("version_name", name);
+    }
+    if let Some(branch_id) = branch_id {
+        let branch_value = match branch_id {
+            Some(branch_id) => mongodb::bson::Bson::String(branch_id.to_string()),
+            None => mongodb::bson::Bson::Null,
+        };
+        set_doc.insert("branch_id", branch_value);
     }
     set_doc.insert("updated_at", mongodb::bson::to_bson(&chrono::Utc::now())?);
 
@@ -384,7 +392,16 @@ pub async fn update_template_with_version(
 ) -> Result<()> {
     // This is now redundant given update_template handles versioning,
     // but we can keep the original signature compatible by forwarding
-    update_template(client, template_name, company_id, schedule, layout, None).await
+    update_template(
+        client,
+        template_name,
+        company_id,
+        schedule,
+        layout,
+        None,
+        None,
+    )
+    .await
 }
 
 /// Renames a log template.

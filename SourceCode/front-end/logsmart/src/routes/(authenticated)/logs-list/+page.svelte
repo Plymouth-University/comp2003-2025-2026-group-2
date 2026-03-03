@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import ClockInOut from '$lib/components/ClockInOut.svelte';
+	import { SvelteDate } from 'svelte/reactivity';
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -13,15 +14,15 @@
 	const sortedPastLogs = $derived(
 		data.pastLogs
 			? [...data.pastLogs].sort((a, b) => {
-					const dateA = new Date(a.period);
-					const dateB = new Date(b.period);
+					const dateA = new SvelteDate(a.period);
+					const dateB = new SvelteDate(b.period);
 					return dateB.getTime() - dateA.getTime();
 				})
 			: []
 	);
 
 	const dueTodayTemplateNames = $derived(
-		new Set(data.dueToday?.map((form: any) => form.template_name) || [])
+		new Set(data.dueToday?.map((form) => form.template_name) || [])
 	);
 
 	const sortedAllLogs = $derived(
@@ -29,20 +30,20 @@
 			? [...data.allLogs]
 					.filter((log) => !dueTodayTemplateNames.has(log.template_name))
 					.sort((a, b) => {
-						const dateA = new Date(a.period);
-						const dateB = new Date(b.period);
+						const dateA = new SvelteDate(a.period);
+						const dateB = new SvelteDate(b.period);
 						return dateB.getTime() - dateA.getTime();
 					})
 			: []
 	);
 
 	function formatDate(dateString: string): string {
-		const date = new Date(dateString);
-		const now = new Date();
-		const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-		const yesterday = new Date(today);
+		const date = new SvelteDate(dateString);
+		const now = new SvelteDate();
+		const today = new SvelteDate(now.getFullYear(), now.getMonth(), now.getDate());
+		const yesterday = new SvelteDate(today);
 		yesterday.setDate(yesterday.getDate() - 1);
-		const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+		const dateOnly = new SvelteDate(date.getFullYear(), date.getMonth(), date.getDate());
 
 		if (dateOnly.getTime() === today.getTime()) {
 			return date.toLocaleTimeString('en-GB', {
@@ -61,7 +62,7 @@
 	}
 
 	function formatFullDateTime(dateString: string): string {
-		const date = new Date(dateString);
+		const date = new SvelteDate(dateString);
 		return date.toLocaleString('en-GB', {
 			day: '2-digit',
 			month: '2-digit',
@@ -127,10 +128,6 @@
 			alert('Error unsubmitting log');
 		}
 	}
-
-	function handleEditLog(entryId: string) {
-		window.location.href = `/log-template?entry=${encodeURIComponent(entryId)}&mode=edit`;
-	}
 </script>
 
 <svelte:head>
@@ -160,7 +157,7 @@
 					</h2>
 					{#if data.dueToday && data.dueToday.length > 0}
 						<div class="space-y-2">
-							{#each data.dueToday as form}
+							{#each data.dueToday as form (form.template_name + form.period)}
 								<div
 									class="flex items-center justify-between rounded border-2 p-4"
 									style="background-color: var(--bg-primary); border-color: var(--border-primary);"
@@ -212,7 +209,7 @@
 					<h2 class="mb-4 text-3xl font-bold" style="color: var(--text-primary);">Past Logs</h2>
 					{#if sortedPastLogs && sortedPastLogs.length > 0}
 						<div class="space-y-2">
-							{#each sortedPastLogs as log}
+							{#each sortedPastLogs as log (log.id)}
 								<div
 									class="flex items-center justify-between rounded border-2 p-4"
 									style="background-color: var(--bg-primary); border-color: var(--border-primary);"
@@ -263,7 +260,7 @@
 					</h2>
 					{#if data.dueToday && data.dueToday.length > 0}
 						<div class="space-y-2">
-							{#each data.dueToday as form}
+							{#each data.dueToday as form (form.template_name + form.period)}
 								<div
 									class="flex items-center justify-between rounded border-2 p-4"
 									style="background-color: var(--bg-primary); border-color: var(--border-primary);"
@@ -315,7 +312,7 @@
 					<h2 class="mb-4 text-3xl font-bold" style="color: var(--text-primary);">All Logs</h2>
 					{#if sortedAllLogs && sortedAllLogs.length > 0}
 						<div class="space-y-2">
-							{#each sortedAllLogs as log}
+							{#each sortedAllLogs as log (log.id)}
 								<div
 									class="flex items-center justify-between rounded border-2 p-4"
 									style="background-color: var(--bg-primary); border-color: var(--border-primary);"

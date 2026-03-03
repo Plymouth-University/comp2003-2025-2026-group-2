@@ -1026,6 +1026,7 @@ export interface components {
 			template_name: string;
 		};
 		GetTemplateResponse: {
+			branch_id?: string | null;
 			template_layout: components['schemas']['Vec'];
 			template_name: string;
 			/** Format: int32 */
@@ -1275,6 +1276,8 @@ export interface components {
 			last_name: string;
 		};
 		UpdateTemplateRequest: {
+			/** @example branch-uuid-here */
+			branch_id?: string | null;
 			schedule?: null | components['schemas']['Schedule'];
 			template_layout?: null | components['schemas']['Vec'];
 			/** @example Kitchen Daily Log */
@@ -2428,6 +2431,8 @@ export interface operations {
 				from?: string | null;
 				/** @description ISO 8601 end date filter (inclusive) */
 				to?: string | null;
+				/** @description Branch ID filter (optional, for `company_manager` to filter by specific branch) */
+				branch_id?: string | null;
 			};
 			header?: never;
 			path?: never;

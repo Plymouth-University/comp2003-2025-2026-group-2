@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { ChildProcess, spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { mkdtempSync, rmSync, writeFileSync } from 'fs';
@@ -13,8 +13,8 @@ const FRONTEND_URL = `http://localhost:${FRONTEND_PORT}`;
 const GOOGLE_ISSUER_URL = 'http://localhost:8080/google';
 const MAILHOG_API_URL = process.env.MAILHOG_API_URL || 'http://localhost:8025/api';
 const PID_FILE = path.join(os.tmpdir(), 'logsmart-test-pids.json');
-const backendProcess: any = null;
-let frontendProcess: any = null;
+const backendProcess: ChildProcess | null = null;
+let frontendProcess: ChildProcess | null = null;
 let tempDir: string | null = null;
 
 async function waitForServer(url: string, timeout = 1200000): Promise<void> {
@@ -26,7 +26,7 @@ async function waitForServer(url: string, timeout = 1200000): Promise<void> {
 				console.log(`✓ Server is ready at ${url}`);
 				return;
 			}
-		} catch (e) {}
+		} catch {}
 		await new Promise((resolve) => setTimeout(resolve, 500));
 	}
 	throw new Error(`Server did not start within ${timeout}ms at ${url}`);
@@ -52,7 +52,7 @@ async function checkMongoDB(timeout = 5000): Promise<void> {
 			});
 			console.log('✓ MongoDB is running');
 			return;
-		} catch (e) {}
+		} catch {}
 		await new Promise((resolve) => setTimeout(resolve, 500));
 	}
 	throw new Error(
@@ -69,7 +69,7 @@ async function checkMailhog(timeout = 5000): Promise<void> {
 				console.log('✓ MailHog is running');
 				return;
 			}
-		} catch (e) {}
+		} catch {}
 		await new Promise((resolve) => setTimeout(resolve, 500));
 	}
 	throw new Error(
@@ -87,36 +87,14 @@ async function checkMockOAuth(timeout = 30000): Promise<void> {
 				return;
 			}
 			console.log(`Mock OAuth check: HTTP ${response.status}`);
-		} catch (e: any) {
-			console.log(`Mock OAuth check error: ${e.message}`);
+		} catch (e: unknown) {
+			console.log(`Mock OAuth check error: ${e instanceof Error ? e.message : 'unknown'}`);
 		}
 		await new Promise((resolve) => setTimeout(resolve, 500));
 	}
 	throw new Error(
 		'Mock OAuth server is not running at http://localhost:8080. Please start it with docker-compose.'
 	);
-}
-
-async function dropAllTables(timeout = 5000): Promise<void> {
-	try {
-		const { Client } = await import('pg');
-		const client = new Client({
-			host: '127.0.0.1',
-			port: 5432,
-			user: 'admin',
-			password: 'adminpassword',
-			database: 'logsmartdb'
-		});
-
-		await client.connect();
-		await client.query('DROP SCHEMA public CASCADE');
-		await client.query('CREATE SCHEMA public');
-		await client.query('GRANT ALL ON SCHEMA public TO public');
-		await client.end();
-		console.log('✓ All database tables dropped');
-	} catch (error) {
-		console.warn('⚠ Could not drop database tables:', error);
-	}
 }
 
 async function checkPostgres(timeout = 5000): Promise<void> {
@@ -139,7 +117,7 @@ async function checkPostgres(timeout = 5000): Promise<void> {
 			});
 			console.log('✓ PostgreSQL is running');
 			return;
-		} catch (e) {}
+		} catch {}
 		await new Promise((resolve) => setTimeout(resolve, 500));
 	}
 	throw new Error(
@@ -201,7 +179,7 @@ async function globalSetup() {
 	await checkPostgres();
 
 	// console.log('Dropping all database tables...');
-	// await dropAllTables();
+	// await _dropAllTables();
 
 	console.log('Checking backend service (ensure containers are started)...');
 	try {
@@ -235,17 +213,17 @@ async function globalSetup() {
 		if (backendProcess?.pid) {
 			try {
 				process.kill(backendProcess.pid, 'SIGTERM');
-			} catch (e) {}
+			} catch {}
 		}
 		if (frontendProcess?.pid) {
 			try {
 				process.kill(frontendProcess.pid, 'SIGTERM');
-			} catch (e) {}
+			} catch {}
 		}
 		if (tempDir) {
 			try {
 				rmSync(tempDir, { recursive: true, force: true });
-			} catch (e) {}
+			} catch {}
 		}
 	};
 

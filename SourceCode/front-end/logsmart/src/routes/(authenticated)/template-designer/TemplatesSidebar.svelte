@@ -115,4 +115,9 @@
 	.btn-create:active {
 		background-color: #398439;
 	}
+	@media (prefers-color-scheme: dark) {
+		.btn-create:hover {
+			background-color: #439c43;
+		}
+	}
 </style>

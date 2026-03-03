@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { register } from './utils';
 
 test.describe('Passkey Management', () => {
-	let userData: any;
+	let userData: unknown;
 
 	test.beforeEach(async ({ browser }) => {
 		userData = await register(browser);

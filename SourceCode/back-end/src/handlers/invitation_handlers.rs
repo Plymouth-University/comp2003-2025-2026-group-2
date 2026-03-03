@@ -95,17 +95,10 @@ pub async fn invite_user(
         }
     }
 
-    let company_id = user.company_id.ok_or((
-        StatusCode::FORBIDDEN,
-        Json(json!({ "error": "User is not associated with a company" })),
-    ))?;
-
     let (invitation_id, expires_at) = services::InvitationService::send_invitation(
         &state.postgres,
-        user.id,
-        user.email,
+        &user,
         payload.email.clone(),
-        company_id,
         payload.role.unwrap_or(db::UserRole::Staff),
         payload.branch_id,
         Some(ip_address),

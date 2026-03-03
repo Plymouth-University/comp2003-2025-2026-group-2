@@ -2,6 +2,7 @@
 	import type { PageData } from './$types';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import { SvelteMap, SvelteDate, SvelteURLSearchParams } from 'svelte/reactivity';
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -13,7 +14,7 @@
 
 	// Create mapping from user_id to branch_id for client-side filtering
 	const userToBranchMap = $derived.by(() => {
-		const map = new Map<string, string | null>();
+		const map = new SvelteMap<string, string | null>();
 		for (const member of members) {
 			map.set(member.id, member.branch_id);
 		}
@@ -27,7 +28,7 @@
 	const yyyy = today.getFullYear();
 	const currentDateFormatted = `${dd}/${mm}/${yyyy}`;
 
-	const tomorrow = new Date(today);
+	const tomorrow = new SvelteDate(today);
 	tomorrow.setDate(tomorrow.getDate() + 1);
 	const tomorrowDD = String(tomorrow.getDate()).padStart(2, '0');
 	const tomorrowMM = String(tomorrow.getMonth() + 1).padStart(2, '0');
@@ -76,7 +77,7 @@
 
 		// Filter by branch (client-side)
 		if (selectedBranchId && selectedBranchId.trim() !== '') {
-			events = events.filter((e: any) => {
+			events = events.filter((e) => {
 				const userBranchId = userToBranchMap.get(e.user_id);
 				return userBranchId === selectedBranchId;
 			});
@@ -86,7 +87,7 @@
 		if (!searchQuery.trim()) return events;
 		const q = searchQuery.toLowerCase();
 		return events.filter(
-			(e: any) =>
+			(e) =>
 				e.first_name.toLowerCase().includes(q) ||
 				e.last_name.toLowerCase().includes(q) ||
 				e.email.toLowerCase().includes(q)
@@ -94,9 +95,6 @@
 	});
 
 	// --- Date picker helpers ---
-	function updateDateFromText(value: string, isFrom: boolean) {
-		// no-op for now, value is bound directly
-	}
 
 	function toggleDatePicker(isFrom: boolean) {
 		activePickerIsFrom = isFrom;
@@ -232,12 +230,12 @@
 
 	// --- Apply / Clear ---
 	function applyDateFilter() {
-		const params = new URLSearchParams();
+		const params = new SvelteURLSearchParams();
 		const fromISO = displayToISO(dateFrom);
 		const toISO = displayToISO(dateTo);
-		if (fromISO) params.set('from', new Date(fromISO).toISOString());
+		if (fromISO) params.set('from', new SvelteDate(fromISO).toISOString());
 		if (toISO) {
-			const end = new Date(toISO);
+			const end = new SvelteDate(toISO);
 			end.setHours(23, 59, 59, 999);
 			params.set('to', end.toISOString());
 		}
@@ -373,7 +371,7 @@
 						style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary); min-width: 180px;"
 					>
 						<option value="">All Branches</option>
-						{#each branches as branch}
+						{#each branches as branch (branch.id)}
 							<option value={branch.id}>{branch.name}</option>
 						{/each}
 					</select>
@@ -391,7 +389,6 @@
 							id="filter-from"
 							type="text"
 							bind:value={dateFrom}
-							oninput={(e) => updateDateFromText(e.currentTarget.value, true)}
 							placeholder="DD/MM/YYYY"
 							class="border-2 px-3 py-2 text-sm"
 							style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary); width: 140px;"
@@ -470,14 +467,14 @@
 										</button>
 									</div>
 									<div class="mb-2 grid grid-cols-7 gap-1">
-										{#each ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as day}
+										{#each ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as day (day)}
 											<div class="py-2 text-center text-sm font-medium" style="color: #A1A6B4;">
 												{day}
 											</div>
 										{/each}
 									</div>
 									<div class="grid grid-cols-7 gap-1">
-										{#each getCalendarDays(calendarDate) as day}
+										{#each getCalendarDays(calendarDate) as day (day ?? 'empty')}
 											{#if day === null}
 												<div class="aspect-square"></div>
 											{:else}
@@ -542,7 +539,7 @@
 										</button>
 									</div>
 									<div class="grid grid-cols-3 gap-2">
-										{#each monthNamesShort as month, index}
+										{#each monthNamesShort as month, index (index)}
 											<button
 												type="button"
 												onclick={() => selectMonth(index)}
@@ -598,7 +595,7 @@
 										</button>
 									</div>
 									<div class="grid grid-cols-3 gap-2">
-										{#each getYearRange() as year}
+										{#each getYearRange() as year (year)}
 											<button
 												type="button"
 												onclick={() => selectYear(year)}
@@ -630,7 +627,6 @@
 							id="filter-to"
 							type="text"
 							bind:value={dateTo}
-							oninput={(e) => updateDateFromText(e.currentTarget.value, false)}
 							placeholder="DD/MM/YYYY"
 							class="border-2 px-3 py-2 text-sm"
 							style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary); width: 140px;"
@@ -709,14 +705,14 @@
 										</button>
 									</div>
 									<div class="mb-2 grid grid-cols-7 gap-1">
-										{#each ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as day}
+										{#each ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as day (day)}
 											<div class="py-2 text-center text-sm font-medium" style="color: #A1A6B4;">
 												{day}
 											</div>
 										{/each}
 									</div>
 									<div class="grid grid-cols-7 gap-1">
-										{#each getCalendarDays(calendarDate) as day}
+										{#each getCalendarDays(calendarDate) as day (day ?? 'empty')}
 											{#if day === null}
 												<div class="aspect-square"></div>
 											{:else}
@@ -781,7 +777,7 @@
 										</button>
 									</div>
 									<div class="grid grid-cols-3 gap-2">
-										{#each monthNamesShort as month, index}
+										{#each monthNamesShort as month, index (index)}
 											<button
 												type="button"
 												onclick={() => selectMonth(index)}
@@ -837,7 +833,7 @@
 										</button>
 									</div>
 									<div class="grid grid-cols-3 gap-2">
-										{#each getYearRange() as year}
+										{#each getYearRange() as year (year)}
 											<button
 												type="button"
 												onclick={() => selectYear(year)}

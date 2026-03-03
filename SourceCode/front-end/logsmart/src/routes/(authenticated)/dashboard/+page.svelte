@@ -216,7 +216,7 @@
 									<div style="color: var(--text-secondary);">No logs due today</div>
 								{:else}
 									<div class="space-y-3">
-										{#each todaysLogs as log}
+										{#each todaysLogs as log (log.template_name + log.period)}
 											<div
 												class="flex items-center justify-between gap-3 rounded border-2 p-3"
 												style="border-color: var(--border-primary); background-color: var(--bg-secondary);"

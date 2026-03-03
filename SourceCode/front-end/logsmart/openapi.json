@@ -915,6 +915,13 @@
 						"description": "ISO 8601 end date filter (inclusive)",
 						"required": false,
 						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "branch_id",
+						"in": "query",
+						"description": "Branch ID filter (optional, for `company_manager` to filter by specific branch)",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
 					}
 				],
 				"responses": {
@@ -2153,6 +2160,7 @@
 				"type": "object",
 				"required": ["template_name", "template_layout", "version"],
 				"properties": {
+					"branch_id": { "type": ["string", "null"] },
 					"template_layout": { "$ref": "#/components/schemas/Vec" },
 					"template_name": { "type": "string" },
 					"version": { "type": "integer", "format": "int32", "minimum": 0 },
@@ -2531,6 +2539,7 @@
 				"type": "object",
 				"required": ["template_name"],
 				"properties": {
+					"branch_id": { "type": ["string", "null"], "example": "branch-uuid-here" },
 					"schedule": {
 						"oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/Schedule" }]
 					},
