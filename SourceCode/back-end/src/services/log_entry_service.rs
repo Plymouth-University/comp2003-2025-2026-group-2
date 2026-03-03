@@ -56,7 +56,9 @@ impl LogEntryService {
                 }
             }
             db::UserRole::Staff => {
-                if !user.is_readonly_hq() && Some(template.branch_id.as_ref()) != Some(user.branch_id.as_ref()) {
+                if !user.is_readonly_hq()
+                    && Some(template.branch_id.as_ref()) != Some(user.branch_id.as_ref())
+                {
                     return Err((
                         StatusCode::FORBIDDEN,
                         json!({ "error": "Template is not available for your branch" }),
