@@ -46,16 +46,9 @@ impl LogEntryService {
                 json!({ "error": "Template not found" }),
             ))?;
 
-        let Some(template_branch_id) = &template.branch_id else {
-            return Err((
-                StatusCode::FORBIDDEN,
-                json!({ "error": "Template is not assigned to any branch" }),
-            ));
-        };
-
         match user.role {
             db::UserRole::BranchManager => {
-                if Some(template_branch_id) != user.branch_id.as_ref() {
+                if Some(template.branch_id.as_ref()) != Some(user.branch_id.as_ref()) {
                     return Err((
                         StatusCode::FORBIDDEN,
                         json!({ "error": "Template is not available for your branch" }),
@@ -63,7 +56,7 @@ impl LogEntryService {
                 }
             }
             db::UserRole::Staff => {
-                if !user.is_readonly_hq() && Some(template_branch_id) != user.branch_id.as_ref() {
+                if !user.is_readonly_hq() && Some(template.branch_id.as_ref()) != Some(user.branch_id.as_ref()) {
                     return Err((
                         StatusCode::FORBIDDEN,
                         json!({ "error": "Template is not available for your branch" }),
@@ -114,7 +107,7 @@ impl LogEntryService {
             entry_id: entry_id.clone(),
             template_name: template_name.to_string(),
             company_id: company_id.clone(),
-            branch_id: user.branch_id.clone(),
+            branch_id: template.branch_id.clone(),
             user_id: user.id.clone(),
             entry_data: serde_json::json!({}),
             created_at: now,
