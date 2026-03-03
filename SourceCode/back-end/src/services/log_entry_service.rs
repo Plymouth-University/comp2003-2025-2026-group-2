@@ -32,7 +32,7 @@ impl LogEntryService {
             json!({ "error": "User is not associated with a company" }),
         ))?;
 
-        let template = logs_db::get_template_by_name(&state.mongodb, template_name, &company_id)
+        let template = logs_db::get_template_by_name(&state.mongodb, template_name, company_id)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to get template: {:?}", e);
@@ -80,7 +80,7 @@ impl LogEntryService {
 
         let has_entry = logs_db::has_entry_for_current_period(
             &state.mongodb,
-            &company_id,
+            company_id,
             template_name,
             &template.schedule.frequency,
         )

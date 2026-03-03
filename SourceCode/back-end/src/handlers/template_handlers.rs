@@ -201,10 +201,13 @@ pub async fn update_template(
         payload.version_name.clone(),
         user.branch_id.as_deref(),
         user.is_company_manager(),
-        payload
-            .branch_id
-            .as_ref()
-            .map(|branch| if branch == "company" { None } else { Some(branch.as_str()) }),
+        payload.branch_id.as_ref().map(|branch| {
+            if branch == "company" {
+                None
+            } else {
+                Some(branch.as_str())
+            }
+        }),
     )
     .await
     .map_err(|(status, err)| (status, Json(err)))?;

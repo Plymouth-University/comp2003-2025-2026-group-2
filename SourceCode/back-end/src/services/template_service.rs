@@ -85,7 +85,13 @@ impl TemplateService {
         company_id: &str,
         template_name: &str,
     ) -> Result<
-        (String, logs_db::TemplateLayout, u16, Option<String>, Option<String>),
+        (
+            String,
+            logs_db::TemplateLayout,
+            u16,
+            Option<String>,
+            Option<String>,
+        ),
         (StatusCode, serde_json::Value),
     > {
         let template = logs_db::get_template_by_name(&state.mongodb, template_name, company_id)
@@ -206,11 +212,11 @@ impl TemplateService {
             }
         }
 
-		let resolved_branch_id = if is_company_manager {
-			target_branch_id
-		} else {
-			None
-		};
+        let resolved_branch_id = if is_company_manager {
+            target_branch_id
+        } else {
+            None
+        };
 
         // 2. Archive current state as a version
         let version_doc = logs_db::TemplateVersionDocument {

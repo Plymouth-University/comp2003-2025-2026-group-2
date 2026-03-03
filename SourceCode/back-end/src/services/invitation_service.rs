@@ -49,7 +49,7 @@ impl InvitationService {
             json!({ "error": "Admin user is not associated with a company" }),
         ))?;
 
-        let company_name = db::get_company_by_id(db_pool, &company_id)
+        let company_name = db::get_company_by_id(db_pool, company_id)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to fetch company name: {:?}", e);

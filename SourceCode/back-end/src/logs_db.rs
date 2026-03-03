@@ -392,7 +392,16 @@ pub async fn update_template_with_version(
 ) -> Result<()> {
     // This is now redundant given update_template handles versioning,
     // but we can keep the original signature compatible by forwarding
-    update_template(client, template_name, company_id, schedule, layout, None, None).await
+    update_template(
+        client,
+        template_name,
+        company_id,
+        schedule,
+        layout,
+        None,
+        None,
+    )
+    .await
 }
 
 /// Renames a log template.
