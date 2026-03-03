@@ -1,6 +1,14 @@
 import { redirect } from '@sveltejs/kit';
 
-export const load = async ({ parent, fetch, cookies }: any) => {
+export const load = async ({
+	parent,
+	fetch,
+	cookies
+}: {
+	parent: () => Promise<{ user: unknown }>;
+	fetch: typeof globalThis.fetch;
+	cookies: { get: (name: string) => string | undefined };
+}) => {
 	const { user } = await parent();
 	const token = cookies.get('ls-token');
 

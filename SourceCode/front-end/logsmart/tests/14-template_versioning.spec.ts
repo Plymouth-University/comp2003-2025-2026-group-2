@@ -98,7 +98,6 @@ test.describe('Template Versioning', () => {
 		// Canvas should show V1 content
 		// We need to click the component to see its properties
 		// Assuming the canvas items are reset, the first item should correspond to the text input we added
-		const canvas = page.locator('canvas, .canvas, [role="main"]').first();
 
 		// Wait for reload (loadTemplate is async)
 		await page.waitForTimeout(1000);

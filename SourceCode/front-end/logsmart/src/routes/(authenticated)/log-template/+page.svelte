@@ -22,13 +22,13 @@
 			: rawTemplateName
 	);
 
-	let entryData = $state<Record<number, any>>({});
+	let entryData = $state<Record<number, string | number | boolean>>({});
 
 	$effect(() => {
 		if (data.entry?.entry_data) {
 			entryData = { ...data.entry.entry_data };
 		} else if (templateLayout.length > 0) {
-			const initialData: Record<number, any> = {};
+			const initialData: Record<number, string | number | boolean> = {};
 			templateLayout.forEach((field: any, index: number) => {
 				if (field.field_type === 'temperature') {
 					initialData[index] = field.props.value !== undefined ? parseFloat(field.props.value) : 0;
@@ -46,10 +46,6 @@
 
 	let mode = $derived(data.mode || 'view');
 	let entryId = $derived(data.entryId || data.entry?.id);
-
-	function handleValueChange(fieldIndex: number, newValue: any) {
-		entryData[fieldIndex] = newValue;
-	}
 
 	async function handleSave() {
 		if (!entryId) return;
@@ -92,7 +88,7 @@
 			});
 
 			if (response.ok) {
-				const result = await response.json();
+				await response.json();
 
 				alert('Log submitted successfully');
 				await invalidateAll();
@@ -148,7 +144,7 @@
 			{/if}
 
 			<div class="space-y-6">
-				{#each templateLayout as field, index}
+				{#each templateLayout as field, index (field.field_id || index)}
 					{#if field.field_type === 'temperature' && entryData[index] !== undefined}
 						<TemperaturePicker
 							bind:value={entryData[index]}

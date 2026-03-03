@@ -1,14 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
-	import { api } from '$lib/api';
 
 	let token = $derived(page.url.searchParams.get('token'));
 	let isLoading = $state(true);
 	let isDeleting = $state(false);
 	let error = $state<string | null>(null);
 	let success = $state<string | null>(null);
-	let branchDetails = $state<{ name: string; id: string } | null>(null);
 
 	$effect(() => {
 		if (!token) {

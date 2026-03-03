@@ -25,7 +25,7 @@ export const load = async ({ cookies, fetch }: RequestEvent) => {
 		return {
 			user: userData
 		};
-	} catch (error) {
+	} catch {
 		cookies.delete('ls-token', { path: '/' });
 		throw redirect(303, '/login');
 	}

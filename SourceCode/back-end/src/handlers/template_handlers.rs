@@ -101,7 +101,7 @@ pub async fn get_template(
         Json(json!({ "error": "User is not associated with a company" })),
     ))?;
 
-    let (template_name, template_layout, version, version_name) =
+    let (template_name, template_layout, version, version_name, branch_id) =
         services::TemplateService::get_template(&state, company_id, &payload.template_name)
             .await
             .map_err(|(status, err)| (status, Json(err)))?;
@@ -111,6 +111,7 @@ pub async fn get_template(
         template_layout,
         version,
         version_name,
+        branch_id,
     }))
 }
 
@@ -200,6 +201,10 @@ pub async fn update_template(
         payload.version_name.clone(),
         user.branch_id.as_deref(),
         user.is_company_manager(),
+        payload
+            .branch_id
+            .as_ref()
+            .map(|branch| if branch == "company" { None } else { Some(branch.as_str()) }),
     )
     .await
     .map_err(|(status, err)| (status, Json(err)))?;

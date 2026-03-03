@@ -1,8 +1,24 @@
 <script lang="ts">
 	import { api } from '$lib/api';
 	import type { components } from '$lib/api-types';
+	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
 
 	type LogEntry = components['schemas']['LogEntryResponse'];
+	type TemplateField = {
+		field_type?: string;
+		field_id?: string;
+		id?: string;
+		name?: string;
+		props?: {
+			name?: string;
+			id?: string;
+			options?: unknown;
+			label?: string;
+		};
+		options?: unknown;
+		label?: string;
+		[key: string]: unknown;
+	};
 
 	// Get user data from parent layout
 	let { data } = $props();
@@ -12,7 +28,6 @@
 	// Check if user is readonly HQ (staff with no branch) or branch manager
 	let isReadonlyHQ = $derived(user?.role === 'staff' && !user?.branch_id);
 	let isCompanyManager = $derived(user?.role === 'company_manager');
-	let isBranchManager = $derived(user?.role === 'branch_manager');
 	let canSeeBranchFilter = $derived((isCompanyManager || isReadonlyHQ) && branches.length > 0);
 
 	// Branch filter state
@@ -70,7 +85,7 @@
 	let pickerView = $state<'day' | 'month' | 'year'>('day');
 	let slideDirection = $state<'left' | 'right'>('left');
 
-	let calendarDate = $state(new Date());
+	let calendarDate = $state(new SvelteDate());
 	let activePickerIsFrom = $state(true);
 
 	let reportGenerated = $state(false);
@@ -79,32 +94,26 @@
 	let error = $state<string | null>(null);
 	let logEntries = $state<LogEntry[]>([]);
 	let filteredEntries = $state<LogEntry[]>([]);
-	let availableLogTypes = $state<Set<string>>(new Set());
 
 	// Function to normalize field type (handle all text field variants as 'text')
-	function normalizeFieldType(fieldType: any): string {
-		if (
-			!fieldType ||
-			fieldType === 'input' ||
-			fieldType === 'text' ||
-			fieldType === 'text_input' ||
-			fieldType === 'label'
-		)
+	function normalizeFieldType(fieldType: unknown): string {
+		const ft = fieldType as string | undefined | null;
+		if (!ft || ft === 'input' || ft === 'text' || ft === 'text_input' || ft === 'label')
 			return 'text';
-		return fieldType;
+		return ft;
 	}
 
 	// Function to parse entry data and extract readable values
 	function parseEntryData(
 		entryData: unknown,
-		templateLayout: any[],
+		templateLayout: TemplateField[],
 		excludeFieldTypes: string[] = []
 	): string {
 		if (!entryData) return 'No data available';
 
 		try {
 			// Parse the entry data if it's a string
-			let data: any;
+			let data: unknown;
 			if (typeof entryData === 'string') {
 				try {
 					data = JSON.parse(entryData);
@@ -122,8 +131,8 @@
 				// If no template layout, try to display the raw data in a readable format
 				if (typeof data === 'object' && data !== null) {
 					const entries = Object.entries(data)
-						.filter(([key, value]) => value !== null && value !== undefined && value !== '')
-						.map(([key, value]) => `${key}: ${value}`);
+						.filter(([, value]) => value !== null && value !== undefined && value !== '')
+						.map(([k, value]) => `${k}: ${value}`);
 					return entries.length > 0 ? entries.join(', ') : 'No data entered';
 				}
 				return String(data);
@@ -132,7 +141,7 @@
 			const results: string[] = [];
 
 			// Try different possible field identifier patterns
-			templateLayout.forEach((field: any, index: number) => {
+			templateLayout.forEach((field: TemplateField, index: number) => {
 				// Skip fields of excluded types - handle null/undefined as text fields
 				const fieldType = normalizeFieldType(field.field_type);
 				if (excludeFieldTypes.includes(fieldType)) {
@@ -150,13 +159,18 @@
 					index.toString()
 				].filter(Boolean);
 
-				let fieldValue: any;
+				let fieldValue: unknown;
 				let fieldId: string | undefined;
 
 				// Try to find the field value using any of the possible IDs
 				for (const id of possibleIds) {
-					if (data[id] !== undefined && data[id] !== null && data[id] !== '') {
-						fieldValue = data[id];
+					if (
+						id &&
+						(data as Record<string, unknown>)[id] !== undefined &&
+						(data as Record<string, unknown>)[id] !== null &&
+						(data as Record<string, unknown>)[id] !== ''
+					) {
+						fieldValue = (data as Record<string, unknown>)[id];
 						fieldId = id;
 						break;
 					}
@@ -177,7 +191,7 @@
 						const options = field.props?.options || field.options;
 						if (Array.isArray(options)) {
 							const option = options.find(
-								(opt: any) => opt.value === fieldValue || opt.id === fieldValue
+								(opt) => opt.value === fieldValue || opt.id === fieldValue
 							);
 							displayValue = option?.label || option?.text || fieldValue;
 						}
@@ -192,20 +206,20 @@
 			// If no results from template parsing, try to show raw data
 			if (results.length === 0 && typeof data === 'object' && data !== null) {
 				const entries = Object.entries(data)
-					.filter(([key, value]) => value !== null && value !== undefined && value !== '')
-					.map(([key, value]) => `${key}: ${value}`);
+					.filter(([, value]) => value !== null && value !== undefined && value !== '')
+					.map(([k, value]) => `${k}: ${value}`);
 				return entries.length > 0 ? entries.join(', ') : 'No data entered';
 			}
 
 			return results.length > 0 ? results.join(', ') : 'No data entered';
-		} catch (e) {
-			console.error('Error parsing entry data:', e);
+		} catch {
+			console.error('Error parsing entry data:', 'error');
 			return 'Error parsing data';
 		}
 	}
 
 	// Function to categorize log type based on template layout
-	function categorizeLogType(templateLayout: any[]): string {
+	function categorizeLogType(templateLayout: TemplateField[]): string {
 		if (!templateLayout || templateLayout.length === 0) return 'Text Logs';
 
 		const fieldTypes = templateLayout.map((field) => field.field_type).filter(Boolean);
@@ -218,7 +232,7 @@
 	}
 
 	// Function to get field type from a single field
-	function getFieldType(field: any): string {
+	function getFieldType(field: Record<string, unknown>): string {
 		const fieldType = field.field_type;
 		if (fieldType === 'temperature') return 'Temperature Logs';
 		if (fieldType === 'checkbox') return 'Checkbox Logs';
@@ -230,7 +244,7 @@
 	function extractComponents(entries: LogEntry[], excludedFieldTypes: string[]) {
 		const components: Array<{
 			entry: LogEntry;
-			field: any;
+			field: Record<string, unknown>;
 			fieldType: string;
 			fieldData: string;
 			fieldIndex: number;
@@ -239,7 +253,7 @@
 		entries.forEach((entry) => {
 			if (!entry.template_layout) return;
 
-			entry.template_layout.forEach((field: any, index: number) => {
+			entry.template_layout.forEach((field: TemplateField, index: number) => {
 				const fieldType = normalizeFieldType(field.field_type);
 
 				// Skip excluded field types
@@ -265,11 +279,11 @@
 	}
 
 	// Function to parse individual field data
-	function parseFieldData(entryData: unknown, field: any, fieldIndex: number): string {
+	function parseFieldData(entryData: unknown, field: TemplateField, fieldIndex: number): string {
 		if (!entryData) return '';
 
 		try {
-			let data: any;
+			let data: unknown;
 			if (typeof entryData === 'string') {
 				try {
 					data = JSON.parse(entryData);
@@ -283,7 +297,7 @@
 			}
 
 			// Try various field identifiers
-			const possibleIds = [
+			const possibleIds: (string | number)[] = [
 				field.field_id,
 				field.id,
 				field.name,
@@ -291,12 +305,17 @@
 				field.props?.id,
 				`field_${fieldIndex}`,
 				fieldIndex.toString()
-			].filter(Boolean);
+			].filter((id): id is string | number => Boolean(id));
 
-			let fieldValue: any;
+			let fieldValue: unknown;
 			for (const id of possibleIds) {
-				if (data[id] !== undefined && data[id] !== null && data[id] !== '') {
-					fieldValue = data[id];
+				const key = String(id);
+				if (
+					(data as Record<string, unknown>)[key] !== undefined &&
+					(data as Record<string, unknown>)[key] !== null &&
+					(data as Record<string, unknown>)[key] !== ''
+				) {
+					fieldValue = (data as Record<string, unknown>)[key];
 					break;
 				}
 			}
@@ -315,7 +334,8 @@
 				const options = field.props?.options || field.options;
 				if (Array.isArray(options)) {
 					const option = options.find(
-						(opt: any) => opt.value === fieldValue || opt.id === fieldValue
+						(opt: { value?: unknown; id?: unknown; label?: string; text?: string }) =>
+							opt.value === fieldValue || opt.id === fieldValue
 					);
 					displayValue = option?.label || option?.text || fieldValue;
 				}
@@ -323,7 +343,7 @@
 
 			const fieldLabel = field.props?.label || field.label || field.name || `Field ${fieldIndex}`;
 			return `${fieldLabel}: ${displayValue}`;
-		} catch (e) {
+		} catch {
 			return '';
 		}
 	}
@@ -354,7 +374,7 @@
 
 	// Function to check if an entry has any remaining fields after filtering
 	function hasRemainingFields(
-		templateLayout: any[],
+		templateLayout: Record<string, unknown>[],
 		excludeFieldTypes: string[],
 		entryData: unknown = null
 	): boolean {
@@ -405,16 +425,6 @@
 		return '';
 	}
 
-	// Convert YYYY-MM-DD to DD/MM/YYYY
-	function formatToDDMMYYYY(dateStr: string): string {
-		const parts = dateStr.split('-');
-		if (parts.length === 3) {
-			const [year, month, day] = parts;
-			return `${day}/${month}/${year}`;
-		}
-		return '';
-	}
-
 	// Update ISO date when text input changes
 	function updateDateFromText(value: string, isFrom: boolean) {
 		const iso = formatToISO(value);
@@ -437,13 +447,6 @@
 			showDateFromPicker = false;
 		}
 		activePickerIsFrom = isFrom;
-	}
-
-	function handleClickOutside(event: MouseEvent) {
-		const target = event.target as HTMLElement;
-		if (!target.closest('.branch-filter-container')) {
-			showBranchDropdown = false;
-		}
 	}
 
 	// Switch between views
@@ -493,36 +496,36 @@
 
 	// Navigate to previous month
 	function previousMonth() {
-		calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1);
+		calendarDate = new SvelteDate(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 1);
 	}
 
 	// Navigate to next month
 	function nextMonth() {
-		calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1);
+		calendarDate = new SvelteDate(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1);
 	}
 
 	// Navigate to previous year
 	function previousYear() {
-		calendarDate = new Date(calendarDate.getFullYear() - 1, calendarDate.getMonth(), 1);
+		calendarDate = new SvelteDate(calendarDate.getFullYear() - 1, calendarDate.getMonth(), 1);
 	}
 
 	// Navigate to next year
 	function nextYear() {
-		calendarDate = new Date(calendarDate.getFullYear() + 1, calendarDate.getMonth(), 1);
+		calendarDate = new SvelteDate(calendarDate.getFullYear() + 1, calendarDate.getMonth(), 1);
 	}
 
 	// Navigate year range (for year view, show 12 years at a time)
 	function previousYearRange() {
-		calendarDate = new Date(calendarDate.getFullYear() - 12, calendarDate.getMonth(), 1);
+		calendarDate = new SvelteDate(calendarDate.getFullYear() - 12, calendarDate.getMonth(), 1);
 	}
 
 	function nextYearRange() {
-		calendarDate = new Date(calendarDate.getFullYear() + 12, calendarDate.getMonth(), 1);
+		calendarDate = new SvelteDate(calendarDate.getFullYear() + 12, calendarDate.getMonth(), 1);
 	}
 
 	// Select a day
 	function selectDay(day: number) {
-		const selectedDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day);
+		const selectedDate = new SvelteDate(calendarDate.getFullYear(), calendarDate.getMonth(), day);
 		const dd = String(selectedDate.getDate()).padStart(2, '0');
 		const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
 		const yyyy = selectedDate.getFullYear();
@@ -542,19 +545,18 @@
 
 	// Select a month
 	function selectMonth(monthIndex: number) {
-		calendarDate = new Date(calendarDate.getFullYear(), monthIndex, 1);
+		calendarDate = new SvelteDate(calendarDate.getFullYear(), monthIndex, 1);
 		switchToDayView();
 	}
 
 	// Select a year
 	function selectYear(year: number) {
-		calendarDate = new Date(year, calendarDate.getMonth(), 1);
+		calendarDate = new SvelteDate(year, calendarDate.getMonth(), 1);
 		switchToMonthView();
 	}
 
 	// Check if a day is selected
 	function isSelectedDay(day: number): boolean {
-		const checkDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day);
 		const formatted = `${String(day).padStart(2, '0')}/${String(calendarDate.getMonth() + 1).padStart(2, '0')}/${calendarDate.getFullYear()}`;
 
 		if (activePickerIsFrom) {
@@ -639,9 +641,9 @@
 		const excludedFieldTypes = getExcludedFieldTypes();
 		filteredEntries = logEntries.filter((entry) => {
 			// Filter by date range
-			const entryDate = new Date(entry.created_at);
-			const fromDate = new Date(dateFromISO);
-			const toDate = new Date(dateToISO);
+			const entryDate = new SvelteDate(entry.created_at);
+			const fromDate = new SvelteDate(dateFromISO);
+			const toDate = new SvelteDate(dateToISO);
 			toDate.setHours(23, 59, 59, 999);
 			const isInDateRange = entryDate >= fromDate && entryDate <= toDate;
 
@@ -658,7 +660,7 @@
 		// Sort entries based on arrange preference
 		if (arrangeBy === 'date') {
 			filteredEntries.sort(
-				(a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+				(a, b) => new SvelteDate(b.created_at).getTime() - new SvelteDate(a.created_at).getTime()
 			);
 		} else {
 			// For log type sorting, we'll handle grouping in the display
@@ -700,12 +702,11 @@
 			logEntries = response.data.entries;
 
 			// Collect available log types from actual data
-			const logTypesSet = new Set<string>();
+			const logTypesSet = new SvelteSet<string>();
 			logEntries.forEach((entry) => {
 				const category = categorizeLogType(entry.template_layout);
 				logTypesSet.add(category);
 			});
-			availableLogTypes = logTypesSet;
 
 			// Filter entries based on date range and selected log types
 			const selectedLogTypes = logTypes
@@ -713,7 +714,8 @@
 				.map((type) => type.label);
 
 			// If "All" is selected or no specific types selected, show all types
-			const showAllTypes =
+			// eslint-disable-next-line @typescript-eslint/no-unused-vars
+			const _showAllTypes =
 				logTypes.find((type) => type.id === 'all')?.checked || selectedLogTypes.length === 0;
 
 			// Get excluded field types for filtering
@@ -721,9 +723,9 @@
 
 			filteredEntries = logEntries.filter((entry) => {
 				// Filter by date range
-				const entryDate = new Date(entry.created_at);
-				const fromDate = new Date(dateFromISO);
-				const toDate = new Date(dateToISO);
+				const entryDate = new SvelteDate(entry.created_at);
+				const fromDate = new SvelteDate(dateFromISO);
+				const toDate = new SvelteDate(dateToISO);
 				// Set time to end of day for 'to' date
 				toDate.setHours(23, 59, 59, 999);
 
@@ -742,7 +744,7 @@
 			// Sort entries based on arrange preference
 			if (arrangeBy === 'date') {
 				filteredEntries.sort(
-					(a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+					(a, b) => new SvelteDate(b.created_at).getTime() - new SvelteDate(a.created_at).getTime()
 				);
 			} else {
 				// For log type sorting, we'll handle grouping in the display
@@ -1028,40 +1030,6 @@
 		return content;
 	}
 
-	function generateReportContent(): string {
-		let content = `
-			<div class="header">
-				<h1>Log Report</h1>
-				<p><strong>Date Range:</strong> ${dateFrom} - ${dateTo}</p>
-				<p><strong>Arranged by:</strong> ${arrangeBy === 'date' ? 'Date' : 'Log Type'}</p>
-				<p><strong>Total Entries:</strong> ${filteredEntries.length}</p>
-				<p><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
-			</div>
-		`;
-
-		if (arrangeBy === 'logType') {
-			const groupedEntries = filteredEntries.reduce((acc: Record<string, LogEntry[]>, entry) => {
-				const category = categorizeLogType(entry.template_layout);
-				if (!acc[category]) acc[category] = [];
-				acc[category].push(entry);
-				return acc;
-			}, {});
-
-			Object.entries(groupedEntries).forEach(([category, entries]) => {
-				content += `<div class="group-header">${category} (${entries.length} entries)</div>`;
-				entries.forEach((entry) => {
-					content += generateEntryHTML(entry);
-				});
-			});
-		} else {
-			filteredEntries.forEach((entry) => {
-				content += generateEntryHTML(entry);
-			});
-		}
-
-		return content;
-	}
-
 	function generateEntryHTML(entry: LogEntry): string {
 		const excludedFieldTypes = getExcludedFieldTypes();
 		const entryData = parseEntryData(entry.entry_data, entry.template_layout, excludedFieldTypes);
@@ -1199,7 +1167,7 @@
 
 										<!-- Day Labels -->
 										<div class="mb-2 grid grid-cols-7 gap-1">
-											{#each ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as day}
+											{#each ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as day (day)}
 												<div class="py-2 text-center text-sm font-medium" style="color: #A1A6B4;">
 													{day}
 												</div>
@@ -1208,7 +1176,7 @@
 
 										<!-- Calendar Days -->
 										<div class="grid grid-cols-7 gap-1">
-											{#each getCalendarDays(calendarDate) as day}
+											{#each getCalendarDays(calendarDate) as day (day ?? 'empty')}
 												{#if day === null}
 													<div class="aspect-square"></div>
 												{:else}
@@ -1282,7 +1250,7 @@
 
 										<!-- Month Grid -->
 										<div class="grid grid-cols-3 gap-2">
-											{#each monthNamesShort as month, index}
+											{#each monthNamesShort as month, index (index)}
 												<button
 													type="button"
 													onclick={() => selectMonth(index)}
@@ -1347,7 +1315,7 @@
 
 										<!-- Year Grid -->
 										<div class="grid grid-cols-3 gap-2">
-											{#each getYearRange() as year}
+											{#each getYearRange() as year (year)}
 												<button
 													type="button"
 													onclick={() => selectYear(year)}
@@ -1468,7 +1436,7 @@
 										</div>
 										<!-- Day Labels -->
 										<div class="mb-2 grid grid-cols-7 gap-1">
-											{#each ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as day}
+											{#each ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as day (day)}
 												<div
 													class="py-2 text-center text-sm font-medium"
 													style="color: var(--text-secondary);"
@@ -1480,7 +1448,7 @@
 
 										<!-- Calendar Days -->
 										<div class="grid grid-cols-7 gap-1">
-											{#each getCalendarDays(calendarDate) as day}
+											{#each getCalendarDays(calendarDate) as day (day ?? 'empty')}
 												{#if day === null}
 													<div class="aspect-square"></div>
 												{:else}
@@ -1554,7 +1522,7 @@
 
 										<!-- Month Grid -->
 										<div class="grid grid-cols-3 gap-2">
-											{#each monthNamesShort as month, index}
+											{#each monthNamesShort as month, index (index)}
 												<button
 													type="button"
 													onclick={() => selectMonth(index)}
@@ -1619,7 +1587,7 @@
 
 										<!-- Year Grid -->
 										<div class="grid grid-cols-3 gap-2">
-											{#each getYearRange() as year}
+											{#each getYearRange() as year (year)}
 												<button
 													type="button"
 													onclick={() => selectYear(year)}
@@ -1647,7 +1615,7 @@
 							>Log Types:</legend
 						>
 						<div class="space-y-2">
-							{#each logTypes as logType}
+							{#each logTypes as logType (logType.id)}
 								<label class="flex cursor-pointer items-center gap-3">
 									<input
 										type="checkbox"
@@ -1718,7 +1686,7 @@
 									>
 										Clear Selection
 									</button>
-									{#each branches as branch}
+									{#each branches as branch (branch.id)}
 										<button
 											type="button"
 											class="flex w-full items-center gap-2 px-4 py-2 text-left hover:opacity-80"
@@ -1903,7 +1871,7 @@
 									},
 									{}
 								)}
-								{#each Object.entries(groupedComponents) as [fieldType, componentGroup]}
+								{#each Object.entries(groupedComponents) as [fieldType, componentGroup] (fieldType)}
 									<div class="mb-6">
 										<h3
 											class="mb-3 border-b pb-2 text-lg font-bold"
@@ -1911,7 +1879,7 @@
 										>
 											{fieldType} ({componentGroup.length} components)
 										</h3>
-										{#each componentGroup as component}
+										{#each componentGroup as component (component.entry.id)}
 											<div
 												class="mb-4 rounded border p-4"
 												style="border-color: var(--border-primary); background-color: var(--bg-secondary);"
@@ -1958,7 +1926,7 @@
 									</div>
 								{/each}
 							{:else}
-								{#each filteredEntries as entry}
+								{#each filteredEntries as entry (entry.id)}
 									{@const excludedFieldTypes = getExcludedFieldTypes()}
 									{@const shouldShowEntry = hasRemainingFields(
 										entry.template_layout,

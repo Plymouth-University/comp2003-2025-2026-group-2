@@ -16,7 +16,7 @@ async function globalTeardown() {
 			try {
 				process.kill(backendPid, 'SIGTERM');
 				await new Promise((resolve) => setTimeout(resolve, 500));
-			} catch (error: any) {
+			} catch (error: unknown) {
 				if (error.code !== 'ESRCH') {
 					console.log('Error killing backend process:', error.message);
 				}
@@ -28,7 +28,7 @@ async function globalTeardown() {
 			try {
 				process.kill(frontendPid, 'SIGTERM');
 				await new Promise((resolve) => setTimeout(resolve, 500));
-			} catch (error: any) {
+			} catch (error: unknown) {
 				if (error.code !== 'ESRCH') {
 					console.log('Error killing frontend process:', error.message);
 				}
@@ -38,15 +38,15 @@ async function globalTeardown() {
 		if (tempDir) {
 			try {
 				rmSync(tempDir, { recursive: true, force: true });
-			} catch (error) {
+			} catch {
 				console.log('Temporary directory cleanup failed or already removed');
 			}
 		}
 
 		try {
 			rmSync(PID_FILE);
-		} catch (e) {}
-	} catch (error) {
+		} catch {}
+	} catch {
 		console.log('PID file not found or already cleaned up');
 	}
 

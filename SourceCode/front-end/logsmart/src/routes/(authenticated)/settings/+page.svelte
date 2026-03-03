@@ -54,9 +54,9 @@
 			setTimeout(() => {
 				showLinkSuccessMessage = false;
 			}, 3000);
-		} catch (e: any) {
+		} catch (e: unknown) {
 			console.error(e);
-			errorMessage = e.message || 'Failed to link Google account';
+			errorMessage = (e as Error)?.message || 'Failed to link Google account';
 		}
 	}
 
@@ -91,9 +91,9 @@
 			showSuccessMessage = true;
 			passkeyName = '';
 			await invalidateAll();
-		} catch (e: any) {
+		} catch (e: unknown) {
 			console.error(e);
-			errorMessage = e.message || 'Failed to register passkey';
+			errorMessage = (e as Error)?.message || 'Failed to register passkey';
 		} finally {
 			isRegisteringPasskey = false;
 		}
@@ -118,7 +118,7 @@
 				const err = await resp.json();
 				errorMessage = err.error || 'Failed to unlink Google account';
 			}
-		} catch (e) {
+		} catch {
 			errorMessage = 'Failed to unlink Google account';
 		}
 	}
@@ -132,7 +132,7 @@
 			} else {
 				errorMessage = 'Failed to delete passkey';
 			}
-		} catch (e) {
+		} catch {
 			errorMessage = 'Failed to delete passkey';
 		}
 	}
@@ -353,7 +353,7 @@
 						<!-- List Existing Passkeys -->
 						{#if data.passkeys && data.passkeys.length > 0}
 							<div class="mb-6 space-y-3">
-								{#each data.passkeys as pk}
+								{#each data.passkeys as pk (pk.id)}
 									<div
 										class="flex items-center justify-between rounded border-2 p-3"
 										style="border-color: var(--border-secondary);"

@@ -29,7 +29,7 @@ export const load: LayoutServerLoad = async ({ cookies, fetch }) => {
 			isAuthenticated: true,
 			user: userData
 		};
-	} catch (error) {
+	} catch {
 		return {
 			isAuthenticated: false
 		};

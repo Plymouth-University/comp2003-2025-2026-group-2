@@ -11,7 +11,6 @@
 		item = $bindable(),
 		selected,
 		canvasRef,
-		snapEnabled,
 		onDragStart,
 		onDrag,
 		onDragEnd,
@@ -20,7 +19,6 @@
 		item: CanvasItem;
 		selected: boolean;
 		canvasRef: HTMLElement | null;
-		snapEnabled: boolean;
 		onDragStart: () => void;
 		onDrag: (e: { offsetX: number; offsetY: number }) => void;
 		onDragEnd: () => void;
@@ -28,7 +26,6 @@
 	}>();
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
 	data-item-id={item.id}
 	class="canvas-item absolute cursor-move rounded p-2"
@@ -76,7 +73,11 @@
 			unit={item.props.unit}
 		/>
 	{:else if item.type === 'dropdown'}
-		<UserDropdown bind:selected={item.props.selected} options={item.props.options} />
+		<UserDropdown
+			bind:selected={item.props.selected}
+			options={item.props.options}
+			disabled={true}
+		/>
 	{:else if item.type === 'label'}
 		<UserTextLabel
 			editable={item.props.editable}

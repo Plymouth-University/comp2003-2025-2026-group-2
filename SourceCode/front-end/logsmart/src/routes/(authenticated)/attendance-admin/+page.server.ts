@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-
+import type { components } from '../../../lib/api-types';
+type UserResponse = components['schemas']['UserResponse'];
 export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 	const { user } = await parent();
 
@@ -81,7 +82,7 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 		});
 		if (membersResponse.ok) {
 			const membersData = await membersResponse.json();
-			members = (membersData.members ?? []).map((m: any) => ({
+			members = (membersData.members ?? []).map((m: UserResponse) => ({
 				id: m.id,
 				branch_id: m.branch_id
 			}));

@@ -276,6 +276,8 @@ pub struct UpdateTemplateRequest {
     pub schedule: Option<logs_db::Schedule>,
     #[schema(example = "Major Update")]
     pub version_name: Option<String>,
+    #[schema(example = "branch-uuid-here")]
+    pub branch_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -442,6 +444,7 @@ pub struct GetTemplateResponse {
     pub template_layout: logs_db::TemplateLayout,
     pub version: u16,
     pub version_name: Option<String>,
+    pub branch_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]

@@ -1,5 +1,5 @@
 import type { PageServerLoad, Actions } from './$types';
-import { fail, type RequestEvent } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ fetch, cookies }) => {
 	const token = cookies.get('ls-token');
@@ -104,7 +104,7 @@ export const actions: Actions = {
 			// Handle successful response
 			if (text) {
 				try {
-					const data = JSON.parse(text);
+					JSON.parse(text);
 				} catch {
 					// Non-JSON response is OK for updates
 				}
@@ -171,16 +171,6 @@ export const actions: Actions = {
 					success: false
 				});
 			}
-
-			// Handle successful response
-			if (text) {
-				try {
-					const data = JSON.parse(text);
-				} catch {
-					// Non-JSON response is OK
-				}
-			}
-
 			return {
 				success: true,
 				message: 'Password reset link sent to your email'

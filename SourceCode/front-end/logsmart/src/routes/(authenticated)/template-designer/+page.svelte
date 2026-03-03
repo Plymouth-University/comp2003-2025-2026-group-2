@@ -3,7 +3,6 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { api } from '$lib/api';
-	import type { components } from '$lib/api-types';
 	import TemplatesSidebar from './TemplatesSidebar.svelte';
 	import DesignCanvas from './DesignCanvas.svelte';
 	import ComponentsPalette from './ComponentsPalette.svelte';
@@ -12,6 +11,7 @@
 	import VersionHistoryModal from './VersionHistoryModal.svelte';
 	import type { CanvasItem, ComponentType, Template } from './types';
 	import type { PageData } from './$types';
+	import type { components } from '$lib/api-types';
 
 	let { data } = $props<{ data: PageData }>();
 	let templates = $state<Template[]>([]);
@@ -44,21 +44,29 @@
 	let hasUndoAvailable = $derived(canvasItemsBackup !== null);
 
 	let showHistory = $state(false);
-	let historyVersions = $state<ApiTemplateVersionInfo[]>([]);
-	let restoring = $state(false);
+	let historyVersions = $state<components['schemas']['TemplateVersionInfo'][]>([]);
+	// restore state is derived from async action; no UI binding needed
 	let currentVersion = $state<number>(1);
 	let currentVersionName = $state<string | null>(null);
-	let branchId = $derived<string | null>(data.user?.branch_id || null);
-	let branches = $state<any[]>([]);
+	let branches = $state<{ id: string; name: string }[]>([]);
 	const canManageCompany = $derived(
 		data.user?.role === 'company_manager' ||
 			data.user?.role === 'branch_manager' ||
 			data.user?.role === 'logsmart_admin'
 	);
+	let branchId = $derived<string>(data.user?.branch_id || '');
+	$effect(() => {
+		if (canManageCompany && branchId === '') {
+			branchId = 'company';
+		}
+	});
 
 	const templateId = $derived(page.url.searchParams.get('id'));
 
-	function mapApiFieldToCanvasItem(field: ApiTemplateField, index: number): CanvasItem {
+	function mapApiFieldToCanvasItem(
+		field: components['schemas']['TemplateField'],
+		index: number
+	): CanvasItem {
 		return {
 			id: `item_${index}_${Math.random().toString(36).substring(2, 9)}`,
 			type: field.field_type,
@@ -80,8 +88,8 @@
 		};
 	}
 
-	function mapCanvasItemToApiField(item: CanvasItem): ApiTemplateField {
-		const props: ApiTemplateFieldProps = {};
+	function mapCanvasItemToApiField(item: CanvasItem): components['schemas']['TemplateField'] {
+		const props: components['schemas']['TemplateFieldProps'] = {};
 
 		if (item.props.text !== undefined) props.text = item.props.text;
 		if (item.props.placeholder !== undefined) props.placeholder = item.props.placeholder;
@@ -112,7 +120,7 @@
 					template_name: name
 				}
 			}
-		} as any);
+		} as unknown);
 
 		if (error) {
 			console.error('Failed to load template:', error);
@@ -127,7 +135,7 @@
 			isEditing = true;
 			currentVersion = data.version || 1;
 			currentVersionName = data.version_name || null;
-			branchId = (data as any).branch_id || null;
+			branchId = data.branch_id || 'company';
 		}
 		loading = false;
 		hasUnsavedChanges = false;
@@ -166,7 +174,8 @@
 				body: {
 					template_name: logTitle,
 					template_layout: templateLayout,
-					version_name: versionName || null
+					version_name: versionName || null,
+					branch_id: branchId === 'company' ? 'company' : branchId
 				}
 			});
 
@@ -176,7 +185,7 @@
 				return;
 			}
 		} else {
-			const schedule: ApiSchedule = {
+			const schedule: components['schemas']['Schedule'] = {
 				frequency: 'Daily',
 				days_of_week: [1, 2, 3, 4, 5]
 			};
@@ -186,7 +195,7 @@
 					template_name: logTitle,
 					template_layout: templateLayout,
 					schedule,
-					branch_id: branchId || undefined
+					branch_id: branchId === 'company' || branchId === '' ? undefined : branchId
 				}
 			});
 
@@ -218,7 +227,7 @@
 						template_name: originalTemplateName
 					}
 				}
-			} as any);
+			} as unknown);
 			if (data?.versions) {
 				historyVersions = data.versions;
 			}
@@ -254,7 +263,7 @@
 					template_name: originalTemplateName
 				}
 			}
-		} as any);
+		});
 
 		if (error) {
 			deleteError = 'Failed to delete template';
@@ -284,7 +293,7 @@
 	async function fetchTemplates() {
 		const { data } = await api.GET('/logs/templates/all');
 		if (data?.templates) {
-			templates = data.templates.map((t: ApiTemplateInfo, index: number) => ({
+			templates = data.templates.map((t: components['schemas']['TemplateInfo'], index: number) => ({
 				id: index,
 				name: t.template_name,
 				selected: t.template_name === originalTemplateName
@@ -312,7 +321,7 @@
 		selectedItemId = null;
 		isEditing = false;
 		originalTemplateName = null;
-		branchId = data.user?.branch_id || null;
+		branchId = data.user?.branch_id || (canManageCompany ? 'company' : '');
 		hasUnsavedChanges = false;
 		goto('/template-designer', { replaceState: true });
 	}
@@ -332,7 +341,7 @@
 		return Math.random().toString(36).substring(2, 9);
 	}
 
-	function getDefaultProps(type: string): Record<string, any> {
+	function getDefaultProps(type: string): Record<string, unknown> {
 		switch (type) {
 			case 'text_input':
 				return { text: '', size: 16, weight: 'normal' };
@@ -370,7 +379,7 @@
 		}
 	}
 
-	function updateItemProp(itemId: string, propKey: string, value: any) {
+	function updateItemProp(itemId: string, propKey: string, value: unknown) {
 		if (propKey === 'lockX' || propKey === 'lockY' || propKey === 'x' || propKey === 'y') {
 			canvasItems = canvasItems.map((item) =>
 				item.id === itemId ? { ...item, [propKey]: value } : item
@@ -570,7 +579,7 @@
 					template_name: originalTemplateName
 				}
 			}
-		} as any);
+		});
 
 		if (error) {
 			console.error('Failed to fetch versions:', error);
@@ -593,7 +602,7 @@
 		)
 			return;
 
-		restoring = true;
+		const restoring = true;
 		const { error } = await api.POST('/logs/templates/versions/restore', {
 			params: {
 				query: {
@@ -603,19 +612,19 @@
 			body: {
 				version
 			}
-		} as any);
+		});
 
 		if (error) {
 			console.error('Failed to restore version:', error);
 			alert('Failed to restore version');
-			restoring = false;
+			void restoring;
 			return;
 		}
 
 		// Reload the template to reflect changes
 		await loadTemplate(originalTemplateName);
 		showHistory = false;
-		restoring = false;
+		void restoring;
 		saveSuccess = true;
 		setTimeout(() => {
 			saveSuccess = false;

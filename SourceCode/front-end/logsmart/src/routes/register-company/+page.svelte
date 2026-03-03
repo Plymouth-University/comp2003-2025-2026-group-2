@@ -8,7 +8,7 @@
 		if (!/[A-Z]/.test(pwd)) errors.push('an uppercase letter');
 		if (!/[a-z]/.test(pwd)) errors.push('a lowercase letter');
 		if (!/\d/.test(pwd)) errors.push('a digit');
-		if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(pwd)) errors.push('a special character');
+		if (!/[!@#$%^&*()_+\-={};':"\\|,.<>/?]/.test(pwd)) errors.push('a special character');
 		return { valid: errors.length === 0, errors };
 	}
 
@@ -88,7 +88,7 @@
 
 		loading = true;
 		try {
-			const { data, error: apiError } = await api.POST('/auth/register', {
+			const { error: apiError } = await api.POST('/auth/register', {
 				body: {
 					company_name: companyName,
 					company_address: companyAddress,
@@ -355,12 +355,12 @@
 								{!/\d/.test(password) ? '✗' : '✓'} Digit (0-9)
 							</div>
 							<div
-								class={!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(password)
+								class={!/[!@#$%^&*()_+\-={};':"\\|,.<>/?]/.test(password)
 									? 'text-red-600 dark:text-red-400'
 									: 'text-green-600 dark:text-green-400'}
 							>
-								{!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?]/.test(password) ? '✗' : '✓'} Special character
-								(!@#$%^&* etc)
+								{!/[!@#$%^&*()_+\-={};':"\\|,.<>/?]/.test(password) ? '✗' : '✓'} Special character (!@#$%^&*
+								etc)
 							</div>
 							<div
 								class={password.length < 8

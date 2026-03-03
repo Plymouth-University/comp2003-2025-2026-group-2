@@ -7,7 +7,7 @@
 		onAlign
 	}: {
 		selectedItem: CanvasItem | undefined;
-		onUpdateProp: (itemId: string, propKey: string, value: any) => void;
+		onUpdateProp: (itemId: string, propKey: string, value: unknown) => void;
 		onAlign: (
 			itemId: string,
 			horizontal: 'left' | 'center' | 'right' | null,
@@ -167,7 +167,7 @@
 							class="mt-1 w-full border-2 px-3 py-2"
 							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 						>
-							{#each [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48] as s}
+							{#each [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48] as s (s)}
 								<option value={s}>{s}px</option>
 							{/each}
 						</select>
@@ -213,7 +213,7 @@
 						class="w-full border-2 px-3 py-2"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
-						{#each [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48] as s}
+						{#each [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48] as s (s)}
 							<option value={s}>{s}px</option>
 						{/each}
 					</select>

@@ -8,7 +8,7 @@
 	import PwaInstallPrompt from '$lib/components/pwa_install_prompt.svelte';
 	import CookieConsent from '$lib/components/CookieConsent.svelte';
 
-	let { children, data } = $props<{ children: any; data: LayoutData }>();
+	let { children, data } = $props<{ children: import('svelte').Snippet; data: LayoutData }>();
 
 	const isAuthenticatedRoute = $derived(
 		page.url.pathname.startsWith('/dashboard') ||

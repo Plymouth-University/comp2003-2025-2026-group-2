@@ -128,6 +128,29 @@ test.describe('Template Designer - CRUD Operations', () => {
 		await expect(page.getByText('Template saved successfully!')).toBeVisible();
 	});
 
+	test('branch_visibility_persists_on_reload', async ({ page }) => {
+		await page.goto('http://localhost:5173/template-designer');
+		await page.waitForLoadState('networkidle');
+
+		const templateName = `Branch Persist Template ${Date.now()}`;
+		await page.getByPlaceholder('Template Name').fill(templateName);
+
+		const branchSelect = page.locator('#branch-select');
+		await expect(branchSelect).toBeVisible();
+		await branchSelect.selectOption({ label: BRANCH_NAME });
+
+		await page.getByRole('button', { name: 'Save Template' }).click();
+		await expect(page.getByText('Template saved successfully!')).toBeVisible();
+
+		await page.goto(
+			`http://localhost:5173/template-designer?id=${encodeURIComponent(templateName)}`
+		);
+		await page.waitForLoadState('networkidle');
+
+		const selectedOption = branchSelect.locator('option:checked');
+		await expect(selectedOption).toHaveText(BRANCH_NAME);
+	});
+
 	test('save_without_template_name_shows_error', async ({ page }) => {
 		await page.goto('http://localhost:5173/template-designer');
 		await page.waitForLoadState('networkidle');

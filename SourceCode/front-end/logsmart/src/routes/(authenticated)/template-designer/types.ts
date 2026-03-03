@@ -5,7 +5,7 @@ export type CanvasItem = {
 	y: number;
 	lockX?: boolean;
 	lockY?: boolean;
-	props: Record<string, any>;
+	props: Record<string, unknown>;
 };
 
 export type ComponentType = {
