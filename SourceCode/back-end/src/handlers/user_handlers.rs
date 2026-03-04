@@ -210,12 +210,10 @@ pub async fn upload_profile_picture(
             return Err(err_forbidden("Only managers can update member profiles"));
         }
 
-        let target = UserService::get_user_by_email(
-            &state.postgres,
-            query.email.as_deref().unwrap_or(""),
-        )
-            .await
-            .map_err(|e| (e.0, Json(e.1)))?;
+        let target =
+            UserService::get_user_by_email(&state.postgres, query.email.as_deref().unwrap_or(""))
+                .await
+                .map_err(|e| (e.0, Json(e.1)))?;
 
         if user.is_company_manager() && user.company_id != target.company_id {
             return Err(err_forbidden("Cannot update users from other companies"));
@@ -234,17 +232,13 @@ pub async fn upload_profile_picture(
         (target.id, target.profile_picture_id)
     };
 
-    let file_id = logs_db::upload_profile_picture(
-        &state.mongodb,
-        data,
-        &target_user_id,
-        &content_type,
-    )
-    .await
-    .map_err(|e| {
-        tracing::error!("Failed to upload profile picture: {:?}", e);
-        err_internal("Failed to upload profile picture")
-    })?;
+    let file_id =
+        logs_db::upload_profile_picture(&state.mongodb, data, &target_user_id, &content_type)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to upload profile picture: {:?}", e);
+                err_internal("Failed to upload profile picture")
+            })?;
 
     if let Some(old_picture_id) = &target_picture_id {
         let _ = logs_db::delete_profile_picture(&state.mongodb, old_picture_id).await;
@@ -334,12 +328,10 @@ pub async fn delete_profile_picture_handler(
             return Err(err_forbidden("Only managers can update member profiles"));
         }
 
-        let target = UserService::get_user_by_email(
-            &state.postgres,
-            query.email.as_deref().unwrap_or(""),
-        )
-            .await
-            .map_err(|e| (e.0, Json(e.1)))?;
+        let target =
+            UserService::get_user_by_email(&state.postgres, query.email.as_deref().unwrap_or(""))
+                .await
+                .map_err(|e| (e.0, Json(e.1)))?;
 
         if user.is_company_manager() && user.company_id != target.company_id {
             return Err(err_forbidden("Cannot update users from other companies"));
