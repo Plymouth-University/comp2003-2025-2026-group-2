@@ -6,7 +6,7 @@ use crate::{
     logs_db,
     middleware::{AnyAuthUser, BranchManagerUser, ReadBranchUser},
     services::user_service::UserService,
-    utils::{AuditLogger, err_bad_request, err_forbidden, err_internal},
+    utils::{AuditLogger, err_bad_request, err_forbidden, err_internal, err_not_found},
 };
 use axum::{
     Json,
@@ -248,6 +248,7 @@ fn infer_content_type(data: &[u8]) -> String {
     tag = "User"
 )]
 pub async fn get_profile_picture(
+    AnyAuthUser(_claims, _user): AnyAuthUser,
     State(state): State<AppState>,
     axum::extract::Path(file_id): axum::extract::Path<String>,
 ) -> Result<
@@ -267,7 +268,7 @@ pub async fn get_profile_picture(
         return Ok((StatusCode::OK, [(header::CONTENT_TYPE, header_value)], data));
     }
 
-    Err(err_bad_request("Profile picture not found"))
+    Err(err_not_found("Profile picture not found"))
 }
 
 #[utoipa::path(
@@ -282,7 +283,7 @@ pub async fn get_profile_picture(
     tag = "User"
 )]
 pub async fn delete_profile_picture_handler(
-    ReadBranchUser(_claims, user): ReadBranchUser,
+    AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
     if let Some(picture_id) = &user.profile_picture_id {
