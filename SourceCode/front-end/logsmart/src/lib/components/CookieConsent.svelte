@@ -1,11 +1,6 @@
 <script lang="ts">
 	let { show = false }: { show?: boolean } = $props();
 
-	const acceptCookies = () => {
-		document.cookie = 'cookies_accepted=true; path=/; max-age=31536000';
-		show = false;
-	};
-
 	const dismissNotice = () => {
 		document.cookie = 'cookies_notice_dismissed=true; path=/; max-age=31536000';
 		show = false;

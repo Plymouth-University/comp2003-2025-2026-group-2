@@ -34,9 +34,19 @@ async function proxyRequest(event: RequestEvent) {
 	const originalUrl = new URL(request.url);
 	const queryString = originalUrl.search;
 	const url = `${API_URL}/${path}${queryString}`;
-	let body = undefined;
+	let requestBody: string | Uint8Array | undefined = undefined;
 	if (request.method !== 'GET' && request.method !== 'HEAD') {
-		body = await request.text();
+		const requestContentType = request.headers.get('content-type') || '';
+		if (
+			requestContentType.includes('application/json') ||
+			requestContentType.includes('application/x-www-form-urlencoded') ||
+			requestContentType.startsWith('text/')
+		) {
+			requestBody = await request.text();
+		} else {
+			const buffer = await request.arrayBuffer();
+			requestBody = new Uint8Array(buffer);
+		}
 	}
 
 	const isSwagger = url.match(/^http(s)?:\/\/(logsmart.app|127\.0\.0\.1:6767)\/swagger-ui.*/);
@@ -44,7 +54,7 @@ async function proxyRequest(event: RequestEvent) {
 		const response = await fetch(url, {
 			method: request.method,
 			headers,
-			body,
+			body: requestBody,
 			redirect: isSwagger ? undefined : 'manual'
 		});
 
@@ -96,14 +106,14 @@ async function proxyRequest(event: RequestEvent) {
 		if (contentType?.includes('application/json')) {
 			const data = await response.json();
 			return json(data, { status: response.status });
-		} else {
-			const text = await response.text();
-			return new Response(text, {
-				status: response.status,
-				headers: { 'content-type': contentType || 'text/plain' }
-			});
 		}
-	} catch (error: any) {
+
+		const responseBody = await response.arrayBuffer();
+		return new Response(responseBody, {
+			status: response.status,
+			headers: { 'content-type': contentType || 'application/octet-stream' }
+		});
+	} catch (error: unknown) {
 		if (error?.status && error?.location) {
 			throw error;
 		}

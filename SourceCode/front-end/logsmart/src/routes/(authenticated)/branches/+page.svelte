@@ -319,7 +319,7 @@
 						<div
 							class="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border-2 border-border-primary bg-bg-primary shadow-lg"
 						>
-							{#each searchResults as result}
+							{#each searchResults as result (result.lat + result.lon)}
 								<button
 									type="button"
 									class="w-full px-4 py-2 text-left text-sm text-text-primary hover:bg-bg-secondary focus:bg-bg-secondary focus:outline-none"
@@ -346,7 +346,7 @@
 
 	<!-- Branches List -->
 	<div class="grid gap-6 md:grid-cols-2">
-		{#each branches as branch}
+		{#each branches as branch (branch.id)}
 			<div class="rounded-base border-2 border-border-primary bg-bg-primary p-6 shadow-sm">
 				{#if editingBranchId === branch.id}
 					<!-- Edit Mode -->
@@ -382,7 +382,7 @@
 								<div
 									class="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border-2 border-border-primary bg-bg-primary shadow-lg"
 								>
-									{#each editSearchResults as result}
+									{#each editSearchResults as result (result.lat + result.lon)}
 										<button
 											type="button"
 											class="w-full px-4 py-2 text-left text-sm text-text-primary hover:bg-bg-secondary focus:bg-bg-secondary focus:outline-none"

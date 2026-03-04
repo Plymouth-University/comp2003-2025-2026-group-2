@@ -21,10 +21,8 @@ impl InvitationService {
     /// Returns an error if the user is already registered, already invited, or if email sending fails.
     pub async fn send_invitation(
         db_pool: &PgPool,
-        admin_id: String,
-        admin_email: String,
+        admin: &db::UserRecord,
         recipient_email: String,
-        company_id: String,
         role: db::UserRole,
         branch_id: Option<String>,
         ip_address: Option<String>,
@@ -46,12 +44,32 @@ impl InvitationService {
             ));
         }
 
+        let company_id = admin.company_id.as_ref().ok_or((
+            StatusCode::FORBIDDEN,
+            json!({ "error": "Admin user is not associated with a company" }),
+        ))?;
+
+        let company_name = db::get_company_by_id(db_pool, company_id)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to fetch company name: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Database error" }),
+                )
+            })?
+            .ok_or((
+                StatusCode::NOT_FOUND,
+                json!({ "error": "Company not found" }),
+            ))?
+            .name;
+
         let token = generate_uuid6_token();
         let expires_at = chrono::Utc::now() + Duration::days(7);
 
         let invitation = db::create_invitation(
             db_pool,
-            company_id,
+            company_id.to_string(),
             recipient_email.clone(),
             token,
             role,
@@ -83,7 +101,7 @@ impl InvitationService {
             "https://logsmart.app", invitation.token
         );
 
-        email::send_invitation_email(&recipient_email, &invite_link, "Your Company Name")
+        email::send_invitation_email(&recipient_email, &invite_link, &company_name)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to send invitation email: {:?}", e);
@@ -95,8 +113,8 @@ impl InvitationService {
 
         AuditLogger::log_invitation_sent(
             db_pool,
-            admin_id,
-            admin_email,
+            admin.id.clone(),
+            admin.email.clone(),
             recipient_email,
             ip_address,
             user_agent,

@@ -1,14 +1,10 @@
 <script lang="ts">
-	import { page } from '$app/state';
 	import { api } from '$lib/api';
-	import type { components } from '$lib/api-types';
-
-	type Branch = components['schemas']['BranchDto'];
 
 	const { showingCreateModel, setShowingCreateModel, branches, loggedInUserRole } = $props<{
 		showingCreateModel: boolean;
 		setShowingCreateModel: (show: boolean) => void;
-		branches: any[];
+		branches: Array<{ id: string; name: string }>;
 		loggedInUserRole: string;
 	}>();
 	let email = $state('');
@@ -95,7 +91,7 @@
 						bind:value={branchId}
 						class="rounded-base block w-full border-2 border-border-primary bg-bg-primary px-3 py-2.5 text-sm text-text-primary shadow-xs focus:ring-2 focus:outline-none"
 					>
-						{#each branches as branch}
+						{#each branches as branch (branch.id)}
 							<option value={branch.id}>{branch.name}</option>
 						{/each}
 						<option value={null} disabled={loggedInUserRole == 'branch_manager'}
@@ -111,7 +107,7 @@
 						let { error } = await api.POST('/auth/invitations/send', {
 							body: {
 								email: email,
-								role: role as any,
+								role: role as 'staff' | 'branch_manager' | 'company_manager',
 								branch_id: branchId || undefined
 							}
 						});

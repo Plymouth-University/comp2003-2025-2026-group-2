@@ -30,6 +30,14 @@ pub struct AdminUpdateMemberRequest {
     pub role: String,
     #[schema(example = "branch-uuid-here")]
     pub branch_id: Option<String>,
+    #[schema(example = "uuid-of-profile-picture")]
+    pub profile_picture_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize, IntoParams, ToSchema)]
+pub struct AdminProfilePictureQuery {
+    #[schema(example = "user@example.com")]
+    pub email: Option<String>,
 }
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CancelInvitationRequest {
@@ -276,6 +284,8 @@ pub struct UpdateTemplateRequest {
     pub schedule: Option<logs_db::Schedule>,
     #[schema(example = "Major Update")]
     pub version_name: Option<String>,
+    #[schema(example = "branch-uuid-here")]
+    pub branch_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -369,24 +379,32 @@ pub struct UserResponse {
     pub role: UserRole,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub oauth_provider: Option<String>,
+    pub profile_picture_url: Option<String>,
+    pub oauth_picture: Option<String>,
 }
 
-derive_from!(
-    db::UserRecord,
-    UserResponse,
-    [
-        id,
-        email,
-        first_name,
-        last_name,
-        company_id,
-        company_name,
-        branch_id,
-        role,
-        created_at,
-        oauth_provider
-    ]
-);
+impl From<db::UserRecord> for UserResponse {
+    fn from(record: db::UserRecord) -> Self {
+        let profile_picture_url = record
+            .profile_picture_id
+            .map(|id| format!("/api/auth/profile-picture/{}", id));
+
+        Self {
+            id: record.id,
+            email: record.email,
+            first_name: record.first_name,
+            last_name: record.last_name,
+            company_id: record.company_id,
+            company_name: record.company_name,
+            branch_id: record.branch_id,
+            role: record.role,
+            created_at: record.created_at,
+            oauth_provider: record.oauth_provider,
+            profile_picture_url,
+            oauth_picture: record.oauth_picture,
+        }
+    }
+}
 
 #[derive(Debug, Deserialize, ToSchema, IntoParams)]
 pub struct GetInvitationDetailsRequest {
@@ -442,6 +460,7 @@ pub struct GetTemplateResponse {
     pub template_layout: logs_db::TemplateLayout,
     pub version: u16,
     pub version_name: Option<String>,
+    pub branch_id: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]

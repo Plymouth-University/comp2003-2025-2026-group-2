@@ -85,7 +85,13 @@ impl TemplateService {
         company_id: &str,
         template_name: &str,
     ) -> Result<
-        (String, logs_db::TemplateLayout, u16, Option<String>),
+        (
+            String,
+            logs_db::TemplateLayout,
+            u16,
+            Option<String>,
+            Option<String>,
+        ),
         (StatusCode, serde_json::Value),
     > {
         let template = logs_db::get_template_by_name(&state.mongodb, template_name, company_id)
@@ -104,6 +110,7 @@ impl TemplateService {
                 t.template_layout,
                 t.version,
                 t.version_name,
+                t.branch_id,
             )),
             None => Err((
                 StatusCode::NOT_FOUND,
@@ -171,6 +178,7 @@ impl TemplateService {
         version_name: Option<String>,
         branch_id: Option<&str>, // Caller's branch_id
         is_company_manager: bool,
+        target_branch_id: Option<Option<&str>>,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
         // 1. Fetch current template state
         let current_template =
@@ -204,6 +212,12 @@ impl TemplateService {
             }
         }
 
+        let resolved_branch_id = if is_company_manager {
+            target_branch_id
+        } else {
+            None
+        };
+
         // 2. Archive current state as a version
         let version_doc = logs_db::TemplateVersionDocument {
             template_name: current_template.template_name.clone(),
@@ -236,6 +250,7 @@ impl TemplateService {
             schedule,
             template_layout,
             version_name,
+            resolved_branch_id,
         )
         .await
         .map_err(|e: anyhow::Error| {
@@ -309,6 +324,7 @@ impl TemplateService {
             Some(format!("Restored from version {version}")),
             branch_id,
             is_company_manager,
+            None,
         )
         .await
     }

@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 
-	let deferredPrompt: any = null;
+	let deferredPrompt: BeforeInstallPromptEvent | null = null;
 	let showInstallPrompt = false;
 	let isIOS = false;
 	let isStandalone = false;
@@ -11,7 +11,7 @@
 		if (!browser) return;
 
 		isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-		isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+		isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window);
 
 		window.addEventListener('beforeinstallprompt', (e) => {
 			e.preventDefault();

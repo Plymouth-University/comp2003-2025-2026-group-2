@@ -915,6 +915,13 @@
 						"description": "ISO 8601 end date filter (inclusive)",
 						"required": false,
 						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "branch_id",
+						"in": "query",
+						"description": "Branch ID filter (optional, for `company_manager` to filter by specific branch)",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
 					}
 				],
 				"responses": {
@@ -1935,6 +1942,10 @@
 					"email": { "type": "string", "example": "user@example.com" },
 					"first_name": { "type": "string", "example": "Jane" },
 					"last_name": { "type": "string", "example": "Smith" },
+					"profile_picture_id": {
+						"type": ["string", "null"],
+						"example": "uuid-of-profile-picture"
+					},
 					"role": { "type": "string", "example": "staff" }
 				}
 			},
@@ -2153,6 +2164,7 @@
 				"type": "object",
 				"required": ["template_name", "template_layout", "version"],
 				"properties": {
+					"branch_id": { "type": ["string", "null"] },
 					"template_layout": { "$ref": "#/components/schemas/Vec" },
 					"template_name": { "type": "string" },
 					"version": { "type": "integer", "format": "int32", "minimum": 0 },
@@ -2531,6 +2543,7 @@
 				"type": "object",
 				"required": ["template_name"],
 				"properties": {
+					"branch_id": { "type": ["string", "null"], "example": "branch-uuid-here" },
 					"schedule": {
 						"oneOf": [{ "type": "null" }, { "$ref": "#/components/schemas/Schedule" }]
 					},
@@ -2558,7 +2571,9 @@
 					"first_name": { "type": "string" },
 					"id": { "type": "string" },
 					"last_name": { "type": "string" },
+					"oauth_picture": { "type": ["string", "null"] },
 					"oauth_provider": { "type": ["string", "null"] },
+					"profile_picture_url": { "type": ["string", "null"] },
 					"role": { "$ref": "#/components/schemas/UserRole" }
 				}
 			},

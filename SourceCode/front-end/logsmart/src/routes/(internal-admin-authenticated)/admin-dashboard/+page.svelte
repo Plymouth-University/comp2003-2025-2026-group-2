@@ -234,7 +234,7 @@
 									</tr>
 								</thead>
 								<tbody>
-									{#each tableSizes.tables as table}
+									{#each tableSizes.tables as table (table.table_name)}
 										<tr class="border-t" style="border-color: var(--border-primary);">
 											<td class="px-4 py-3 text-sm font-medium" style="color: var(--text-primary);"
 												>{table.table_name}</td
@@ -297,7 +297,7 @@
 									</tr>
 								</thead>
 								<tbody>
-									{#each slowQueries.queries as query}
+									{#each slowQueries.queries as query (query.query)}
 										<tr class="border-t" style="border-color: var(--border-primary);">
 											<td class="max-w-md px-4 py-3 text-sm">
 												<div
@@ -357,7 +357,7 @@
 								These indexes may be candidates for removal:
 							</p>
 							<ul class="list-inside list-disc text-sm" style="color: var(--text-primary);">
-								{#each indexUsage.unused_indexes as idx}
+								{#each indexUsage.unused_indexes as idx, i (i)}
 									<li class="font-mono">{idx}</li>
 								{/each}
 							</ul>
@@ -397,7 +397,7 @@
 										</tr>
 									</thead>
 									<tbody>
-										{#each indexUsage.indexes as idx}
+										{#each indexUsage.indexes as idx (idx.index_name)}
 											<tr class="border-t" style="border-color: var(--border-primary);">
 												<td class="px-4 py-3 font-mono text-sm" style="color: var(--text-primary);"
 													>{idx.index_name}</td

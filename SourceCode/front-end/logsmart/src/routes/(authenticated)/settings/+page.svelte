@@ -5,6 +5,7 @@
 	import { startRegistration } from '@simplewebauthn/browser';
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import ProfilePictureUploader from '$lib/components/ProfilePictureUploader.svelte';
 
 	let { data, form } = $props<{ data: PageData; form: ActionData }>();
 
@@ -12,6 +13,10 @@
 	let lastName = $derived(data.user?.last_name || '');
 	let email = $derived(data.user?.email || '');
 	let hasGoogleLinked = $derived(data.user?.oauth_provider === 'google');
+	let profilePictureUrl = $derived(data.user?.profile_picture_url || null);
+	let oauthPictureUrl = $derived(data.user?.oauth_picture || null);
+
+	let effectivePictureUrl = $derived(profilePictureUrl ? profilePictureUrl : oauthPictureUrl);
 
 	let isSubmitting = $state(false);
 	let showSuccessMessage = $state(false);
@@ -54,9 +59,9 @@
 			setTimeout(() => {
 				showLinkSuccessMessage = false;
 			}, 3000);
-		} catch (e: any) {
+		} catch (e: unknown) {
 			console.error(e);
-			errorMessage = e.message || 'Failed to link Google account';
+			errorMessage = (e as Error)?.message || 'Failed to link Google account';
 		}
 	}
 
@@ -91,9 +96,9 @@
 			showSuccessMessage = true;
 			passkeyName = '';
 			await invalidateAll();
-		} catch (e: any) {
+		} catch (e: unknown) {
 			console.error(e);
-			errorMessage = e.message || 'Failed to register passkey';
+			errorMessage = (e as Error)?.message || 'Failed to register passkey';
 		} finally {
 			isRegisteringPasskey = false;
 		}
@@ -118,7 +123,7 @@
 				const err = await resp.json();
 				errorMessage = err.error || 'Failed to unlink Google account';
 			}
-		} catch (e) {
+		} catch {
 			errorMessage = 'Failed to unlink Google account';
 		}
 	}
@@ -132,7 +137,7 @@
 			} else {
 				errorMessage = 'Failed to delete passkey';
 			}
-		} catch (e) {
+		} catch {
 			errorMessage = 'Failed to delete passkey';
 		}
 	}
@@ -199,101 +204,118 @@
 					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Profile Information</h2>
 				</div>
 				<div class="px-6 py-6" style="background-color: var(--bg-primary);">
-					<form
-						method="POST"
-						action="?/updateProfile"
-						use:enhance={() => {
-							isSubmitting = true;
-							return async ({ update }) => {
-								await update();
-								isSubmitting = false;
-							};
-						}}
-						class="max-w-2xl space-y-4"
-					>
-						<!-- First Name -->
-						<div>
-							<label
-								for="firstName"
-								class="mb-2 block text-sm font-medium"
-								style="color: var(--text-primary);"
-							>
-								First Name
-							</label>
-							<input
-								id="firstName"
-								name="firstName"
-								type="text"
-								bind:value={firstName}
-								class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
-								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
-								placeholder="Enter your first name"
-								required
+					<div class="flex flex-col gap-6 md:flex-row">
+						<form
+							method="POST"
+							action="?/updateProfile"
+							use:enhance={() => {
+								isSubmitting = true;
+								return async ({ update }) => {
+									await update();
+									isSubmitting = false;
+								};
+							}}
+							class="max-w-2xl flex-1 space-y-4"
+						>
+							<!-- First Name -->
+							<div>
+								<label
+									for="firstName"
+									class="mb-2 block text-sm font-medium"
+									style="color: var(--text-primary);"
+								>
+									First Name
+								</label>
+								<input
+									id="firstName"
+									name="firstName"
+									type="text"
+									bind:value={firstName}
+									class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
+									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+									placeholder="Enter your first name"
+									required
+								/>
+							</div>
+
+							<!-- Last Name -->
+							<div>
+								<label
+									for="lastName"
+									class="mb-2 block text-sm font-medium"
+									style="color: var(--text-primary);"
+								>
+									Last Name
+								</label>
+								<input
+									id="lastName"
+									name="lastName"
+									type="text"
+									bind:value={lastName}
+									class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
+									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+									placeholder="Enter your last name"
+									required
+								/>
+							</div>
+
+							<!-- Email -->
+							<div>
+								<label
+									for="email"
+									class="mb-2 block text-sm font-medium"
+									style="color: var(--text-primary);"
+								>
+									Email Address
+								</label>
+								<input
+									id="email"
+									name="email"
+									type="email"
+									bind:value={email}
+									class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
+									style="border-color: var(--border-secondary); background-color: var(--bg-secondary); color: var(--text-secondary);"
+									placeholder="Enter your email"
+									readonly
+									disabled
+									title="Email cannot be changed"
+								/>
+								<p class="mt-1 text-sm" style="color: var(--text-secondary);">
+									Email address cannot be changed
+								</p>
+							</div>
+
+							<!-- Save Button -->
+							<div class="pt-2">
+								<button
+									type="submit"
+									disabled={isSubmitting ||
+										!firstName.trim() ||
+										!lastName.trim() ||
+										(firstName === data.user?.first_name && lastName === data.user?.last_name)}
+									class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+								>
+									{isSubmitting ? 'Saving...' : 'Save Profile'}
+								</button>
+							</div>
+						</form>
+
+						<!-- Profile Picture on the right side -->
+						<div class="flex flex-1 flex-col items-center justify-start pt-4 md:pt-0 md:pl-8">
+							<ProfilePictureUploader
+								currentPictureUrl={effectivePictureUrl}
+								{firstName}
+								{lastName}
+								onUploadComplete={() => {
+									invalidateAll();
+								}}
+								onDeleteComplete={() => {
+									invalidateAll();
+								}}
 							/>
 						</div>
-
-						<!-- Last Name -->
-						<div>
-							<label
-								for="lastName"
-								class="mb-2 block text-sm font-medium"
-								style="color: var(--text-primary);"
-							>
-								Last Name
-							</label>
-							<input
-								id="lastName"
-								name="lastName"
-								type="text"
-								bind:value={lastName}
-								class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
-								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
-								placeholder="Enter your last name"
-								required
-							/>
-						</div>
-
-						<!-- Email -->
-						<div>
-							<label
-								for="email"
-								class="mb-2 block text-sm font-medium"
-								style="color: var(--text-primary);"
-							>
-								Email Address
-							</label>
-							<input
-								id="email"
-								name="email"
-								type="email"
-								bind:value={email}
-								class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
-								style="border-color: var(--border-secondary); background-color: var(--bg-secondary); color: var(--text-secondary);"
-								placeholder="Enter your email"
-								readonly
-								disabled
-								title="Email cannot be changed"
-							/>
-							<p class="mt-1 text-sm" style="color: var(--text-secondary);">
-								Email address cannot be changed
-							</p>
-						</div>
-
-						<!-- Save Button -->
-						<div class="pt-2">
-							<button
-								type="submit"
-								disabled={isSubmitting ||
-									!firstName.trim() ||
-									!lastName.trim() ||
-									(firstName === data.user?.first_name && lastName === data.user?.last_name)}
-								class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
-							>
-								{isSubmitting ? 'Saving...' : 'Save Profile'}
-							</button>
-						</div>
-					</form>
+					</div>
 				</div>
 			</div>
 
@@ -353,7 +375,7 @@
 						<!-- List Existing Passkeys -->
 						{#if data.passkeys && data.passkeys.length > 0}
 							<div class="mb-6 space-y-3">
-								{#each data.passkeys as pk}
+								{#each data.passkeys as pk (pk.id)}
 									<div
 										class="flex items-center justify-between rounded border-2 p-3"
 										style="border-color: var(--border-secondary);"

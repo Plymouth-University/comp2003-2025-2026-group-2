@@ -101,6 +101,7 @@ impl UserService {
         last_name: String,
         role: db::UserRole,
         branch_id: Option<String>,
+        profile_picture_id: Option<String>,
     ) -> Result<db::UserRecord, ServiceError> {
         if !admin_user.can_manage_branch() || admin_user.is_readonly_hq() {
             return Err(svc_err_forbidden(
@@ -148,6 +149,7 @@ impl UserService {
                 last_name,
                 role,
                 branch_id,
+                profile_picture_id,
             ),
             "updating member profile"
         )

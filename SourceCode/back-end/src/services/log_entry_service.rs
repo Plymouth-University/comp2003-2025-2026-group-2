@@ -24,29 +24,15 @@ impl LogEntryService {
     /// Returns an error if the user has no company, the template is not found, or an entry already exists for the period.
     pub async fn create_log_entry(
         state: &AppState,
-        user_id: &str,
+        user: &UserRecord,
         template_name: &str,
     ) -> Result<String, (StatusCode, serde_json::Value)> {
-        let user = db::get_user_by_id(&state.postgres, user_id)
-            .await
-            .map_err(|e| {
-                tracing::error!("Database error fetching user: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Database error" }),
-                )
-            })?
-            .ok_or((
-                StatusCode::UNAUTHORIZED,
-                json!({ "error": "User not found" }),
-            ))?;
-
-        let company_id = user.company_id.ok_or((
+        let company_id = user.company_id.as_ref().ok_or((
             StatusCode::FORBIDDEN,
             json!({ "error": "User is not associated with a company" }),
         ))?;
 
-        let template = logs_db::get_template_by_name(&state.mongodb, template_name, &company_id)
+        let template = logs_db::get_template_by_name(&state.mongodb, template_name, company_id)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to get template: {:?}", e);
@@ -60,19 +46,36 @@ impl LogEntryService {
                 json!({ "error": "Template not found" }),
             ))?;
 
-        // Check if template is for the correct branch
-        if let Some(template_branch_id) = &template.branch_id
-            && Some(template_branch_id) != user.branch_id.as_ref()
-        {
-            return Err((
-                StatusCode::FORBIDDEN,
-                json!({ "error": "Template is not available for your branch" }),
-            ));
+        match user.role {
+            db::UserRole::BranchManager => {
+                if Some(template.branch_id.as_ref()) != Some(user.branch_id.as_ref()) {
+                    return Err((
+                        StatusCode::FORBIDDEN,
+                        json!({ "error": "Template is not available for your branch" }),
+                    ));
+                }
+            }
+            db::UserRole::Staff => {
+                if !user.is_readonly_hq()
+                    && Some(template.branch_id.as_ref()) != Some(user.branch_id.as_ref())
+                {
+                    return Err((
+                        StatusCode::FORBIDDEN,
+                        json!({ "error": "Template is not available for your branch" }),
+                    ));
+                }
+            }
+            db::UserRole::CompanyManager => {
+                // Company admins can access templates for any branch in their company, so no branch check needed here
+            }
+            db::UserRole::LogSmartAdmin => {
+                // LogSmart admins can access all templates, so no branch check needed here
+            }
         }
 
         let has_entry = logs_db::has_entry_for_current_period(
             &state.mongodb,
-            &company_id,
+            company_id,
             template_name,
             &template.schedule.frequency,
         )
@@ -105,9 +108,9 @@ impl LogEntryService {
         let entry = logs_db::LogEntry {
             entry_id: entry_id.clone(),
             template_name: template_name.to_string(),
-            company_id,
-            branch_id: user.branch_id,
-            user_id: user_id.to_string(),
+            company_id: company_id.clone(),
+            branch_id: template.branch_id.clone(),
+            user_id: user.id.clone(),
             entry_data: serde_json::json!({}),
             created_at: now,
             updated_at: now,

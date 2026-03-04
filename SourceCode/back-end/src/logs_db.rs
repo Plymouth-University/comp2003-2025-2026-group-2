@@ -336,8 +336,9 @@ pub async fn update_template(
     schedule: Option<&Schedule>,
     layout: Option<&TemplateLayout>,
     version_name: Option<String>,
+    branch_id: Option<Option<&str>>,
 ) -> Result<()> {
-    if schedule.is_none() && layout.is_none() && version_name.is_none() {
+    if schedule.is_none() && layout.is_none() && version_name.is_none() && branch_id.is_none() {
         return Ok(());
     }
     let db = client.database("logs_db");
@@ -358,6 +359,13 @@ pub async fn update_template(
     }
     if let Some(name) = version_name {
         set_doc.insert("version_name", name);
+    }
+    if let Some(branch_id) = branch_id {
+        let branch_value = match branch_id {
+            Some(branch_id) => mongodb::bson::Bson::String(branch_id.to_string()),
+            None => mongodb::bson::Bson::Null,
+        };
+        set_doc.insert("branch_id", branch_value);
     }
     set_doc.insert("updated_at", mongodb::bson::to_bson(&chrono::Utc::now())?);
 
@@ -384,7 +392,16 @@ pub async fn update_template_with_version(
 ) -> Result<()> {
     // This is now redundant given update_template handles versioning,
     // but we can keep the original signature compatible by forwarding
-    update_template(client, template_name, company_id, schedule, layout, None).await
+    update_template(
+        client,
+        template_name,
+        company_id,
+        schedule,
+        layout,
+        None,
+        None,
+    )
+    .await
 }
 
 /// Renames a log template.
@@ -1120,4 +1137,75 @@ pub fn process_template_layout_with_period_string(
             processed_field
         })
         .collect()
+}
+
+const PROFILE_PICTURES_COLLECTION: &str = "profile_pictures";
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+struct ProfilePictureDoc {
+    _id: mongodb::bson::Uuid,
+    user_id: String,
+    data: Vec<u8>,
+    content_type: String,
+    created_at: chrono::DateTime<chrono::Utc>,
+}
+
+pub async fn upload_profile_picture(
+    client: &mongodb::Client,
+    data: Vec<u8>,
+    user_id: &str,
+    content_type: &str,
+) -> Result<String> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<ProfilePictureDoc> =
+        db.collection(PROFILE_PICTURES_COLLECTION);
+
+    let file_id = mongodb::bson::Uuid::new();
+
+    let doc = ProfilePictureDoc {
+        _id: file_id,
+        user_id: user_id.to_string(),
+        data,
+        content_type: content_type.to_string(),
+        created_at: chrono::Utc::now(),
+    };
+
+    collection.insert_one(doc).await?;
+
+    Ok(file_id.to_string())
+}
+
+pub async fn get_profile_picture(
+    client: &mongodb::Client,
+    file_id: &str,
+) -> Result<Option<(String, Vec<u8>)>> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<ProfilePictureDoc> =
+        db.collection(PROFILE_PICTURES_COLLECTION);
+
+    let oid = mongodb::bson::Uuid::parse_str(file_id)
+        .map_err(|e| anyhow::anyhow!("Invalid file ID: {}", e))?;
+
+    let filter = mongodb::bson::doc! { "_id": oid };
+
+    let doc = collection.find_one(filter).await?;
+
+    match doc {
+        Some(picture) => Ok(Some((picture.content_type, picture.data))),
+        None => Ok(None),
+    }
+}
+
+pub async fn delete_profile_picture(client: &mongodb::Client, file_id: &str) -> Result<()> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<ProfilePictureDoc> =
+        db.collection(PROFILE_PICTURES_COLLECTION);
+
+    let oid = mongodb::bson::Uuid::parse_str(file_id)
+        .map_err(|e| anyhow::anyhow!("Invalid file ID: {}", e))?;
+
+    let filter = mongodb::bson::doc! { "_id": oid };
+    collection.delete_one(filter).await?;
+
+    Ok(())
 }

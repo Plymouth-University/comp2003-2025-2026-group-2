@@ -47,7 +47,7 @@
 				return 'Weekly';
 			case 'monthly':
 				return `Monthly (Day ${schedule.dayOfMonth})`;
-			case 'yearly':
+			case 'yearly': {
 				const months = [
 					'Jan',
 					'Feb',
@@ -63,6 +63,7 @@
 					'Dec'
 				];
 				return `Yearly (${months[(schedule.monthOfYear || 1) - 1]} ${schedule.dayOfMonth})`;
+			}
 			case 'custom':
 				return `Every ${schedule.customIntervalDays} days`;
 			default:

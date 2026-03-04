@@ -3,7 +3,15 @@ import type { components } from '$lib/api-types';
 type GetTemplateResponse = components['schemas']['GetTemplateResponse'];
 type LogEntryResponse = components['schemas']['LogEntryResponse'];
 
-export const load = async ({ url, fetch, cookies }: any) => {
+export const load = async ({
+	url,
+	fetch,
+	cookies
+}: {
+	url: URL;
+	fetch: typeof globalThis.fetch;
+	cookies: { get: (name: string) => string | undefined };
+}) => {
 	const token = cookies.get('ls-token');
 	const templateName = url.searchParams.get('template');
 	const entryId = url.searchParams.get('entry');

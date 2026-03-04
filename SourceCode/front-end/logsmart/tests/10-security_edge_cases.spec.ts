@@ -139,7 +139,7 @@ test.describe('Security: XSS Prevention', () => {
 });
 
 test.describe('Security: Authorization Boundary Tests', () => {
-	test('horizontal_privilege_escalation_view_other_user_logs', async ({ page, context }) => {
+	test('horizontal_privilege_escalation_view_other_user_logs', async ({ page }) => {
 		await page.goto('http://localhost:5173/');
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
