@@ -9,7 +9,8 @@
 		firstName = '',
 		lastName = '',
 		triggerOnImageClick = false,
-		showUploadButton = true
+		showUploadButton = true,
+		targetUserEmail = ''
 	}: {
 		currentPictureUrl?: string | null;
 		onUploadComplete?: (url: string) => void;
@@ -19,6 +20,7 @@
 		lastName?: string;
 		triggerOnImageClick?: boolean;
 		showUploadButton?: boolean;
+		targetUserEmail?: string;
 	} = $props();
 
 	let fileInput: HTMLInputElement = $state(null as unknown as HTMLInputElement);
@@ -154,7 +156,10 @@
 				throw new Error('Failed to process image');
 			}
 
-			const response = await fetch('/api/auth/profile-picture', {
+			const uploadUrl = targetUserEmail
+				? `/api/auth/profile-picture?email=${encodeURIComponent(targetUserEmail)}`
+				: '/api/auth/profile-picture';
+			const response = await fetch(uploadUrl, {
 				method: 'POST',
 				body: blob,
 				headers: {
@@ -200,7 +205,10 @@
 		errorMessage = '';
 
 		try {
-			const response = await fetch('/api/auth/profile-picture', {
+			const deleteUrl = targetUserEmail
+				? `/api/auth/profile-picture?email=${encodeURIComponent(targetUserEmail)}`
+				: '/api/auth/profile-picture';
+			const response = await fetch(deleteUrl, {
 				method: 'DELETE'
 			});
 

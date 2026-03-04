@@ -39,52 +39,28 @@
 
 	async function handlePictureUpload(pictureUrl: string) {
 		if (!selectedUser || isReadonlyHQ) return;
-
-		const response = await api.PUT('/auth/admin/update-member', {
-			body: {
-				email: selectedUser.email,
-				first_name: firstName,
-				last_name: lastName,
-				role: role,
-				branch_id: branchId || undefined,
-				profile_picture_id: pictureUrl.split('/').pop()
-			}
+		updateMember(selectedUser.email, {
+			first_name: firstName,
+			last_name: lastName,
+			role: role,
+			branch_id: branchId,
+			profile_picture_url: pictureUrl,
+			profile_picture_id: pictureUrl.split('/').pop() || null
 		});
-
-		if (!response.error) {
-			updateMember(selectedUser.email, {
-				first_name: firstName,
-				last_name: lastName,
-				role: role,
-				branch_id: branchId
-			});
-			await invalidateAll();
-		}
+		await invalidateAll();
 	}
 
 	async function handlePictureDelete() {
 		if (!selectedUser || isReadonlyHQ) return;
-
-		const response = await api.PUT('/auth/admin/update-member', {
-			body: {
-				email: selectedUser.email,
-				first_name: firstName,
-				last_name: lastName,
-				role: role,
-				branch_id: branchId || undefined,
-				profile_picture_id: null
-			}
+		updateMember(selectedUser.email, {
+			first_name: firstName,
+			last_name: lastName,
+			role: role,
+			branch_id: branchId,
+			profile_picture_url: null,
+			profile_picture_id: null
 		});
-
-		if (!response.error) {
-			updateMember(selectedUser.email, {
-				first_name: firstName,
-				last_name: lastName,
-				role: role,
-				branch_id: branchId
-			});
-			await invalidateAll();
-		}
+		await invalidateAll();
 	}
 </script>
 
@@ -108,6 +84,7 @@
 					disabled={isReadonlyHQ}
 					triggerOnImageClick={true}
 					showUploadButton={false}
+					targetUserEmail={selectedUser?.email || ''}
 					onUploadComplete={handlePictureUpload}
 					onDeleteComplete={handlePictureDelete}
 				/>

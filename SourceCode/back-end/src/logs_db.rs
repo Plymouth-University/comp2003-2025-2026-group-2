@@ -1153,6 +1153,7 @@ struct ProfilePictureDoc {
 pub async fn upload_profile_picture(
     client: &mongodb::Client,
     data: Vec<u8>,
+    user_id: &str,
     content_type: &str,
 ) -> Result<String> {
     let db = client.database("logs_db");
@@ -1163,7 +1164,7 @@ pub async fn upload_profile_picture(
 
     let doc = ProfilePictureDoc {
         _id: file_id,
-        user_id: String::new(),
+        user_id: user_id.to_string(),
         data,
         content_type: content_type.to_string(),
         created_at: chrono::Utc::now(),

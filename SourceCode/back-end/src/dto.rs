@@ -33,6 +33,12 @@ pub struct AdminUpdateMemberRequest {
     #[schema(example = "uuid-of-profile-picture")]
     pub profile_picture_id: Option<String>,
 }
+
+#[derive(Debug, Deserialize, IntoParams, ToSchema)]
+pub struct AdminProfilePictureQuery {
+    #[schema(example = "user@example.com")]
+    pub email: Option<String>,
+}
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CancelInvitationRequest {
     #[schema(example = "invitation-uuid-here")]

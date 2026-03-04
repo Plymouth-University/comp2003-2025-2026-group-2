@@ -1,7 +1,8 @@
 use crate::{
     AppState, db,
     dto::{
-        AdminUpdateMemberRequest, ErrorResponse, GetCompanyMembersResponse, RemoveMemberRequest,
+        AdminProfilePictureQuery, AdminUpdateMemberRequest, ErrorResponse,
+        GetCompanyMembersResponse, RemoveMemberRequest,
     },
     logs_db,
     middleware::{AnyAuthUser, BranchManagerUser, ReadBranchUser},
@@ -11,7 +12,7 @@ use crate::{
 use axum::{
     Json,
     body::Bytes,
-    extract::State,
+    extract::{Query, State},
     http::{StatusCode, header},
 };
 use serde_json::json;
@@ -170,6 +171,7 @@ pub async fn admin_delete_member(
 #[utoipa::path(
     post,
     path = "/auth/profile-picture",
+    params(AdminProfilePictureQuery),
     request_body = Vec<u8>,
     responses(
         (status = 200, description = "Profile picture uploaded successfully", body = serde_json::Value),
@@ -183,6 +185,7 @@ pub async fn admin_delete_member(
 pub async fn upload_profile_picture(
     AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
+    Query(query): Query<AdminProfilePictureQuery>,
     body: Bytes,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
     let data = body.to_vec();
@@ -200,25 +203,61 @@ pub async fn upload_profile_picture(
         return Err(err_bad_request("File must be an image"));
     }
 
-    let file_id = logs_db::upload_profile_picture(&state.mongodb, data, &content_type)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to upload profile picture: {:?}", e);
-            err_internal("Failed to upload profile picture")
-        })?;
+    let (target_user_id, target_picture_id) = if query.email.as_deref().unwrap_or("").is_empty() {
+        (user.id.clone(), user.profile_picture_id.clone())
+    } else {
+        if !user.can_manage_branch() {
+            return Err(err_forbidden("Only managers can update member profiles"));
+        }
 
-    if let Some(old_picture_id) = &user.profile_picture_id {
+        let target = UserService::get_user_by_email(
+            &state.postgres,
+            query.email.as_deref().unwrap_or(""),
+        )
+            .await
+            .map_err(|e| (e.0, Json(e.1)))?;
+
+        if user.is_company_manager() && user.company_id != target.company_id {
+            return Err(err_forbidden("Cannot update users from other companies"));
+        }
+
+        if user.is_branch_manager() && user.branch_id != target.branch_id {
+            return Err(err_forbidden(
+                "Branch managers can only manage users in their branch",
+            ));
+        }
+
+        if target.is_logsmart_admin() && !user.is_logsmart_admin() {
+            return Err(err_forbidden("Cannot modify LogSmart internal admin users"));
+        }
+
+        (target.id, target.profile_picture_id)
+    };
+
+    let file_id = logs_db::upload_profile_picture(
+        &state.mongodb,
+        data,
+        &target_user_id,
+        &content_type,
+    )
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to upload profile picture: {:?}", e);
+        err_internal("Failed to upload profile picture")
+    })?;
+
+    if let Some(old_picture_id) = &target_picture_id {
         let _ = logs_db::delete_profile_picture(&state.mongodb, old_picture_id).await;
     }
 
-    db::update_user_profile_picture_id(&state.postgres, &user.id, Some(&file_id))
+    db::update_user_profile_picture_id(&state.postgres, &target_user_id, Some(&file_id))
         .await
         .map_err(|e| {
             tracing::error!("Failed to update user profile picture: {:?}", e);
             err_internal("Failed to update profile picture reference")
         })?;
 
-    state.user_cache.invalidate(&user.id).await;
+    state.user_cache.invalidate(&target_user_id).await;
 
     Ok(Json(
         json!({ "profile_picture_id": file_id, "profile_picture_url": format!("/api/auth/profile-picture/{}", file_id) }),
@@ -274,6 +313,7 @@ pub async fn get_profile_picture(
 #[utoipa::path(
     delete,
     path = "/auth/profile-picture",
+    params(AdminProfilePictureQuery),
     responses(
         (status = 200, description = "Profile picture deleted successfully"),
         (status = 401, description = "Unauthorized", body = ErrorResponse),
@@ -285,19 +325,51 @@ pub async fn get_profile_picture(
 pub async fn delete_profile_picture_handler(
     AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
+    Query(query): Query<AdminProfilePictureQuery>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    if let Some(picture_id) = &user.profile_picture_id {
+    let (target_user_id, target_picture_id) = if query.email.as_deref().unwrap_or("").is_empty() {
+        (user.id.clone(), user.profile_picture_id.clone())
+    } else {
+        if !user.can_manage_branch() {
+            return Err(err_forbidden("Only managers can update member profiles"));
+        }
+
+        let target = UserService::get_user_by_email(
+            &state.postgres,
+            query.email.as_deref().unwrap_or(""),
+        )
+            .await
+            .map_err(|e| (e.0, Json(e.1)))?;
+
+        if user.is_company_manager() && user.company_id != target.company_id {
+            return Err(err_forbidden("Cannot update users from other companies"));
+        }
+
+        if user.is_branch_manager() && user.branch_id != target.branch_id {
+            return Err(err_forbidden(
+                "Branch managers can only manage users in their branch",
+            ));
+        }
+
+        if target.is_logsmart_admin() && !user.is_logsmart_admin() {
+            return Err(err_forbidden("Cannot modify LogSmart internal admin users"));
+        }
+
+        (target.id, target.profile_picture_id)
+    };
+
+    if let Some(picture_id) = &target_picture_id {
         let _ = logs_db::delete_profile_picture(&state.mongodb, picture_id).await;
     }
 
-    db::update_user_profile_picture_id(&state.postgres, &user.id, None)
+    db::update_user_profile_picture_id(&state.postgres, &target_user_id, None)
         .await
         .map_err(|e| {
             tracing::error!("Failed to delete profile picture: {:?}", e);
             err_internal("Failed to delete profile picture")
         })?;
 
-    state.user_cache.invalidate(&user.id).await;
+    state.user_cache.invalidate(&target_user_id).await;
 
     Ok(Json(
         json!({ "message": "Profile picture deleted successfully" }),

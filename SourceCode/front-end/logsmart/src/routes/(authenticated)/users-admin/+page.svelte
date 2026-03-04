@@ -101,7 +101,14 @@
 
 	const updateMember = (
 		email: string,
-		updates: { first_name: string; last_name: string; role: string }
+		updates: {
+			first_name: string;
+			last_name: string;
+			role: string;
+			branch_id?: string | null;
+			profile_picture_id?: string | null;
+			profile_picture_url?: string | null;
+		}
 	) => {
 		const memberIndex = members.findIndex((m: Member) => m.email === email);
 		if (memberIndex !== -1) {
