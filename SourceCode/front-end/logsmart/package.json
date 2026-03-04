@@ -48,6 +48,7 @@
 		"@neodrag/svelte": "^2.3.3",
 		"@simplewebauthn/browser": "^13.2.2",
 		"@types/pg": "^8.18.0",
+		"cropperjs": "^2.1.0",
 		"openapi-fetch": "^0.15.2",
 		"pg": "^8.19.0"
 	}

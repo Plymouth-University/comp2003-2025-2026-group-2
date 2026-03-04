@@ -72,6 +72,7 @@ pub struct UserRecord {
     pub oauth_provider: Option<String>,
     pub oauth_subject: Option<String>,
     pub oauth_picture: Option<String>,
+    pub profile_picture_id: Option<String>,
 }
 
 impl UserRecord {
@@ -260,6 +261,7 @@ where
         company_id,
         branch_id: None,
         company_name: None,
+        profile_picture_id: None,
         role,
         created_at: now,
         deleted_at: None,
@@ -302,7 +304,7 @@ pub async fn get_user_by_email(pool: &PgPool, email: &str) -> Result<Option<User
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
                users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
-               companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture
+               companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.email = $1 AND users.deleted_at IS NULL
@@ -324,7 +326,7 @@ pub async fn get_user_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRecord
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
             users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
-            companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture
+            companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.id = $1 AND users.deleted_at IS NULL
@@ -361,7 +363,7 @@ pub async fn get_user_by_oauth(
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
             users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
-            companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture
+            companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.oauth_provider = $1 AND users.oauth_subject = $2 AND users.deleted_at IS NULL
@@ -427,6 +429,7 @@ where
         role,
         created_at: now,
         deleted_at: None,
+        profile_picture_id: None,
         oauth_provider: Some(oauth_provider),
         oauth_subject: Some(oauth_subject),
         oauth_picture,
@@ -828,6 +831,30 @@ pub async fn update_user_profile(
     Ok(user)
 }
 
+pub async fn update_user_profile_picture_id(
+    pool: &PgPool,
+    user_id: &str,
+    picture_id: Option<&str>,
+) -> Result<UserRecord> {
+    sqlx::query(
+        r"
+        UPDATE users
+        SET profile_picture_id = $1
+        WHERE id = $2
+        ",
+    )
+    .bind(picture_id)
+    .bind(user_id)
+    .execute(pool)
+    .await?;
+
+    let user = get_user_by_id(pool, user_id)
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("User not found"))?;
+
+    Ok(user)
+}
+
 /// Updates a user's profile information including their role and branch.
 ///
 /// # Errors
@@ -839,18 +866,20 @@ pub async fn update_user_profile_full(
     last_name: String,
     role: UserRole,
     branch_id: Option<String>,
+    profile_picture_id: Option<String>,
 ) -> Result<UserRecord> {
     sqlx::query(
         r"
         UPDATE users
-        SET first_name = $1, last_name = $2, role = $3, branch_id = $4
-        WHERE id = $5
+        SET first_name = $1, last_name = $2, role = $3, branch_id = $4, profile_picture_id = $5
+        WHERE id = $6
         ",
     )
     .bind(&first_name)
     .bind(&last_name)
     .bind(&role)
-    .bind(branch_id)
+    .bind(&branch_id)
+    .bind(&profile_picture_id)
     .bind(user_id)
     .execute(pool)
     .await?;
@@ -1092,7 +1121,7 @@ pub async fn get_users_by_company_id(pool: &PgPool, company_id: &str) -> Result<
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
                users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
-               companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture
+               companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.company_id = $1 AND users.deleted_at IS NULL
@@ -1466,6 +1495,7 @@ pub async fn accept_invitation_with_user_creation(
         company_id: Some(company_id.to_string()),
         branch_id,
         company_name: None,
+        profile_picture_id: None,
         role,
         created_at: now,
         deleted_at: None,
@@ -1817,7 +1847,7 @@ pub async fn get_company_members_for_user(pool: &PgPool, user_id: &str) -> Resul
         r"
         SELECT target_user.id, target_user.email, target_user.first_name, target_user.last_name, 
                target_user.password_hash, target_user.company_id, target_user.branch_id, target_user.role, target_user.created_at, target_user.deleted_at, 
-               companies.name as company_name, target_user.oauth_provider, target_user.oauth_subject, target_user.oauth_picture
+               companies.name as company_name, target_user.oauth_provider, target_user.oauth_subject, target_user.oauth_picture, target_user.profile_picture_id
         FROM users as request_user
         JOIN users as target_user ON request_user.company_id = target_user.company_id
         LEFT JOIN companies ON target_user.company_id = companies.id

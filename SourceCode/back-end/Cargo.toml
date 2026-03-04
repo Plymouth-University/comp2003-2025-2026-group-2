@@ -27,7 +27,7 @@ jsonwebtoken = { version = "10", features = ["rust_crypto"] }
 chrono = { version = "0.4", features = ["serde"] }
 argon2 = "0.5"
 regex = "1.10"
-tower = "0.5"
+tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.6", features = ["cors", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json", "env-filter"] }
@@ -49,6 +49,7 @@ webauthn-rs-proto = "0.5.4"
 openidconnect = { version = "4.0.1", features = [ "reqwest" ] }
 reqwest = { version = "0.13.1", features = ["json"] }
 moka = { version = "0.12.13", features = ["future"] }
+image = "0.25"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }

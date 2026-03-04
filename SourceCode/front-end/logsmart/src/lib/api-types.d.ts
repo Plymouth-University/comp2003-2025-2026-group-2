@@ -890,6 +890,8 @@ export interface components {
 			first_name: string;
 			/** @example Smith */
 			last_name: string;
+			/** @example uuid-of-profile-picture */
+			profile_picture_id?: string | null;
 			/** @example staff */
 			role: string;
 		};
@@ -1298,7 +1300,9 @@ export interface components {
 			first_name: string;
 			id: string;
 			last_name: string;
+			oauth_picture?: string | null;
 			oauth_provider?: string | null;
+			profile_picture_url?: string | null;
 			role: components['schemas']['UserRole'];
 		};
 		/** @enum {string} */

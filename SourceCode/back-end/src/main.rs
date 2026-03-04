@@ -236,6 +236,18 @@ async fn main() {
             "/auth/admin/remove-member",
             delete(handlers::admin_delete_member),
         )
+        .route(
+            "/auth/profile-picture",
+            post(handlers::upload_profile_picture),
+        )
+        .route(
+            "/auth/profile-picture",
+            delete(handlers::delete_profile_picture_handler),
+        )
+        .route(
+            "/auth/profile-picture/{user_id}",
+            get(handlers::get_profile_picture),
+        )
         .route("/logs/templates", post(handlers::add_template))
         .route("/logs/templates", get(handlers::get_template))
         .route("/logs/templates/all", get(handlers::get_all_templates))
