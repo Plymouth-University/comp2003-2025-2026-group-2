@@ -240,21 +240,23 @@ pub async fn upload_profile_picture(
                 err_internal("Failed to upload profile picture")
             })?;
 
-    if let Err(err) = db::update_user_profile_picture_id(&state.postgres, &target_user_id, Some(&file_id))
-        .await
+    if let Err(err) =
+        db::update_user_profile_picture_id(&state.postgres, &target_user_id, Some(&file_id)).await
     {
         tracing::error!("Failed to update user profile picture: {:?}", err);
         if let Err(delete_err) = logs_db::delete_profile_picture(&state.mongodb, &file_id).await {
-            tracing::error!("Failed to cleanup uploaded profile picture: {:?}", delete_err);
+            tracing::error!(
+                "Failed to cleanup uploaded profile picture: {:?}",
+                delete_err
+            );
         }
         return Err(err_internal("Failed to update profile picture reference"));
     }
 
-    if let Some(old_picture_id) = &target_picture_id {
-        if let Err(err) = logs_db::delete_profile_picture(&state.mongodb, old_picture_id).await {
+    if let Some(old_picture_id) = &target_picture_id
+        && let Err(err) = logs_db::delete_profile_picture(&state.mongodb, old_picture_id).await {
             tracing::error!("Failed to delete old profile picture: {:?}", err);
         }
-    }
 
     state.user_cache.invalidate(&target_user_id).await;
 
@@ -355,15 +357,15 @@ pub async fn delete_profile_picture_handler(
         (target.id, target.profile_picture_id)
     };
 
-    if let Err(err) = db::update_user_profile_picture_id(&state.postgres, &target_user_id, None)
-        .await
+    if let Err(err) =
+        db::update_user_profile_picture_id(&state.postgres, &target_user_id, None).await
     {
         tracing::error!("Failed to delete profile picture: {:?}", err);
         return Err(err_internal("Failed to delete profile picture"));
     }
 
-    if let Some(picture_id) = &target_picture_id {
-        if let Err(err) = logs_db::delete_profile_picture(&state.mongodb, picture_id).await {
+    if let Some(picture_id) = &target_picture_id
+        && let Err(err) = logs_db::delete_profile_picture(&state.mongodb, picture_id).await {
             tracing::error!("Failed to delete profile picture from Mongo: {:?}", err);
             if let Err(rollback_err) = db::update_user_profile_picture_id(
                 &state.postgres,
@@ -379,7 +381,6 @@ pub async fn delete_profile_picture_handler(
             }
             return Err(err_internal("Failed to delete profile picture"));
         }
-    }
 
     state.user_cache.invalidate(&target_user_id).await;
 
