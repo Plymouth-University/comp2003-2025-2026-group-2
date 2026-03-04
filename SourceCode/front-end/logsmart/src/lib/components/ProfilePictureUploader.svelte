@@ -22,6 +22,7 @@
 		showUploadButton?: boolean;
 		targetUserEmail?: string;
 	} = $props();
+	const uid = $props.id();
 
 	let fileInput: HTMLInputElement = $state(null as unknown as HTMLInputElement);
 	let imageElement: HTMLImageElement = $state(null as unknown as HTMLImageElement);
@@ -300,11 +301,11 @@
 				onchange={handleFileSelect}
 				disabled={disabled || isLoading}
 				class="file-input"
-				id="profile-picture-input"
+				id="{uid}-profile-picture-input"
 			/>
 			{#if showUploadButton}
 				<label
-					for="profile-picture-input"
+					for="{uid}-profile-picture-input"
 					class="btn-upload"
 					class:disabled={disabled || isLoading}
 				>
