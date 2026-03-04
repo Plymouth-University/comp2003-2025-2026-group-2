@@ -33,6 +33,7 @@ impl UserFactory {
             oauth_provider: None,
             oauth_subject: None,
             oauth_picture: None,
+            profile_picture_id: None,
         }
     }
 
@@ -510,6 +511,7 @@ pub async fn create_test_user(
         oauth_provider: row.get("oauth_provider"),
         oauth_subject: row.get("oauth_subject"),
         oauth_picture: row.get("oauth_picture"),
+        profile_picture_id: row.get("profile_picture_id"),
     })
     .unwrap()
 }
@@ -562,6 +564,7 @@ pub async fn create_test_user_with_role(
         oauth_provider: row.get("oauth_provider"),
         oauth_subject: row.get("oauth_subject"),
         oauth_picture: row.get("oauth_picture"),
+        profile_picture_id: row.get("profile_picture_id"),
     })
     .unwrap()
 }

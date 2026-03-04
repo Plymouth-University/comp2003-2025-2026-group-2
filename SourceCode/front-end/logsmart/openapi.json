@@ -1942,6 +1942,10 @@
 					"email": { "type": "string", "example": "user@example.com" },
 					"first_name": { "type": "string", "example": "Jane" },
 					"last_name": { "type": "string", "example": "Smith" },
+					"profile_picture_id": {
+						"type": ["string", "null"],
+						"example": "uuid-of-profile-picture"
+					},
 					"role": { "type": "string", "example": "staff" }
 				}
 			},
@@ -2567,7 +2571,9 @@
 					"first_name": { "type": "string" },
 					"id": { "type": "string" },
 					"last_name": { "type": "string" },
+					"oauth_picture": { "type": ["string", "null"] },
 					"oauth_provider": { "type": ["string", "null"] },
+					"profile_picture_url": { "type": ["string", "null"] },
 					"role": { "$ref": "#/components/schemas/UserRole" }
 				}
 			},

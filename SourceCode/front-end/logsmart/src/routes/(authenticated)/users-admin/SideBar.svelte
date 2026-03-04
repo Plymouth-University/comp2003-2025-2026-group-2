@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { api } from '$lib/api';
 	import type { Member } from './+page.svelte';
-	import PlaceHolderImage from '$lib/assets/placeholder.png';
+	import ProfilePictureUploader from '$lib/components/ProfilePictureUploader.svelte';
+	import { invalidateAll } from '$app/navigation';
 
 	const { selectedUser, loggedInUserRole, updateMember, branches, isReadonlyHQ } = $props<{
 		selectedUser: Member | null;
@@ -18,6 +19,13 @@
 	let lastName = $state('');
 	let role = $state('');
 	let branchId = $state(null as string | null);
+	let profilePictureId = $state<string | null>(null);
+
+	let profilePictureUrl = $derived(
+		selectedUser?.profile_picture_url
+			? selectedUser.profile_picture_url
+			: selectedUser?.oauth_picture || null
+	);
 
 	$effect(() => {
 		if (selectedUser) {
@@ -25,8 +33,35 @@
 			lastName = selectedUser.last_name;
 			role = selectedUser.role;
 			branchId = selectedUser.branch_id || null;
+			profilePictureId = selectedUser.profile_picture_id || null;
 		}
 	});
+
+	async function handlePictureUpload(pictureUrl: string) {
+		if (!selectedUser || isReadonlyHQ) return;
+		updateMember(selectedUser.email, {
+			first_name: firstName,
+			last_name: lastName,
+			role: role,
+			branch_id: branchId,
+			profile_picture_url: pictureUrl,
+			profile_picture_id: pictureUrl.split('/').pop() || null
+		});
+		await invalidateAll();
+	}
+
+	async function handlePictureDelete() {
+		if (!selectedUser || isReadonlyHQ) return;
+		updateMember(selectedUser.email, {
+			first_name: firstName,
+			last_name: lastName,
+			role: role,
+			branch_id: branchId,
+			profile_picture_url: null,
+			profile_picture_id: null
+		});
+		await invalidateAll();
+	}
 </script>
 
 <div
@@ -41,7 +76,19 @@
 			class="mb-4 flex flex-col items-center px-8 pt-2 pb-8"
 			onsubmit={(e) => e.preventDefault()}
 		>
-			<img class="h-50 w-50" src={PlaceHolderImage} alt="User Profile" />
+			<div class="mb-4">
+				<ProfilePictureUploader
+					currentPictureUrl={profilePictureUrl}
+					{firstName}
+					{lastName}
+					disabled={isReadonlyHQ}
+					triggerOnImageClick={true}
+					showUploadButton={false}
+					targetUserEmail={selectedUser?.email || ''}
+					onUploadComplete={handlePictureUpload}
+					onDeleteComplete={handlePictureDelete}
+				/>
+			</div>
 			<input
 				class="mb-2 border-2 border-border-primary bg-bg-primary px-3 py-1 text-text-primary"
 				id="fname"

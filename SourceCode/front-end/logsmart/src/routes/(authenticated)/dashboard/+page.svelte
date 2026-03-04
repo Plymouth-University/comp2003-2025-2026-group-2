@@ -67,12 +67,14 @@
 					break;
 			}
 
+			const profilePictureUrl = data.user.profile_picture_url || data.user.oauth_picture || null;
 			return {
 				name: fullName || 'User',
 				email: data.user.email || '',
 				company: data.user.company_name || 'N/A',
 				role: role,
-				initials: initials || '?'
+				initials: initials || '?',
+				profilePictureUrl
 			};
 		})()
 	);
@@ -157,13 +159,26 @@
 			<div class="border-2" style="border-color: var(--border-primary);">
 				<div class="px-6 py-4" style="background-color: var(--bg-primary);">
 					<div class="flex items-center gap-4">
-						<!-- Profile Picture (Initials) -->
-						<div
-							class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white"
-							style="background-color: #3D7A82;"
-						>
-							{user.initials}
-						</div>
+						<!-- Profile Picture -->
+						{#if user.profilePictureUrl}
+							<div
+								class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full"
+								style="background-color: var(--bg-secondary); border: 2px solid var(--border-primary);"
+							>
+								<img
+									src={user.profilePictureUrl}
+									alt="Profile"
+									class="h-14 w-14 rounded-full object-cover"
+								/>
+							</div>
+						{:else}
+							<div
+								class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white"
+								style="background-color: #3D7A82; border: 2px solid var(--border-primary);"
+							>
+								{user.initials}
+							</div>
+						{/if}
 						<!-- User Info -->
 						<div class="text-left">
 							<div class="font-bold" style="color: var(--text-primary);">{user.name}</div>
