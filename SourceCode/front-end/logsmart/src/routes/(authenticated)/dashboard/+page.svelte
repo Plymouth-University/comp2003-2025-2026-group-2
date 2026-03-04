@@ -67,16 +67,16 @@
 					break;
 			}
 
-		const profilePictureUrl = data.user.profile_picture_url || data.user.oauth_picture || null;
-		return {
-			name: fullName || 'User',
-			email: data.user.email || '',
-			company: data.user.company_name || 'N/A',
-			role: role,
-			initials: initials || '?',
-			profilePictureUrl
-		};
-	})()
+			const profilePictureUrl = data.user.profile_picture_url || data.user.oauth_picture || null;
+			return {
+				name: fullName || 'User',
+				email: data.user.email || '',
+				company: data.user.company_name || 'N/A',
+				role: role,
+				initials: initials || '?',
+				profilePictureUrl
+			};
+		})()
 	);
 
 	// Draggable boxes state

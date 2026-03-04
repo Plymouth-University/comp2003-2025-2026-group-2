@@ -54,7 +54,7 @@ async function proxyRequest(event: RequestEvent) {
 		const response = await fetch(url, {
 			method: request.method,
 			headers,
-		body: requestBody,
+			body: requestBody,
 			redirect: isSwagger ? undefined : 'manual'
 		});
 

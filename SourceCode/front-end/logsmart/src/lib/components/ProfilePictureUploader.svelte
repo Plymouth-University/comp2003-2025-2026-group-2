@@ -295,7 +295,11 @@
 				id="profile-picture-input"
 			/>
 			{#if showUploadButton}
-				<label for="profile-picture-input" class="btn-upload" class:disabled={disabled || isLoading}>
+				<label
+					for="profile-picture-input"
+					class="btn-upload"
+					class:disabled={disabled || isLoading}
+				>
 					{isLoading ? 'Uploading...' : currentPictureUrl ? 'Change Picture' : 'Upload Picture'}
 				</label>
 			{/if}
