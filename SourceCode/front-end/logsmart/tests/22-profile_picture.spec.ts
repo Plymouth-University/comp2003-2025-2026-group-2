@@ -26,7 +26,7 @@ test.describe('Profile Picture', () => {
 		await page.getByRole('link', { name: 'Settings' }).click();
 		await page.waitForURL('**/settings');
 
-		const fileInput = page.locator('#profile-picture-input');
+		const fileInput = page.locator('.file-input');
 		await fileInput.setInputFiles({
 			name: 'avatar.png',
 			mimeType: 'image/png',
