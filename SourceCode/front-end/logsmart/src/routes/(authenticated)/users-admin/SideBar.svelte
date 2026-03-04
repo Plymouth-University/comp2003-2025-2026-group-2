@@ -106,6 +106,8 @@
 					{firstName}
 					{lastName}
 					disabled={isReadonlyHQ}
+					triggerOnImageClick={true}
+					showUploadButton={false}
 					onUploadComplete={handlePictureUpload}
 					onDeleteComplete={handlePictureDelete}
 				/>

@@ -7,7 +7,9 @@
 		onDeleteComplete,
 		disabled = false,
 		firstName = '',
-		lastName = ''
+		lastName = '',
+		triggerOnImageClick = false,
+		showUploadButton = true
 	}: {
 		currentPictureUrl?: string | null;
 		onUploadComplete?: (url: string) => void;
@@ -15,6 +17,8 @@
 		disabled?: boolean;
 		firstName?: string;
 		lastName?: string;
+		triggerOnImageClick?: boolean;
+		showUploadButton?: boolean;
 	} = $props();
 
 	let fileInput: HTMLInputElement = $state(null as unknown as HTMLInputElement);
@@ -26,6 +30,11 @@
 	let isLoading = $state(false);
 	let showCropper = $state(false);
 	let errorMessage = $state('');
+
+	function handlePictureClick() {
+		if (!triggerOnImageClick || disabled || isLoading) return;
+		fileInput?.click();
+	}
 
 	async function loadCropper() {
 		if (cropperConstructor) return cropperConstructor;
@@ -237,17 +246,39 @@
 			</div>
 		</div>
 	{:else}
-		<div class="current-picture">
-			{#if currentPictureUrl}
-				<img src={currentPictureUrl} alt="Profile" class="profile-preview" />
-			{:else}
-				<div class="no-picture">
-					<span class="initials">
-						{firstName?.[0] || ''}{lastName?.[0] || ''}
-					</span>
-				</div>
-			{/if}
-		</div>
+		{#if triggerOnImageClick}
+			<button
+				type="button"
+				class="current-picture clickable"
+				onclick={handlePictureClick}
+				disabled={disabled || isLoading}
+			>
+				{#if currentPictureUrl}
+					<img src={currentPictureUrl} alt="Profile" class="profile-preview" />
+				{:else}
+					<div class="no-picture">
+						<span class="initials">
+							{firstName?.[0] || ''}{lastName?.[0] || ''}
+						</span>
+					</div>
+				{/if}
+				{#if !disabled}
+					<div class="click-overlay">Change</div>
+				{/if}
+			</button>
+		{:else}
+			<div class="current-picture">
+				{#if currentPictureUrl}
+					<img src={currentPictureUrl} alt="Profile" class="profile-preview" />
+				{:else}
+					<div class="no-picture">
+						<span class="initials">
+							{firstName?.[0] || ''}{lastName?.[0] || ''}
+						</span>
+					</div>
+				{/if}
+			</div>
+		{/if}
 
 		{#if errorMessage}
 			<p class="error">{errorMessage}</p>
@@ -263,9 +294,11 @@
 				class="file-input"
 				id="profile-picture-input"
 			/>
-			<label for="profile-picture-input" class="btn-upload" class:disabled={disabled || isLoading}>
-				{isLoading ? 'Uploading...' : currentPictureUrl ? 'Change Picture' : 'Upload Picture'}
-			</label>
+			{#if showUploadButton}
+				<label for="profile-picture-input" class="btn-upload" class:disabled={disabled || isLoading}>
+					{isLoading ? 'Uploading...' : currentPictureUrl ? 'Change Picture' : 'Upload Picture'}
+				</label>
+			{/if}
 
 			{#if currentPictureUrl}
 				<button
@@ -295,6 +328,34 @@
 		border-radius: 50%;
 		overflow: hidden;
 		border: 3px solid var(--border-primary);
+		position: relative;
+	}
+
+	.current-picture.clickable {
+		cursor: pointer;
+		padding: 0;
+		background: transparent;
+	}
+
+	.click-overlay {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(17, 24, 39, 0.6);
+		color: #f9fafb;
+		font-weight: 600;
+		font-size: 0.875rem;
+		letter-spacing: 0.02em;
+		opacity: 0;
+		transition: opacity 0.2s ease;
+		pointer-events: none;
+	}
+
+	.current-picture.clickable:hover .click-overlay,
+	.current-picture.clickable:focus-visible .click-overlay {
+		opacity: 1;
 	}
 
 	.profile-preview {
