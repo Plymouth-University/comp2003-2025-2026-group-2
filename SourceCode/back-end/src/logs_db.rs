@@ -1156,10 +1156,11 @@ pub async fn upload_profile_picture(
     content_type: &str,
 ) -> Result<String> {
     let db = client.database("logs_db");
-    let collection: mongodb::Collection<ProfilePictureDoc> = db.collection(PROFILE_PICTURES_COLLECTION);
+    let collection: mongodb::Collection<ProfilePictureDoc> =
+        db.collection(PROFILE_PICTURES_COLLECTION);
 
     let file_id = mongodb::bson::Uuid::new();
-    
+
     let doc = ProfilePictureDoc {
         _id: file_id,
         user_id: String::new(),
@@ -1178,32 +1179,29 @@ pub async fn get_profile_picture(
     file_id: &str,
 ) -> Result<Option<(String, Vec<u8>)>> {
     let db = client.database("logs_db");
-    let collection: mongodb::Collection<ProfilePictureDoc> = db.collection(PROFILE_PICTURES_COLLECTION);
+    let collection: mongodb::Collection<ProfilePictureDoc> =
+        db.collection(PROFILE_PICTURES_COLLECTION);
 
-    let oid = mongodb::bson::Uuid::parse_str(file_id).map_err(|e| {
-        anyhow::anyhow!("Invalid file ID: {}", e)
-    })?;
+    let oid = mongodb::bson::Uuid::parse_str(file_id)
+        .map_err(|e| anyhow::anyhow!("Invalid file ID: {}", e))?;
 
     let filter = mongodb::bson::doc! { "_id": oid };
-    
+
     let doc = collection.find_one(filter).await?;
-    
+
     match doc {
         Some(picture) => Ok(Some((picture.content_type, picture.data))),
         None => Ok(None),
     }
 }
 
-pub async fn delete_profile_picture(
-    client: &mongodb::Client,
-    file_id: &str,
-) -> Result<()> {
+pub async fn delete_profile_picture(client: &mongodb::Client, file_id: &str) -> Result<()> {
     let db = client.database("logs_db");
-    let collection: mongodb::Collection<ProfilePictureDoc> = db.collection(PROFILE_PICTURES_COLLECTION);
+    let collection: mongodb::Collection<ProfilePictureDoc> =
+        db.collection(PROFILE_PICTURES_COLLECTION);
 
-    let oid = mongodb::bson::Uuid::parse_str(file_id).map_err(|e| {
-        anyhow::anyhow!("Invalid file ID: {}", e)
-    })?;
+    let oid = mongodb::bson::Uuid::parse_str(file_id)
+        .map_err(|e| anyhow::anyhow!("Invalid file ID: {}", e))?;
 
     let filter = mongodb::bson::doc! { "_id": oid };
     collection.delete_one(filter).await?;

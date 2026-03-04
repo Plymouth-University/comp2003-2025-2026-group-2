@@ -9,10 +9,10 @@ use crate::{
     utils::{AuditLogger, err_bad_request, err_forbidden, err_internal},
 };
 use axum::{
+    Json,
     body::Bytes,
     extract::State,
-    http::{header, StatusCode},
-    Json,
+    http::{StatusCode, header},
 };
 use serde_json::json;
 
@@ -220,7 +220,9 @@ pub async fn upload_profile_picture(
 
     state.user_cache.invalidate(&user.id).await;
 
-    Ok(Json(json!({ "profile_picture_id": file_id, "profile_picture_url": format!("/api/auth/profile-picture/{}", file_id) })))
+    Ok(Json(
+        json!({ "profile_picture_id": file_id, "profile_picture_url": format!("/api/auth/profile-picture/{}", file_id) }),
+    ))
 }
 
 fn infer_content_type(data: &[u8]) -> String {
@@ -248,11 +250,14 @@ fn infer_content_type(data: &[u8]) -> String {
 pub async fn get_profile_picture(
     State(state): State<AppState>,
     axum::extract::Path(file_id): axum::extract::Path<String>,
-) -> Result<(
-    StatusCode,
-    [(header::HeaderName, header::HeaderValue); 1],
-    Vec<u8>,
-), (StatusCode, Json<serde_json::Value>)> {
+) -> Result<
+    (
+        StatusCode,
+        [(header::HeaderName, header::HeaderValue); 1],
+        Vec<u8>,
+    ),
+    (StatusCode, Json<serde_json::Value>),
+> {
     if let Some((content_type, data)) = logs_db::get_profile_picture(&state.mongodb, &file_id)
         .await
         .map_err(|e| err_internal(&e.to_string()))?
@@ -293,5 +298,7 @@ pub async fn delete_profile_picture_handler(
 
     state.user_cache.invalidate(&user.id).await;
 
-    Ok(Json(json!({ "message": "Profile picture deleted successfully" })))
+    Ok(Json(
+        json!({ "message": "Profile picture deleted successfully" }),
+    ))
 }

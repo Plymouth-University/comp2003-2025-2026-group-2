@@ -379,10 +379,10 @@ pub struct UserResponse {
 
 impl From<db::UserRecord> for UserResponse {
     fn from(record: db::UserRecord) -> Self {
-        let profile_picture_url = record.profile_picture_id.map(|id| {
-            format!("/api/auth/profile-picture/{}", id)
-        });
-        
+        let profile_picture_url = record
+            .profile_picture_id
+            .map(|id| format!("/api/auth/profile-picture/{}", id));
+
         Self {
             id: record.id,
             email: record.email,
