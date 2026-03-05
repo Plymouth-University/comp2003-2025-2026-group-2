@@ -236,7 +236,7 @@
 								value={selectedItem.props.color || ''}
 								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
 								placeholder="#000000"
-								class="flex-1 w-2 border-2 px-3 py-2"
+								class="w-2 flex-1 border-2 px-3 py-2"
 								style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 							/>
 						</div>
@@ -380,7 +380,7 @@
 								value={selectedItem.props.color || ''}
 								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
 								placeholder="#000000"
-								class="flex-1 border-2 px-3 py-2 w-2"
+								class="w-2 flex-1 border-2 px-3 py-2"
 								style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 							/>
 						</div>
@@ -417,7 +417,7 @@
 								value={selectedItem.props.color || ''}
 								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
 								placeholder="#000000"
-								class="flex-1 border-2 px-3 py-2 w-2"
+								class="w-2 flex-1 border-2 px-3 py-2"
 								style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 							/>
 						</div>
