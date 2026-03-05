@@ -99,6 +99,12 @@ pub struct TemplateDocument {
     pub version_name: Option<String>,
 }
 
+impl TemplateDocument {
+    pub fn is_company_wide(&self) -> bool {
+        self.branch_id.is_none()
+    }
+}
+
 fn default_version() -> u16 {
     1
 }

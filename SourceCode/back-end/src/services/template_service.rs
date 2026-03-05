@@ -1,4 +1,8 @@
-use crate::{AppState, logs_db, utils};
+use crate::{
+    AppState,
+    db::{UserRecord, UserRole},
+    logs_db, utils,
+};
 use axum::http::StatusCode;
 use serde_json::json;
 
@@ -437,8 +441,8 @@ impl TemplateService {
                 ))?;
 
         // Authorization check
-        if !is_company_manager {
-            if current_template.branch_id.is_none() {
+        if user.is_branch_manager() {
+            if current_template.is_company_wide() {
                 return Err((
                     StatusCode::FORBIDDEN,
                     json!({ "error": "Branch managers cannot update company-wide templates" }),
@@ -509,18 +513,36 @@ impl TemplateService {
     /// Returns an error if database query fails.
     pub async fn get_versions(
         state: &AppState,
-        company_id: &str,
         template_name: &str,
+        user: &UserRecord,
     ) -> Result<Vec<logs_db::TemplateVersionDocument>, (StatusCode, serde_json::Value)> {
-        logs_db::get_template_versions(&state.mongodb, company_id, template_name)
-            .await
-            .map_err(|e| {
-                tracing::error!("Failed to fetch template versions: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Database error" }),
-                )
-            })
+        let company_id = user.company_id.as_ref().ok_or((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            json!({ "error": "User record missing company ID" }),
+        ))?;
+        let template_versions =
+            logs_db::get_template_versions(&state.mongodb, company_id, template_name)
+                .await
+                .map_err(|e| {
+                    tracing::error!("Failed to fetch template versions: {:?}", e);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        json!({ "error": "Database error" }),
+                    )
+                });
+        let last_version = template_versions
+            .as_ref()
+            .ok()
+            .and_then(|versions| versions.last());
+        if user.role == UserRole::BranchManager
+            && (last_version.map_or(false, |t| t.branch_id.as_deref() != user.branch_id.as_deref()))
+        {
+            return Err((
+                StatusCode::FORBIDDEN,
+                json!({ "error": "Unauthorized to view versions of this template" }),
+            ));
+        }
+        Ok(template_versions?)
     }
 
     /// Restores a specific version of a template.
@@ -578,8 +600,8 @@ impl TemplateService {
         company_id: &str,
         old_name: &str,
         new_name: &str,
-        branch_id: Option<&str>,
-        is_company_manager: bool,
+        user_branch_id: Option<&str>,
+        user_role: &UserRole,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
         let template = logs_db::get_template_by_name(&state.mongodb, old_name, company_id)
             .await
@@ -595,8 +617,8 @@ impl TemplateService {
                 json!({ "error": "Template not found" }),
             ))?;
 
-        if !is_company_manager
-            && (template.branch_id.is_none() || template.branch_id.as_deref() != branch_id)
+        if *user_role == UserRole::BranchManager
+            && (template.is_company_wide() || template.branch_id.as_deref() != user_branch_id)
         {
             return Err((
                 StatusCode::FORBIDDEN,
@@ -624,8 +646,8 @@ impl TemplateService {
         state: &AppState,
         company_id: &str,
         template_name: &str,
-        branch_id: Option<&str>,
-        is_company_manager: bool,
+        user_branch_id: Option<&str>,
+        user_role: &UserRole,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
         let template = logs_db::get_template_by_name(&state.mongodb, template_name, company_id)
             .await
@@ -641,8 +663,8 @@ impl TemplateService {
                 json!({ "error": "Template not found" }),
             ))?;
 
-        if !is_company_manager
-            && (template.branch_id.is_none() || template.branch_id.as_deref() != branch_id)
+        if *user_role == UserRole::BranchManager
+            && (template.is_company_wide() || template.branch_id.as_deref() != user_branch_id)
         {
             return Err((
                 StatusCode::FORBIDDEN,
