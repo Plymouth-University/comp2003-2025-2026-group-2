@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { sanitizeColorValue } from '$lib/utils/validation';
+
 	let {
 		editable = false,
 		text = $bindable('Label Text'),
@@ -22,6 +24,9 @@
 	function handleBlur() {
 		text = element?.textContent ?? '';
 	}
+
+	// Sanitize color to prevent CSS injection
+	const safeColor = $derived(sanitizeColorValue(color || ''));
 </script>
 
 <p
@@ -34,8 +39,8 @@
 		${weight === 'bold' ? 'font-bold' : ''}
 		${editable ? 'cursor-text outline-none' : ''}
 	`}
-	style="{color
-		? `color: ${color};`
+	style="{safeColor
+		? `color: ${safeColor};`
 		: 'color: var(--text-primary);'} font-size: {size}px; font-family: {fontFamily}; text-decoration: {textDecoration};"
 >
 	{text}

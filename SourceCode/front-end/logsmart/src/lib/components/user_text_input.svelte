@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { sanitizeColorValue } from '$lib/utils/validation';
+
 	let {
 		text = $bindable(''),
 		size = 16,
@@ -41,12 +43,12 @@
 	}
 
 	// Ensure maxLength and minLength are valid non-negative integers
-	const validMaxLength = $derived(
-		maxLength !== undefined && maxLength >= 0 ? maxLength : undefined
-	);
-	const validMinLength = $derived(
-		minLength !== undefined && minLength >= 0 ? minLength : undefined
-	);
+	const validMaxLength = $derived(maxLength !== undefined && maxLength >= 0 ? maxLength : undefined);
+	const validMinLength = $derived(minLength !== undefined && minLength >= 0 ? minLength : undefined);
+
+	// Sanitize color to prevent CSS injection
+	const safeColor = $derived(sanitizeColorValue(color || ''));
+
 </script>
 
 <input
@@ -64,9 +66,9 @@
 	{required}
 	maxlength={validMaxLength}
 	minlength={validMinLength}
-	style="border-color: var(--border-primary); {color
-		? `color: ${color};`
-		: ''} background-color: var(--bg-primary); font-size: {size}px; font-family: {fontFamily}; text-decoration: {textDecoration}; {disabled
+	style="border-color: var(--border-primary); {safeColor
+		? `color: ${safeColor};`
+		: 'color: var(--text-primary);'} background-color: var(--bg-primary); font-size: {size}px; font-family: {fontFamily}; text-decoration: {textDecoration}; {disabled
 		? 'opacity: 0.5; cursor: not-allowed;'
 		: ''}"
 />

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { sanitizeColorValue } from '$lib/utils/validation';
+
 	let {
 		text = 'Checkbox Label',
 		size = '16px',
@@ -17,13 +19,17 @@
 		required?: boolean;
 	} = $props();
 	const uid = $props.id();
+
+	// Sanitize color to prevent CSS injection
+	const safeColor = $derived(sanitizeColorValue(color || ''));
+
 </script>
 
 <div style={disabled ? 'opacity: 0.5; cursor: not-allowed;' : ''}>
 	<label
 		for="{uid}-checkbox"
-		style="font-size: {size}; font-weight: {weight}; {color
-			? `color: ${color};`
+		style="font-size: {size}; font-weight: {weight}; {safeColor
+			? `color: ${safeColor};`
 			: 'color: var(--text-primary);'} {disabled ? 'cursor: not-allowed;' : ''}"
 		>{text}{required ? ' *' : ''}</label
 	>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { CanvasItem } from './types';
+	import { isValidCSSColor } from '$lib/utils/validation';
 
 	let {
 		selectedItem,
@@ -227,14 +228,24 @@
 							<input
 								type="color"
 								value={selectedItem.props.color || '#000000'}
-								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
+								oninput={(e) => {
+									const newColor = e.currentTarget.value;
+									if (isValidCSSColor(newColor)) {
+										onUpdateProp(selectedItem.id, 'color', newColor);
+									}
+								}}
 								class="h-12 w-12 min-w-12 cursor-pointer rounded border-2 p-1"
 								style="border-color: var(--border-primary);"
 							/>
 							<input
 								type="text"
 								value={selectedItem.props.color || ''}
-								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
+								oninput={(e) => {
+									const newColor = e.currentTarget.value;
+									if (isValidCSSColor(newColor)) {
+										onUpdateProp(selectedItem.id, 'color', newColor);
+									}
+								}}
 								placeholder="#000000"
 								class="w-2 flex-1 border-2 px-3 py-2"
 								style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"

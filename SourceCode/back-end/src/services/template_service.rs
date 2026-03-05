@@ -1,80 +1,119 @@
-use crate::{AppState, logs_db};
+use crate::{AppState, logs_db, utils};
 use axum::http::StatusCode;
 use serde_json::json;
 
 #[cfg(test)]
 mod template_service_tests {
-    #[tokio::test]
-    async fn test_template_service_basic() {
-        assert!(true);
-    }
+	#[tokio::test]
+	async fn test_template_service_basic() {
+		assert!(true);
+	}
 }
 
 pub struct TemplateService;
 
 impl TemplateService {
+	/// Validates that all color fields in a template layout are safe CSS colors.
+	/// Returns an error if any color contains potentially malicious content.
+	fn validate_template_layout(template_layout: &logs_db::TemplateLayout) -> Result<(), (StatusCode, serde_json::Value)> {
+		for field in template_layout {
+			// Validate color field if present
+			if let Some(color) = &field.props.color {
+				if !utils::is_valid_css_color(color) {
+					return Err((
+						StatusCode::BAD_REQUEST,
+						json!({ "error": "Invalid color value in template field. Colors must be valid CSS values (hex, rgb/rgba, or named colors)." }),
+					));
+				}
+			}
+
+			// Validate font_family field if present
+			if let Some(font_family) = &field.props.font_family {
+				if !utils::is_valid_font_family(font_family) {
+					return Err((
+						StatusCode::BAD_REQUEST,
+						json!({ "error": "Invalid font family value in template field." }),
+					));
+				}
+			}
+
+			// Validate text_decoration field if present
+			if let Some(text_decoration) = &field.props.text_decoration {
+				if !utils::is_valid_text_decoration(text_decoration) {
+					return Err((
+						StatusCode::BAD_REQUEST,
+						json!({ "error": "Invalid text decoration value in template field." }),
+					));
+				}
+			}
+		}
+		Ok(())
+	}
     /// Creates a new log template.
     ///
     /// # Errors
     /// Returns an error if a template with the same name already exists or if database operations fail.
-    pub async fn create_template(
-        state: &AppState,
-        company_id: &str,
-        template_name: String,
-        template_layout: logs_db::TemplateLayout,
-        schedule: logs_db::Schedule,
-        user_id: &str,
-        branch_id: Option<String>,
-    ) -> Result<(), (StatusCode, serde_json::Value)> {
-        let existing_template =
-            logs_db::get_template_by_name(&state.mongodb, &template_name, company_id)
-                .await
-                .map_err(|e| {
-                    tracing::error!("Failed to check for existing template: {:?}", e);
-                    (
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        json!({ "error": "Database error" }),
-                    )
-                })?;
+	pub async fn create_template(
+		state: &AppState,
+		company_id: &str,
+		template_name: String,
+		template_layout: logs_db::TemplateLayout,
+		schedule: logs_db::Schedule,
+		user_id: &str,
+		branch_id: Option<String>,
+	) -> Result<(), (StatusCode, serde_json::Value)> {
+		// Validate template layout for malicious content
+		Self::validate_template_layout(&template_layout)?;
 
-        if existing_template.is_some() {
-            return Err((
-                StatusCode::CONFLICT,
-                json!({ "error": "A template with this name already exists for your company" }),
-            ));
-        }
+		let existing_template =
+			logs_db::get_template_by_name(&state.mongodb, &template_name, company_id)
+				.await
+				.map_err(|e| {
+					tracing::error!("Failed to check for existing template: {:?}", e);
+					(
+						StatusCode::INTERNAL_SERVER_ERROR,
+						json!({ "error": "Database error" }),
+					)
+				})?;
 
-        let template_document = logs_db::TemplateDocument {
-            template_name,
-            template_layout,
-            company_id: company_id.to_string(),
-            branch_id,
-            created_at: chrono::Utc::now(),
-            updated_at: chrono::Utc::now(),
-            created_by: mongodb::bson::Uuid::parse_str(user_id).map_err(|e| {
-                tracing::error!("Failed to parse user ID as UUID: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Server error" }),
-                )
-            })?,
-            schedule,
-            version: 1,
-            version_name: None,
-        };
+		if existing_template.is_some() {
+			return Err((
+				StatusCode::CONFLICT,
+				json!({ "error": "A template with this name already exists for your company" }),
+			));
+		}
 
-        logs_db::add_template(&state.mongodb, &template_document)
-            .await
-            .map_err(|e: anyhow::Error| {
-                tracing::error!("Failed to add template: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({ "error": "Failed to add template" }),
-                )
-            })?;
+		let template_document = logs_db::TemplateDocument {
+			template_name,
+			template_layout,
+			company_id: company_id.to_string(),
+			branch_id,
+			created_at: chrono::Utc::now(),
+			updated_at: chrono::Utc::now(),
+			created_by: mongodb::bson::Uuid::parse_str(user_id).map_err(|e| {
+				tracing::error!("Failed to parse user ID as UUID: {:?}", e);
+				(
+					StatusCode::INTERNAL_SERVER_ERROR,
+					json!({ "error": "Server error" }),
+				)
+			})?,
+			schedule,
+			version: 1,
+			version_name: None,
+		};
 
-        Ok(())
-    }
+		logs_db::add_template(&state.mongodb, &template_document)
+			.await
+			.map_err(|e: anyhow::Error| {
+				tracing::error!("Failed to add template: {:?}", e);
+				(
+					StatusCode::INTERNAL_SERVER_ERROR,
+					json!({ "error": "Failed to add template" }),
+				)
+			})?;
+
+		Ok(())
+	}
 
     /// Retrieves a specific log template by its name.
     ///
@@ -180,6 +219,11 @@ impl TemplateService {
         is_company_manager: bool,
         target_branch_id: Option<Option<&str>>,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
+        // Validate template layout for malicious content if provided
+        if let Some(layout) = template_layout {
+            Self::validate_template_layout(layout)?;
+        }
+
         // 1. Fetch current template state
         let current_template =
             logs_db::get_template_by_name(&state.mongodb, template_name, company_id)

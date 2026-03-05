@@ -374,5 +374,339 @@ pub fn svc_err_forbidden(msg: &str) -> ServiceError {
 
 #[must_use]
 pub fn svc_err_bad_request(msg: &str) -> ServiceError {
-    svc_err(axum::http::StatusCode::BAD_REQUEST, msg)
+	svc_err(axum::http::StatusCode::BAD_REQUEST, msg)
+}
+
+/// Validates that a string is a valid CSS color value.
+/// Rejects values containing CSS syntax characters that could be used for injection.
+///
+/// Valid formats:
+/// - Hex colors: #RGB, #RRGGBB, #RRGGBBAA
+/// - RGB/RGBA: rgb(...), rgba(...)
+/// - Named colors: red, blue, etc.
+#[must_use]
+pub fn is_valid_css_color(color: &str) -> bool {
+	// Empty string is valid (means no custom color)
+	if color.trim().is_empty() {
+		return true;
+	}
+
+	let trimmed = color.trim();
+
+	// Check for dangerous characters that could be used for CSS injection
+	// Semicolon, curly braces, backslash (escape), and @ (at-rules)
+	if trimmed.contains(';') || trimmed.contains('{') || trimmed.contains('}') 
+		|| trimmed.contains('\\') || trimmed.contains('@') {
+		return false;
+	}
+
+	// Hex color pattern: #RGB or #RRGGBB or #RRGGBBAA
+	if regex::Regex::new(r"^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?([0-9a-fA-F]{2})?$")
+		.map(|re| re.is_match(trimmed))
+		.unwrap_or(false) {
+		return true;
+	}
+
+	// RGB/RGBA pattern: rgb(...) or rgba(...)
+	if regex::Regex::new(r"^rgba?\s*\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$")
+		.map(|re| re.is_match(trimmed))
+		.unwrap_or(false) {
+		return true;
+	}
+
+	// Named colors: letters only (no spaces or special chars)
+	if regex::Regex::new(r"^[a-zA-Z]+$")
+		.map(|re| re.is_match(trimmed))
+		.unwrap_or(false) {
+		return true;
+	}
+
+	// Hex short format with alpha in older browsers
+	if regex::Regex::new(r"^#[0-9a-fA-F]{4}$")
+		.map(|re| re.is_match(trimmed))
+		.unwrap_or(false) {
+		return true;
+	}
+
+	// If none of the valid formats match, reject it
+	false
+}
+
+/// Validates that a font family value is safe (no CSS injection characters).
+/// Allows common font family names and safe CSS values.
+pub fn is_valid_font_family(font_family: &str) -> bool {
+	// Empty string is valid
+	if font_family.trim().is_empty() {
+		return true;
+	}
+
+	let trimmed = font_family.trim();
+
+	// Check for dangerous characters that could be used for CSS injection
+	if trimmed.contains(';') || trimmed.contains('{') || trimmed.contains('}') 
+		|| trimmed.contains('\\') || trimmed.contains('@') {
+		return false;
+	}
+
+	// Whitelist of safe font family values
+	let safe_fonts = vec![
+		"system-ui",
+		"serif",
+		"sans-serif",
+		"monospace",
+		"cursive",
+		"fantasy",
+		"georgia",
+		"times",
+		"courier",
+		"verdana",
+		"arial",
+		"helvetica",
+	];
+
+	// Check if it's in the safe list (case insensitive)
+	let lower_font = trimmed.to_lowercase();
+	if safe_fonts.iter().any(|f| f == &lower_font) {
+		return true;
+	}
+
+	// Allow single quoted font names if they don't contain dangerous chars
+	if trimmed.starts_with('\'') && trimmed.ends_with('\'') && trimmed.len() > 2 {
+		let inside = &trimmed[1..trimmed.len()-1];
+		// Font names with quotes can contain spaces but not dangerous chars
+		return !inside.contains(';') && !inside.contains('{') && !inside.contains('}') 
+			&& !inside.contains('\\') && !inside.contains('@');
+	}
+
+	// Allow double quoted font names
+	if trimmed.starts_with('"') && trimmed.ends_with('"') && trimmed.len() > 2 {
+		let inside = &trimmed[1..trimmed.len()-1];
+		return !inside.contains(';') && !inside.contains('{') && !inside.contains('}') 
+			&& !inside.contains('\\') && !inside.contains('@');
+	}
+
+	false
+}
+
+/// Validates that a text decoration value is safe (no CSS injection characters).
+pub fn is_valid_text_decoration(text_decoration: &str) -> bool {
+	// Empty string is valid
+	if text_decoration.trim().is_empty() {
+		return true;
+	}
+
+	let trimmed = text_decoration.trim();
+
+	// Check for dangerous characters that could be used for CSS injection
+	if trimmed.contains(';') || trimmed.contains('{') || trimmed.contains('}') 
+		|| trimmed.contains('\\') || trimmed.contains('@') {
+		return false;
+	}
+
+	// Whitelist of safe text decoration values
+	let safe_decorations = vec![
+		"none",
+		"underline",
+		"overline",
+		"line-through",
+		"blink",
+	];
+
+	// Check if it's in the safe list (case insensitive)
+	let lower = trimmed.to_lowercase();
+	safe_decorations.iter().any(|d| d == &lower)
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_valid_hex_colors() {
+		// Valid hex colors
+		assert!(is_valid_css_color("#FF0000")); // Red
+		assert!(is_valid_css_color("#f00")); // Red short
+		assert!(is_valid_css_color("#00FF00")); // Green
+		assert!(is_valid_css_color("#0F0")); // Green short
+		assert!(is_valid_css_color("#0000FF")); // Blue
+		assert!(is_valid_css_color("#00F")); // Blue short
+		assert!(is_valid_css_color("#FFFFFF")); // White
+		assert!(is_valid_css_color("#FFF")); // White short
+		assert!(is_valid_css_color("#000000")); // Black
+		assert!(is_valid_css_color("#000")); // Black short
+		assert!(is_valid_css_color("#FF0000FF")); // Red with full alpha
+		assert!(is_valid_css_color("#F00F")); // Red short with alpha
+		assert!(is_valid_css_color("#123456AA")); // With alpha
+	}
+
+	#[test]
+	fn test_valid_rgb_colors() {
+		// Valid RGB colors
+		assert!(is_valid_css_color("rgb(255, 0, 0)")); // Red
+		assert!(is_valid_css_color("rgb(0, 255, 0)")); // Green
+		assert!(is_valid_css_color("rgb(0, 0, 255)")); // Blue
+		assert!(is_valid_css_color("rgb(255,0,0)")); // No spaces
+		assert!(is_valid_css_color("rgb(  255  ,  0  ,  0  )")); // Extra spaces
+	}
+
+	#[test]
+	fn test_valid_rgba_colors() {
+		// Valid RGBA colors
+		assert!(is_valid_css_color("rgba(255, 0, 0, 1)")); // Red fully opaque
+		assert!(is_valid_css_color("rgba(255, 0, 0, 0.5)")); // Red semi-transparent
+		assert!(is_valid_css_color("rgba(0, 255, 0, 0)")); // Green fully transparent
+		assert!(is_valid_css_color("rgba(0,0,255,0.75)")); // No spaces
+		assert!(is_valid_css_color("rgba(  100  ,  100  ,  100  ,  0.5  )")); // Extra spaces
+	}
+
+	#[test]
+	fn test_valid_named_colors() {
+		// Valid named colors
+		assert!(is_valid_css_color("red"));
+		assert!(is_valid_css_color("blue"));
+		assert!(is_valid_css_color("green"));
+		assert!(is_valid_css_color("white"));
+		assert!(is_valid_css_color("black"));
+		assert!(is_valid_css_color("transparent"));
+		assert!(is_valid_css_color("darkred"));
+		assert!(is_valid_css_color("lightblue"));
+	}
+
+	#[test]
+	fn test_empty_string_is_valid() {
+		// Empty string is valid (means no custom color)
+		assert!(is_valid_css_color(""));
+		assert!(is_valid_css_color("   ")); // Whitespace only
+	}
+
+	#[test]
+	fn test_malicious_semicolon_injection() {
+		// CSS injection via semicolon
+		assert!(!is_valid_css_color("red;color:blue"));
+		assert!(!is_valid_css_color("#FF0000;display:none"));
+		assert!(!is_valid_css_color("rgb(255,0,0);opacity:0"));
+		assert!(!is_valid_css_color("red;font-size:100px"));
+	}
+
+	#[test]
+	fn test_malicious_curly_brace_injection() {
+		// CSS injection via curly braces
+		assert!(!is_valid_css_color("red{display:none}"));
+		assert!(!is_valid_css_color("#FF0000{color:blue}"));
+		assert!(!is_valid_css_color("rgb(255,0,0){font-size:100px}"));
+	}
+
+	#[test]
+	fn test_malicious_at_rule_injection() {
+		// CSS injection via @-rules
+		assert!(!is_valid_css_color("@import url('evil.css')"));
+		assert!(!is_valid_css_color("red@keyframes"));
+		assert!(!is_valid_css_color("#FF0000@media"));
+	}
+
+	#[test]
+	fn test_malicious_backslash_injection() {
+		// CSS escape sequences
+		assert!(!is_valid_css_color("red\\"));
+		assert!(!is_valid_css_color("red\\000041"));
+		assert!(!is_valid_css_color("#FF0000\\20display\\3Anone"));
+	}
+
+	#[test]
+	fn test_malicious_comment_injection() {
+		// Note: Comments don't have the injection characters, but testing edge cases
+		assert!(!is_valid_css_color("red/**/color:blue")); // Comment with extra chars won't match patterns
+		assert!(!is_valid_css_color("rgb(255,0,0)/*comment*/")); // This will fail because of special chars
+	}
+
+	#[test]
+	fn test_invalid_color_formats() {
+		// Invalid color formats
+		assert!(!is_valid_css_color("123456")); // No # for hex
+		assert!(!is_valid_css_color("#GGGGGG")); // Invalid hex characters
+		assert!(!is_valid_css_color("#FF")); // Too few hex digits (2)
+		assert!(!is_valid_css_color("#FF00000")); // Invalid hex length (7 digits)
+		assert!(!is_valid_css_color("rgb(-1, 0, 0)")); // Negative values (starts with -)
+		assert!(!is_valid_css_color("rgb(255, 0)")); // Missing parameter
+		assert!(!is_valid_css_color("rgb(255 0 0)")); // Space separator instead of comma
+		assert!(!is_valid_css_color("hsl(120, 100%, 50%)")); // HSL not supported in our validation
+		assert!(!is_valid_css_color("rgba 255 0 0 1")); // Invalid syntax
+		assert!(!is_valid_css_color("red blue")); // Multiple colors
+		assert!(!is_valid_css_color("red!")); // Special characters
+	}
+
+	#[test]
+	fn test_case_insensitive_colors() {
+		// Color names should be case insensitive in CSS, but our validator accepts any letters
+		assert!(is_valid_css_color("RED"));
+		assert!(is_valid_css_color("Red"));
+		assert!(is_valid_css_color("rEd"));
+		assert!(is_valid_css_color("#ff0000")); // Hex lowercase
+		assert!(is_valid_css_color("#FF0000")); // Hex uppercase
+		assert!(is_valid_css_color("#Ff00Ff")); // Hex mixed case
+	}
+
+	#[test]
+	fn test_valid_font_families() {
+		// Safe font family values
+		assert!(is_valid_font_family("system-ui"));
+		assert!(is_valid_font_family("serif"));
+		assert!(is_valid_font_family("sans-serif"));
+		assert!(is_valid_font_family("monospace"));
+		assert!(is_valid_font_family("cursive"));
+		assert!(is_valid_font_family("fantasy"));
+		assert!(is_valid_font_family("georgia"));
+		assert!(is_valid_font_family("times"));
+		assert!(is_valid_font_family("courier"));
+		assert!(is_valid_font_family("verdana"));
+		assert!(is_valid_font_family("arial"));
+		assert!(is_valid_font_family("helvetica"));
+		assert!(is_valid_font_family("Georgia")); // Case insensitive
+		assert!(is_valid_font_family("ARIAL"));
+		assert!(is_valid_font_family("")); // Empty is valid
+		assert!(is_valid_font_family("   ")); // Whitespace only is valid
+	}
+
+	#[test]
+	fn test_quoted_font_families() {
+		// Quoted font families are allowed
+		assert!(is_valid_font_family("'Custom Font'"));
+		assert!(is_valid_font_family("'Times New Roman'"));
+		assert!(is_valid_font_family("\"Custom Font\""));
+		assert!(is_valid_font_family("\"Courier New\""));
+	}
+
+	#[test]
+	fn test_malicious_font_families() {
+		// Font families with injection characters should be rejected
+		assert!(!is_valid_font_family("serif;color:red"));
+		assert!(!is_valid_font_family("arial{display:none}"));
+		assert!(!is_valid_font_family("times\\000041"));
+		assert!(!is_valid_font_family("@import"));
+		assert!(!is_valid_font_family("'Custom';display:none")); // Injection in quoted
+	}
+
+	#[test]
+	fn test_valid_text_decorations() {
+		// Safe text decoration values
+		assert!(is_valid_text_decoration("none"));
+		assert!(is_valid_text_decoration("underline"));
+		assert!(is_valid_text_decoration("overline"));
+		assert!(is_valid_text_decoration("line-through"));
+		assert!(is_valid_text_decoration("blink"));
+		assert!(is_valid_text_decoration("None")); // Case insensitive
+		assert!(is_valid_text_decoration("UNDERLINE"));
+		assert!(is_valid_text_decoration("")); // Empty is valid
+		assert!(is_valid_text_decoration("   ")); // Whitespace only is valid
+	}
+
+	#[test]
+	fn test_malicious_text_decorations() {
+		// Text decorations with injection characters should be rejected
+		assert!(!is_valid_text_decoration("none;color:red"));
+		assert!(!is_valid_text_decoration("underline{display:none}"));
+		assert!(!is_valid_text_decoration("line-through\\000041"));
+		assert!(!is_valid_text_decoration("@keyframes"));
+		assert!(!is_valid_text_decoration("invalid-value")); // Not a valid decoration
+	}
 }
