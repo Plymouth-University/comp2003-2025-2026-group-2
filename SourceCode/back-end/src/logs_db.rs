@@ -29,6 +29,7 @@ pub struct TemplateFieldProps {
     pub color: Option<String>,
     pub required: Option<bool>,
     pub max_length: Option<i32>,
+    pub min_length: Option<i32>,
     pub input_type: Option<String>,
 }
 
@@ -51,6 +52,7 @@ impl Default for TemplateFieldProps {
             color: None,
             required: Some(false),
             max_length: None,
+            min_length: None,
             input_type: Some("text".to_string()),
         }
     }

@@ -268,6 +268,7 @@ impl TemplateFactory {
                     required: None,
                     input_type: None,
                     max_length: None,
+                    min_length: None,
                 },
             }],
             company_id: Uuid::new_v4().to_string(),

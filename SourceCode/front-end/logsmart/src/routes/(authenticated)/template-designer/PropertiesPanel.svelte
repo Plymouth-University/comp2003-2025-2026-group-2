@@ -257,24 +257,44 @@
 						</select>
 					</label>
 				</div>
-				<div>
-					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
-						Max Length
-						<input
-							type="number"
-							value={selectedItem.props.maxLength || ''}
-							oninput={(e) =>
-								onUpdateProp(
-									selectedItem.id,
-									'maxLength',
-									e.currentTarget.value ? parseInt(e.currentTarget.value) : null
-								)}
-							placeholder="No limit"
-							class="mt-1 w-full border-2 px-3 py-2"
-							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
-						/>
-					</label>
-				</div>
+			<div>
+				<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+					Max Length
+					<input
+						type="number"
+						value={selectedItem.props.maxLength !== null && selectedItem.props.maxLength !== undefined ? selectedItem.props.maxLength : ''}
+						oninput={(e) => {
+							const value = e.currentTarget.value ? parseInt(e.currentTarget.value) : null;
+							// Only update if value is null or >= 0
+							if (value === null || value >= 0) {
+								onUpdateProp(selectedItem.id, 'maxLength', value);
+							}
+						}}
+						placeholder="No limit"
+						class="mt-1 w-full border-2 px-3 py-2"
+						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+					/>
+				</label>
+			</div>
+			<div>
+				<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+					Min Length
+					<input
+						type="number"
+						value={selectedItem.props.minLength !== null && selectedItem.props.minLength !== undefined ? selectedItem.props.minLength : ''}
+						oninput={(e) => {
+							const value = e.currentTarget.value ? parseInt(e.currentTarget.value) : null;
+							// Only update if value is null or >= 0
+							if (value === null || value >= 0) {
+								onUpdateProp(selectedItem.id, 'minLength', value);
+							}
+						}}
+						placeholder="No limit"
+						class="mt-1 w-full border-2 px-3 py-2"
+						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+					/>
+				</label>
+			</div>
 				<div class="flex items-center gap-2">
 					<input
 						type="checkbox"

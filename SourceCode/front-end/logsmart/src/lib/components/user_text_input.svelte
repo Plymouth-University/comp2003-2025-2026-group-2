@@ -10,6 +10,7 @@
 		color = '',
 		required = false,
 		maxLength = undefined as number | undefined,
+		minLength = undefined as number | undefined,
 		inputType = 'text'
 	}: {
 		text: string;
@@ -22,6 +23,7 @@
 		color?: string;
 		required?: boolean;
 		maxLength?: number;
+		minLength?: number;
 		inputType?: string;
 	} = $props();
 
@@ -37,6 +39,10 @@
 
 		text = value;
 	}
+
+	// Ensure maxLength and minLength are valid non-negative integers
+	const validMaxLength = $derived(maxLength !== undefined && maxLength >= 0 ? maxLength : undefined);
+	const validMinLength = $derived(minLength !== undefined && minLength >= 0 ? minLength : undefined);
 </script>
 
 <input
@@ -52,7 +58,8 @@
 	{placeholder}
 	{disabled}
 	{required}
-	maxlength={maxLength}
+	maxlength={validMaxLength}
+	minlength={validMinLength}
 	style="border-color: var(--border-primary); {color
 		? `color: ${color};`
 		: ''} background-color: var(--bg-primary); font-size: {size}px; font-family: {fontFamily}; text-decoration: {textDecoration}; {disabled

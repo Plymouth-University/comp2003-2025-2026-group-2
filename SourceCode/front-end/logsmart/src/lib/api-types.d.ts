@@ -1232,16 +1232,25 @@ export interface components {
 			props: components['schemas']['TemplateFieldProps'];
 		};
 		TemplateFieldProps: {
+			color?: string | null;
 			editable?: boolean | null;
+			font_family?: string | null;
+			input_type?: string | null;
 			/** Format: float */
 			max?: number | null;
+			/** Format: int32 */
+			max_length?: number | null;
 			/** Format: float */
 			min?: number | null;
+			/** Format: int32 */
+			min_length?: number | null;
 			options?: string[] | null;
 			placeholder?: string | null;
+			required?: boolean | null;
 			selected?: string | null;
 			size?: string | null;
 			text?: string | null;
+			text_decoration?: string | null;
 			unit?: string | null;
 			value?: string | null;
 			weight?: string | null;

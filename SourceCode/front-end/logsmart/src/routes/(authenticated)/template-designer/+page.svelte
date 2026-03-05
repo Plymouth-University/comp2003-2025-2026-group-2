@@ -83,7 +83,14 @@
 				value: field.props.value ?? '',
 				unit: field.props.unit ?? '°C',
 				options: field.props.options ?? [],
-				selected: field.props.selected ?? false
+				selected: field.props.selected ?? false,
+				fontFamily: field.props.font_family ?? 'system-ui',
+				textDecoration: field.props.text_decoration ?? 'none',
+				color: field.props.color ?? '',
+				required: field.props.required ?? false,
+				maxLength: field.props.max_length ?? null,
+				minLength: field.props.min_length ?? null,
+				inputType: field.props.input_type ?? 'text'
 			}
 		};
 	}
@@ -102,6 +109,13 @@
 		if (item.props.unit !== undefined) props.unit = item.props.unit;
 		if (item.props.options !== undefined) props.options = item.props.options;
 		if (item.props.selected !== undefined) props.selected = String(item.props.selected);
+		if (item.props.fontFamily !== undefined) props.font_family = item.props.fontFamily;
+		if (item.props.textDecoration !== undefined) props.text_decoration = item.props.textDecoration;
+		if (item.props.color !== undefined) props.color = item.props.color;
+		if (item.props.required !== undefined) props.required = item.props.required;
+		if (item.props.maxLength !== undefined) props.max_length = item.props.maxLength;
+		if (item.props.minLength !== undefined) props.min_length = item.props.minLength;
+		if (item.props.inputType !== undefined) props.input_type = item.props.inputType;
 
 		return {
 			field_type: item.type,
@@ -354,6 +368,7 @@
 					color: '',
 					required: false,
 					maxLength: null,
+					minLength: null,
 					inputType: 'text'
 				};
 			case 'checkbox':

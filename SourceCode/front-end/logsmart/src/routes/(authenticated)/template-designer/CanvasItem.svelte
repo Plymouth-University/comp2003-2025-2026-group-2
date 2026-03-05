@@ -67,6 +67,7 @@
 				color={item.props.color}
 				required={item.props.required}
 				maxLength={item.props.maxLength}
+				minLength={item.props.minLength}
 				inputType={item.props.inputType}
 			/>
 		{/key}
