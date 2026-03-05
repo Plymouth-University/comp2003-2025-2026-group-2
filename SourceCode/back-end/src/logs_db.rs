@@ -24,6 +24,38 @@ pub struct TemplateFieldProps {
     pub options: Option<Vec<String>>,
     pub editable: Option<bool>,
     pub placeholder: Option<String>,
+    pub font_family: Option<String>,
+    pub text_decoration: Option<String>,
+    pub color: Option<String>,
+    pub required: Option<bool>,
+    pub max_length: Option<i32>,
+    pub min_length: Option<i32>,
+    pub input_type: Option<String>,
+}
+
+impl Default for TemplateFieldProps {
+    fn default() -> Self {
+        TemplateFieldProps {
+            text: None,
+            size: None,
+            weight: None,
+            value: None,
+            min: None,
+            max: None,
+            unit: None,
+            selected: None,
+            options: None,
+            editable: Some(true),
+            placeholder: None,
+            font_family: None,
+            text_decoration: None,
+            color: None,
+            required: Some(false),
+            max_length: None,
+            min_length: None,
+            input_type: Some("text".to_string()),
+        }
+    }
 }
 
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema, JsonSchema)]

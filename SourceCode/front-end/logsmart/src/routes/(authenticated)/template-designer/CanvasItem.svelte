@@ -56,14 +56,31 @@
 	tabindex="0"
 >
 	{#if item.type === 'text_input'}
-		<UserTextInput
-			text={item.props.text}
-			size={item.props.size}
-			weight={item.props.weight}
-			placeholder={item.props.placeholder}
-		/>
+		{#key `${item.props.color}-${item.props.fontFamily}-${item.props.textDecoration}`}
+			<UserTextInput
+				text={item.props.text}
+				size={item.props.size}
+				weight={item.props.weight}
+				placeholder={item.props.placeholder}
+				fontFamily={item.props.fontFamily}
+				textDecoration={item.props.textDecoration}
+				color={item.props.color}
+				required={item.props.required}
+				maxLength={item.props.maxLength}
+				minLength={item.props.minLength}
+				inputType={item.props.inputType}
+			/>
+		{/key}
 	{:else if item.type === 'checkbox'}
-		<UserCheckbox text={item.props.text} size={item.props.size} weight={item.props.weight} />
+		{#key `${item.props.color}`}
+			<UserCheckbox
+				text={item.props.text}
+				size={item.props.size}
+				weight={item.props.weight}
+				color={item.props.color}
+				required={item.props.required}
+			/>
+		{/key}
 	{:else if item.type === 'temperature'}
 		<TemperaturePicker
 			bind:value={item.props.value}
@@ -79,12 +96,17 @@
 			disabled={true}
 		/>
 	{:else if item.type === 'label'}
-		<UserTextLabel
-			editable={item.props.editable}
-			bind:text={item.props.text}
-			size={item.props.size}
-			weight={item.props.weight}
-		/>
+		{#key `${item.props.color}-${item.props.fontFamily}-${item.props.textDecoration}`}
+			<UserTextLabel
+				editable={item.props.editable}
+				bind:text={item.props.text}
+				size={item.props.size}
+				weight={item.props.weight}
+				fontFamily={item.props.fontFamily}
+				textDecoration={item.props.textDecoration}
+				color={item.props.color}
+			/>
+		{/key}
 	{/if}
 </div>
 

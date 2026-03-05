@@ -2483,14 +2483,21 @@
 			"TemplateFieldProps": {
 				"type": "object",
 				"properties": {
+					"color": { "type": ["string", "null"] },
 					"editable": { "type": ["boolean", "null"] },
+					"font_family": { "type": ["string", "null"] },
+					"input_type": { "type": ["string", "null"] },
 					"max": { "type": ["number", "null"], "format": "float" },
+					"max_length": { "type": ["integer", "null"], "format": "int32" },
 					"min": { "type": ["number", "null"], "format": "float" },
+					"min_length": { "type": ["integer", "null"], "format": "int32" },
 					"options": { "type": ["array", "null"], "items": { "type": "string" } },
 					"placeholder": { "type": ["string", "null"] },
+					"required": { "type": ["boolean", "null"] },
 					"selected": { "type": ["string", "null"] },
 					"size": { "type": ["string", "null"] },
 					"text": { "type": ["string", "null"] },
+					"text_decoration": { "type": ["string", "null"] },
 					"unit": { "type": ["string", "null"] },
 					"value": { "type": ["string", "null"] },
 					"weight": { "type": ["string", "null"] }

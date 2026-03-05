@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
+	import { browser } from '$app/environment';
 	import { api } from '$lib/api';
 
 	function validatePassword(pwd: string): { valid: boolean; errors: string[] } {
@@ -52,6 +53,7 @@
 	};
 
 	$effect.pre(() => {
+		if (!browser) return;
 		const params = new URLSearchParams(window.location.search);
 		const t = params.get('token') || '';
 		if (t) {

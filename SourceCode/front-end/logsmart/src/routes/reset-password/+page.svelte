@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { api } from '$lib/api';
+	import { browser } from '$app/environment';
 
 	function validatePassword(pwd: string): { valid: boolean; errors: string[] } {
 		const errors: string[] = [];
@@ -23,6 +24,7 @@
 	let showConfirmPassword = $state(false);
 
 	$effect.pre(() => {
+		if (!browser) return;
 		const params = new URLSearchParams(window.location.search);
 		const t = params.get('token');
 		if (t) {

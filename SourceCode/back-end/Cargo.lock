@@ -412,6 +412,7 @@ dependencies = [
  "moka",
  "mongodb",
  "ollama-rs",
+ "once_cell",
  "openidconnect",
  "proptest",
  "rand 0.8.5",
