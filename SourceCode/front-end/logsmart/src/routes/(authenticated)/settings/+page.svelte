@@ -526,6 +526,22 @@
 					</div>
 				</div>
 			</div>
+			<!-- Delete account -->
+			<div
+				class="border-2"
+				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+			>
+				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
+					<h2 class="text-xl font-bold" style="color:#ef4444;">Delete Account</h2>
+				</div>
+				<div class="px-6 py-6" style="background-color: var(--bg-primary);">
+					<div class="max-w-2xl">
+						<p class="mb-4" style="color: var(--text-secondary);">
+							Accounts are recoverable for 30 days after deletion.
+						</p>
+					</div>
+				</div>
+			</div>
 		</div>
 	</div>
 </div>
