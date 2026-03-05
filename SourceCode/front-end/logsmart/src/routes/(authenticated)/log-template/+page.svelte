@@ -61,7 +61,10 @@
 			}
 
 			// Check length constraints for text inputs
-			if ((field.field_type === 'text' || field.field_type === 'text_input') && typeof value === 'string') {
+			if (
+				(field.field_type === 'text' || field.field_type === 'text_input') &&
+				typeof value === 'string'
+			) {
 				if (field.props.min_length) {
 					const minLength = Number(field.props.min_length);
 					if (value.length < minLength) {
@@ -182,61 +185,61 @@
 				</div>
 			{/if}
 
-		<div class="space-y-6">
-			{#each templateLayout as field, index (field.field_id || index)}
-				{#if field.field_type === 'temperature' && entryData[index] !== undefined}
-					<TemperaturePicker
-						bind:value={entryData[index] as number}
-						min={Number(field.props.min) ?? -20}
-						max={Number(field.props.max) ?? 50}
-						label={field.props.text || `Field ${index + 1}`}
-						unit={field.props.unit || '°C'}
-						disabled={mode === 'view'}
-					/>
-				{:else if (field.field_type === 'text' || field.field_type === 'text_input') && entryData[index] !== undefined}
-					<UserTextInput
-						bind:text={entryData[index] as string}
-						size={Number(field.props.size) ?? 16}
-						weight={String(field.props.weight) || 'normal'}
-						placeholder={field.props.text || `Field ${index + 1}`}
-						fontFamily={String(field.props.font_family) || 'system-ui'}
-						textDecoration={String(field.props.text_decoration) || 'none'}
-						color={String(field.props.color) || ''}
-						required={field.props.required === true || field.props.required === 'true'}
-						maxLength={field.props.max_length ? Number(field.props.max_length) : undefined}
-						minLength={field.props.min_length ? Number(field.props.min_length) : undefined}
-						inputType={String(field.props.input_type) || 'text'}
-						disabled={mode === 'view'}
-					/>
-				{:else if field.field_type === 'checkbox' && entryData[index] !== undefined}
-					<UserCheckbox
-						bind:checked={entryData[index] as boolean}
-						text={field.props.text || `Field ${index + 1}`}
-						size={String(field.props.size) || '16px'}
-						weight={String(field.props.weight) || 'normal'}
-						color={String(field.props.color) || ''}
-						required={field.props.required === true || field.props.required === 'true'}
-						disabled={mode === 'view'}
-					/>
-				{:else if field.field_type === 'dropdown' && entryData[index] !== undefined}
-					<UserDropdown
-						bind:selected={entryData[index] as string}
-						options={field.props.options || []}
-						disabled={mode === 'view'}
-					/>
-				{:else if field.field_type === 'label'}
-					<UserTextLabel
-						editable={false}
-						text={field.props.text || `Field ${index + 1}`}
-						size={Number(field.props.size) ?? 16}
-						weight={String(field.props.weight) || 'normal'}
-						fontFamily={String(field.props.font_family) || 'system-ui'}
-						textDecoration={String(field.props.text_decoration) || 'none'}
-						color={String(field.props.color) || ''}
-					/>
-				{/if}
-			{/each}
-		</div>
+			<div class="space-y-6">
+				{#each templateLayout as field, index (field.field_id || index)}
+					{#if field.field_type === 'temperature' && entryData[index] !== undefined}
+						<TemperaturePicker
+							bind:value={entryData[index] as number}
+							min={Number(field.props.min) ?? -20}
+							max={Number(field.props.max) ?? 50}
+							label={field.props.text || `Field ${index + 1}`}
+							unit={field.props.unit || '°C'}
+							disabled={mode === 'view'}
+						/>
+					{:else if (field.field_type === 'text' || field.field_type === 'text_input') && entryData[index] !== undefined}
+						<UserTextInput
+							bind:text={entryData[index] as string}
+							size={Number(field.props.size) ?? 16}
+							weight={String(field.props.weight) || 'normal'}
+							placeholder={field.props.text || `Field ${index + 1}`}
+							fontFamily={String(field.props.font_family) || 'system-ui'}
+							textDecoration={String(field.props.text_decoration) || 'none'}
+							color={String(field.props.color) || ''}
+							required={field.props.required === true || field.props.required === 'true'}
+							maxLength={field.props.max_length ? Number(field.props.max_length) : undefined}
+							minLength={field.props.min_length ? Number(field.props.min_length) : undefined}
+							inputType={String(field.props.input_type) || 'text'}
+							disabled={mode === 'view'}
+						/>
+					{:else if field.field_type === 'checkbox' && entryData[index] !== undefined}
+						<UserCheckbox
+							bind:checked={entryData[index] as boolean}
+							text={field.props.text || `Field ${index + 1}`}
+							size={String(field.props.size) || '16px'}
+							weight={String(field.props.weight) || 'normal'}
+							color={String(field.props.color) || ''}
+							required={field.props.required === true || field.props.required === 'true'}
+							disabled={mode === 'view'}
+						/>
+					{:else if field.field_type === 'dropdown' && entryData[index] !== undefined}
+						<UserDropdown
+							bind:selected={entryData[index] as string}
+							options={field.props.options || []}
+							disabled={mode === 'view'}
+						/>
+					{:else if field.field_type === 'label'}
+						<UserTextLabel
+							editable={false}
+							text={field.props.text || `Field ${index + 1}`}
+							size={Number(field.props.size) ?? 16}
+							weight={String(field.props.weight) || 'normal'}
+							fontFamily={String(field.props.font_family) || 'system-ui'}
+							textDecoration={String(field.props.text_decoration) || 'none'}
+							color={String(field.props.color) || ''}
+						/>
+					{/if}
+				{/each}
+			</div>
 
 			{#if mode !== 'view'}
 				<div class="mt-8 flex justify-end gap-4">

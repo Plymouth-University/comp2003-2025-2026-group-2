@@ -22,7 +22,6 @@
 
 	// Sanitize color to prevent CSS injection
 	const safeColor = $derived(sanitizeColorValue(color || ''));
-
 </script>
 
 <div style={disabled ? 'opacity: 0.5; cursor: not-allowed;' : ''}>

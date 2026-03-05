@@ -1,12 +1,12 @@
 /**
  * Validates that a string is a valid CSS color value.
  * Rejects values containing CSS syntax characters that could be used for injection.
- * 
+ *
  * Valid formats:
  * - Hex colors: #RGB, #RRGGBB, #RRGGBBAA
  * - RGB/RGBA: rgb(...), rgba(...)
  * - Named colors: red, blue, etc.
- * 
+ *
  * @param color - The color string to validate
  * @returns true if the color is valid and safe, false otherwise
  */
@@ -53,7 +53,7 @@ export function isValidCSSColor(color: string): boolean {
 /**
  * Sanitizes a color value for safe use in inline styles.
  * Returns the color if valid, or an empty string if invalid.
- * 
+ *
  * @param color - The color value to sanitize
  * @returns The sanitized color value or empty string
  */

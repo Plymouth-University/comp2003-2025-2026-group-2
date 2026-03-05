@@ -43,12 +43,15 @@
 	}
 
 	// Ensure maxLength and minLength are valid non-negative integers
-	const validMaxLength = $derived(maxLength !== undefined && maxLength >= 0 ? maxLength : undefined);
-	const validMinLength = $derived(minLength !== undefined && minLength >= 0 ? minLength : undefined);
+	const validMaxLength = $derived(
+		maxLength !== undefined && maxLength >= 0 ? maxLength : undefined
+	);
+	const validMinLength = $derived(
+		minLength !== undefined && minLength >= 0 ? minLength : undefined
+	);
 
 	// Sanitize color to prevent CSS injection
 	const safeColor = $derived(sanitizeColorValue(color || ''));
-
 </script>
 
 <input
