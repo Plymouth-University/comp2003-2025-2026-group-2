@@ -53,9 +53,25 @@
 			const value = entryData[index];
 			const fieldLabel = field.props.text || `Field ${index + 1}`;
 
-			// Check required constraint
+			// Check required constraint based on field type
 			if (field.props.required === true || field.props.required === 'true') {
-				if (value === undefined || value === null || value === '') {
+				let isEmpty = false;
+
+				if (field.field_type === 'checkbox') {
+					// Checkbox must be explicitly true
+					isEmpty = value !== true;
+				} else if (field.field_type === 'temperature') {
+					// Temperature must be a finite number
+					isEmpty = typeof value !== 'number' || !Number.isFinite(value);
+				} else if (field.field_type === 'dropdown') {
+					// Dropdown must not be null or empty string
+					isEmpty = value == null || value === '';
+				} else if (field.field_type === 'text' || field.field_type === 'text_input') {
+					// Text must be a non-empty string (after trimming)
+					isEmpty = typeof value !== 'string' || value.trim() === '';
+				}
+
+				if (isEmpty) {
 					return `${fieldLabel} is required`;
 				}
 			}
@@ -65,13 +81,13 @@
 				(field.field_type === 'text' || field.field_type === 'text_input') &&
 				typeof value === 'string'
 			) {
-				if (field.props.min_length) {
+				if (field.props.min_length != null) {
 					const minLength = Number(field.props.min_length);
 					if (value.length < minLength) {
 						return `${fieldLabel} must be at least ${minLength} characters long`;
 					}
 				}
-				if (field.props.max_length) {
+				if (field.props.max_length != null) {
 					const maxLength = Number(field.props.max_length);
 					if (value.length > maxLength) {
 						return `${fieldLabel} must not exceed ${maxLength} characters`;
