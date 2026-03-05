@@ -1,7 +1,7 @@
 use crate::db;
 use axum::http::HeaderMap;
-use sqlx::PgPool;
 use once_cell::sync::Lazy;
+use sqlx::PgPool;
 
 #[macro_export]
 macro_rules! try_db {
@@ -387,51 +387,42 @@ pub fn svc_err_bad_request(msg: &str) -> ServiceError {
 /// - Named colors: red, blue, etc.
 /// Safe font family values - precompiled list
 const SAFE_FONTS: &[&str] = &[
-	"system-ui",
-	"serif",
-	"sans-serif",
-	"monospace",
-	"cursive",
-	"fantasy",
-	"georgia",
-	"times",
-	"courier",
-	"verdana",
-	"arial",
-	"helvetica",
+    "system-ui",
+    "serif",
+    "sans-serif",
+    "monospace",
+    "cursive",
+    "fantasy",
+    "georgia",
+    "times",
+    "courier",
+    "verdana",
+    "arial",
+    "helvetica",
 ];
 
 /// Safe text decoration values - precompiled list
-const SAFE_DECORATIONS: &[&str] = &[
-	"none",
-	"underline",
-	"overline",
-	"line-through",
-	"blink",
-];
+const SAFE_DECORATIONS: &[&str] = &["none", "underline", "overline", "line-through", "blink"];
 
 /// Static regex for hex colors: #RGB or #RRGGBB or #RRGGBBAA
 static HEX_COLOR_PATTERN: Lazy<regex::Regex> = Lazy::new(|| {
-	regex::Regex::new(r"^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?([0-9a-fA-F]{2})?$")
-		.expect("Failed to compile hex color regex")
+    regex::Regex::new(r"^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?([0-9a-fA-F]{2})?$")
+        .expect("Failed to compile hex color regex")
 });
 
 /// Static regex for RGB/RGBA colors: rgb(...) or rgba(...)
 static RGB_COLOR_PATTERN: Lazy<regex::Regex> = Lazy::new(|| {
-	regex::Regex::new(r"^rgba?\s*\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$")
-		.expect("Failed to compile RGB color regex")
+    regex::Regex::new(r"^rgba?\s*\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$")
+        .expect("Failed to compile RGB color regex")
 });
 
 /// Static regex for named colors: letters only
-static NAMED_COLOR_PATTERN: Lazy<regex::Regex> = Lazy::new(|| {
-	regex::Regex::new(r"^[a-zA-Z]+$")
-		.expect("Failed to compile named color regex")
-});
+static NAMED_COLOR_PATTERN: Lazy<regex::Regex> =
+    Lazy::new(|| regex::Regex::new(r"^[a-zA-Z]+$").expect("Failed to compile named color regex"));
 
 /// Static regex for short hex with alpha: #RGBA
 static SHORT_HEX_ALPHA_PATTERN: Lazy<regex::Regex> = Lazy::new(|| {
-	regex::Regex::new(r"^#[0-9a-fA-F]{4}$")
-		.expect("Failed to compile short hex alpha regex")
+    regex::Regex::new(r"^#[0-9a-fA-F]{4}$").expect("Failed to compile short hex alpha regex")
 });
 
 pub fn is_valid_css_color(color: &str) -> bool {
@@ -453,25 +444,25 @@ pub fn is_valid_css_color(color: &str) -> bool {
         return false;
     }
 
-	// Hex color pattern: #RGB or #RRGGBB or #RRGGBBAA
-	if HEX_COLOR_PATTERN.is_match(trimmed) {
-		return true;
-	}
+    // Hex color pattern: #RGB or #RRGGBB or #RRGGBBAA
+    if HEX_COLOR_PATTERN.is_match(trimmed) {
+        return true;
+    }
 
-	// RGB/RGBA pattern: rgb(...) or rgba(...)
-	if RGB_COLOR_PATTERN.is_match(trimmed) {
-		return true;
-	}
+    // RGB/RGBA pattern: rgb(...) or rgba(...)
+    if RGB_COLOR_PATTERN.is_match(trimmed) {
+        return true;
+    }
 
-	// Named colors: letters only (no spaces or special chars)
-	if NAMED_COLOR_PATTERN.is_match(trimmed) {
-		return true;
-	}
+    // Named colors: letters only (no spaces or special chars)
+    if NAMED_COLOR_PATTERN.is_match(trimmed) {
+        return true;
+    }
 
-	// Hex short format with alpha in older browsers
-	if SHORT_HEX_ALPHA_PATTERN.is_match(trimmed) {
-		return true;
-	}
+    // Hex short format with alpha in older browsers
+    if SHORT_HEX_ALPHA_PATTERN.is_match(trimmed) {
+        return true;
+    }
 
     // If none of the valid formats match, reject it
     false
@@ -487,17 +478,21 @@ pub fn is_valid_font_family(font_family: &str) -> bool {
 
     let trimmed = font_family.trim();
 
-	// Check for dangerous characters that could be used for CSS injection
-	if trimmed.contains(';') || trimmed.contains('{') || trimmed.contains('}') 
-		|| trimmed.contains('\\') || trimmed.contains('@') {
-		return false;
-	}
+    // Check for dangerous characters that could be used for CSS injection
+    if trimmed.contains(';')
+        || trimmed.contains('{')
+        || trimmed.contains('}')
+        || trimmed.contains('\\')
+        || trimmed.contains('@')
+    {
+        return false;
+    }
 
-	// Check if it's in the safe list (case insensitive)
-	let lower_font = trimmed.to_lowercase();
-	if SAFE_FONTS.iter().any(|f| f == &lower_font) {
-		return true;
-	}
+    // Check if it's in the safe list (case insensitive)
+    let lower_font = trimmed.to_lowercase();
+    if SAFE_FONTS.iter().any(|f| f == &lower_font) {
+        return true;
+    }
 
     // Allow single quoted font names if they don't contain dangerous chars
     if trimmed.starts_with('\'') && trimmed.ends_with('\'') && trimmed.len() > 2 {
@@ -532,15 +527,19 @@ pub fn is_valid_text_decoration(text_decoration: &str) -> bool {
 
     let trimmed = text_decoration.trim();
 
-	// Check for dangerous characters that could be used for CSS injection
-	if trimmed.contains(';') || trimmed.contains('{') || trimmed.contains('}') 
-		|| trimmed.contains('\\') || trimmed.contains('@') {
-		return false;
-	}
+    // Check for dangerous characters that could be used for CSS injection
+    if trimmed.contains(';')
+        || trimmed.contains('{')
+        || trimmed.contains('}')
+        || trimmed.contains('\\')
+        || trimmed.contains('@')
+    {
+        return false;
+    }
 
-	// Check if it's in the safe list (case insensitive)
-	let lower = trimmed.to_lowercase();
-	SAFE_DECORATIONS.iter().any(|d| d == &lower)
+    // Check if it's in the safe list (case insensitive)
+    let lower = trimmed.to_lowercase();
+    SAFE_DECORATIONS.iter().any(|d| d == &lower)
 }
 
 /// Supported input types for template fields
@@ -550,15 +549,15 @@ const SUPPORTED_INPUT_TYPES: &[&str] = &["text", "int", "float"];
 /// Must be one of the canonical types: text, int, float
 /// Empty strings are rejected.
 pub fn is_valid_input_type(input_type: &str) -> bool {
-	let trimmed = input_type.trim();
-	
-	// Empty strings are not allowed
-	if trimmed.is_empty() {
-		return false;
-	}
-	
-	// Must be in the canonical set (case sensitive)
-	SUPPORTED_INPUT_TYPES.contains(&trimmed)
+    let trimmed = input_type.trim();
+
+    // Empty strings are not allowed
+    if trimmed.is_empty() {
+        return false;
+    }
+
+    // Must be in the canonical set (case sensitive)
+    SUPPORTED_INPUT_TYPES.contains(&trimmed)
 }
 
 /// Validates string length constraints.
@@ -566,29 +565,32 @@ pub fn is_valid_input_type(input_type: &str) -> bool {
 /// - Non-negative (>= 0)
 /// - If both present, min_length must be <= max_length
 /// Returns Ok(()) if valid, or descriptive error message if invalid.
-pub fn validate_length_constraints(min_length: Option<i32>, max_length: Option<i32>) -> Result<(), String> {
-	// Check if min_length is provided and valid
-	if let Some(min) = min_length {
-		if min < 0 {
-			return Err("min_length must be non-negative".to_string());
-		}
-	}
-	
-	// Check if max_length is provided and valid
-	if let Some(max) = max_length {
-		if max < 0 {
-			return Err("max_length must be non-negative".to_string());
-		}
-	}
-	
-	// If both are provided, ensure min <= max
-	if let (Some(min), Some(max)) = (min_length, max_length) {
-		if min > max {
-			return Err("min_length cannot be greater than max_length".to_string());
-		}
-	}
-	
-	Ok(())
+pub fn validate_length_constraints(
+    min_length: Option<i32>,
+    max_length: Option<i32>,
+) -> Result<(), String> {
+    // Check if min_length is provided and valid
+    if let Some(min) = min_length {
+        if min < 0 {
+            return Err("min_length must be non-negative".to_string());
+        }
+    }
+
+    // Check if max_length is provided and valid
+    if let Some(max) = max_length {
+        if max < 0 {
+            return Err("max_length must be non-negative".to_string());
+        }
+    }
+
+    // If both are provided, ensure min <= max
+    if let (Some(min), Some(max)) = (min_length, max_length) {
+        if min > max {
+            return Err("min_length cannot be greater than max_length".to_string());
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -774,76 +776,79 @@ mod tests {
         assert!(is_valid_text_decoration("   ")); // Whitespace only is valid
     }
 
-	#[test]
-	fn test_malicious_text_decorations() {
-		// Text decorations with injection characters should be rejected
-		assert!(!is_valid_text_decoration("none;color:red"));
-		assert!(!is_valid_text_decoration("underline{display:none}"));
-		assert!(!is_valid_text_decoration("line-through\\000041"));
-		assert!(!is_valid_text_decoration("@keyframes"));
-		assert!(!is_valid_text_decoration("invalid-value")); // Not a valid decoration
-	}
+    #[test]
+    fn test_malicious_text_decorations() {
+        // Text decorations with injection characters should be rejected
+        assert!(!is_valid_text_decoration("none;color:red"));
+        assert!(!is_valid_text_decoration("underline{display:none}"));
+        assert!(!is_valid_text_decoration("line-through\\000041"));
+        assert!(!is_valid_text_decoration("@keyframes"));
+        assert!(!is_valid_text_decoration("invalid-value")); // Not a valid decoration
+    }
 
-	#[test]
-	fn test_valid_input_types() {
-		// Canonical input types
-		assert!(is_valid_input_type("text"));
-		assert!(is_valid_input_type("int"));
-		assert!(is_valid_input_type("float"));
-	}
+    #[test]
+    fn test_valid_input_types() {
+        // Canonical input types
+        assert!(is_valid_input_type("text"));
+        assert!(is_valid_input_type("int"));
+        assert!(is_valid_input_type("float"));
+    }
 
-	#[test]
-	fn test_invalid_input_types() {
-		// Invalid input types
-		assert!(!is_valid_input_type("")); // Empty
-		assert!(!is_valid_input_type("   ")); // Whitespace only
-		assert!(!is_valid_input_type("email")); // Not supported
-		assert!(!is_valid_input_type("number")); // Not supported
-		assert!(!is_valid_input_type("TEXT")); // Case sensitive
-		assert!(!is_valid_input_type("INT")); // Case sensitive
-		assert!(!is_valid_input_type("FLOAT")); // Case sensitive
-		assert!(!is_valid_input_type("int;select")); // Injection attempt
-	}
+    #[test]
+    fn test_invalid_input_types() {
+        // Invalid input types
+        assert!(!is_valid_input_type("")); // Empty
+        assert!(!is_valid_input_type("   ")); // Whitespace only
+        assert!(!is_valid_input_type("email")); // Not supported
+        assert!(!is_valid_input_type("number")); // Not supported
+        assert!(!is_valid_input_type("TEXT")); // Case sensitive
+        assert!(!is_valid_input_type("INT")); // Case sensitive
+        assert!(!is_valid_input_type("FLOAT")); // Case sensitive
+        assert!(!is_valid_input_type("int;select")); // Injection attempt
+    }
 
-	#[test]
-	fn test_valid_length_constraints() {
-		// Valid combinations
-		assert!(validate_length_constraints(None, None).is_ok());
-		assert!(validate_length_constraints(Some(0), None).is_ok());
-		assert!(validate_length_constraints(None, Some(100)).is_ok());
-		assert!(validate_length_constraints(Some(0), Some(100)).is_ok());
-		assert!(validate_length_constraints(Some(10), Some(10)).is_ok());
-		assert!(validate_length_constraints(Some(5), Some(100)).is_ok());
-	}
+    #[test]
+    fn test_valid_length_constraints() {
+        // Valid combinations
+        assert!(validate_length_constraints(None, None).is_ok());
+        assert!(validate_length_constraints(Some(0), None).is_ok());
+        assert!(validate_length_constraints(None, Some(100)).is_ok());
+        assert!(validate_length_constraints(Some(0), Some(100)).is_ok());
+        assert!(validate_length_constraints(Some(10), Some(10)).is_ok());
+        assert!(validate_length_constraints(Some(5), Some(100)).is_ok());
+    }
 
-	#[test]
-	fn test_invalid_length_constraints() {
-		// Negative min_length
-		assert!(validate_length_constraints(Some(-1), None).is_err());
-		assert!(validate_length_constraints(Some(-1), Some(100)).is_err());
-		
-		// Negative max_length
-		assert!(validate_length_constraints(None, Some(-1)).is_err());
-		assert!(validate_length_constraints(Some(0), Some(-1)).is_err());
-		
-		// min > max
-		assert!(validate_length_constraints(Some(100), Some(10)).is_err());
-		assert!(validate_length_constraints(Some(5), Some(4)).is_err());
-	}
+    #[test]
+    fn test_invalid_length_constraints() {
+        // Negative min_length
+        assert!(validate_length_constraints(Some(-1), None).is_err());
+        assert!(validate_length_constraints(Some(-1), Some(100)).is_err());
 
-	#[test]
-	fn test_length_constraint_error_messages() {
-		// Verify specific error messages for debugging
-		let result = validate_length_constraints(Some(-1), None);
-		assert!(result.is_err());
-		assert_eq!(result.unwrap_err(), "min_length must be non-negative");
-		
-		let result = validate_length_constraints(None, Some(-5));
-		assert!(result.is_err());
-		assert_eq!(result.unwrap_err(), "max_length must be non-negative");
-		
-		let result = validate_length_constraints(Some(100), Some(50));
-		assert!(result.is_err());
-		assert_eq!(result.unwrap_err(), "min_length cannot be greater than max_length");
-	}
+        // Negative max_length
+        assert!(validate_length_constraints(None, Some(-1)).is_err());
+        assert!(validate_length_constraints(Some(0), Some(-1)).is_err());
+
+        // min > max
+        assert!(validate_length_constraints(Some(100), Some(10)).is_err());
+        assert!(validate_length_constraints(Some(5), Some(4)).is_err());
+    }
+
+    #[test]
+    fn test_length_constraint_error_messages() {
+        // Verify specific error messages for debugging
+        let result = validate_length_constraints(Some(-1), None);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "min_length must be non-negative");
+
+        let result = validate_length_constraints(None, Some(-5));
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "max_length must be non-negative");
+
+        let result = validate_length_constraints(Some(100), Some(50));
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err(),
+            "min_length cannot be greater than max_length"
+        );
+    }
 }
