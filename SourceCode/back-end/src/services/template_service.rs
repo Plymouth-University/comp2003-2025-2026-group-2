@@ -1,4 +1,4 @@
-use crate::{AppState, logs_db, utils};
+use crate::{AppState, db::UserRecord, logs_db, utils};
 use axum::http::StatusCode;
 use serde_json::json;
 
@@ -401,20 +401,22 @@ impl TemplateService {
     /// Returns an error if the database update fails.
     pub async fn update_template(
         state: &AppState,
-        company_id: &str,
         template_name: &str,
         template_layout: Option<&logs_db::TemplateLayout>,
         schedule: Option<&logs_db::Schedule>,
-        user_id: &str,
+        user: &UserRecord,
         version_name: Option<String>,
-        branch_id: Option<&str>, // Caller's branch_id
-        is_company_manager: bool,
         target_branch_id: Option<Option<&str>>,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
         // Validate template layout for malicious content if provided
         if let Some(layout) = template_layout {
             Self::validate_template_layout(layout)?;
         }
+
+        let company_id = user.company_id.as_ref().ok_or((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            json!({ "error": "User record missing company ID" }),
+        ))?;
 
         // 1. Fetch current template state
         let current_template =
@@ -433,14 +435,14 @@ impl TemplateService {
                 ))?;
 
         // Authorization check
-        if !is_company_manager {
+        if user.is_branch_manager() {
             if current_template.branch_id.is_none() {
                 return Err((
                     StatusCode::FORBIDDEN,
                     json!({ "error": "Branch managers cannot update company-wide templates" }),
                 ));
             }
-            if current_template.branch_id.as_deref() != branch_id {
+            if current_template.branch_id.as_deref() != user.branch_id.as_deref() {
                 return Err((
                     StatusCode::FORBIDDEN,
                     json!({ "error": "Branch managers can only update templates for their own branch" }),
@@ -448,7 +450,7 @@ impl TemplateService {
             }
         }
 
-        let resolved_branch_id = if is_company_manager {
+        let resolved_branch_id = if user.is_company_manager() {
             target_branch_id
         } else {
             None
@@ -464,7 +466,7 @@ impl TemplateService {
             template_layout: current_template.template_layout.clone(),
             schedule: current_template.schedule,
             created_at: chrono::Utc::now(),
-            created_by: mongodb::bson::Uuid::parse_str(user_id)
+            created_by: mongodb::bson::Uuid::parse_str(&user.id)
                 .unwrap_or(current_template.created_by),
         };
 
@@ -528,9 +530,7 @@ impl TemplateService {
         company_id: &str,
         template_name: &str,
         version: u16,
-        user_id: &str,
-        branch_id: Option<&str>,
-        is_company_manager: bool,
+        user: &UserRecord,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
         // 1. Fetch target version
         let target_version =
@@ -552,14 +552,11 @@ impl TemplateService {
         // This handles archiving the CURRENT state before overwriting it with the OLD state
         Self::update_template(
             state,
-            company_id,
             template_name,
             Some(&target_version.template_layout),
             Some(&target_version.schedule),
-            user_id,
+            user,
             Some(format!("Restored from version {version}")),
-            branch_id,
-            is_company_manager,
             None,
         )
         .await
