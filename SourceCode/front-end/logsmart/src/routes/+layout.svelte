@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
+	import { browser } from '$app/environment';
 	import type { LayoutData } from './$types';
 	import '../app.css';
 	import Icon from '$lib/assets/icon.svelte';
@@ -30,6 +31,7 @@
 	let showCookieConsent = $state(false);
 
 	$effect(() => {
+		if (!browser) return;
 		if (isLegalRoute) return;
 
 		const cookies = document.cookie.split(';');

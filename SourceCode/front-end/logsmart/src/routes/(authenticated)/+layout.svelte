@@ -24,7 +24,7 @@
 	}
 </script>
 
-<div class="flex h-screen w-full flex-col" style="background-color: var(--bg-secondary);">
+<div class="flex h-full w-full flex-col" style="background-color: var(--bg-secondary);">
 	<header
 		style="border-color: var(--border-secondary); background-color: var(--bg-primary);"
 		class="shrink-0 border-b shadow-sm"

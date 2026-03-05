@@ -40,8 +40,8 @@
 	};
 </script>
 
-<div class="grid grid-cols-[120px_1fr_120px] items-center gap-8">
-	<div class="flex items-center gap-3">
+<div class="grid grid-cols-[70px_1fr_70px] items-center gap-4">
+	<div class="flex items-center gap-2">
 		<input
 			type="number"
 			bind:value
@@ -49,7 +49,7 @@
 			{max}
 			{min}
 			{disabled}
-			class="w-16 border-2 px-3 py-2 text-center text-xl font-medium"
+			class="w-12 border-2 px-2 py-1 text-center text-sm font-medium"
 			style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary); {disabled
 				? 'opacity: 0.5; cursor: not-allowed;'
 				: ''}"
@@ -59,7 +59,7 @@
 				type="button"
 				onclick={increaseValue}
 				{disabled}
-				class="flex h-7 w-7 items-center justify-center rounded-sm border-2 transition-all
+				class="flex h-6 w-6 items-center justify-center rounded-sm border-2 transition-all
                 {disabled ? '' : 'hover:scale-110 hover:bg-gray-100 active:scale-95'}"
 				style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary); {disabled
 					? 'opacity: 0.5; cursor: not-allowed;'
@@ -81,7 +81,7 @@
 				type="button"
 				onclick={decreaseValue}
 				{disabled}
-				class="flex h-7 w-7 items-center justify-center rounded-sm border-2 transition-all {disabled
+				class="flex h-6 w-6 items-center justify-center rounded-sm border-2 transition-all {disabled
 					? ''
 					: 'hover:scale-110 hover:bg-gray-100 active:scale-95'}"
 				style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary); {disabled
@@ -90,8 +90,8 @@
 				aria-label="Decrease temperature"
 			>
 				<svg
-					width="14"
-					height="14"
+					width="12"
+					height="12"
 					viewBox="0 0 14 14"
 					fill="none"
 					stroke="currentColor"
@@ -104,11 +104,11 @@
 	</div>
 
 	<!-- Name/Label -->
-	<div class="text-lg" style="color: var(--text-primary);">
+	<div class="text-sm" style="color: var(--text-primary);">
 		{label}
 	</div>
 	<!-- Units -->
-	<div class="text-right text-lg" style="color: var(--text-primary);">
+	<div class="text-right text-sm" style="color: var(--text-primary);">
 		{unit}
 	</div>
 </div>

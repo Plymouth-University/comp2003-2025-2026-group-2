@@ -1,9 +1,182 @@
-use crate::{AppState, logs_db};
+use crate::{AppState, logs_db, utils};
 use axum::http::StatusCode;
 use serde_json::json;
 
 #[cfg(test)]
 mod template_service_tests {
+    use super::*;
+
+    // Helper to create a valid template field
+    fn valid_field() -> logs_db::TemplateField {
+        logs_db::TemplateField {
+            field_type: "text".to_string(),
+            position: logs_db::Position { x: 10.0, y: 20.0 },
+            props: logs_db::TemplateFieldProps {
+                text: Some("Test Field".to_string()),
+                input_type: Some("text".to_string()),
+                min_length: Some(0),
+                max_length: Some(100),
+                required: Some(false),
+                color: Some("red".to_string()),
+                ..Default::default()
+            },
+        }
+    }
+
+    #[test]
+    fn test_validate_template_layout_valid_field() {
+        let layout = vec![valid_field()];
+        assert!(TemplateService::validate_template_layout(&layout).is_ok());
+    }
+
+    #[test]
+    fn test_validate_template_layout_invalid_input_type() {
+        let mut field = valid_field();
+        field.props.input_type = Some("invalid_type".to_string());
+        let layout = vec![field];
+
+        let result = TemplateService::validate_template_layout(&layout);
+        assert!(result.is_err());
+        let (status, err) = result.unwrap_err();
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert!(err["error"].to_string().contains("Invalid input type"));
+    }
+
+    #[test]
+    fn test_validate_template_layout_negative_min_length() {
+        let mut field = valid_field();
+        field.props.min_length = Some(-1);
+        let layout = vec![field];
+
+        let result = TemplateService::validate_template_layout(&layout);
+        assert!(result.is_err());
+        let (status, err) = result.unwrap_err();
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert!(
+            err["error"]
+                .to_string()
+                .contains("min_length must be non-negative")
+        );
+    }
+
+    #[test]
+    fn test_validate_template_layout_negative_max_length() {
+        let mut field = valid_field();
+        field.props.max_length = Some(-5);
+        let layout = vec![field];
+
+        let result = TemplateService::validate_template_layout(&layout);
+        assert!(result.is_err());
+        let (status, err) = result.unwrap_err();
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert!(
+            err["error"]
+                .to_string()
+                .contains("max_length must be non-negative")
+        );
+    }
+
+    #[test]
+    fn test_validate_template_layout_min_greater_than_max() {
+        let mut field = valid_field();
+        field.props.min_length = Some(100);
+        field.props.max_length = Some(50);
+        let layout = vec![field];
+
+        let result = TemplateService::validate_template_layout(&layout);
+        assert!(result.is_err());
+        let (status, err) = result.unwrap_err();
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert!(
+            err["error"]
+                .to_string()
+                .contains("min_length cannot be greater than max_length")
+        );
+    }
+
+    #[test]
+    fn test_validate_template_layout_invalid_color() {
+        let mut field = valid_field();
+        field.props.color = Some("red;display:none".to_string());
+        let layout = vec![field];
+
+        let result = TemplateService::validate_template_layout(&layout);
+        assert!(result.is_err());
+        let (status, err) = result.unwrap_err();
+        assert_eq!(status, StatusCode::BAD_REQUEST);
+        assert!(err["error"].to_string().contains("Invalid color value"));
+    }
+
+    #[test]
+    fn test_validate_template_layout_valid_input_types() {
+        for input_type in &["text", "int", "float"] {
+            let mut field = valid_field();
+            field.props.input_type = Some(input_type.to_string());
+            let layout = vec![field];
+            assert!(
+                TemplateService::validate_template_layout(&layout).is_ok(),
+                "Failed for input_type: {}",
+                input_type
+            );
+        }
+    }
+
+    #[test]
+    fn test_validate_template_layout_valid_length_combinations() {
+        // No constraints
+        let mut field = valid_field();
+        field.props.min_length = None;
+        field.props.max_length = None;
+        let layout = vec![field];
+        assert!(TemplateService::validate_template_layout(&layout).is_ok());
+
+        // Only min_length
+        let mut field = valid_field();
+        field.props.min_length = Some(5);
+        field.props.max_length = None;
+        let layout = vec![field];
+        assert!(TemplateService::validate_template_layout(&layout).is_ok());
+
+        // Only max_length
+        let mut field = valid_field();
+        field.props.min_length = None;
+        field.props.max_length = Some(50);
+        let layout = vec![field];
+        assert!(TemplateService::validate_template_layout(&layout).is_ok());
+
+        // Both equal
+        let mut field = valid_field();
+        field.props.min_length = Some(10);
+        field.props.max_length = Some(10);
+        let layout = vec![field];
+        assert!(TemplateService::validate_template_layout(&layout).is_ok());
+    }
+
+    #[test]
+    fn test_validate_template_layout_multiple_fields() {
+        let field1 = valid_field();
+        let field2 = valid_field();
+        let field3 = valid_field();
+        let layout = vec![field1, field2, field3];
+
+        assert!(TemplateService::validate_template_layout(&layout).is_ok());
+    }
+
+    #[test]
+    fn test_validate_template_layout_error_identifies_field() {
+        let field1 = valid_field();
+        let mut field2 = valid_field();
+        field2.props.input_type = Some("invalid".to_string());
+        let field3 = valid_field();
+        let layout = vec![field1, field2, field3];
+
+        let result = TemplateService::validate_template_layout(&layout);
+        assert!(result.is_err());
+        let (_, err) = result.unwrap_err();
+        // Error should mention field 1 (0-indexed)
+        assert!(err["error"].to_string().contains("Field 1"));
+    }
+
     #[tokio::test]
     async fn test_template_service_basic() {
         assert!(true);
@@ -13,6 +186,65 @@ mod template_service_tests {
 pub struct TemplateService;
 
 impl TemplateService {
+    /// Validates that all template fields contain safe values and valid constraints.
+    /// Checks for CSS injection, input types, and length constraints.
+    /// Returns an error if any field contains invalid data.
+    fn validate_template_layout(
+        template_layout: &logs_db::TemplateLayout,
+    ) -> Result<(), (StatusCode, serde_json::Value)> {
+        for (field_index, field) in template_layout.iter().enumerate() {
+            // Validate color field if present
+            if let Some(color) = &field.props.color {
+                if !utils::is_valid_css_color(color) {
+                    return Err((
+                        StatusCode::BAD_REQUEST,
+                        json!({ "error": format!("Field {}: Invalid color value. Colors must be valid CSS values (hex, rgb/rgba, or named colors).", field_index) }),
+                    ));
+                }
+            }
+
+            // Validate font_family field if present
+            if let Some(font_family) = &field.props.font_family {
+                if !utils::is_valid_font_family(font_family) {
+                    return Err((
+                        StatusCode::BAD_REQUEST,
+                        json!({ "error": format!("Field {}: Invalid font family value.", field_index) }),
+                    ));
+                }
+            }
+
+            // Validate text_decoration field if present
+            if let Some(text_decoration) = &field.props.text_decoration {
+                if !utils::is_valid_text_decoration(text_decoration) {
+                    return Err((
+                        StatusCode::BAD_REQUEST,
+                        json!({ "error": format!("Field {}: Invalid text decoration value.", field_index) }),
+                    ));
+                }
+            }
+
+            // Validate input_type if present
+            if let Some(input_type) = &field.props.input_type {
+                if !utils::is_valid_input_type(input_type) {
+                    return Err((
+                        StatusCode::BAD_REQUEST,
+                        json!({ "error": format!("Field {}: Invalid input type '{}'. Must be one of: text, int, float.", field_index, input_type) }),
+                    ));
+                }
+            }
+
+            // Validate length constraints (min_length and max_length)
+            if let Err(e) =
+                utils::validate_length_constraints(field.props.min_length, field.props.max_length)
+            {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    json!({ "error": format!("Field {}: {}", field_index, e) }),
+                ));
+            }
+        }
+        Ok(())
+    }
     /// Creates a new log template.
     ///
     /// # Errors
@@ -26,6 +258,9 @@ impl TemplateService {
         user_id: &str,
         branch_id: Option<String>,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
+        // Validate template layout for malicious content
+        Self::validate_template_layout(&template_layout)?;
+
         let existing_template =
             logs_db::get_template_by_name(&state.mongodb, &template_name, company_id)
                 .await
@@ -180,6 +415,11 @@ impl TemplateService {
         is_company_manager: bool,
         target_branch_id: Option<Option<&str>>,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
+        // Validate template layout for malicious content if provided
+        if let Some(layout) = template_layout {
+            Self::validate_template_layout(layout)?;
+        }
+
         // 1. Fetch current template state
         let current_template =
             logs_db::get_template_by_name(&state.mongodb, template_name, company_id)

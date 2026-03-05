@@ -148,6 +148,8 @@ fn test_user_response_structure() {
         company_name: Some("Test Company".to_string()),
         branch_id: None,
         role: UserRole::CompanyManager,
+        profile_picture_url: None,
+        oauth_picture: None,
         created_at: chrono::Utc::now(),
         oauth_provider: None,
     };
@@ -163,12 +165,14 @@ fn test_user_response_without_company() {
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
+        oauth_picture: None,
         company_id: None,
         company_name: None,
         branch_id: None,
         role: UserRole::Staff,
         created_at: chrono::Utc::now(),
         oauth_provider: None,
+        profile_picture_url: None,
     };
     assert_eq!(user_response.company_name, None);
 }
@@ -193,9 +197,11 @@ fn test_auth_response_structure() {
         last_name: "Doe".to_string(),
         company_id: Some("company123".to_string()),
         company_name: Some("Test Company".to_string()),
+        profile_picture_url: None,
         branch_id: None,
         role: UserRole::CompanyManager,
         created_at: chrono::Utc::now(),
+        oauth_picture: None,
         oauth_provider: None,
     };
     let auth_response = AuthResponse {
@@ -252,11 +258,13 @@ fn test_user_response_serialization() {
         email: "test@example.com".to_string(),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
+        oauth_picture: None,
         company_id: Some("company123".to_string()),
         company_name: Some("Test Company".to_string()),
         branch_id: None,
         role: UserRole::CompanyManager,
         created_at: chrono::Utc::now(),
+        profile_picture_url: None,
         oauth_provider: None,
     };
     let json = serde_json::to_string(&user_response).unwrap();
@@ -306,6 +314,8 @@ fn test_response_contains_token() {
         last_name: "Doe".to_string(),
         company_id: Some("Test Company".to_string()),
         company_name: Some("Test Company".to_string()),
+        oauth_picture: None,
+        profile_picture_url: None,
         branch_id: None,
         role: UserRole::CompanyManager,
         created_at: chrono::Utc::now(),
