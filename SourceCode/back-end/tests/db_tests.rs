@@ -210,7 +210,7 @@ fn test_user_is_branch_manager_true() {
         company_id: Some("company1".to_string()),
         branch_id: Some("branch1".to_string()),
         company_name: None,
-        profile_picture_id: None,        
+        profile_picture_id: None,
         role: UserRole::BranchManager,
         created_at: chrono::Utc::now(),
         deleted_at: None,

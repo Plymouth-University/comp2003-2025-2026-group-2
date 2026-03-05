@@ -254,9 +254,10 @@ pub async fn upload_profile_picture(
     }
 
     if let Some(old_picture_id) = &target_picture_id
-        && let Err(err) = logs_db::delete_profile_picture(&state.mongodb, old_picture_id).await {
-            tracing::error!("Failed to delete old profile picture: {:?}", err);
-        }
+        && let Err(err) = logs_db::delete_profile_picture(&state.mongodb, old_picture_id).await
+    {
+        tracing::error!("Failed to delete old profile picture: {:?}", err);
+    }
 
     state.user_cache.invalidate(&target_user_id).await;
 
@@ -365,22 +366,20 @@ pub async fn delete_profile_picture_handler(
     }
 
     if let Some(picture_id) = &target_picture_id
-        && let Err(err) = logs_db::delete_profile_picture(&state.mongodb, picture_id).await {
-            tracing::error!("Failed to delete profile picture from Mongo: {:?}", err);
-            if let Err(rollback_err) = db::update_user_profile_picture_id(
-                &state.postgres,
-                &target_user_id,
-                Some(picture_id),
-            )
-            .await
-            {
-                tracing::error!(
-                    "Failed to rollback profile picture reference: {:?}",
-                    rollback_err
-                );
-            }
-            return Err(err_internal("Failed to delete profile picture"));
+        && let Err(err) = logs_db::delete_profile_picture(&state.mongodb, picture_id).await
+    {
+        tracing::error!("Failed to delete profile picture from Mongo: {:?}", err);
+        if let Err(rollback_err) =
+            db::update_user_profile_picture_id(&state.postgres, &target_user_id, Some(picture_id))
+                .await
+        {
+            tracing::error!(
+                "Failed to rollback profile picture reference: {:?}",
+                rollback_err
+            );
         }
+        return Err(err_internal("Failed to delete profile picture"));
+    }
 
     state.user_cache.invalidate(&target_user_id).await;
 
