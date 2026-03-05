@@ -173,7 +173,7 @@
 <svelte:head>
 	<title>Settings</title>
 </svelte:head>
-<div class="min-h-screen" style="background-color: var(--bg-secondary);">
+<div class="min-h-full" style="background-color: var(--bg-secondary);">
 	<div class="mx-auto max-w-7xl px-6 py-8">
 		<!-- Header -->
 		<h1 class="mb-8 text-3xl font-bold" style="color: var(--text-primary);">Settings</h1>

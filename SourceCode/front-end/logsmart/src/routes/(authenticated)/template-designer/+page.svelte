@@ -344,15 +344,40 @@
 	function getDefaultProps(type: string): Record<string, unknown> {
 		switch (type) {
 			case 'text_input':
-				return { text: '', size: 16, weight: 'normal' };
+				return {
+					text: '',
+					size: 16,
+					weight: 'normal',
+					placeholder: 'Text Input',
+					fontFamily: 'system-ui',
+					textDecoration: 'none',
+					color: '',
+					required: false,
+					maxLength: null,
+					inputType: 'text'
+				};
 			case 'checkbox':
-				return { text: 'Checkbox Label', size: '16px', weight: 'normal' };
+				return {
+					text: 'Checkbox Label',
+					size: '16px',
+					weight: 'normal',
+					color: '',
+					required: false
+				};
 			case 'temperature':
 				return { value: 0, min: -20, max: 50, label: 'Temperature', unit: '°C' };
 			case 'dropdown':
 				return { selected: '', options: ['Option 1', 'Option 2', 'Option 3'] };
 			case 'label':
-				return { editable: true, text: 'Label Text', size: 16, weight: 'normal' };
+				return {
+					editable: true,
+					text: 'Label Text',
+					size: 16,
+					weight: 'normal',
+					fontFamily: 'system-ui',
+					textDecoration: 'none',
+					color: ''
+				};
 			default:
 				return {};
 		}

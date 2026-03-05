@@ -188,6 +188,105 @@
 						</select>
 					</label>
 				</div>
+				<div>
+					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+						Font Family
+						<select
+							value={selectedItem.props.fontFamily}
+							onchange={(e) => onUpdateProp(selectedItem.id, 'fontFamily', e.currentTarget.value)}
+							class="mt-1 w-full border-2 px-3 py-2"
+							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						>
+							<option value="system-ui">System UI</option>
+							<option value="serif">Serif</option>
+							<option value="sans-serif">Sans-Serif</option>
+							<option value="monospace">Monospace</option>
+						</select>
+					</label>
+				</div>
+				<div>
+					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+						Text Decoration
+						<select
+							value={selectedItem.props.textDecoration}
+							onchange={(e) =>
+								onUpdateProp(selectedItem.id, 'textDecoration', e.currentTarget.value)}
+							class="mt-1 w-full border-2 px-3 py-2"
+							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						>
+							<option value="none">None</option>
+							<option value="underline">Underline</option>
+							<option value="line-through">Line Through</option>
+						</select>
+					</label>
+				</div>
+				<div>
+					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+						Color
+						<div class="mt-1 flex items-center gap-2">
+							<input
+								type="color"
+								value={selectedItem.props.color || '#000000'}
+								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
+								class="h-12 w-12 min-w-12 cursor-pointer rounded border-2 p-1"
+								style="border-color: var(--border-primary);"
+							/>
+							<input
+								type="text"
+								value={selectedItem.props.color || ''}
+								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
+								placeholder="#000000"
+								class="flex-1 w-2 border-2 px-3 py-2"
+								style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+							/>
+						</div>
+					</label>
+				</div>
+				<div>
+					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+						Input Type
+						<select
+							value={selectedItem.props.inputType}
+							onchange={(e) => onUpdateProp(selectedItem.id, 'inputType', e.currentTarget.value)}
+							class="mt-1 w-full border-2 px-3 py-2"
+							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						>
+							<option value="text">Text</option>
+							<option value="int">Integer</option>
+							<option value="float">Float</option>
+						</select>
+					</label>
+				</div>
+				<div>
+					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+						Max Length
+						<input
+							type="number"
+							value={selectedItem.props.maxLength || ''}
+							oninput={(e) =>
+								onUpdateProp(
+									selectedItem.id,
+									'maxLength',
+									e.currentTarget.value ? parseInt(e.currentTarget.value) : null
+								)}
+							placeholder="No limit"
+							class="mt-1 w-full border-2 px-3 py-2"
+							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						/>
+					</label>
+				</div>
+				<div class="flex items-center gap-2">
+					<input
+						type="checkbox"
+						id="required"
+						checked={!!selectedItem.props.required}
+						onchange={(e) => onUpdateProp(selectedItem.id, 'required', e.currentTarget.checked)}
+						class="h-4 w-4"
+					/>
+					<label for="required" class="text-sm font-medium" style="color: var(--text-secondary);"
+						>Required</label
+					>
+				</div>
 			</div>
 		{:else if selectedItem.type === 'label'}
 			<div class="space-y-2">
@@ -233,6 +332,60 @@
 						<option value="bold">Bold</option>
 					</select>
 				</div>
+				<div>
+					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+						Font Family
+						<select
+							value={selectedItem.props.fontFamily}
+							onchange={(e) => onUpdateProp(selectedItem.id, 'fontFamily', e.currentTarget.value)}
+							class="mt-1 w-full border-2 px-3 py-2"
+							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						>
+							<option value="system-ui">System UI</option>
+							<option value="serif">Serif</option>
+							<option value="sans-serif">Sans-Serif</option>
+							<option value="monospace">Monospace</option>
+						</select>
+					</label>
+				</div>
+				<div>
+					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+						Text Decoration
+						<select
+							value={selectedItem.props.textDecoration}
+							onchange={(e) =>
+								onUpdateProp(selectedItem.id, 'textDecoration', e.currentTarget.value)}
+							class="mt-1 w-full border-2 px-3 py-2"
+							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						>
+							<option value="none">None</option>
+							<option value="underline">Underline</option>
+							<option value="line-through">Line Through</option>
+						</select>
+					</label>
+				</div>
+				<div>
+					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+						Color
+						<div class="mt-1 flex items-center gap-2">
+							<input
+								type="color"
+								value={selectedItem.props.color || '#000000'}
+								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
+								class="h-12 w-12 min-w-12 cursor-pointer rounded border-2 p-1"
+								style="border-color: var(--border-primary);"
+							/>
+							<input
+								type="text"
+								value={selectedItem.props.color || ''}
+								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
+								placeholder="#000000"
+								class="flex-1 border-2 px-3 py-2 w-2"
+								style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+							/>
+						</div>
+					</label>
+				</div>
 			</div>
 		{:else if selectedItem.type === 'checkbox'}
 			<div class="space-y-2">
@@ -247,6 +400,42 @@
 						class="w-full border-2 px-3 py-2"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					/>
+				</div>
+				<div>
+					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+						Color
+						<div class="mt-1 flex items-center gap-2">
+							<input
+								type="color"
+								value={selectedItem.props.color || '#000000'}
+								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
+								class="h-12 w-12 min-w-12 cursor-pointer rounded border-2 p-1"
+								style="border-color: var(--border-primary);"
+							/>
+							<input
+								type="text"
+								value={selectedItem.props.color || ''}
+								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
+								placeholder="#000000"
+								class="flex-1 border-2 px-3 py-2 w-2"
+								style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+							/>
+						</div>
+					</label>
+				</div>
+				<div class="flex items-center gap-2">
+					<input
+						type="checkbox"
+						id="checkbox-required"
+						checked={!!selectedItem.props.required}
+						onchange={(e) => onUpdateProp(selectedItem.id, 'required', e.currentTarget.checked)}
+						class="h-4 w-4"
+					/>
+					<label
+						for="checkbox-required"
+						class="text-sm font-medium"
+						style="color: var(--text-secondary);">Required</label
+					>
 				</div>
 			</div>
 		{:else if selectedItem.type === 'temperature'}
