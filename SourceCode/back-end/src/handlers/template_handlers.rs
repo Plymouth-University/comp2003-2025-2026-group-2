@@ -105,6 +105,24 @@ pub async fn get_template(
         services::TemplateService::get_template(&state, company_id, &payload.template_name)
             .await
             .map_err(|(status, err)| (status, Json(err)))?;
+    
+    if let Some(branch) = branch_id.clone() {
+        // If the template is branch-specific, check if the user has access to that branch
+        if let Some(user_branch_id) = &user.branch_id {
+            if &branch != user_branch_id && !user.is_company_manager() {
+                return Err((
+                    StatusCode::FORBIDDEN,
+                    Json(json!({ "error": "User does not have access to this template" })),
+                ));
+            }
+        } else if !user.is_company_manager() {
+            // If the user is not associated with any branch and is not a company manager, deny access
+            return Err((
+                StatusCode::FORBIDDEN,
+                Json(json!({ "error": "User does not have access to this template" })),
+            ));
+        }
+    }
 
     Ok(Json(GetTemplateResponse {
         template_name,
@@ -228,13 +246,8 @@ pub async fn get_template_versions(
     State(state): State<AppState>,
     Query(payload): Query<GetTemplateRequest>,
 ) -> Result<Json<crate::dto::GetTemplateVersionsResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = user.company_id.ok_or((
-        StatusCode::FORBIDDEN,
-        Json(json!({ "error": "User is not associated with a company" })),
-    ))?;
-
     let versions =
-        services::TemplateService::get_versions(&state, &company_id, &payload.template_name)
+        services::TemplateService::get_versions(&state, &payload.template_name, &user)
             .await
             .map_err(|(status, err)| (status, Json(err)))?;
 
@@ -327,7 +340,7 @@ pub async fn rename_template(
         &payload.old_template_name,
         &payload.new_template_name,
         user.branch_id.as_deref(),
-        user.is_company_manager(),
+        &user.role,
     )
     .await
     .map_err(|(status, err)| (status, Json(err)))?;
@@ -367,7 +380,7 @@ pub async fn delete_template(
         company_id,
         &payload.template_name,
         user.branch_id.as_deref(),
-        user.is_company_manager(),
+        &user.role
     )
     .await
     .map_err(|(status, err)| (status, Json(err)))?;
