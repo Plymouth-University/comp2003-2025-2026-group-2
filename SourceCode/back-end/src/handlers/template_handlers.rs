@@ -204,21 +204,13 @@ pub async fn update_template(
     State(state): State<AppState>,
     Json(payload): Json<UpdateTemplateRequest>,
 ) -> Result<Json<UpdateTemplateResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = user.company_id.clone().ok_or((
-        StatusCode::FORBIDDEN,
-        Json(json!({ "error": "User is not associated with a company" })),
-    ))?;
-
     services::TemplateService::update_template(
         &state,
-        &company_id,
         &payload.template_name,
         payload.template_layout.as_ref(),
         payload.schedule.as_ref(),
-        &user.id,
+        &user,
         payload.version_name.clone(),
-        user.branch_id.as_deref(),
-        user.is_company_manager(),
         payload.branch_id.as_ref().map(|branch| {
             if branch == "company" {
                 None
@@ -308,9 +300,7 @@ pub async fn restore_template_version(
         company_id,
         &query.template_name,
         payload.version,
-        &user.id,
-        user.branch_id.as_deref(),
-        user.is_company_manager(),
+        &user
     )
     .await
     .map_err(|(status, err)| (status, Json(err)))?;
