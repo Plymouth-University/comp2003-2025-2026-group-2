@@ -11,7 +11,7 @@ use crate::{
     dto::{
         AuthResponse, ErrorResponse, JwtVerifyResponse, LoginRequest, PasswordResetResponse,
         RegisterRequest, RequestPasswordResetRequest, ResetPasswordRequest, UpdateProfileRequest,
-        UserResponse, VerifyTokenRequest,
+        UserResponse, VerifyTokenRequest, DeleteAccountRequest,
     },
     jwt_manager::JwtManager,
     services,
@@ -266,6 +266,23 @@ pub async fn login(
 
     Ok(response)
 }
+#[utopa::path(
+    delete,
+    path = "auth/profile",
+    request_body = DeleteAccountRequest,
+    responses(
+        (status = 200, description = "Account deleted successfully"),
+        (status = 400, description = "Invalid request", body = ErrorResponse)
+        (status = 401, description = "")
+
+    )
+)]
+pub async fn delete_account(
+    let role = match payload.role.as_str() {
+        "company_manager" => db::UserRole::CompanyManager,
+        "branch_manager" => db::UserRole::BranchManager,
+    }
+)
 
 #[utoipa::path(
     get,

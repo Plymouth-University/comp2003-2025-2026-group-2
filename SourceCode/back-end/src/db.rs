@@ -317,6 +317,15 @@ pub async fn get_user_by_email(pool: &PgPool, email: &str) -> Result<Option<User
     Ok(user)
 }
 
+/// Retrives a user by their role.
+///
+/// # Errors
+/// Returns an error if database query fails.
+pub async fn get_user_by_role(pool: &PgPool, id: &str) -> Result<Option<UserRecord>> {
+    let user = sqlx::query_as::<_, UserRecord
+}
+
+
 /// Retrieves a user by their ID.
 ///
 /// # Errors
