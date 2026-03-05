@@ -317,14 +317,33 @@ pub async fn get_user_by_email(pool: &PgPool, email: &str) -> Result<Option<User
     Ok(user)
 }
 
-/// Retrives a user by their role.
+/// Retrieves a user by their role.
 ///
 /// # Errors
 /// Returns an error if database query fails.
-pub async fn get_user_by_role(pool: &PgPool, id: &str) -> Result<Option<UserRecord>> {
-    let user = sqlx::query_as::<_, UserRecord
-}
+pub async fn get_users_by_role(
+    pool: &PgPool,
+    id: &str,
+    company_id: &str,
+    role: &str,
+    branch_id: Option<String>,
+) -> Result<Vec<UserRecord>> {
+    let users = sqlx::query_as::<_, UserRecord>(
+        r"
+        SELECT users.id
+        FROM users
+        WHERE NOT users.id = $1 AND users.company_id = $2 AND users.role = $3 AND users.branch_id = $4 AND users.deleted_at IS NULL
+        ",
+    )
+    .bind(&id)
+    .bind(&company_id)
+    .bind(&role)
+    .bind(&branch_id)
+    .fetch_all(pool)
+    .await?;
 
+    Ok(users)
+}
 
 /// Retrieves a user by their ID.
 ///
