@@ -1,6 +1,7 @@
 use crate::db;
 use axum::http::HeaderMap;
 use sqlx::PgPool;
+use once_cell::sync::Lazy;
 
 #[macro_export]
 macro_rules! try_db {
@@ -384,7 +385,55 @@ pub fn svc_err_bad_request(msg: &str) -> ServiceError {
 /// - Hex colors: #RGB, #RRGGBB, #RRGGBBAA
 /// - RGB/RGBA: rgb(...), rgba(...)
 /// - Named colors: red, blue, etc.
-#[must_use]
+/// Safe font family values - precompiled list
+const SAFE_FONTS: &[&str] = &[
+	"system-ui",
+	"serif",
+	"sans-serif",
+	"monospace",
+	"cursive",
+	"fantasy",
+	"georgia",
+	"times",
+	"courier",
+	"verdana",
+	"arial",
+	"helvetica",
+];
+
+/// Safe text decoration values - precompiled list
+const SAFE_DECORATIONS: &[&str] = &[
+	"none",
+	"underline",
+	"overline",
+	"line-through",
+	"blink",
+];
+
+/// Static regex for hex colors: #RGB or #RRGGBB or #RRGGBBAA
+static HEX_COLOR_PATTERN: Lazy<regex::Regex> = Lazy::new(|| {
+	regex::Regex::new(r"^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?([0-9a-fA-F]{2})?$")
+		.expect("Failed to compile hex color regex")
+});
+
+/// Static regex for RGB/RGBA colors: rgb(...) or rgba(...)
+static RGB_COLOR_PATTERN: Lazy<regex::Regex> = Lazy::new(|| {
+	regex::Regex::new(r"^rgba?\s*\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$")
+		.expect("Failed to compile RGB color regex")
+});
+
+/// Static regex for named colors: letters only
+static NAMED_COLOR_PATTERN: Lazy<regex::Regex> = Lazy::new(|| {
+	regex::Regex::new(r"^[a-zA-Z]+$")
+		.expect("Failed to compile named color regex")
+});
+
+/// Static regex for short hex with alpha: #RGBA
+static SHORT_HEX_ALPHA_PATTERN: Lazy<regex::Regex> = Lazy::new(|| {
+	regex::Regex::new(r"^#[0-9a-fA-F]{4}$")
+		.expect("Failed to compile short hex alpha regex")
+});
+
 pub fn is_valid_css_color(color: &str) -> bool {
     // Empty string is valid (means no custom color)
     if color.trim().is_empty() {
@@ -404,37 +453,25 @@ pub fn is_valid_css_color(color: &str) -> bool {
         return false;
     }
 
-    // Hex color pattern: #RGB or #RRGGBB or #RRGGBBAA
-    if regex::Regex::new(r"^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?([0-9a-fA-F]{2})?$")
-        .map(|re| re.is_match(trimmed))
-        .unwrap_or(false)
-    {
-        return true;
-    }
+	// Hex color pattern: #RGB or #RRGGBB or #RRGGBBAA
+	if HEX_COLOR_PATTERN.is_match(trimmed) {
+		return true;
+	}
 
-    // RGB/RGBA pattern: rgb(...) or rgba(...)
-    if regex::Regex::new(r"^rgba?\s*\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$")
-        .map(|re| re.is_match(trimmed))
-        .unwrap_or(false)
-    {
-        return true;
-    }
+	// RGB/RGBA pattern: rgb(...) or rgba(...)
+	if RGB_COLOR_PATTERN.is_match(trimmed) {
+		return true;
+	}
 
-    // Named colors: letters only (no spaces or special chars)
-    if regex::Regex::new(r"^[a-zA-Z]+$")
-        .map(|re| re.is_match(trimmed))
-        .unwrap_or(false)
-    {
-        return true;
-    }
+	// Named colors: letters only (no spaces or special chars)
+	if NAMED_COLOR_PATTERN.is_match(trimmed) {
+		return true;
+	}
 
-    // Hex short format with alpha in older browsers
-    if regex::Regex::new(r"^#[0-9a-fA-F]{4}$")
-        .map(|re| re.is_match(trimmed))
-        .unwrap_or(false)
-    {
-        return true;
-    }
+	// Hex short format with alpha in older browsers
+	if SHORT_HEX_ALPHA_PATTERN.is_match(trimmed) {
+		return true;
+	}
 
     // If none of the valid formats match, reject it
     false
@@ -450,37 +487,17 @@ pub fn is_valid_font_family(font_family: &str) -> bool {
 
     let trimmed = font_family.trim();
 
-    // Check for dangerous characters that could be used for CSS injection
-    if trimmed.contains(';')
-        || trimmed.contains('{')
-        || trimmed.contains('}')
-        || trimmed.contains('\\')
-        || trimmed.contains('@')
-    {
-        return false;
-    }
+	// Check for dangerous characters that could be used for CSS injection
+	if trimmed.contains(';') || trimmed.contains('{') || trimmed.contains('}') 
+		|| trimmed.contains('\\') || trimmed.contains('@') {
+		return false;
+	}
 
-    // Whitelist of safe font family values
-    let safe_fonts = vec![
-        "system-ui",
-        "serif",
-        "sans-serif",
-        "monospace",
-        "cursive",
-        "fantasy",
-        "georgia",
-        "times",
-        "courier",
-        "verdana",
-        "arial",
-        "helvetica",
-    ];
-
-    // Check if it's in the safe list (case insensitive)
-    let lower_font = trimmed.to_lowercase();
-    if safe_fonts.iter().any(|f| f == &lower_font) {
-        return true;
-    }
+	// Check if it's in the safe list (case insensitive)
+	let lower_font = trimmed.to_lowercase();
+	if SAFE_FONTS.iter().any(|f| f == &lower_font) {
+		return true;
+	}
 
     // Allow single quoted font names if they don't contain dangerous chars
     if trimmed.starts_with('\'') && trimmed.ends_with('\'') && trimmed.len() > 2 {
@@ -515,22 +532,15 @@ pub fn is_valid_text_decoration(text_decoration: &str) -> bool {
 
     let trimmed = text_decoration.trim();
 
-    // Check for dangerous characters that could be used for CSS injection
-    if trimmed.contains(';')
-        || trimmed.contains('{')
-        || trimmed.contains('}')
-        || trimmed.contains('\\')
-        || trimmed.contains('@')
-    {
-        return false;
-    }
+	// Check for dangerous characters that could be used for CSS injection
+	if trimmed.contains(';') || trimmed.contains('{') || trimmed.contains('}') 
+		|| trimmed.contains('\\') || trimmed.contains('@') {
+		return false;
+	}
 
-    // Whitelist of safe text decoration values
-    let safe_decorations = ["none", "underline", "overline", "line-through", "blink"];
-
-    // Check if it's in the safe list (case insensitive)
-    let lower = trimmed.to_lowercase();
-    safe_decorations.iter().any(|d| d == &lower)
+	// Check if it's in the safe list (case insensitive)
+	let lower = trimmed.to_lowercase();
+	SAFE_DECORATIONS.iter().any(|d| d == &lower)
 }
 
 #[cfg(test)]
