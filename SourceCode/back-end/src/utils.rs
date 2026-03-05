@@ -543,6 +543,54 @@ pub fn is_valid_text_decoration(text_decoration: &str) -> bool {
 	SAFE_DECORATIONS.iter().any(|d| d == &lower)
 }
 
+/// Supported input types for template fields
+const SUPPORTED_INPUT_TYPES: &[&str] = &["text", "int", "float"];
+
+/// Validates that an input type is supported.
+/// Must be one of the canonical types: text, int, float
+/// Empty strings are rejected.
+pub fn is_valid_input_type(input_type: &str) -> bool {
+	let trimmed = input_type.trim();
+	
+	// Empty strings are not allowed
+	if trimmed.is_empty() {
+		return false;
+	}
+	
+	// Must be in the canonical set (case sensitive)
+	SUPPORTED_INPUT_TYPES.contains(&trimmed)
+}
+
+/// Validates string length constraints.
+/// If provided, both must be:
+/// - Non-negative (>= 0)
+/// - If both present, min_length must be <= max_length
+/// Returns Ok(()) if valid, or descriptive error message if invalid.
+pub fn validate_length_constraints(min_length: Option<i32>, max_length: Option<i32>) -> Result<(), String> {
+	// Check if min_length is provided and valid
+	if let Some(min) = min_length {
+		if min < 0 {
+			return Err("min_length must be non-negative".to_string());
+		}
+	}
+	
+	// Check if max_length is provided and valid
+	if let Some(max) = max_length {
+		if max < 0 {
+			return Err("max_length must be non-negative".to_string());
+		}
+	}
+	
+	// If both are provided, ensure min <= max
+	if let (Some(min), Some(max)) = (min_length, max_length) {
+		if min > max {
+			return Err("min_length cannot be greater than max_length".to_string());
+		}
+	}
+	
+	Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -726,13 +774,76 @@ mod tests {
         assert!(is_valid_text_decoration("   ")); // Whitespace only is valid
     }
 
-    #[test]
-    fn test_malicious_text_decorations() {
-        // Text decorations with injection characters should be rejected
-        assert!(!is_valid_text_decoration("none;color:red"));
-        assert!(!is_valid_text_decoration("underline{display:none}"));
-        assert!(!is_valid_text_decoration("line-through\\000041"));
-        assert!(!is_valid_text_decoration("@keyframes"));
-        assert!(!is_valid_text_decoration("invalid-value")); // Not a valid decoration
-    }
+	#[test]
+	fn test_malicious_text_decorations() {
+		// Text decorations with injection characters should be rejected
+		assert!(!is_valid_text_decoration("none;color:red"));
+		assert!(!is_valid_text_decoration("underline{display:none}"));
+		assert!(!is_valid_text_decoration("line-through\\000041"));
+		assert!(!is_valid_text_decoration("@keyframes"));
+		assert!(!is_valid_text_decoration("invalid-value")); // Not a valid decoration
+	}
+
+	#[test]
+	fn test_valid_input_types() {
+		// Canonical input types
+		assert!(is_valid_input_type("text"));
+		assert!(is_valid_input_type("int"));
+		assert!(is_valid_input_type("float"));
+	}
+
+	#[test]
+	fn test_invalid_input_types() {
+		// Invalid input types
+		assert!(!is_valid_input_type("")); // Empty
+		assert!(!is_valid_input_type("   ")); // Whitespace only
+		assert!(!is_valid_input_type("email")); // Not supported
+		assert!(!is_valid_input_type("number")); // Not supported
+		assert!(!is_valid_input_type("TEXT")); // Case sensitive
+		assert!(!is_valid_input_type("INT")); // Case sensitive
+		assert!(!is_valid_input_type("FLOAT")); // Case sensitive
+		assert!(!is_valid_input_type("int;select")); // Injection attempt
+	}
+
+	#[test]
+	fn test_valid_length_constraints() {
+		// Valid combinations
+		assert!(validate_length_constraints(None, None).is_ok());
+		assert!(validate_length_constraints(Some(0), None).is_ok());
+		assert!(validate_length_constraints(None, Some(100)).is_ok());
+		assert!(validate_length_constraints(Some(0), Some(100)).is_ok());
+		assert!(validate_length_constraints(Some(10), Some(10)).is_ok());
+		assert!(validate_length_constraints(Some(5), Some(100)).is_ok());
+	}
+
+	#[test]
+	fn test_invalid_length_constraints() {
+		// Negative min_length
+		assert!(validate_length_constraints(Some(-1), None).is_err());
+		assert!(validate_length_constraints(Some(-1), Some(100)).is_err());
+		
+		// Negative max_length
+		assert!(validate_length_constraints(None, Some(-1)).is_err());
+		assert!(validate_length_constraints(Some(0), Some(-1)).is_err());
+		
+		// min > max
+		assert!(validate_length_constraints(Some(100), Some(10)).is_err());
+		assert!(validate_length_constraints(Some(5), Some(4)).is_err());
+	}
+
+	#[test]
+	fn test_length_constraint_error_messages() {
+		// Verify specific error messages for debugging
+		let result = validate_length_constraints(Some(-1), None);
+		assert!(result.is_err());
+		assert_eq!(result.unwrap_err(), "min_length must be non-negative");
+		
+		let result = validate_length_constraints(None, Some(-5));
+		assert!(result.is_err());
+		assert_eq!(result.unwrap_err(), "max_length must be non-negative");
+		
+		let result = validate_length_constraints(Some(100), Some(50));
+		assert!(result.is_err());
+		assert_eq!(result.unwrap_err(), "min_length cannot be greater than max_length");
+	}
 }
