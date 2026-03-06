@@ -1,21 +1,32 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { goto, invalidateAll } from '$app/navigation';
+	import type { components } from '$lib/api-types';
+	import goto from '$app/navigation';
 	import TemperaturePicker from '$lib/components/temperature_picker.svelte';
 	import UserCheckbox from '$lib/components/user_checkbox.svelte';
 	import UserDropdown from '$lib/components/user_dropdown.svelte';
 	import UserTextInput from '$lib/components/user_text_input.svelte';
 	import UserTextLabel from '$lib/components/user_text_label.svelte';
 
+	type LogEntryResponse = components['schemas']['LogEntryResponse'];
+
 	let { data } = $props<{ data: PageData }>();
 
-	let templateLayout = $derived(
-		data.template?.template_layout || data.entry?.template_layout || []
+	let entry = $derived<LogEntryResponse | null>(data.entry as LogEntryResponse | null);
+
+	type TemplateField = {
+		field_id?: string;
+		field_type: string;
+		props: Record<string, unknown>;
+	};
+
+	let templateLayout = $derived<TemplateField[]>(
+		data.template?.template_layout || entry?.template_layout || []
 	);
 	let rawTemplateName = $derived(
-		data.template?.template_name || data.entry?.template_name || 'Log Template'
+		data.template?.template_name || entry?.template_name || 'Log Template'
 	);
-	let period = $derived(data.entry?.period);
+	let period = $derived(entry?.period);
 	let templateName = $derived(
 		period && rawTemplateName.includes('{period}')
 			? rawTemplateName.replace('{period}', period)
@@ -24,15 +35,16 @@
 
 	let entryData = $state<Record<number, string | number | boolean>>({});
 
-	$effect(() => {
-		// Check if entry_data exists and has actual data
-		const hasEntryData = data.entry?.entry_data && Object.keys(data.entry.entry_data).length > 0;
+	function isValidEntryData(data: unknown): data is Record<string, unknown> {
+		return typeof data === 'object' && data !== null && !Array.isArray(data);
+	}
 
-		if (hasEntryData) {
-			entryData = { ...data.entry.entry_data };
+	$effect(() => {
+		if (entry && isValidEntryData(entry.entry_data) && Object.keys(entry.entry_data).length > 0) {
+			entryData = { ...entry.entry_data } as Record<number, string | number | boolean>;
 		} else if (templateLayout.length > 0) {
 			const initialData: Record<number, string | number | boolean> = {};
-			templateLayout.forEach((field: any, index: number) => {
+			templateLayout.forEach((field: TemplateField, index: number) => {
 				const props = field.props || {};
 				if (field.field_type === 'temperature') {
 					initialData[index] = props.value !== undefined ? parseFloat(props.value) : 0;
@@ -49,7 +61,7 @@
 	});
 
 	let mode = $derived(data.mode || 'view');
-	let entryId = $derived(data.entryId || data.entry?.id);
+	let entryId = $derived(data.entryId || entry?.id);
 
 	function validateForm(): string | null {
 		for (let index = 0; index < templateLayout.length; index++) {
@@ -188,14 +200,14 @@
 			class="rounded-lg border-2 p-8"
 			style="border-color: var(--border-color); margin-left:10%; margin-right:10%; background-color: var(--bg-primary);"
 		>
-			{#if mode === 'view' && data.entry?.status === 'submitted'}
+			{#if mode === 'view' && entry?.status === 'submitted'}
 				<div
 					class="mb-4 rounded p-4"
 					style="background-color: #e8f5e9; border: 1px solid #4caf50; color: #2e7d32;"
 				>
 					This log has been submitted and cannot be edited.
 				</div>
-			{:else if mode === 'edit' && data.entry?.status === 'submitted'}
+			{:else if mode === 'edit' && entry?.status === 'submitted'}
 				<div
 					class="mb-4 rounded p-4"
 					style="background-color: #fff3cd; border: 1px solid #ffc107; color: #856404;"

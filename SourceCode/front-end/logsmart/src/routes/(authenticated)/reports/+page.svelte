@@ -451,6 +451,7 @@
 			fieldType: string;
 			fieldData: string;
 			fieldIndex: number;
+			componentId: string;
 		}> = [];
 
 		entries.forEach((entry) => {
@@ -472,7 +473,8 @@
 						field,
 						fieldType: getFieldType(field),
 						fieldData,
-						fieldIndex: index
+						fieldIndex: index,
+						componentId: `${entry.id}-field-${index}`
 					});
 				}
 			});
@@ -2444,7 +2446,7 @@
 										>
 											{fieldType} ({componentGroup.length} components)
 										</h3>
-										{#each componentGroup as component (component.entry.id)}
+										{#each componentGroup as component (component.componentId)}
 											<div
 												class="mb-4 rounded border p-4"
 												style="border-color: var(--border-primary); background-color: var(--bg-secondary);"
