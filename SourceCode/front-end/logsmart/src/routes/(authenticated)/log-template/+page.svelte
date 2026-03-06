@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import type { components } from '$lib/api-types';
-	import goto from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import TemperaturePicker from '$lib/components/temperature_picker.svelte';
 	import UserCheckbox from '$lib/components/user_checkbox.svelte';
 	import UserDropdown from '$lib/components/user_dropdown.svelte';
@@ -19,6 +19,27 @@
 		field_type: string;
 		props: Record<string, unknown>;
 	};
+
+	// Type guard helpers for safely accessing props values
+	function getPropAsString(props: Record<string, unknown>, key: string): string | undefined {
+		const value = props[key];
+		return typeof value === 'string' ? value : undefined;
+	}
+
+	function getPropAsNumber(props: Record<string, unknown>, key: string): number | undefined {
+		const value = props[key];
+		return typeof value === 'number' ? value : undefined;
+	}
+
+	function getPropAsStringOrBoolean(props: Record<string, unknown>, key: string): string | boolean | undefined {
+		const value = props[key];
+		return typeof value === 'string' || typeof value === 'boolean' ? value : undefined;
+	}
+
+	function getPropAsArray<T = unknown>(props: Record<string, unknown>, key: string): T[] | undefined {
+		const value = props[key];
+		return Array.isArray(value) ? value : undefined;
+	}
 
 	let templateLayout = $derived<TemplateField[]>(
 		data.template?.template_layout || entry?.template_layout || []
@@ -47,13 +68,23 @@
 			templateLayout.forEach((field: TemplateField, index: number) => {
 				const props = field.props || {};
 				if (field.field_type === 'temperature') {
-					initialData[index] = props.value !== undefined ? parseFloat(props.value) : 0;
+					const propValue = getPropAsStringOrBoolean(props, 'value');
+					const numValue = typeof propValue === 'string' ? parseFloat(propValue) : undefined;
+					initialData[index] = numValue ?? (typeof propValue === 'number' ? propValue : 0);
 				} else if (field.field_type === 'text' || field.field_type === 'text_input') {
-					initialData[index] = props.value || '';
+					const propValue = getPropAsString(props, 'value');
+					initialData[index] = propValue || '';
 				} else if (field.field_type === 'checkbox') {
-					initialData[index] = props.value === 'true' || props.value === true;
+					const propValue = getPropAsStringOrBoolean(props, 'value');
+					initialData[index] = propValue === 'true' || propValue === true;
 				} else if (field.field_type === 'dropdown') {
-					initialData[index] = props.selected || (props.options?.[0] ?? '');
+					const propSelected = getPropAsString(props, 'selected');
+					const propOptions = getPropAsArray(props, 'options');
+					const firstOption = propOptions?.[0];
+					const firstOptionValue = typeof firstOption === 'object' && firstOption !== null && 'value' in firstOption 
+						? (firstOption as { value?: unknown }).value 
+						: firstOption;
+					initialData[index] = propSelected || (typeof firstOptionValue === 'string' ? firstOptionValue : '');
 				}
 			});
 			entryData = initialData;
@@ -67,10 +98,11 @@
 		for (let index = 0; index < templateLayout.length; index++) {
 			const field = templateLayout[index];
 			const value = entryData[index];
-			const fieldLabel = field.props.text || `Field ${index + 1}`;
+			const fieldLabel = getPropAsString(field.props, 'text') || `Field ${index + 1}`;
 
 			// Check required constraint based on field type
-			if (field.props.required === true || field.props.required === 'true') {
+			const requiredProp = getPropAsStringOrBoolean(field.props, 'required');
+			if (requiredProp === true || requiredProp === 'true') {
 				let isEmpty = false;
 
 				if (field.field_type === 'checkbox') {
@@ -97,14 +129,18 @@
 				(field.field_type === 'text' || field.field_type === 'text_input') &&
 				typeof value === 'string'
 			) {
-				if (field.props.min_length != null) {
-					const minLength = Number(field.props.min_length);
+				const minLengthProp = getPropAsNumber(field.props, 'min_length') ?? 
+					(typeof field.props['min_length'] === 'string' ? Number(field.props['min_length']) : undefined);
+				if (minLengthProp != null) {
+					const minLength = minLengthProp;
 					if (value.length < minLength) {
 						return `${fieldLabel} must be at least ${minLength} characters long`;
 					}
 				}
-				if (field.props.max_length != null) {
-					const maxLength = Number(field.props.max_length);
+				const maxLengthProp = getPropAsNumber(field.props, 'max_length') ?? 
+					(typeof field.props['max_length'] === 'string' ? Number(field.props['max_length']) : undefined);
+				if (maxLengthProp != null) {
+					const maxLength = maxLengthProp;
 					if (value.length > maxLength) {
 						return `${fieldLabel} must not exceed ${maxLength} characters`;
 					}
