@@ -79,7 +79,7 @@ pub async fn add_template(
     get,
     path = "/logs/templates",
     params(
-        ("template_name", description = "Name of the template to retrieve", example = "ErrorLog" )
+        ("template_name"=String, Query, description = "Name of the template to retrieve", example = "ErrorLog" )
     ),
     responses(
         (status = 200, description = "Template retrieved successfully", body = GetTemplateResponse),
@@ -230,7 +230,7 @@ pub async fn update_template(
     get,
     path = "/logs/templates/versions",
     params(
-        ("template_name", description = "Name of the template to retrieve versions for", example = "ErrorLog")
+        ("template_name"=String, Query, description = "Name of the template to retrieve versions for", example = "ErrorLog")
     ),
     responses(
         (status = 200, description = "Versions retrieved successfully", body = GetTemplateVersionsResponse),
@@ -269,7 +269,7 @@ pub async fn get_template_versions(
     post,
     path = "/logs/templates/versions/restore",
     params(
-        ("template_name", description = "Name of the template to restore", example = "ErrorLog")
+        ("template_name"=String, Query, description = "Name of the template to restore", example = "ErrorLog")
     ),
     request_body = RestoreTemplateVersionRequest,
     responses(

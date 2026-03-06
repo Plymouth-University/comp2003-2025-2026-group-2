@@ -1560,9 +1560,10 @@
 				"parameters": [
 					{
 						"name": "template_name",
-						"in": "path",
+						"in": "query",
 						"description": "Name of the template to retrieve",
 						"required": true,
+						"schema": { "type": "string" },
 						"example": "ErrorLog"
 					}
 				],
@@ -1811,9 +1812,10 @@
 				"parameters": [
 					{
 						"name": "template_name",
-						"in": "path",
+						"in": "query",
 						"description": "Name of the template to retrieve versions for",
 						"required": true,
+						"schema": { "type": "string" },
 						"example": "ErrorLog"
 					}
 				],
@@ -1850,9 +1852,10 @@
 				"parameters": [
 					{
 						"name": "template_name",
-						"in": "path",
+						"in": "query",
 						"description": "Name of the template to restore",
 						"required": true,
+						"schema": { "type": "string" },
 						"example": "ErrorLog"
 					}
 				],

@@ -129,7 +129,7 @@
 
 		const { data, error } = await api.GET('/logs/templates', {
 			params: {
-				path: {
+				query: {
 					template_name: name
 				}
 			}
@@ -236,7 +236,7 @@
 		if (showHistory && originalTemplateName) {
 			const { data } = await api.GET('/logs/templates/versions', {
 				params: {
-					path: {
+					query: {
 						template_name: originalTemplateName
 					}
 				}
@@ -707,7 +707,7 @@
 
 		const { data, error } = await api.GET('/logs/templates/versions', {
 			params: {
-				path: {
+				query: {
 					template_name: originalTemplateName
 				}
 			}
@@ -737,7 +737,7 @@
 		const restoring = true;
 		const { error } = await api.POST('/logs/templates/versions/restore', {
 			params: {
-				path: {
+				query: {
 					template_name: originalTemplateName
 				}
 			},
