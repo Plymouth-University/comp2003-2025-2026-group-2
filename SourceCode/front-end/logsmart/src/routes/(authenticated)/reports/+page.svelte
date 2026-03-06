@@ -4,21 +4,8 @@
 	import { SvelteDate, SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 	type LogEntry = components['schemas']['LogEntryResponse'];
-	type TemplateField = {
-		field_type?: string;
-		field_id?: string;
-		id?: string;
-		name?: string;
-		props?: {
-			name?: string;
-			id?: string;
-			options?: unknown;
-			label?: string;
-		};
-		options?: unknown;
-		label?: string;
-		[key: string]: unknown;
-	};
+	type TemplateField = components['schemas']['TemplateField'];
+	type TemplateFieldProps = components['schemas']['TemplateFieldProps'];
 
 	// Get user data from parent layout
 	let { data } = $props();
@@ -43,7 +30,11 @@
 	}
 
 	function selectAllBranches() {
-		selectedBranches = branches.map((b: any) => b.id);
+		if (Array.isArray(branches)) {
+			selectedBranches = branches
+				.map((b) => typeof b === 'object' && b !== null && 'id' in b ? (b as { id?: string }).id : undefined)
+				.filter((id): id is string => id !== undefined);
+		}
 	}
 
 	function clearBranchFilter() {
@@ -53,9 +44,18 @@
 	let selectedBranchesLabel = $derived(() => {
 		if (selectedBranches.length === 0) return 'All Branches';
 		if (selectedBranches.length === branches.length) return 'All Branches';
-		if (selectedBranches.length === 1) {
-			const branch = branches.find((b: any) => b.id === selectedBranches[0]);
-			return branch?.name || '1 Branch';
+		if (selectedBranches.length === 1 && Array.isArray(branches)) {
+			const branchId = selectedBranches[0];
+			const branch = branches.find((b) => {
+				if (typeof b === 'object' && b !== null && 'id' in b) {
+					return (b as { id?: string }).id === branchId;
+				}
+				return false;
+			});
+			const name = typeof branch === 'object' && branch !== null && 'name' in branch 
+				? (branch as { name?: string }).name 
+				: undefined;
+			return name || '1 Branch';
 		}
 		return `${selectedBranches.length} Branches`;
 	});
@@ -134,62 +134,38 @@
 			const firstEntry = groupEntries[0];
 			if (!firstEntry.template_layout) return;
 
-			firstEntry.template_layout.forEach((field: any, fieldIndex: number) => {
-				if (field.field_type !== 'temperature') return;
+		firstEntry.template_layout.forEach((field: TemplateField, fieldIndex: number) => {
+			if (field.field_type !== 'temperature') return;
 
-				const fieldLabel =
-					field.props?.label || field.label || field.name || `Temperature ${fieldIndex + 1}`;
-				const unit = field.props?.unit || '°C';
+			const fieldLabel = field.props?.text || `Temperature ${fieldIndex + 1}`;
+			const unit = field.props?.unit || '°C';
 
-				const dataPoints: TemperatureDataPoint[] = [];
+			const dataPoints: TemperatureDataPoint[] = [];
 
-				groupEntries.forEach((entry) => {
-					let data: any;
-					if (typeof entry.entry_data === 'string') {
-						try {
-							data = JSON.parse(entry.entry_data);
-						} catch {
-							return;
-						}
-					} else if (typeof entry.entry_data === 'object') {
-						data = entry.entry_data;
-					} else {
-						return;
-					}
+			groupEntries.forEach((entry) => {
+				const entryData = typeof entry.entry_data === 'string' 
+					? (() => { try { return JSON.parse(entry.entry_data); } catch { return {}; } })()
+					: (typeof entry.entry_data === 'object' ? entry.entry_data : {});
 
-					if (!data) return;
+				if (!entryData || typeof entryData !== 'object') return;
 
-					// Try various field identifiers
-					const possibleIds = [
-						field.field_id,
-						field.id,
-						field.name,
-						field.props?.name,
-						field.props?.id,
-						`field_${fieldIndex}`,
-						fieldIndex.toString()
-					].filter(Boolean);
+				// Access field data by array index, which is how entry_data is keyed
+				const fieldValue = (entryData as Record<string | number, unknown>)[fieldIndex];
 
-					let fieldValue: any;
-					for (const id of possibleIds) {
-						if (data[id] !== undefined && data[id] !== null && data[id] !== '') {
-							fieldValue = data[id];
-							break;
-						}
-					}
-
-					if (
-						fieldValue !== undefined &&
-						typeof Number(fieldValue) === 'number' &&
-						!isNaN(Number(fieldValue))
-					) {
-						dataPoints.push({
-							value: Number(fieldValue),
-							date: entry.created_at,
-							entryId: entry.id,
-							period: entry.period
-						});
-					}
+				if (
+					fieldValue !== undefined &&
+					fieldValue !== null &&
+					fieldValue !== '' &&
+					typeof Number(fieldValue) === 'number' &&
+					!isNaN(Number(fieldValue))
+				) {
+					dataPoints.push({
+						value: Number(fieldValue),
+						date: entry.created_at,
+						entryId: entry.id,
+						period: entry.period
+					});
+				}
 				});
 
 				// Sort by date ascending
@@ -351,59 +327,36 @@
 					return; // Skip this field
 				}
 
-				// Try various ways the field ID might be stored
-				const possibleIds = [
-					field.field_id,
-					field.id,
-					field.name,
-					field.props?.name,
-					field.props?.id,
-					`field_${index}`,
-					index.toString()
-				].filter(Boolean);
+				// Field data is keyed by array index in entry_data
+				const fieldValue = (data as Record<string | number, unknown>)[index];
 
-				let fieldValue: unknown;
-				let fieldId: string | undefined;
-
-				// Try to find the field value using any of the possible IDs
-				for (const id of possibleIds) {
-					if (
-						id &&
-						(data as Record<string, unknown>)[id] !== undefined &&
-						(data as Record<string, unknown>)[id] !== null &&
-						(data as Record<string, unknown>)[id] !== ''
-					) {
-						fieldValue = (data as Record<string, unknown>)[id];
-						fieldId = id;
-						break;
-					}
+				if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
+					return; // Skip empty fields
 				}
 
-				// If we found a value, format it appropriately
-				if (fieldValue !== undefined && fieldId) {
-					const fieldType = field.field_type;
-					let displayValue = fieldValue;
+				// Format different field types
+				let displayValue: unknown = fieldValue;
 
-					// Format different field types
-					if (fieldType === 'temperature' && typeof fieldValue === 'number') {
-						displayValue = `${fieldValue}°C`;
-					} else if (fieldType === 'checkbox' || fieldType === 'boolean') {
-						displayValue = fieldValue ? 'Yes' : 'No';
-					} else if (fieldType === 'dropdown' || fieldType === 'select') {
-						// Try to find the option label
-						const options = field.props?.options || field.options;
-						if (Array.isArray(options)) {
-							const option = options.find(
-								(opt) => opt.value === fieldValue || opt.id === fieldValue
-							);
-							displayValue = option?.label || option?.text || fieldValue;
+				if (fieldType === 'temperature' && typeof fieldValue === 'number') {
+					displayValue = `${fieldValue}°C`;
+				} else if (fieldType === 'checkbox' || fieldType === 'boolean') {
+					displayValue = fieldValue ? 'Yes' : 'No';
+				} else if (fieldType === 'dropdown' || fieldType === 'select') {
+					// Try to find the option label
+					const options = field.props?.options;
+					if (Array.isArray(options) && typeof fieldValue === 'string') {
+						const matchingOption = options.find(
+							(opt) => typeof opt === 'string' ? opt === fieldValue : false
+						);
+						if (matchingOption) {
+							displayValue = matchingOption;
 						}
 					}
-
-					// Get field label
-					const fieldLabel = field.props?.label || field.label || field.name || `Field ${fieldId}`;
-					results.push(`${fieldLabel}: ${displayValue}`);
 				}
+
+				// Get field label
+				const fieldLabel = field.props?.text || `Field ${index + 1}`;
+				results.push(`${fieldLabel}: ${displayValue}`);
 			});
 
 			// If no results from template parsing, try to show raw data
@@ -501,31 +454,12 @@
 				return '';
 			}
 
-			// Try various field identifiers
-			const possibleIds: (string | number)[] = [
-				field.field_id,
-				field.id,
-				field.name,
-				field.props?.name,
-				field.props?.id,
-				`field_${fieldIndex}`,
-				fieldIndex.toString()
-			].filter((id): id is string | number => Boolean(id));
+			// Field data is keyed by array index
+			const fieldValue = (data as Record<string | number, unknown>)[fieldIndex];
 
-			let fieldValue: unknown;
-			for (const id of possibleIds) {
-				const key = String(id);
-				if (
-					(data as Record<string, unknown>)[key] !== undefined &&
-					(data as Record<string, unknown>)[key] !== null &&
-					(data as Record<string, unknown>)[key] !== ''
-				) {
-					fieldValue = (data as Record<string, unknown>)[key];
-					break;
-				}
+			if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
+				return '';
 			}
-
-			if (fieldValue === undefined) return '';
 
 			// Format the field value
 			const fieldType = field.field_type;
@@ -536,17 +470,16 @@
 			} else if (fieldType === 'checkbox' || fieldType === 'boolean') {
 				displayValue = fieldValue ? 'Yes' : 'No';
 			} else if (fieldType === 'dropdown' || fieldType === 'select') {
-				const options = field.props?.options || field.options;
-				if (Array.isArray(options)) {
-					const option = options.find(
-						(opt: { value?: unknown; id?: unknown; label?: string; text?: string }) =>
-							opt.value === fieldValue || opt.id === fieldValue
-					);
-					displayValue = option?.label || option?.text || fieldValue;
+				const options = field.props?.options;
+				if (Array.isArray(options) && typeof fieldValue === 'string') {
+					// Options are simple strings, so just check if the value is in the list
+					if (options.includes(fieldValue)) {
+						displayValue = fieldValue;
+					}
 				}
 			}
 
-			const fieldLabel = field.props?.label || field.label || field.name || `Field ${fieldIndex}`;
+			const fieldLabel = field.props?.text || `Field ${fieldIndex + 1}`;
 			return `${fieldLabel}: ${displayValue}`;
 		} catch {
 			return '';
@@ -579,7 +512,7 @@
 
 	// Function to check if an entry has any remaining fields after filtering
 	function hasRemainingFields(
-		templateLayout: Record<string, unknown>[],
+		templateLayout: TemplateField[],
 		excludeFieldTypes: string[],
 		entryData: unknown = null
 	): boolean {
