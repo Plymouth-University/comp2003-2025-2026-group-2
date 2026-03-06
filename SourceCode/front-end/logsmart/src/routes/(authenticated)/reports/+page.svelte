@@ -32,7 +32,9 @@
 	function selectAllBranches() {
 		if (Array.isArray(branches)) {
 			selectedBranches = branches
-				.map((b) => typeof b === 'object' && b !== null && 'id' in b ? (b as { id?: string }).id : undefined)
+				.map((b) =>
+					typeof b === 'object' && b !== null && 'id' in b ? (b as { id?: string }).id : undefined
+				)
 				.filter((id): id is string => id !== undefined);
 		}
 	}
@@ -52,9 +54,10 @@
 				}
 				return false;
 			});
-			const name = typeof branch === 'object' && branch !== null && 'name' in branch 
-				? (branch as { name?: string }).name 
-				: undefined;
+			const name =
+				typeof branch === 'object' && branch !== null && 'name' in branch
+					? (branch as { name?: string }).name
+					: undefined;
 			return name || '1 Branch';
 		}
 		return `${selectedBranches.length} Branches`;
@@ -134,38 +137,47 @@
 			const firstEntry = groupEntries[0];
 			if (!firstEntry.template_layout) return;
 
-		firstEntry.template_layout.forEach((field: TemplateField, fieldIndex: number) => {
-			if (field.field_type !== 'temperature') return;
+			firstEntry.template_layout.forEach((field: TemplateField, fieldIndex: number) => {
+				if (field.field_type !== 'temperature') return;
 
-			const fieldLabel = field.props?.text || `Temperature ${fieldIndex + 1}`;
-			const unit = field.props?.unit || '°C';
+				const fieldLabel = field.props?.text || `Temperature ${fieldIndex + 1}`;
+				const unit = field.props?.unit || '°C';
 
-			const dataPoints: TemperatureDataPoint[] = [];
+				const dataPoints: TemperatureDataPoint[] = [];
 
-			groupEntries.forEach((entry) => {
-				const entryData = typeof entry.entry_data === 'string' 
-					? (() => { try { return JSON.parse(entry.entry_data); } catch { return {}; } })()
-					: (typeof entry.entry_data === 'object' ? entry.entry_data : {});
+				groupEntries.forEach((entry) => {
+					const entryData =
+						typeof entry.entry_data === 'string'
+							? (() => {
+									try {
+										return JSON.parse(entry.entry_data);
+									} catch {
+										return {};
+									}
+								})()
+							: typeof entry.entry_data === 'object'
+								? entry.entry_data
+								: {};
 
-				if (!entryData || typeof entryData !== 'object') return;
+					if (!entryData || typeof entryData !== 'object') return;
 
-				// Access field data by array index, which is how entry_data is keyed
-				const fieldValue = (entryData as Record<string | number, unknown>)[fieldIndex];
+					// Access field data by array index, which is how entry_data is keyed
+					const fieldValue = (entryData as Record<string | number, unknown>)[fieldIndex];
 
-				if (
-					fieldValue !== undefined &&
-					fieldValue !== null &&
-					fieldValue !== '' &&
-					typeof Number(fieldValue) === 'number' &&
-					!isNaN(Number(fieldValue))
-				) {
-					dataPoints.push({
-						value: Number(fieldValue),
-						date: entry.created_at,
-						entryId: entry.id,
-						period: entry.period
-					});
-				}
+					if (
+						fieldValue !== undefined &&
+						fieldValue !== null &&
+						fieldValue !== '' &&
+						typeof Number(fieldValue) === 'number' &&
+						!isNaN(Number(fieldValue))
+					) {
+						dataPoints.push({
+							value: Number(fieldValue),
+							date: entry.created_at,
+							entryId: entry.id,
+							period: entry.period
+						});
+					}
 				});
 
 				// Sort by date ascending
@@ -345,8 +357,8 @@
 					// Try to find the option label
 					const options = field.props?.options;
 					if (Array.isArray(options) && typeof fieldValue === 'string') {
-						const matchingOption = options.find(
-							(opt) => typeof opt === 'string' ? opt === fieldValue : false
+						const matchingOption = options.find((opt) =>
+							typeof opt === 'string' ? opt === fieldValue : false
 						);
 						if (matchingOption) {
 							displayValue = matchingOption;
