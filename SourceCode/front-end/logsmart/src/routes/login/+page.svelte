@@ -147,7 +147,8 @@
 			}
 		} catch (e: unknown) {
 			console.error(e);
-			error = (e as Error)?.message || 'Passkey login failed';
+			const message = e instanceof Error ? e.message : 'Passkey login failed';
+			error = message || 'Passkey login failed';
 		} finally {
 			loading = false;
 		}
