@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { api } from '$lib/api';
 	import type { components } from '$lib/api-types';
-	import { SvelteDate, SvelteSet } from 'svelte/reactivity';
+	import { SvelteDate, SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 	type LogEntry = components['schemas']['LogEntryResponse'];
 	type TemplateField = {
@@ -85,7 +85,7 @@
 	let pickerView = $state<'day' | 'month' | 'year'>('day');
 	let slideDirection = $state<'left' | 'right'>('left');
 
-	let calendarDate = $state(new SvelteDate());
+	let calendarDate = new SvelteDate();
 	let activePickerIsFrom = $state(true);
 
 	let reportGenerated = $state(false);
@@ -94,7 +94,6 @@
 	let error = $state<string | null>(null);
 	let logEntries = $state<LogEntry[]>([]);
 	let filteredEntries = $state<LogEntry[]>([]);
-	let availableLogTypes = $state<Set<string>>(new Set());
 	let includeTemperatureGraphs = $state(false);
 
 	// Temperature graph data types
@@ -117,7 +116,7 @@
 	// Extract temperature graph data from filtered entries
 	function extractTemperatureGraphData(entries: LogEntry[]): TemperatureGraphData[] {
 		// Group entries by template name
-		const templateGroups = new Map<string, LogEntry[]>();
+		const templateGroups = new SvelteMap<string, LogEntry[]>();
 		entries.forEach((entry) => {
 			if (!templateGroups.has(entry.template_name)) {
 				templateGroups.set(entry.template_name, []);
@@ -2095,7 +2094,7 @@
 							Include Temperature Graphs
 						</span>
 					</label>
-					<p class="ml-8 mt-1 text-xs" style="color: var(--text-secondary);">
+					<p class="mt-1 ml-8 text-xs" style="color: var(--text-secondary);">
 						Generates line graphs for temperature fields (requires 2+ entries)
 					</p>
 				</div>
@@ -2206,7 +2205,7 @@
 									>
 										📈 Temperature Graphs
 									</h3>
-									{#each temperatureGraphs as graph}
+									{#each temperatureGraphs as graph (graph.dataPoints)}
 										{@const values = graph.dataPoints.map((p) => p.value)}
 										{@const minVal = Math.min(...values)}
 										{@const maxVal = Math.max(...values)}
@@ -2306,7 +2305,7 @@
 													/>
 
 													<!-- Data points -->
-													{#each chartPoints as point, i}
+													{#each chartPoints as point (point.x + '-' + point.y)}
 														<g class="chart-point">
 															<circle
 																cx={point.x}
@@ -2356,7 +2355,7 @@
 													{/each}
 
 													<!-- X-axis labels -->
-													{#each chartPoints as point, i}
+													{#each chartPoints as point, i (point.x + '-' + point.y)}
 														{#if i === 0 || i === chartPoints.length - 1 || chartPoints.length <= 10 || i % Math.ceil(chartPoints.length / 8) === 0}
 															<text
 																x={point.x}

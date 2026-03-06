@@ -27,7 +27,7 @@
 	$effect(() => {
 		// Check if entry_data exists and has actual data
 		const hasEntryData = data.entry?.entry_data && Object.keys(data.entry.entry_data).length > 0;
-		
+
 		if (hasEntryData) {
 			entryData = { ...data.entry.entry_data };
 		} else if (templateLayout.length > 0) {

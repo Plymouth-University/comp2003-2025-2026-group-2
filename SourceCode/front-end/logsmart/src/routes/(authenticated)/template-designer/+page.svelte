@@ -12,13 +12,6 @@
 	import type { CanvasItem, ComponentType, Template } from './types';
 	import type { PageData } from './$types';
 	import type { components } from '$lib/api-types';
-
-	type ApiTemplateInfo = components['schemas']['TemplateInfo'];
-	type ApiTemplateField = components['schemas']['TemplateField'];
-	type ApiTemplateFieldProps = components['schemas']['TemplateFieldProps'];
-	type ApiSchedule = components['schemas']['Schedule'];
-	type ApiTemplateVersionInfo = components['schemas']['TemplateVersionInfo'];
-
 	let { data } = $props<{ data: PageData }>();
 	let templates = $state<Template[]>([]);
 
@@ -674,14 +667,15 @@
 
 	function handleResizeMove(e: MouseEvent) {
 		if (!resizingSidebar) return;
-		
-		const sidebarSelector = resizingSidebar === 'left' ? '[data-left-sidebar]' : '[data-right-sidebar]';
+
+		const sidebarSelector =
+			resizingSidebar === 'left' ? '[data-left-sidebar]' : '[data-right-sidebar]';
 		const sidebar = document.querySelector(sidebarSelector);
-		
+
 		if (sidebar) {
 			const sidebarRect = sidebar.getBoundingClientRect();
 			const currentHeight = resizingSidebar === 'left' ? leftPaletteHeight : rightPaletteHeight;
-			
+
 			if (currentHeight === null) {
 				const initialHeight = sidebarRect.height / 2;
 				if (resizingSidebar === 'left') {
@@ -690,10 +684,10 @@
 					rightPaletteHeight = initialHeight;
 				}
 			}
-			
+
 			const newHeight = e.clientY - sidebarRect.top;
 			const constrainedHeight = Math.max(100, Math.min(newHeight, sidebarRect.height - 100));
-			
+
 			if (resizingSidebar === 'left') {
 				leftPaletteHeight = constrainedHeight;
 			} else {
@@ -786,7 +780,7 @@
 <div class="min-h-full" style="background-color: var(--bg-secondary);">
 	<!-- Centered menu bar for small screens -->
 	{#if isSmallScreen}
-		<div class="fixed left-1/2 bottom-4 z-50 -translate-x-1/2 transform">
+		<div class="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 transform">
 			<div class="menu-bar flex items-center gap-1 rounded-full px-4 py-2 shadow-xl">
 				<button
 					class="menu-btn rounded-full px-4 py-2"
