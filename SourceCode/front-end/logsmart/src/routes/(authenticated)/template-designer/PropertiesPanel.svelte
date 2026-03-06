@@ -535,7 +535,7 @@
 						>Options (one per line)</span
 					>
 					<textarea
-						value={selectedItem.props.options.join('\n')}
+						value={Array.isArray(selectedItem.props.options) ? selectedItem.props.options.join('\n') : ''}
 						oninput={(e) =>
 							onUpdateProp(
 								selectedItem.id,

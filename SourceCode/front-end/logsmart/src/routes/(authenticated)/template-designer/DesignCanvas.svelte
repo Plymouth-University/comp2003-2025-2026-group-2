@@ -235,7 +235,6 @@
 								bind:item={canvasItems[canvasItems.findIndex((i) => i.id === item.id)]}
 								selected={selectedItemId === item.id}
 								{canvasRef}
-								{snapEnabled}
 								onSelect={() => selectItem(item.id)}
 								onDragStart={() => {
 									isDragging = true;

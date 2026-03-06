@@ -74,7 +74,7 @@
 			props: {
 				text: field.props.text ?? '',
 				placeholder: field.props.placeholder ?? '',
-				size: field.props.size ?? 16,
+				size: field.props.size ? parseInt(field.props.size) : 16,
 				weight: field.props.weight ?? 'normal',
 				editable: field.props.editable ?? true,
 				min: field.props.min ?? 0,
@@ -129,11 +129,11 @@
 
 		const { data, error } = await api.GET('/logs/templates', {
 			params: {
-				query: {
+				path: {
 					template_name: name
 				}
 			}
-		} as unknown);
+		});
 
 		if (error) {
 			console.error('Failed to load template:', error);
@@ -236,11 +236,11 @@
 		if (showHistory && originalTemplateName) {
 			const { data } = await api.GET('/logs/templates/versions', {
 				params: {
-					query: {
+					path: {
 						template_name: originalTemplateName
 					}
 				}
-			} as unknown);
+			});
 			if (data?.versions) {
 				historyVersions = data.versions;
 			}
@@ -436,14 +436,14 @@
 		return { x: constrainedX, y: constrainedY };
 	}
 
-	function updateItemProp(itemId: string, propKey: string, value: string | number | boolean) {
+	function updateItemProp(itemId: string, propKey: string, value: unknown) {
 		if (propKey === 'lockX' || propKey === 'lockY' || propKey === 'x' || propKey === 'y') {
 			// Constrain x and y positions to canvas bounds
 			if (propKey === 'x' || propKey === 'y') {
 				const item = canvasItems.find((i) => i.id === itemId);
 				if (item) {
-					const newX = propKey === 'x' ? value : item.x;
-					const newY = propKey === 'y' ? value : item.y;
+					const newX = propKey === 'x' ? (value as number) : item.x;
+					const newY = propKey === 'y' ? (value as number) : item.y;
 					const constrained = constrainToBounds(newX, newY, itemId);
 					canvasItems = canvasItems.map((i) =>
 						i.id === itemId ? { ...i, x: constrained.x, y: constrained.y } : i
@@ -707,7 +707,7 @@
 
 		const { data, error } = await api.GET('/logs/templates/versions', {
 			params: {
-				query: {
+				path: {
 					template_name: originalTemplateName
 				}
 			}
@@ -737,7 +737,7 @@
 		const restoring = true;
 		const { error } = await api.POST('/logs/templates/versions/restore', {
 			params: {
-				query: {
+				path: {
 					template_name: originalTemplateName
 				}
 			},
