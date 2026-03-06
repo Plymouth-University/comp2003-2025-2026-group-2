@@ -50,6 +50,8 @@
 	let snapLines = $state<{ x: number[]; y: number[] }>({ x: [], y: [] });
 	let isDragging = $state(false);
 	let snapEnabled = $state(true);
+	let canvasHeight = $state<number>(500);
+	let isResizingCanvas = $state(false);
 
 	function selectItem(id: string) {
 		selectedItemId = id;
@@ -59,6 +61,27 @@
 		if (e.target === canvasRef) {
 			selectedItemId = null;
 		}
+	}
+
+	function handleCanvasResizeStart(e: MouseEvent) {
+		e.preventDefault();
+		isResizingCanvas = true;
+		const startY = e.clientY;
+		const startHeight = canvasHeight;
+
+		const handleMouseMove = (e: MouseEvent) => {
+			const delta = e.clientY - startY;
+			canvasHeight = Math.max(300, startHeight + delta);
+		};
+
+		const handleMouseUp = () => {
+			isResizingCanvas = false;
+			document.removeEventListener('mousemove', handleMouseMove);
+			document.removeEventListener('mouseup', handleMouseUp);
+		};
+
+		document.addEventListener('mousemove', handleMouseMove);
+		document.addEventListener('mouseup', handleMouseUp);
 	}
 </script>
 
@@ -179,82 +202,104 @@
 
 				<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 				<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-				<div
-					bind:this={canvasRef}
-					data-canvas
-					class="relative min-h-125 rounded border-2 border-dashed border-border-secondary bg-bg-secondary"
-					onclick={handleCanvasClick}
-					onkeydown={(e) => {
-						const target = e.target as HTMLElement;
-						const isEditing =
-							target.isContentEditable ||
-							target.tagName === 'INPUT' ||
-							target.tagName === 'TEXTAREA';
-						if (e.key === 'Escape') selectedItemId = null;
-						if ((e.key === 'Delete' || e.key === 'Backspace') && !isEditing) onDeleteSelected();
-					}}
-					role="application"
-					tabindex="0"
-					aria-label="Design canvas - drag components here to design your template"
-				>
-					{#if canvasItems.length === 0}
-						<div class="pointer-events-none absolute inset-0 flex items-center justify-center">
-							<p class="text-lg text-text-secondary opacity-50">
-								Drag components here to start designing
-							</p>
-						</div>
-					{/if}
+				<div class="relative">
+					<div
+						bind:this={canvasRef}
+						data-canvas
+						class="relative rounded border-2 border-dashed border-border-secondary bg-bg-secondary"
+						style="height: {canvasHeight}px;"
+						onclick={handleCanvasClick}
+						onkeydown={(e) => {
+							const target = e.target as HTMLElement;
+							const isEditing =
+								target.isContentEditable ||
+								target.tagName === 'INPUT' ||
+								target.tagName === 'TEXTAREA';
+							if (e.key === 'Escape') selectedItemId = null;
+							if ((e.key === 'Delete' || e.key === 'Backspace') && !isEditing) onDeleteSelected();
+						}}
+						role="application"
+						tabindex="0"
+						aria-label="Design canvas - drag components here to design your template"
+					>
+						{#if canvasItems.length === 0}
+							<div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+								<p class="text-lg text-text-secondary opacity-50">
+									Drag components here to start designing
+								</p>
+							</div>
+						{/if}
 
-					{#each canvasItems as item (item.id)}
-						<CanvasItemComponent
-							bind:item={canvasItems[canvasItems.findIndex((i) => i.id === item.id)]}
-							selected={selectedItemId === item.id}
-							{canvasRef}
-							{snapEnabled}
-							onSelect={() => selectItem(item.id)}
-							onDragStart={() => {
-								isDragging = true;
-							}}
-							onDrag={({ offsetX, offsetY }) => {
-								const idx = canvasItems.findIndex((i) => i.id === item.id);
-								if (idx !== -1) {
-									if (snapEnabled && canvasRef) {
-										const otherItemIds = canvasItems
-											.filter((i) => i.id !== item.id)
-											.map((i) => i.id);
-										const snap = calculateSnap(item.id, offsetX, offsetY, canvasRef, otherItemIds);
-										snapLines = { x: snap.snapLinesX, y: snap.snapLinesY };
-										if (!item.lockX) canvasItems[idx].x = snap.x;
-										if (!item.lockY) canvasItems[idx].y = snap.y;
-									} else {
-										snapLines = { x: [], y: [] };
-										if (!item.lockX) canvasItems[idx].x = offsetX;
-										if (!item.lockY) canvasItems[idx].y = offsetY;
+						{#each canvasItems as item (item.id)}
+							<CanvasItemComponent
+								bind:item={canvasItems[canvasItems.findIndex((i) => i.id === item.id)]}
+								selected={selectedItemId === item.id}
+								{canvasRef}
+								onSelect={() => selectItem(item.id)}
+								onDragStart={() => {
+									isDragging = true;
+								}}
+								onDrag={({ offsetX, offsetY }) => {
+									const idx = canvasItems.findIndex((i) => i.id === item.id);
+									if (idx !== -1) {
+										if (snapEnabled && canvasRef) {
+											const otherItemIds = canvasItems
+												.filter((i) => i.id !== item.id)
+												.map((i) => i.id);
+											const snap = calculateSnap(
+												item.id,
+												offsetX,
+												offsetY,
+												canvasRef,
+												otherItemIds
+											);
+											snapLines = { x: snap.snapLinesX, y: snap.snapLinesY };
+											if (!item.lockX) canvasItems[idx].x = snap.x;
+											if (!item.lockY) canvasItems[idx].y = snap.y;
+										} else {
+											snapLines = { x: [], y: [] };
+											if (!item.lockX) canvasItems[idx].x = offsetX;
+											if (!item.lockY) canvasItems[idx].y = offsetY;
+										}
 									}
-								}
-							}}
-							onDragEnd={() => {
-								isDragging = false;
-								snapLines = { x: [], y: [] };
-								if (onItemMoved) onItemMoved();
-							}}
-						/>
-					{/each}
+								}}
+								onDragEnd={() => {
+									isDragging = false;
+									snapLines = { x: [], y: [] };
+									if (onItemMoved) onItemMoved();
+								}}
+							/>
+						{/each}
 
-					{#if isDragging}
-						{#each snapLines.x as lineX (lineX)}
-							<div
-								class="snap-line-vertical pointer-events-none absolute top-0 bottom-0 w-px"
-								style="left: {lineX}px; background-color: #3b82f6;"
-							></div>
-						{/each}
-						{#each snapLines.y as lineY (lineY)}
-							<div
-								class="snap-line-horizontal pointer-events-none absolute right-0 left-0 h-px"
-								style="top: {lineY}px; background-color: #3b82f6;"
-							></div>
-						{/each}
-					{/if}
+						{#if isDragging}
+							{#each snapLines.x as lineX (lineX)}
+								<div
+									class="snap-line-vertical pointer-events-none absolute top-0 bottom-0 w-px"
+									style="left: {lineX}px; background-color: #3b82f6;"
+								></div>
+							{/each}
+							{#each snapLines.y as lineY (lineY)}
+								<div
+									class="snap-line-horizontal pointer-events-none absolute right-0 left-0 h-px"
+									style="top: {lineY}px; background-color: #3b82f6;"
+								></div>
+							{/each}
+						{/if}
+					</div>
+					<!-- Canvas Height Resizer -->
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<div
+						class="mx-auto h-3 w-32 cursor-row-resize rounded-b border-2 border-t-0 transition-colors hover:bg-gray-300 active:bg-gray-400"
+						style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+						onmousedown={handleCanvasResizeStart}
+						role="separator"
+						aria-label="Resize canvas height"
+						aria-orientation="horizontal"
+					>
+						<div class="flex h-full items-center justify-center">
+							<div class="h-0.5 w-8 rounded" style="background-color: var(--border-primary);"></div>
+						</div>
+					</div>
 				</div>
 			</div>
 		{/if}

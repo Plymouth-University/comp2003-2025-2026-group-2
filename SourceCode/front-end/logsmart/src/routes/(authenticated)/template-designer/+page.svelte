@@ -12,7 +12,6 @@
 	import type { CanvasItem, ComponentType, Template } from './types';
 	import type { PageData } from './$types';
 	import type { components } from '$lib/api-types';
-
 	let { data } = $props<{ data: PageData }>();
 	let templates = $state<Template[]>([]);
 
@@ -75,7 +74,7 @@
 			props: {
 				text: field.props.text ?? '',
 				placeholder: field.props.placeholder ?? '',
-				size: field.props.size ?? 16,
+				size: field.props.size ? parseInt(field.props.size) : 16,
 				weight: field.props.weight ?? 'normal',
 				editable: field.props.editable ?? true,
 				min: field.props.min ?? 0,
@@ -134,7 +133,7 @@
 					template_name: name
 				}
 			}
-		} as unknown);
+		});
 
 		if (error) {
 			console.error('Failed to load template:', error);
@@ -241,7 +240,7 @@
 						template_name: originalTemplateName
 					}
 				}
-			} as unknown);
+			});
 			if (data?.versions) {
 				historyVersions = data.versions;
 			}
@@ -419,11 +418,42 @@
 		}
 	}
 
+	function constrainToBounds(x: number, y: number, itemId: string): { x: number; y: number } {
+		if (!canvasRef) return { x, y };
+
+		const canvasRect = canvasRef.getBoundingClientRect();
+		const itemElement = canvasRef.querySelector(`[data-item-id="${itemId}"]`) as HTMLElement;
+		if (!itemElement) return { x, y };
+
+		const itemRect = itemElement.getBoundingClientRect();
+		const itemWidth = itemRect.width;
+		const itemHeight = itemRect.height;
+
+		// Ensure item stays within canvas bounds
+		const constrainedX = Math.max(0, Math.min(x, canvasRect.width - itemWidth));
+		const constrainedY = Math.max(0, Math.min(y, canvasRect.height - itemHeight));
+
+		return { x: constrainedX, y: constrainedY };
+	}
+
 	function updateItemProp(itemId: string, propKey: string, value: unknown) {
 		if (propKey === 'lockX' || propKey === 'lockY' || propKey === 'x' || propKey === 'y') {
-			canvasItems = canvasItems.map((item) =>
-				item.id === itemId ? { ...item, [propKey]: value } : item
-			);
+			// Constrain x and y positions to canvas bounds
+			if (propKey === 'x' || propKey === 'y') {
+				const item = canvasItems.find((i) => i.id === itemId);
+				if (item) {
+					const newX = propKey === 'x' ? (value as number) : item.x;
+					const newY = propKey === 'y' ? (value as number) : item.y;
+					const constrained = constrainToBounds(newX, newY, itemId);
+					canvasItems = canvasItems.map((i) =>
+						i.id === itemId ? { ...i, x: constrained.x, y: constrained.y } : i
+					);
+				}
+			} else {
+				canvasItems = canvasItems.map((item) =>
+					item.id === itemId ? { ...item, [propKey]: value } : item
+				);
+			}
 		} else {
 			canvasItems = canvasItems.map((item) =>
 				item.id === itemId ? { ...item, props: { ...item.props, [propKey]: value } } : item
@@ -581,31 +611,93 @@
 		}
 	}
 
-	let paletteHeight = $state<number | null>(null);
-	let isResizing = $state(false);
+	let leftPaletteHeight = $state<number | null>(null);
+	let rightPaletteHeight = $state<number | null>(null);
+	let resizingSidebar = $state<'left' | 'right' | null>(null);
 
-	function handleResizeStart(e: MouseEvent) {
+	// Responsive sidebar state
+	let leftSidebarOpen = $state(true);
+	let rightSidebarOpen = $state(true);
+	let isSmallScreen = $state(false);
+
+	// Check screen size and update sidebar visibility
+	$effect(() => {
+		if (!browser) return;
+
+		function handleResize() {
+			const width = window.innerWidth;
+			isSmallScreen = width < 1280; // xl breakpoint
+
+			// Auto-close sidebars on small screens initially
+			if (isSmallScreen && leftSidebarOpen && rightSidebarOpen) {
+				leftSidebarOpen = false;
+				rightSidebarOpen = false;
+			}
+		}
+
+		handleResize();
+		window.addEventListener('resize', handleResize);
+
+		return () => {
+			window.removeEventListener('resize', handleResize);
+		};
+	});
+
+	function toggleLeftSidebar() {
+		leftSidebarOpen = !leftSidebarOpen;
+	}
+
+	function toggleRightSidebar() {
+		rightSidebarOpen = !rightSidebarOpen;
+	}
+
+	function closeDrawers() {
+		if (isSmallScreen) {
+			leftSidebarOpen = false;
+			rightSidebarOpen = false;
+		}
+	}
+
+	function handleResizeStart(e: MouseEvent, side: 'left' | 'right') {
 		e.preventDefault();
-		isResizing = true;
+		resizingSidebar = side;
 		window.addEventListener('mousemove', handleResizeMove);
 		window.addEventListener('mouseup', handleResizeEnd);
 	}
 
 	function handleResizeMove(e: MouseEvent) {
-		if (!isResizing) return;
-		const sidebar = document.querySelector('[data-right-sidebar]');
+		if (!resizingSidebar) return;
+
+		const sidebarSelector =
+			resizingSidebar === 'left' ? '[data-left-sidebar]' : '[data-right-sidebar]';
+		const sidebar = document.querySelector(sidebarSelector);
+
 		if (sidebar) {
 			const sidebarRect = sidebar.getBoundingClientRect();
-			if (paletteHeight === null) {
-				paletteHeight = sidebarRect.height / 2;
+			const currentHeight = resizingSidebar === 'left' ? leftPaletteHeight : rightPaletteHeight;
+
+			if (currentHeight === null) {
+				const initialHeight = sidebarRect.height / 2;
+				if (resizingSidebar === 'left') {
+					leftPaletteHeight = initialHeight;
+				} else {
+					rightPaletteHeight = initialHeight;
+				}
 			}
+
 			const newHeight = e.clientY - sidebarRect.top;
-			paletteHeight = Math.max(100, Math.min(newHeight, sidebarRect.height - 100));
+			const constrainedHeight = Math.max(100, Math.min(newHeight, sidebarRect.height - 100));
+
+			if (resizingSidebar === 'left') {
+				leftPaletteHeight = constrainedHeight;
+			} else {
+				rightPaletteHeight = constrainedHeight;
+			}
 		}
 	}
 
 	function handleResizeEnd() {
-		isResizing = false;
+		resizingSidebar = null;
 		window.removeEventListener('mousemove', handleResizeMove);
 		window.removeEventListener('mouseup', handleResizeEnd);
 	}
@@ -686,15 +778,60 @@
 />
 
 <div class="min-h-full" style="background-color: var(--bg-secondary);">
+	<!-- Centered menu bar for small screens -->
+	{#if isSmallScreen}
+		<div class="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 transform">
+			<div class="menu-bar flex items-center gap-1 rounded-full px-4 py-2 shadow-xl">
+				<button
+					class="menu-btn rounded-full px-4 py-2"
+					class:menu-btn-active={leftSidebarOpen}
+					onclick={toggleLeftSidebar}
+					aria-label="Toggle templates/AI sidebar"
+					title="Templates & AI"
+				>
+					<span class="text-lg">{leftSidebarOpen ? '✕' : '☰'}</span>
+					<span class="ml-1.5 text-sm">Templates</span>
+				</button>
+				<div class="menu-divider"></div>
+				<button
+					class="menu-btn rounded-full px-4 py-2"
+					class:menu-btn-active={rightSidebarOpen}
+					onclick={toggleRightSidebar}
+					aria-label="Toggle components/properties sidebar"
+					title="Components & Properties"
+				>
+					<span class="text-lg">{rightSidebarOpen ? '✕' : '🎨'}</span>
+					<span class="ml-1.5 text-sm">Components</span>
+				</button>
+			</div>
+		</div>
+	{/if}
+
+	<!-- Overlay for drawer mode -->
+	{#if isSmallScreen && (leftSidebarOpen || rightSidebarOpen)}
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<div class="fixed inset-0 z-30 bg-black/50" onclick={closeDrawers}></div>
+	{/if}
+
 	<div class="flex h-[calc(100vh-73px)]">
+		<!-- Left Sidebar -->
 		<div
 			data-left-sidebar
-			class="flex w-72 flex-col border-r-2"
+			class="flex flex-col border-r-2 transition-transform duration-300"
+			class:fixed={isSmallScreen}
+			class:left-0={isSmallScreen}
+			class:top-0={isSmallScreen}
+			class:h-full={isSmallScreen}
+			class:z-40={isSmallScreen}
+			class:w-80={isSmallScreen}
+			class:w-72={!isSmallScreen}
+			class:-translate-x-full={isSmallScreen && !leftSidebarOpen}
 			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 		>
 			<div
-				style="height: {paletteHeight !== null
-					? `${paletteHeight}px`
+				style="height: {leftPaletteHeight !== null
+					? `${leftPaletteHeight}px`
 					: '60%'}; flex-shrink: 0; overflow: auto;"
 			>
 				<TemplatesSidebar
@@ -709,8 +846,8 @@
 			<div
 				class="h-2 cursor-row-resize border-y-2 hover:bg-gray-100 dark:hover:bg-gray-700"
 				style="border-color: var(--border-primary); flex-shrink: 0;"
-				onmousedown={handleResizeStart}
-				ondblclick={() => (paletteHeight = null)}
+				onmousedown={(e) => handleResizeStart(e, 'left')}
+				ondblclick={() => (leftPaletteHeight = null)}
 				role="separator"
 				aria-orientation="horizontal"
 			></div>
@@ -725,6 +862,8 @@
 				/>
 			</div>
 		</div>
+
+		<!-- Canvas Area -->
 		<DesignCanvas
 			bind:canvasItems
 			bind:logTitle
@@ -748,14 +887,23 @@
 			{deleteError}
 		/>
 
+		<!-- Right Sidebar -->
 		<div
 			data-right-sidebar
-			class="flex w-72 flex-col border-l-2"
+			class="flex flex-col border-l-2 transition-transform duration-300"
+			class:fixed={isSmallScreen}
+			class:right-0={isSmallScreen}
+			class:top-0={isSmallScreen}
+			class:h-full={isSmallScreen}
+			class:z-40={isSmallScreen}
+			class:w-80={isSmallScreen}
+			class:w-72={!isSmallScreen}
+			class:translate-x-full={isSmallScreen && !rightSidebarOpen}
 			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 		>
 			<div
-				style="height: {paletteHeight !== null
-					? `${paletteHeight}px`
+				style="height: {rightPaletteHeight !== null
+					? `${rightPaletteHeight}px`
 					: '35%'}; flex-shrink: 0; overflow: auto;"
 			>
 				<ComponentsPalette {componentTypes} onAddComponent={addComponent} />
@@ -764,8 +912,8 @@
 			<div
 				class="h-2 cursor-row-resize border-y-2 hover:bg-gray-100 dark:hover:bg-gray-700"
 				style="border-color: var(--border-primary); flex-shrink: 0;"
-				onmousedown={handleResizeStart}
-				ondblclick={() => (paletteHeight = null)}
+				onmousedown={(e) => handleResizeStart(e, 'right')}
+				ondblclick={() => (rightPaletteHeight = null)}
 				role="separator"
 				aria-orientation="horizontal"
 			></div>
@@ -775,3 +923,41 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	.menu-bar {
+		background-color: var(--bg-primary);
+		border: 2px solid var(--border-primary);
+		backdrop-filter: blur(10px);
+		display: flex;
+		align-items: center;
+	}
+
+	.menu-btn {
+		color: var(--text-primary);
+		transition: all 0.2s ease;
+		font-weight: 500;
+		white-space: nowrap;
+		display: flex;
+		align-items: center;
+	}
+
+	.menu-btn:hover {
+		background-color: var(--bg-secondary);
+	}
+
+	.menu-btn-active {
+		background-color: var(--bg-secondary);
+	}
+
+	.menu-btn:active {
+		opacity: 0.8;
+	}
+
+	.menu-divider {
+		width: 2px;
+		height: 24px;
+		background-color: var(--border-primary);
+		margin: 0 0.5rem;
+	}
+</style>

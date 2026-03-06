@@ -24,9 +24,9 @@
 	} = $props();
 	const uid = $props.id();
 
-	let fileInput: HTMLInputElement = $state(null as unknown as HTMLInputElement);
-	let imageElement: HTMLImageElement = $state(null as unknown as HTMLImageElement);
-	let cropperContainer: HTMLDivElement = $state(null as unknown as HTMLDivElement);
+	let fileInput: HTMLInputElement | null = $state(null);
+	let imageElement: HTMLImageElement | null = $state(null);
+	let cropperContainer: HTMLDivElement | null = $state(null);
 	type CropperConstructor = typeof import('cropperjs').default;
 	let cropperConstructor: CropperConstructor | null = null;
 	let cropper: InstanceType<CropperConstructor> | null = null;
@@ -70,11 +70,11 @@
 			await tick();
 			await loadCropper();
 
-			if (imageElement) {
+			if (imageElement && typeof e.target?.result === 'string') {
 				imageElement.onload = () => {
 					initCropper();
 				};
-				imageElement.src = e.target?.result as string;
+				imageElement.src = e.target.result;
 			}
 		};
 		reader.readAsDataURL(file);

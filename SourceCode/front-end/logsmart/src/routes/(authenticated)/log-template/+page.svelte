@@ -1,21 +1,27 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import { goto, invalidateAll } from '$app/navigation';
+	import type { components } from '$lib/api-types';
+	import { goto } from '$app/navigation';
 	import TemperaturePicker from '$lib/components/temperature_picker.svelte';
 	import UserCheckbox from '$lib/components/user_checkbox.svelte';
 	import UserDropdown from '$lib/components/user_dropdown.svelte';
 	import UserTextInput from '$lib/components/user_text_input.svelte';
 	import UserTextLabel from '$lib/components/user_text_label.svelte';
 
+	type LogEntryResponse = components['schemas']['LogEntryResponse'];
+	type TemplateField = components['schemas']['TemplateField'];
+
 	let { data } = $props<{ data: PageData }>();
 
-	let templateLayout = $derived(
-		data.template?.template_layout || data.entry?.template_layout || []
+	let entry = $derived<LogEntryResponse | null>(data.entry as LogEntryResponse | null);
+
+	let templateLayout = $derived<TemplateField[]>(
+		data.template?.template_layout || entry?.template_layout || []
 	);
 	let rawTemplateName = $derived(
-		data.template?.template_name || data.entry?.template_name || 'Log Template'
+		data.template?.template_name || entry?.template_name || 'Log Template'
 	);
-	let period = $derived(data.entry?.period);
+	let period = $derived(entry?.period);
 	let templateName = $derived(
 		period && rawTemplateName.includes('{period}')
 			? rawTemplateName.replace('{period}', period)
@@ -24,20 +30,25 @@
 
 	let entryData = $state<Record<number, string | number | boolean>>({});
 
+	function isValidEntryData(data: unknown): data is Record<string, unknown> {
+		return typeof data === 'object' && data !== null && !Array.isArray(data);
+	}
+
 	$effect(() => {
-		if (data.entry?.entry_data) {
-			entryData = { ...data.entry.entry_data };
+		if (entry && isValidEntryData(entry.entry_data) && Object.keys(entry.entry_data).length > 0) {
+			entryData = { ...entry.entry_data } as Record<number, string | number | boolean>;
 		} else if (templateLayout.length > 0) {
 			const initialData: Record<number, string | number | boolean> = {};
-			templateLayout.forEach((field: any, index: number) => {
+			templateLayout.forEach((field: TemplateField, index: number) => {
 				if (field.field_type === 'temperature') {
-					initialData[index] = field.props.value !== undefined ? parseFloat(field.props.value) : 0;
+					const propValue = field.props?.value ? parseFloat(field.props.value) : undefined;
+					initialData[index] = propValue ?? field.props?.min ?? 0;
 				} else if (field.field_type === 'text' || field.field_type === 'text_input') {
-					initialData[index] = field.props.value || '';
+					initialData[index] = field.props?.value || '';
 				} else if (field.field_type === 'checkbox') {
-					initialData[index] = field.props.value === 'true' || field.props.value === true;
+					initialData[index] = field.props?.value === 'true';
 				} else if (field.field_type === 'dropdown') {
-					initialData[index] = field.props.selected || (field.props.options?.[0] ?? '');
+					initialData[index] = field.props?.selected || (field.props?.options?.[0] ?? '');
 				}
 			});
 			entryData = initialData;
@@ -45,16 +56,16 @@
 	});
 
 	let mode = $derived(data.mode || 'view');
-	let entryId = $derived(data.entryId || data.entry?.id);
+	let entryId = $derived(data.entryId || entry?.id);
 
 	function validateForm(): string | null {
 		for (let index = 0; index < templateLayout.length; index++) {
 			const field = templateLayout[index];
 			const value = entryData[index];
-			const fieldLabel = field.props.text || `Field ${index + 1}`;
+			const fieldLabel = field.props?.text || `Field ${index + 1}`;
 
 			// Check required constraint based on field type
-			if (field.props.required === true || field.props.required === 'true') {
+			if (field.props?.required === true) {
 				let isEmpty = false;
 
 				if (field.field_type === 'checkbox') {
@@ -81,14 +92,14 @@
 				(field.field_type === 'text' || field.field_type === 'text_input') &&
 				typeof value === 'string'
 			) {
-				if (field.props.min_length != null) {
-					const minLength = Number(field.props.min_length);
+				if (field.props?.min_length != null) {
+					const minLength = field.props.min_length;
 					if (value.length < minLength) {
 						return `${fieldLabel} must be at least ${minLength} characters long`;
 					}
 				}
-				if (field.props.max_length != null) {
-					const maxLength = Number(field.props.max_length);
+				if (field.props?.max_length != null) {
+					const maxLength = field.props.max_length;
 					if (value.length > maxLength) {
 						return `${fieldLabel} must not exceed ${maxLength} characters`;
 					}
@@ -184,14 +195,14 @@
 			class="rounded-lg border-2 p-8"
 			style="border-color: var(--border-color); margin-left:10%; margin-right:10%; background-color: var(--bg-primary);"
 		>
-			{#if mode === 'view' && data.entry?.status === 'submitted'}
+			{#if mode === 'view' && entry?.status === 'submitted'}
 				<div
 					class="mb-4 rounded p-4"
 					style="background-color: #e8f5e9; border: 1px solid #4caf50; color: #2e7d32;"
 				>
 					This log has been submitted and cannot be edited.
 				</div>
-			{:else if mode === 'edit' && data.entry?.status === 'submitted'}
+			{:else if mode === 'edit' && entry?.status === 'submitted'}
 				<div
 					class="mb-4 rounded p-4"
 					style="background-color: #fff3cd; border: 1px solid #ffc107; color: #856404;"
@@ -201,73 +212,90 @@
 			{/if}
 
 			<div class="space-y-6">
-				{#each templateLayout as field, index (field.field_id || index)}
+				{#each templateLayout as field, index (index)}
 					{#if field.field_type === 'temperature' && entryData[index] !== undefined}
 						{@const tempMin =
-							field.props.min != null && !Number.isNaN(Number(field.props.min))
+							field.props?.min != null && !Number.isNaN(Number(field.props.min))
 								? Number(field.props.min)
 								: -20}
 						{@const tempMax =
-							field.props.max != null && !Number.isNaN(Number(field.props.max))
+							field.props?.max != null && !Number.isNaN(Number(field.props.max))
 								? Number(field.props.max)
 								: 50}
+						{@const fieldLabel = field.props?.text || `Field ${index + 1}`}
+						{@const fieldUnit = field.props?.unit || '°C'}
 						<TemperaturePicker
 							bind:value={entryData[index] as number}
 							min={tempMin}
 							max={tempMax}
-							label={field.props.text || `Field ${index + 1}`}
-							unit={field.props.unit || '°C'}
+							label={fieldLabel}
+							unit={fieldUnit}
 							disabled={mode === 'view'}
 						/>
 					{:else if (field.field_type === 'text' || field.field_type === 'text_input') && entryData[index] !== undefined}
-						{@const inputSize = field.props.size != null ? Number(field.props.size) : 16}
+						{@const inputSize = field.props?.size != null ? Number(field.props.size) : 16}
 						{@const safeSize = Number.isFinite(inputSize) && inputSize > 0 ? inputSize : 16}
+						{@const fieldWeight = field.props?.weight || 'normal'}
+						{@const fieldText = field.props?.text || `Field ${index + 1}`}
+						{@const fieldFontFamily = field.props?.font_family || 'system-ui'}
+						{@const fieldTextDecoration = field.props?.text_decoration || 'none'}
+						{@const fieldColor = field.props?.color || ''}
+						{@const fieldRequired = field.props?.required === true}
+						{@const fieldMaxLength = field.props?.max_length ?? undefined}
+						{@const fieldMinLength = field.props?.min_length ?? undefined}
+						{@const fieldInputType = field.props?.input_type || 'text'}
 						<UserTextInput
 							bind:text={entryData[index] as string}
 							size={safeSize}
-							weight={field.props.weight ?? 'normal'}
-							placeholder={field.props.text || `Field ${index + 1}`}
-							fontFamily={field.props.font_family ?? 'system-ui'}
-							textDecoration={field.props.text_decoration ?? 'none'}
-							color={field.props.color ?? ''}
-							required={field.props.required === true || field.props.required === 'true'}
-							maxLength={field.props.max_length != null
-								? Number(field.props.max_length)
-								: undefined}
-							minLength={field.props.min_length != null
-								? Number(field.props.min_length)
-								: undefined}
-							inputType={field.props.input_type ?? 'text'}
+							weight={fieldWeight}
+							placeholder={fieldText}
+							fontFamily={fieldFontFamily}
+							textDecoration={fieldTextDecoration}
+							color={fieldColor}
+							required={fieldRequired}
+							maxLength={fieldMaxLength}
+							minLength={fieldMinLength}
+							inputType={fieldInputType}
 							disabled={mode === 'view'}
 						/>
 					{:else if field.field_type === 'checkbox' && entryData[index] !== undefined}
-						{@const checkboxSize = field.props.size != null ? String(field.props.size) : '16px'}
+						{@const checkboxSize = field.props?.size != null ? String(field.props.size) : '16px'}
+						{@const checkboxText = field.props?.text || `Field ${index + 1}`}
+						{@const checkboxWeight = field.props?.weight || 'normal'}
+						{@const checkboxColor = field.props?.color || ''}
+						{@const checkboxRequired = field.props?.required === true}
 						<UserCheckbox
 							bind:checked={entryData[index] as boolean}
-							text={field.props.text || `Field ${index + 1}`}
+							text={checkboxText}
 							size={checkboxSize}
-							weight={field.props.weight ?? 'normal'}
-							color={field.props.color ?? ''}
-							required={field.props.required === true || field.props.required === 'true'}
+							weight={checkboxWeight}
+							color={checkboxColor}
+							required={checkboxRequired}
 							disabled={mode === 'view'}
 						/>
 					{:else if field.field_type === 'dropdown' && entryData[index] !== undefined}
+						{@const dropdownOptions = field.props?.options || []}
 						<UserDropdown
 							bind:selected={entryData[index] as string}
-							options={field.props.options || []}
+							options={dropdownOptions}
 							disabled={mode === 'view'}
 						/>
 					{:else if field.field_type === 'label'}
-						{@const labelSize = field.props.size != null ? Number(field.props.size) : 16}
+						{@const labelSize = field.props?.size != null ? Number(field.props.size) : 16}
 						{@const safeLabelSize = Number.isFinite(labelSize) && labelSize > 0 ? labelSize : 16}
+						{@const labelText = field.props?.text || `Field ${index + 1}`}
+						{@const labelWeight = field.props?.weight || 'normal'}
+						{@const labelFontFamily = field.props?.font_family || 'system-ui'}
+						{@const labelTextDecoration = field.props?.text_decoration || 'none'}
+						{@const labelColor = field.props?.color || ''}
 						<UserTextLabel
 							editable={false}
-							text={field.props.text || `Field ${index + 1}`}
+							text={labelText}
 							size={safeLabelSize}
-							weight={field.props.weight ?? 'normal'}
-							fontFamily={field.props.font_family ?? 'system-ui'}
-							textDecoration={field.props.text_decoration ?? 'none'}
-							color={field.props.color ?? ''}
+							weight={labelWeight}
+							fontFamily={labelFontFamily}
+							textDecoration={labelTextDecoration}
+							color={labelColor}
 						/>
 					{/if}
 				{/each}
