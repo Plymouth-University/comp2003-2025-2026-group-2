@@ -12,51 +12,6 @@
 	const passwordValid = $derived(password.length >= 6);
 	const formValid = $derived(emailValid && passwordValid);
 
-	// onMount(async () => {
-	// 	if (
-	// 		browser &&
-	// 		window.PublicKeyCredential &&
-	// 		window.PublicKeyCredential.isConditionalMediationAvailable &&
-	// 		(await window.PublicKeyCredential.isConditionalMediationAvailable())
-	// 	) {
-	// 		try {
-	// 			const startResp = await fetch('/api/auth/passkey/login/discoverable/start', {
-	// 				method: 'POST',
-	// 				headers: { 'Content-Type': 'application/json' },
-	// 				body: JSON.stringify({})
-	// 			});
-
-	// 			if (startResp.ok) {
-	// 				const startData = await startResp.json();
-	// 				// Enable conditional UI
-	// 				// @ts-ignore - SimpleWebAuthn v10+ supports 2nd arg for conditional UI
-	// 				const authResp = await startAuthentication(startData.options, true);
-
-	// 				// If we get here, the user selected a credential from the autofill
-	// 				loading = true;
-	// 				const finishResp = await fetch('/api/auth/passkey/login/discoverable/finish', {
-	// 					method: 'POST',
-	// 					headers: { 'Content-Type': 'application/json' },
-	// 					body: JSON.stringify({
-	// 						credential: authResp,
-	// 						auth_id: startData.auth_id
-	// 					})
-	// 				});
-
-	// 				if (!finishResp.ok) {
-	// 					throw new Error('Authentication failed');
-	// 				}
-
-	// 				await invalidateAll();
-	// 				await goto('/dashboard');
-	// 			}
-	// 		} catch (e: any) {
-	// 			// Ignore errors from conditional UI (timeout, cancellation, etc)
-	// 			console.debug('Conditional UI:', e);
-	// 		}
-	// 	}
-	// });
-
 	async function submit(e: Event) {
 		e.preventDefault();
 		error = '';
