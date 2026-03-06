@@ -105,7 +105,7 @@ pub async fn get_template(
         services::TemplateService::get_template(&state, company_id, &payload.template_name)
             .await
             .map_err(|(status, err)| (status, Json(err)))?;
-    
+
     if let Some(branch) = branch_id.clone() {
         // If the template is branch-specific, check if the user has access to that branch
         if let Some(user_branch_id) = &user.branch_id {
@@ -246,10 +246,9 @@ pub async fn get_template_versions(
     State(state): State<AppState>,
     Query(payload): Query<GetTemplateRequest>,
 ) -> Result<Json<crate::dto::GetTemplateVersionsResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let versions =
-        services::TemplateService::get_versions(&state, &payload.template_name, &user)
-            .await
-            .map_err(|(status, err)| (status, Json(err)))?;
+    let versions = services::TemplateService::get_versions(&state, &payload.template_name, &user)
+        .await
+        .map_err(|(status, err)| (status, Json(err)))?;
 
     let version_infos = versions
         .into_iter()
@@ -300,7 +299,7 @@ pub async fn restore_template_version(
         company_id,
         &query.template_name,
         payload.version,
-        &user
+        &user,
     )
     .await
     .map_err(|(status, err)| (status, Json(err)))?;
@@ -380,7 +379,7 @@ pub async fn delete_template(
         company_id,
         &payload.template_name,
         user.branch_id.as_deref(),
-        &user.role
+        &user.role,
     )
     .await
     .map_err(|(status, err)| (status, Json(err)))?;

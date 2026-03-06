@@ -198,44 +198,40 @@ impl TemplateService {
     ) -> Result<(), (StatusCode, serde_json::Value)> {
         for (field_index, field) in template_layout.iter().enumerate() {
             // Validate color field if present
-            if let Some(color) = &field.props.color {
-                if !utils::is_valid_css_color(color) {
+            if let Some(color) = &field.props.color
+                && !utils::is_valid_css_color(color) {
                     return Err((
                         StatusCode::BAD_REQUEST,
                         json!({ "error": format!("Field {}: Invalid color value. Colors must be valid CSS values (hex, rgb/rgba, or named colors).", field_index) }),
                     ));
                 }
-            }
 
             // Validate font_family field if present
-            if let Some(font_family) = &field.props.font_family {
-                if !utils::is_valid_font_family(font_family) {
+            if let Some(font_family) = &field.props.font_family
+                && !utils::is_valid_font_family(font_family) {
                     return Err((
                         StatusCode::BAD_REQUEST,
                         json!({ "error": format!("Field {}: Invalid font family value.", field_index) }),
                     ));
                 }
-            }
 
             // Validate text_decoration field if present
-            if let Some(text_decoration) = &field.props.text_decoration {
-                if !utils::is_valid_text_decoration(text_decoration) {
+            if let Some(text_decoration) = &field.props.text_decoration
+                && !utils::is_valid_text_decoration(text_decoration) {
                     return Err((
                         StatusCode::BAD_REQUEST,
                         json!({ "error": format!("Field {}: Invalid text decoration value.", field_index) }),
                     ));
                 }
-            }
 
             // Validate input_type if present
-            if let Some(input_type) = &field.props.input_type {
-                if !utils::is_valid_input_type(input_type) {
+            if let Some(input_type) = &field.props.input_type
+                && !utils::is_valid_input_type(input_type) {
                     return Err((
                         StatusCode::BAD_REQUEST,
                         json!({ "error": format!("Field {}: Invalid input type '{}'. Must be one of: text, int, float.", field_index, input_type) }),
                     ));
                 }
-            }
 
             // Validate length constraints (min_length and max_length)
             if let Err(e) =
@@ -537,14 +533,16 @@ impl TemplateService {
             .ok()
             .and_then(|versions| versions.last());
         if user.role == UserRole::BranchManager
-            && (last_version.map_or(false, |t| t.branch_id.as_deref() != user.branch_id.as_deref()))
+            && (last_version.is_some_and(|t| {
+                t.branch_id.as_deref() != user.branch_id.as_deref()
+            }))
         {
             return Err((
                 StatusCode::FORBIDDEN,
                 json!({ "error": "Unauthorized to view versions of this template" }),
             ));
         }
-        Ok(template_versions?)
+        template_versions
     }
 
     /// Restores a specific version of a template.

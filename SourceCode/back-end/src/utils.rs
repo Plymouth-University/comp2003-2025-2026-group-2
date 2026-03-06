@@ -570,25 +570,22 @@ pub fn validate_length_constraints(
     max_length: Option<i32>,
 ) -> Result<(), String> {
     // Check if min_length is provided and valid
-    if let Some(min) = min_length {
-        if min < 0 {
+    if let Some(min) = min_length
+        && min < 0 {
             return Err("min_length must be non-negative".to_string());
         }
-    }
 
     // Check if max_length is provided and valid
-    if let Some(max) = max_length {
-        if max < 0 {
+    if let Some(max) = max_length
+        && max < 0 {
             return Err("max_length must be non-negative".to_string());
         }
-    }
 
     // If both are provided, ensure min <= max
-    if let (Some(min), Some(max)) = (min_length, max_length) {
-        if min > max {
+    if let (Some(min), Some(max)) = (min_length, max_length)
+        && min > max {
             return Err("min_length cannot be greater than max_length".to_string());
         }
-    }
 
     Ok(())
 }
