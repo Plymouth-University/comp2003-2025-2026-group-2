@@ -436,7 +436,7 @@
 		return { x: constrainedX, y: constrainedY };
 	}
 
-	function updateItemProp(itemId: string, propKey: string, value: any) {
+	function updateItemProp(itemId: string, propKey: string, value: string | number | boolean) {
 		if (propKey === 'lockX' || propKey === 'lockY' || propKey === 'x' || propKey === 'y') {
 			// Constrain x and y positions to canvas bounds
 			if (propKey === 'x' || propKey === 'y') {
