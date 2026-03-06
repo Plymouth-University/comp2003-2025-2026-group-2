@@ -9,37 +9,11 @@
 	import UserTextLabel from '$lib/components/user_text_label.svelte';
 
 	type LogEntryResponse = components['schemas']['LogEntryResponse'];
+	type TemplateField = components['schemas']['TemplateField'];
 
 	let { data } = $props<{ data: PageData }>();
 
 	let entry = $derived<LogEntryResponse | null>(data.entry as LogEntryResponse | null);
-
-	type TemplateField = {
-		field_id?: string;
-		field_type: string;
-		props: Record<string, unknown>;
-	};
-
-	// Type guard helpers for safely accessing props values
-	function getPropAsString(props: Record<string, unknown>, key: string): string | undefined {
-		const value = props[key];
-		return typeof value === 'string' ? value : undefined;
-	}
-
-	function getPropAsNumber(props: Record<string, unknown>, key: string): number | undefined {
-		const value = props[key];
-		return typeof value === 'number' ? value : undefined;
-	}
-
-	function getPropAsStringOrBoolean(props: Record<string, unknown>, key: string): string | boolean | undefined {
-		const value = props[key];
-		return typeof value === 'string' || typeof value === 'boolean' ? value : undefined;
-	}
-
-	function getPropAsArray<T = unknown>(props: Record<string, unknown>, key: string): T[] | undefined {
-		const value = props[key];
-		return Array.isArray(value) ? value : undefined;
-	}
 
 	let templateLayout = $derived<TemplateField[]>(
 		data.template?.template_layout || entry?.template_layout || []
@@ -66,25 +40,15 @@
 		} else if (templateLayout.length > 0) {
 			const initialData: Record<number, string | number | boolean> = {};
 			templateLayout.forEach((field: TemplateField, index: number) => {
-				const props = field.props || {};
 				if (field.field_type === 'temperature') {
-					const propValue = getPropAsStringOrBoolean(props, 'value');
-					const numValue = typeof propValue === 'string' ? parseFloat(propValue) : undefined;
-					initialData[index] = numValue ?? (typeof propValue === 'number' ? propValue : 0);
+					const propValue = field.props?.value ? parseFloat(field.props.value) : undefined;
+					initialData[index] = propValue ?? field.props?.min ?? 0;
 				} else if (field.field_type === 'text' || field.field_type === 'text_input') {
-					const propValue = getPropAsString(props, 'value');
-					initialData[index] = propValue || '';
+					initialData[index] = field.props?.value || '';
 				} else if (field.field_type === 'checkbox') {
-					const propValue = getPropAsStringOrBoolean(props, 'value');
-					initialData[index] = propValue === 'true' || propValue === true;
+					initialData[index] = field.props?.value === 'true';
 				} else if (field.field_type === 'dropdown') {
-					const propSelected = getPropAsString(props, 'selected');
-					const propOptions = getPropAsArray(props, 'options');
-					const firstOption = propOptions?.[0];
-					const firstOptionValue = typeof firstOption === 'object' && firstOption !== null && 'value' in firstOption 
-						? (firstOption as { value?: unknown }).value 
-						: firstOption;
-					initialData[index] = propSelected || (typeof firstOptionValue === 'string' ? firstOptionValue : '');
+					initialData[index] = field.props?.selected || (field.props?.options?.[0] ?? '');
 				}
 			});
 			entryData = initialData;
@@ -98,11 +62,10 @@
 		for (let index = 0; index < templateLayout.length; index++) {
 			const field = templateLayout[index];
 			const value = entryData[index];
-			const fieldLabel = getPropAsString(field.props, 'text') || `Field ${index + 1}`;
+			const fieldLabel = field.props?.text || `Field ${index + 1}`;
 
 			// Check required constraint based on field type
-			const requiredProp = getPropAsStringOrBoolean(field.props, 'required');
-			if (requiredProp === true || requiredProp === 'true') {
+			if (field.props?.required === true) {
 				let isEmpty = false;
 
 				if (field.field_type === 'checkbox') {
@@ -129,18 +92,14 @@
 				(field.field_type === 'text' || field.field_type === 'text_input') &&
 				typeof value === 'string'
 			) {
-				const minLengthProp = getPropAsNumber(field.props, 'min_length') ?? 
-					(typeof field.props['min_length'] === 'string' ? Number(field.props['min_length']) : undefined);
-				if (minLengthProp != null) {
-					const minLength = minLengthProp;
+				if (field.props?.min_length != null) {
+					const minLength = field.props.min_length;
 					if (value.length < minLength) {
 						return `${fieldLabel} must be at least ${minLength} characters long`;
 					}
 				}
-				const maxLengthProp = getPropAsNumber(field.props, 'max_length') ?? 
-					(typeof field.props['max_length'] === 'string' ? Number(field.props['max_length']) : undefined);
-				if (maxLengthProp != null) {
-					const maxLength = maxLengthProp;
+				if (field.props?.max_length != null) {
+					const maxLength = field.props.max_length;
 					if (value.length > maxLength) {
 						return `${fieldLabel} must not exceed ${maxLength} characters`;
 					}
@@ -253,73 +212,90 @@
 			{/if}
 
 			<div class="space-y-6">
-				{#each templateLayout as field, index (field.field_id || index)}
+				{#each templateLayout as field, index (index)}
 					{#if field.field_type === 'temperature' && entryData[index] !== undefined}
 						{@const tempMin =
-							field.props.min != null && !Number.isNaN(Number(field.props.min))
+							field.props?.min != null && !Number.isNaN(Number(field.props.min))
 								? Number(field.props.min)
 								: -20}
 						{@const tempMax =
-							field.props.max != null && !Number.isNaN(Number(field.props.max))
+							field.props?.max != null && !Number.isNaN(Number(field.props.max))
 								? Number(field.props.max)
 								: 50}
+						{@const fieldLabel = field.props?.text || `Field ${index + 1}`}
+						{@const fieldUnit = field.props?.unit || '°C'}
 						<TemperaturePicker
 							bind:value={entryData[index] as number}
 							min={tempMin}
 							max={tempMax}
-							label={field.props.text || `Field ${index + 1}`}
-							unit={field.props.unit || '°C'}
+							label={fieldLabel}
+							unit={fieldUnit}
 							disabled={mode === 'view'}
 						/>
 					{:else if (field.field_type === 'text' || field.field_type === 'text_input') && entryData[index] !== undefined}
-						{@const inputSize = field.props.size != null ? Number(field.props.size) : 16}
+						{@const inputSize = field.props?.size != null ? Number(field.props.size) : 16}
 						{@const safeSize = Number.isFinite(inputSize) && inputSize > 0 ? inputSize : 16}
+						{@const fieldWeight = field.props?.weight || 'normal'}
+						{@const fieldText = field.props?.text || `Field ${index + 1}`}
+						{@const fieldFontFamily = field.props?.font_family || 'system-ui'}
+						{@const fieldTextDecoration = field.props?.text_decoration || 'none'}
+						{@const fieldColor = field.props?.color || ''}
+						{@const fieldRequired = field.props?.required === true}
+						{@const fieldMaxLength = field.props?.max_length ?? undefined}
+						{@const fieldMinLength = field.props?.min_length ?? undefined}
+						{@const fieldInputType = field.props?.input_type || 'text'}
 						<UserTextInput
 							bind:text={entryData[index] as string}
 							size={safeSize}
-							weight={field.props.weight ?? 'normal'}
-							placeholder={field.props.text || `Field ${index + 1}`}
-							fontFamily={field.props.font_family ?? 'system-ui'}
-							textDecoration={field.props.text_decoration ?? 'none'}
-							color={field.props.color ?? ''}
-							required={field.props.required === true || field.props.required === 'true'}
-							maxLength={field.props.max_length != null
-								? Number(field.props.max_length)
-								: undefined}
-							minLength={field.props.min_length != null
-								? Number(field.props.min_length)
-								: undefined}
-							inputType={field.props.input_type ?? 'text'}
+							weight={fieldWeight}
+							placeholder={fieldText}
+							fontFamily={fieldFontFamily}
+							textDecoration={fieldTextDecoration}
+							color={fieldColor}
+							required={fieldRequired}
+							maxLength={fieldMaxLength}
+							minLength={fieldMinLength}
+							inputType={fieldInputType}
 							disabled={mode === 'view'}
 						/>
 					{:else if field.field_type === 'checkbox' && entryData[index] !== undefined}
-						{@const checkboxSize = field.props.size != null ? String(field.props.size) : '16px'}
+						{@const checkboxSize = field.props?.size != null ? String(field.props.size) : '16px'}
+						{@const checkboxText = field.props?.text || `Field ${index + 1}`}
+						{@const checkboxWeight = field.props?.weight || 'normal'}
+						{@const checkboxColor = field.props?.color || ''}
+						{@const checkboxRequired = field.props?.required === true}
 						<UserCheckbox
 							bind:checked={entryData[index] as boolean}
-							text={field.props.text || `Field ${index + 1}`}
+							text={checkboxText}
 							size={checkboxSize}
-							weight={field.props.weight ?? 'normal'}
-							color={field.props.color ?? ''}
-							required={field.props.required === true || field.props.required === 'true'}
+							weight={checkboxWeight}
+							color={checkboxColor}
+							required={checkboxRequired}
 							disabled={mode === 'view'}
 						/>
 					{:else if field.field_type === 'dropdown' && entryData[index] !== undefined}
+						{@const dropdownOptions = field.props?.options || []}
 						<UserDropdown
 							bind:selected={entryData[index] as string}
-							options={field.props.options || []}
+							options={dropdownOptions}
 							disabled={mode === 'view'}
 						/>
 					{:else if field.field_type === 'label'}
-						{@const labelSize = field.props.size != null ? Number(field.props.size) : 16}
+						{@const labelSize = field.props?.size != null ? Number(field.props.size) : 16}
 						{@const safeLabelSize = Number.isFinite(labelSize) && labelSize > 0 ? labelSize : 16}
+						{@const labelText = field.props?.text || `Field ${index + 1}`}
+						{@const labelWeight = field.props?.weight || 'normal'}
+						{@const labelFontFamily = field.props?.font_family || 'system-ui'}
+						{@const labelTextDecoration = field.props?.text_decoration || 'none'}
+						{@const labelColor = field.props?.color || ''}
 						<UserTextLabel
 							editable={false}
-							text={field.props.text || `Field ${index + 1}`}
+							text={labelText}
 							size={safeLabelSize}
-							weight={field.props.weight ?? 'normal'}
-							fontFamily={field.props.font_family ?? 'system-ui'}
-							textDecoration={field.props.text_decoration ?? 'none'}
-							color={field.props.color ?? ''}
+							weight={labelWeight}
+							fontFamily={labelFontFamily}
+							textDecoration={labelTextDecoration}
+							color={labelColor}
 						/>
 					{/if}
 				{/each}
