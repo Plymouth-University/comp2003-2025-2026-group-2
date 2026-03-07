@@ -41,8 +41,8 @@ export function calculateSnap(
 	otherItemIds: string[],
 	threshold: number = 10
 ): SnapResult {
-	const draggedEl = document.querySelector(`[data-item-id="${draggedId}"]`) as HTMLElement;
-	if (!draggedEl || !canvasRef) {
+	const draggedEl = document.querySelector(`[data-item-id="${draggedId}"]`);
+	if (!draggedEl || !canvasRef || !(draggedEl instanceof HTMLElement)) {
 		return { x: proposedX, y: proposedY, snapLinesX: [], snapLinesY: [] };
 	}
 
@@ -64,8 +64,8 @@ export function calculateSnap(
 	const snapLinesY: number[] = [];
 
 	for (const itemId of otherItemIds) {
-		const el = document.querySelector(`[data-item-id="${itemId}"]`) as HTMLElement;
-		if (!el) continue;
+		const el = document.querySelector(`[data-item-id="${itemId}"]`);
+		if (!el || !(el instanceof HTMLElement)) continue;
 
 		const bounds = getElementBounds(el, canvasRef);
 

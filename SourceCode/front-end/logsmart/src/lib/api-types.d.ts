@@ -3310,15 +3310,15 @@ export interface operations {
 	};
 	get_template: {
 		parameters: {
-			query?: never;
-			header?: never;
-			path: {
+			query: {
 				/**
 				 * @description Name of the template to retrieve
 				 * @example ErrorLog
 				 */
 				template_name: string;
 			};
+			header?: never;
+			path?: never;
 			cookie?: never;
 		};
 		requestBody?: never;
@@ -3612,15 +3612,15 @@ export interface operations {
 	};
 	get_template_versions: {
 		parameters: {
-			query?: never;
-			header?: never;
-			path: {
+			query: {
 				/**
 				 * @description Name of the template to retrieve versions for
 				 * @example ErrorLog
 				 */
 				template_name: string;
 			};
+			header?: never;
+			path?: never;
 			cookie?: never;
 		};
 		requestBody?: never;
@@ -3656,15 +3656,15 @@ export interface operations {
 	};
 	restore_template_version: {
 		parameters: {
-			query?: never;
-			header?: never;
-			path: {
+			query: {
 				/**
 				 * @description Name of the template to restore
 				 * @example ErrorLog
 				 */
 				template_name: string;
 			};
+			header?: never;
+			path?: never;
 			cookie?: never;
 		};
 		requestBody: {

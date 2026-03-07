@@ -61,7 +61,8 @@
 			}, 3000);
 		} catch (e: unknown) {
 			console.error(e);
-			errorMessage = (e as Error)?.message || 'Failed to link Google account';
+			const message = e instanceof Error ? e.message : 'Failed to link Google account';
+			errorMessage = message || 'Failed to link Google account';
 		}
 	}
 
@@ -98,7 +99,8 @@
 			await invalidateAll();
 		} catch (e: unknown) {
 			console.error(e);
-			errorMessage = (e as Error)?.message || 'Failed to register passkey';
+			const message = e instanceof Error ? e.message : 'Failed to register passkey';
+			errorMessage = message || 'Failed to register passkey';
 		} finally {
 			isRegisteringPasskey = false;
 		}

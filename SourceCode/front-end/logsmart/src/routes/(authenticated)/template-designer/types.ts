@@ -1,3 +1,25 @@
+export type CanvasItemProps = {
+	text?: string;
+	placeholder?: string;
+	size?: number;
+	weight?: string;
+	editable?: boolean;
+	min?: number;
+	max?: number;
+	value?: string | number;
+	unit?: string;
+	options?: string[];
+	selected?: string | number | boolean;
+	fontFamily?: string;
+	textDecoration?: string;
+	color?: string;
+	required?: boolean;
+	maxLength?: number | null;
+	minLength?: number | null;
+	inputType?: string;
+	label?: string;
+};
+
 export type CanvasItem = {
 	id: string;
 	type: string;
@@ -5,7 +27,7 @@ export type CanvasItem = {
 	y: number;
 	lockX?: boolean;
 	lockY?: boolean;
-	props: Record<string, unknown>;
+	props: CanvasItemProps;
 };
 
 export type ComponentType = {

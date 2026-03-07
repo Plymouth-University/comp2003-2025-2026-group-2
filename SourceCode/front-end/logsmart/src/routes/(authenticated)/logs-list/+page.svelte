@@ -1,7 +1,10 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import type { components } from '$lib/api-types';
 	import ClockInOut from '$lib/components/ClockInOut.svelte';
 	import { SvelteDate } from 'svelte/reactivity';
+
+	type LogEntry = components['schemas']['LogEntryResponse'];
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -83,7 +86,7 @@
 	function handleFillLog(templateName: string, period?: string, status?: string | null) {
 		if (status === 'draft' && period) {
 			const draftEntry = (data.allLogs || data.pastLogs || []).find(
-				(log: any) =>
+				(log: LogEntry) =>
 					log.template_name === templateName && log.period === period && log.status === 'draft'
 			);
 
