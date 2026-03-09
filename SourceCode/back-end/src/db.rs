@@ -202,7 +202,7 @@ pub struct ClockEvent {
 impl ClockEvent {
     #[must_use]
     pub fn is_clocked_in(&self) -> bool {
-        self.clock_out.is_none() && self.clock_in <= chrono::Utc::now()
+        self.clock_out.is_none()
     }
 }
 
@@ -1985,6 +1985,13 @@ pub struct CompanyClockEventRow {
     pub email: String,
 }
 
+impl CompanyClockEventRow {
+    #[must_use]
+    pub fn is_clocked_in(&self) -> bool {
+        self.clock_out.is_none()
+    }
+}
+
 /// Gets all clock events for a company, joined with user name/email.
 /// Optionally filtered by date range and branch.
 ///
@@ -2053,4 +2060,68 @@ pub async fn get_company_clock_events(
     let events = query.fetch_all(pool).await?;
 
     Ok(events)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_clocked_in_with_future_clock_in() {
+        let future_time = chrono::Utc::now() + chrono::Duration::seconds(60);
+        let event = ClockEvent {
+            id: "test".to_string(),
+            user_id: "user1".to_string(),
+            company_id: "company1".to_string(),
+            clock_in: future_time,
+            clock_out: None,
+            created_at: chrono::Utc::now(),
+        };
+        assert!(event.is_clocked_in(), "ClockEvent with clock_out=None should be clocked in even if clock_in is in the future");
+    }
+
+    #[test]
+    fn test_is_clocked_in_with_past_clock_in() {
+        let past_time = chrono::Utc::now() - chrono::Duration::seconds(60);
+        let event = ClockEvent {
+            id: "test".to_string(),
+            user_id: "user1".to_string(),
+            company_id: "company1".to_string(),
+            clock_in: past_time,
+            clock_out: None,
+            created_at: chrono::Utc::now(),
+        };
+        assert!(event.is_clocked_in(), "ClockEvent with clock_out=None should be clocked in");
+    }
+
+    #[test]
+    fn test_is_clocked_in_with_clock_out() {
+        let past_time = chrono::Utc::now() - chrono::Duration::seconds(60);
+        let event = ClockEvent {
+            id: "test".to_string(),
+            user_id: "user1".to_string(),
+            company_id: "company1".to_string(),
+            clock_in: past_time,
+            clock_out: Some(past_time + chrono::Duration::seconds(60)),
+            created_at: chrono::Utc::now(),
+        };
+        assert!(!event.is_clocked_in(), "ClockEvent with clock_out set should not be clocked in");
+    }
+
+    #[test]
+    fn test_company_clock_event_row_is_clocked_in() {
+        let future_time = chrono::Utc::now() + chrono::Duration::seconds(60);
+        let row = CompanyClockEventRow {
+            id: "test".to_string(),
+            user_id: "user1".to_string(),
+            company_id: "company1".to_string(),
+            clock_in: future_time,
+            clock_out: None,
+            created_at: chrono::Utc::now(),
+            first_name: "John".to_string(),
+            last_name: "Doe".to_string(),
+            email: "john@example.com".to_string(),
+        };
+        assert!(row.is_clocked_in(), "CompanyClockEventRow with clock_out=None should be clocked in even if clock_in is in the future");
+    }
 }
