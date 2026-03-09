@@ -387,7 +387,7 @@ impl From<db::UserRecord> for UserResponse {
     fn from(record: db::UserRecord) -> Self {
         let profile_picture_url = record
             .profile_picture_id
-            .map(|id| format!("/api/auth/profile-picture/{}", id));
+            .map(|id| format!("/api/auth/profile-picture/{id}"));
 
         Self {
             id: record.id,
@@ -681,12 +681,7 @@ pub struct CompanyClockEventResponse {
 
 impl From<db::CompanyClockEventRow> for CompanyClockEventResponse {
     fn from(row: db::CompanyClockEventRow) -> Self {
-        let status = if row.is_clocked_in() {
-            "in"
-        } else {
-            "out"
-        }
-        .to_string();
+        let status = if row.is_clocked_in() { "in" } else { "out" }.to_string();
 
         Self {
             id: row.id,

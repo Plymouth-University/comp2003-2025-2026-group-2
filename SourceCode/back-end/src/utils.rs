@@ -1,6 +1,5 @@
 use crate::db;
 use axum::http::HeaderMap;
-use once_cell::sync::Lazy;
 use sqlx::PgPool;
 
 #[macro_export]
@@ -405,25 +404,27 @@ const SAFE_FONTS: &[&str] = &[
 const SAFE_DECORATIONS: &[&str] = &["none", "underline", "overline", "line-through", "blink"];
 
 /// Static regex for hex colors: #RGB or #RRGGBB or #RRGGBBAA
-static HEX_COLOR_PATTERN: Lazy<regex::Regex> = Lazy::new(|| {
+static HEX_COLOR_PATTERN: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
     regex::Regex::new(r"^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?([0-9a-fA-F]{2})?$")
         .expect("Failed to compile hex color regex")
 });
 
 /// Static regex for RGB/RGBA colors: rgb(...) or rgba(...)
-static RGB_COLOR_PATTERN: Lazy<regex::Regex> = Lazy::new(|| {
+static RGB_COLOR_PATTERN: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
     regex::Regex::new(r"^rgba?\s*\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$")
         .expect("Failed to compile RGB color regex")
 });
 
 /// Static regex for named colors: letters only
-static NAMED_COLOR_PATTERN: Lazy<regex::Regex> =
-    Lazy::new(|| regex::Regex::new(r"^[a-zA-Z]+$").expect("Failed to compile named color regex"));
+static NAMED_COLOR_PATTERN: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
+    regex::Regex::new(r"^[a-zA-Z]+$").expect("Failed to compile named color regex")
+});
 
 /// Static regex for short hex with alpha: #RGBA
-static SHORT_HEX_ALPHA_PATTERN: Lazy<regex::Regex> = Lazy::new(|| {
-    regex::Regex::new(r"^#[0-9a-fA-F]{4}$").expect("Failed to compile short hex alpha regex")
-});
+static SHORT_HEX_ALPHA_PATTERN: std::sync::LazyLock<regex::Regex> =
+    std::sync::LazyLock::new(|| {
+        regex::Regex::new(r"^#[0-9a-fA-F]{4}$").expect("Failed to compile short hex alpha regex")
+    });
 
 pub fn is_valid_css_color(color: &str) -> bool {
     // Empty string is valid (means no custom color)
@@ -470,6 +471,7 @@ pub fn is_valid_css_color(color: &str) -> bool {
 
 /// Validates that a font family value is safe (no CSS injection characters).
 /// Allows common font family names and safe CSS values.
+#[must_use]
 pub fn is_valid_font_family(font_family: &str) -> bool {
     // Empty string is valid
     if font_family.trim().is_empty() {
@@ -519,6 +521,7 @@ pub fn is_valid_font_family(font_family: &str) -> bool {
 }
 
 /// Validates that a text decoration value is safe (no CSS injection characters).
+#[must_use]
 pub fn is_valid_text_decoration(text_decoration: &str) -> bool {
     // Empty string is valid
     if text_decoration.trim().is_empty() {
@@ -548,6 +551,7 @@ const SUPPORTED_INPUT_TYPES: &[&str] = &["text", "int", "float"];
 /// Validates that an input type is supported.
 /// Must be one of the canonical types: text, int, float
 /// Empty strings are rejected.
+#[must_use]
 pub fn is_valid_input_type(input_type: &str) -> bool {
     let trimmed = input_type.trim();
 
@@ -563,8 +567,9 @@ pub fn is_valid_input_type(input_type: &str) -> bool {
 /// Validates string length constraints.
 /// If provided, both must be:
 /// - Non-negative (>= 0)
-/// - If both present, min_length must be <= max_length
-/// Returns Ok(()) if valid, or descriptive error message if invalid.
+/// - If both present, `min_length` must be <= `max_length`
+///
+///  Returns Ok(()) if valid, or descriptive error message if invalid.
 pub fn validate_length_constraints(
     min_length: Option<i32>,
     max_length: Option<i32>,

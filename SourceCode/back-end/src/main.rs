@@ -267,7 +267,7 @@ async fn main() {
         .route("/logs/entries", get(handlers::list_user_log_entries))
         .route(
             "/logs/admin/entries",
-            get(handlers::list_company_log_entries),
+            get(handlers::list_company_log_entries::<std::hash::RandomState>),
         )
         .route("/logs/entries/{entry_id}", get(handlers::get_log_entry))
         .route("/logs/entries/{entry_id}", put(handlers::update_log_entry))

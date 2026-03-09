@@ -1,6 +1,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use std::fmt::Write;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -2023,18 +2024,18 @@ pub async fn get_company_clock_events(
     // Add branch filter if provided
     if branch_id.is_some() {
         bind_count += 1;
-        query_str.push_str(&format!("  AND u.branch_id = ${bind_count}\n"));
+        writeln!(query_str, "  AND u.branch_id = ${bind_count}")?;
     }
 
     // Add date filters
     if from.is_some() {
         bind_count += 1;
-        query_str.push_str(&format!("  AND ce.clock_in >= ${bind_count}\n"));
+        writeln!(query_str, "  AND ce.clock_in >= ${bind_count}")?;
     }
 
     if to.is_some() {
         bind_count += 1;
-        query_str.push_str(&format!("  AND ce.clock_in <= ${bind_count}\n"));
+        writeln!(query_str, "  AND ce.clock_in <= ${bind_count}")?;
     }
 
     query_str.push_str("ORDER BY ce.clock_in DESC");
@@ -2077,7 +2078,10 @@ mod tests {
             clock_out: None,
             created_at: chrono::Utc::now(),
         };
-        assert!(event.is_clocked_in(), "ClockEvent with clock_out=None should be clocked in even if clock_in is in the future");
+        assert!(
+            event.is_clocked_in(),
+            "ClockEvent with clock_out=None should be clocked in even if clock_in is in the future"
+        );
     }
 
     #[test]
@@ -2091,7 +2095,10 @@ mod tests {
             clock_out: None,
             created_at: chrono::Utc::now(),
         };
-        assert!(event.is_clocked_in(), "ClockEvent with clock_out=None should be clocked in");
+        assert!(
+            event.is_clocked_in(),
+            "ClockEvent with clock_out=None should be clocked in"
+        );
     }
 
     #[test]
@@ -2105,7 +2112,10 @@ mod tests {
             clock_out: Some(past_time + chrono::Duration::seconds(60)),
             created_at: chrono::Utc::now(),
         };
-        assert!(!event.is_clocked_in(), "ClockEvent with clock_out set should not be clocked in");
+        assert!(
+            !event.is_clocked_in(),
+            "ClockEvent with clock_out set should not be clocked in"
+        );
     }
 
     #[test]
@@ -2122,6 +2132,9 @@ mod tests {
             last_name: "Doe".to_string(),
             email: "john@example.com".to_string(),
         };
-        assert!(row.is_clocked_in(), "CompanyClockEventRow with clock_out=None should be clocked in even if clock_in is in the future");
+        assert!(
+            row.is_clocked_in(),
+            "CompanyClockEventRow with clock_out=None should be clocked in even if clock_in is in the future"
+        );
     }
 }
