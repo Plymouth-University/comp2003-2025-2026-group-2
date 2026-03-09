@@ -65,11 +65,8 @@ impl LogEntryService {
                     ));
                 }
             }
-            db::UserRole::CompanyManager => {
-                // Company admins can access templates for any branch in their company, so no branch check needed here
-            }
-            db::UserRole::LogSmartAdmin => {
-                // LogSmart admins can access all templates, so no branch check needed here
+            db::UserRole::CompanyManager | db::UserRole::LogSmartAdmin => {
+                // Company admins and LogSmart admins can access templates for any branch in their company, so no branch check needed here
             }
         }
 

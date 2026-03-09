@@ -69,7 +69,7 @@ impl InvitationService {
 
         let invitation = db::create_invitation(
             db_pool,
-            company_id.to_string(),
+            company_id.clone(),
             recipient_email.clone(),
             token,
             role,

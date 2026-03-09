@@ -26,7 +26,7 @@ impl ClockService {
         })?;
 
         if let Some(ref event) = current
-            && event.status == "in"
+            && event.is_clocked_in()
         {
             return Err((
                 StatusCode::CONFLICT,

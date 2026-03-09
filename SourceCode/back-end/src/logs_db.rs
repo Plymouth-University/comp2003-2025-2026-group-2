@@ -100,6 +100,7 @@ pub struct TemplateDocument {
 }
 
 impl TemplateDocument {
+    #[must_use]
     pub fn is_company_wide(&self) -> bool {
         self.branch_id.is_none()
     }
@@ -1222,7 +1223,7 @@ pub async fn get_profile_picture(
         db.collection(PROFILE_PICTURES_COLLECTION);
 
     let oid = mongodb::bson::Uuid::parse_str(file_id)
-        .map_err(|e| anyhow::anyhow!("Invalid file ID: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("Invalid file ID: {e}"))?;
 
     let filter = mongodb::bson::doc! { "_id": oid };
 
@@ -1240,7 +1241,7 @@ pub async fn delete_profile_picture(client: &mongodb::Client, file_id: &str) -> 
         db.collection(PROFILE_PICTURES_COLLECTION);
 
     let oid = mongodb::bson::Uuid::parse_str(file_id)
-        .map_err(|e| anyhow::anyhow!("Invalid file ID: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("Invalid file ID: {e}"))?;
 
     let filter = mongodb::bson::doc! { "_id": oid };
     collection.delete_one(filter).await?;

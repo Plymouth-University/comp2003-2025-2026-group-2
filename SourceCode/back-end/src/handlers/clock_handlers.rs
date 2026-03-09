@@ -107,8 +107,9 @@ pub async fn get_clock_status(
         .await
         .map_err(|(status, err)| (status, Json(err)))?;
 
-    let is_clocked_in = current.as_ref().is_some_and(|e| e.status == "in");
-
+    let is_clocked_in = current
+        .as_ref()
+        .is_some_and(super::super::db::ClockEvent::is_clocked_in);
     let current_event = if is_clocked_in {
         current.map(ClockEventResponse::from)
     } else {
