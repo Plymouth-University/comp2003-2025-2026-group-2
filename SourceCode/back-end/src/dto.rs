@@ -646,12 +646,7 @@ pub struct ClockEventResponse {
 
 impl From<db::ClockEvent> for ClockEventResponse {
     fn from(event: db::ClockEvent) -> Self {
-        let status = if event.is_clocked_in() {
-            "in"
-        } else {
-            "out"
-        }
-        .to_string();
+        let status = if event.is_clocked_in() { "in" } else { "out" }.to_string();
 
         Self {
             id: event.id,
@@ -686,12 +681,7 @@ pub struct CompanyClockEventResponse {
 
 impl From<db::CompanyClockEventRow> for CompanyClockEventResponse {
     fn from(row: db::CompanyClockEventRow) -> Self {
-        let status = if row.clock_out.is_none() {
-            "in"
-        } else {
-            "out"
-        }
-        .to_string();
+        let status = if row.clock_out.is_none() { "in" } else { "out" }.to_string();
 
         Self {
             id: row.id,
