@@ -55,9 +55,10 @@ impl OAuthStateStore {
     }
 
     pub fn store_link_token(&self, user_info: OAuthUserInfo) -> String {
-        use rand::Rng;
-        let token: String = rand::thread_rng()
-            .sample_iter(&rand::distributions::Alphanumeric)
+        use rand::rngs::ThreadRng;
+        use rand::RngExt;
+        let token: String = ThreadRng::default()
+            .sample_iter(&rand::distr::Alphanumeric)
             .take(64)
             .map(char::from)
             .collect();

@@ -2,6 +2,7 @@
 
 use anyhow::Result;
 use async_trait::async_trait;
+use rand::RngExt;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -282,15 +283,15 @@ impl MockOAuthStateStore {
 
     #[must_use]
     pub fn generate_state_string(&self, length: usize) -> String {
-        use rand::Rng;
+        use rand::rngs::ThreadRng;
         let charset: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                              abcdefghijklmnopqrstuvwxyz\
                              0123456789";
-        let mut rng = rand::thread_rng();
+        let mut rng = ThreadRng::default();
 
         (0..length)
             .map(|_| {
-                let idx = rng.gen_range(0..charset.len());
+                let idx = rng.random_range(0..charset.len());
                 charset[idx] as char
             })
             .collect()
