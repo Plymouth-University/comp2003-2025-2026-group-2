@@ -118,7 +118,7 @@
 </svelte:head>
 
 <div class="flex h-full w-full items-center justify-center bg-bg-primary p-8">
-	<div class="w-full max-w-[600px]">
+	<div class="w-full max-w-150">
 		<div class="mb-8 flex items-center justify-center gap-4">
 			<div class="flex flex-col items-center gap-2">
 				<div

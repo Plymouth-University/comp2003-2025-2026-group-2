@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api';
+	import { onMount } from 'svelte';
 	import type { components } from '$lib/api-types';
 	import type { Template, TemplateSchedule, DayOfWeek } from './types';
 	import TemplateRow from './TemplateRow.svelte';
@@ -106,7 +107,7 @@
 		loading = false;
 	}
 
-	$effect(() => {
+	onMount(() => {
 		fetchTemplates();
 	});
 

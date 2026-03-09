@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { api } from '$lib/api';
+	import { onMount } from 'svelte';
 	import TemplatesSidebar from './TemplatesSidebar.svelte';
 	import DesignCanvas from './DesignCanvas.svelte';
 	import ComponentsPalette from './ComponentsPalette.svelte';
@@ -289,7 +290,7 @@
 		await fetchTemplates();
 	}
 
-	$effect(() => {
+	onMount(() => {
 		if (browser && templateId) {
 			loadTemplate(templateId);
 		}
@@ -319,7 +320,7 @@
 		}
 	}
 
-	$effect(() => {
+	onMount(() => {
 		fetchTemplates();
 	});
 
