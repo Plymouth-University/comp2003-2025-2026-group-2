@@ -53,7 +53,7 @@ async fn test_clock_in_creates_event() {
 
     assert_eq!(event.user_id, user.id);
     assert_eq!(event.company_id, company.id);
-    assert_eq!(event.status, "in");
+    assert!(event.is_clocked_in());
     assert!(event.clock_out.is_none());
 }
 
@@ -95,7 +95,7 @@ async fn test_clock_out_updates_event() {
         .expect("No clock out event returned");
 
     assert_eq!(event.user_id, user.id);
-    assert_eq!(event.status, "out");
+    assert!(!event.is_clocked_in());
     assert!(event.clock_out.is_some());
 }
 
@@ -178,7 +178,7 @@ async fn test_get_clock_status_returns_latest() {
         .expect("No status returned");
 
     assert_eq!(status.id, second_event.id);
-    assert_eq!(status.status, "in");
+    assert!(status.is_clocked_in());
 }
 
 #[tokio::test]

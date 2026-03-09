@@ -196,8 +196,14 @@ pub struct ClockEvent {
     pub company_id: String,
     pub clock_in: chrono::DateTime<chrono::Utc>,
     pub clock_out: Option<chrono::DateTime<chrono::Utc>>,
-    pub status: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl ClockEvent {
+    #[must_use]
+    pub fn is_clocked_in(&self) -> bool {
+        self.clock_out.is_none() && self.clock_in <= chrono::Utc::now()
+    }
 }
 
 /// Initialize database by running `SQLx` migrations
@@ -1879,9 +1885,9 @@ pub async fn clock_in(pool: &PgPool, user_id: &str, company_id: &str) -> Result<
     let id = Uuid::new_v4().to_string();
     let event = sqlx::query_as::<_, ClockEvent>(
         r"
-        INSERT INTO clock_events (id, user_id, company_id, clock_in, status)
-        VALUES ($1, $2, $3, CURRENT_TIMESTAMP, 'in')
-        RETURNING id, user_id, company_id, clock_in, clock_out, status, created_at
+        INSERT INTO clock_events (id, user_id, company_id, clock_in)
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+        RETURNING id, user_id, company_id, clock_in, clock_out, created_at
         ",
     )
     .bind(&id)
@@ -1901,14 +1907,14 @@ pub async fn clock_out(pool: &PgPool, user_id: &str) -> Result<Option<ClockEvent
     let event = sqlx::query_as::<_, ClockEvent>(
         r"
         UPDATE clock_events
-        SET clock_out = CURRENT_TIMESTAMP, status = 'out'
+        SET clock_out = CURRENT_TIMESTAMP
         WHERE id = (
             SELECT id FROM clock_events
-            WHERE user_id = $1 AND status = 'in'
+            WHERE user_id = $1 AND clock_out IS NULL
             ORDER BY clock_in DESC
             LIMIT 1
         )
-        RETURNING id, user_id, company_id, clock_in, clock_out, status, created_at
+        RETURNING id, user_id, company_id, clock_in, clock_out, created_at
         ",
     )
     .bind(user_id)
@@ -1925,7 +1931,7 @@ pub async fn clock_out(pool: &PgPool, user_id: &str) -> Result<Option<ClockEvent
 pub async fn get_clock_status(pool: &PgPool, user_id: &str) -> Result<Option<ClockEvent>> {
     let event = sqlx::query_as::<_, ClockEvent>(
         r"
-        SELECT id, user_id, company_id, clock_in, clock_out, status, created_at
+        SELECT id, user_id, company_id, clock_in, clock_out, created_at
         FROM clock_events
         WHERE user_id = $1
         ORDER BY created_at DESC
@@ -1950,7 +1956,7 @@ pub async fn get_recent_clock_events(
 ) -> Result<Vec<ClockEvent>> {
     let events = sqlx::query_as::<_, ClockEvent>(
         r"
-        SELECT id, user_id, company_id, clock_in, clock_out, status, created_at
+        SELECT id, user_id, company_id, clock_in, clock_out, created_at
         FROM clock_events
         WHERE user_id = $1
         ORDER BY created_at DESC
@@ -1973,7 +1979,6 @@ pub struct CompanyClockEventRow {
     pub company_id: String,
     pub clock_in: chrono::DateTime<chrono::Utc>,
     pub clock_out: Option<chrono::DateTime<chrono::Utc>>,
-    pub status: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub first_name: String,
     pub last_name: String,
@@ -1998,7 +2003,7 @@ pub async fn get_company_clock_events(
     let mut query_str = String::from(
         r"
         SELECT ce.id, ce.user_id, ce.company_id, ce.clock_in, ce.clock_out,
-               ce.status, ce.created_at,
+               ce.created_at,
                u.first_name, u.last_name, u.email
         FROM clock_events ce
         JOIN users u ON u.id = ce.user_id
