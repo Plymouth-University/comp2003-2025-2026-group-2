@@ -1,6 +1,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use std::fmt::Write;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -196,8 +197,14 @@ pub struct ClockEvent {
     pub company_id: String,
     pub clock_in: chrono::DateTime<chrono::Utc>,
     pub clock_out: Option<chrono::DateTime<chrono::Utc>>,
-    pub status: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl ClockEvent {
+    #[must_use]
+    pub fn is_clocked_in(&self) -> bool {
+        self.clock_out.is_none()
+    }
 }
 
 /// Initialize database by running `SQLx` migrations
@@ -1879,9 +1886,9 @@ pub async fn clock_in(pool: &PgPool, user_id: &str, company_id: &str) -> Result<
     let id = Uuid::new_v4().to_string();
     let event = sqlx::query_as::<_, ClockEvent>(
         r"
-        INSERT INTO clock_events (id, user_id, company_id, clock_in, status)
-        VALUES ($1, $2, $3, CURRENT_TIMESTAMP, 'in')
-        RETURNING id, user_id, company_id, clock_in, clock_out, status, created_at
+        INSERT INTO clock_events (id, user_id, company_id, clock_in)
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
+        RETURNING id, user_id, company_id, clock_in, clock_out, created_at
         ",
     )
     .bind(&id)
@@ -1901,14 +1908,14 @@ pub async fn clock_out(pool: &PgPool, user_id: &str) -> Result<Option<ClockEvent
     let event = sqlx::query_as::<_, ClockEvent>(
         r"
         UPDATE clock_events
-        SET clock_out = CURRENT_TIMESTAMP, status = 'out'
+        SET clock_out = CURRENT_TIMESTAMP
         WHERE id = (
             SELECT id FROM clock_events
-            WHERE user_id = $1 AND status = 'in'
+            WHERE user_id = $1 AND clock_out IS NULL
             ORDER BY clock_in DESC
             LIMIT 1
         )
-        RETURNING id, user_id, company_id, clock_in, clock_out, status, created_at
+        RETURNING id, user_id, company_id, clock_in, clock_out, created_at
         ",
     )
     .bind(user_id)
@@ -1925,7 +1932,7 @@ pub async fn clock_out(pool: &PgPool, user_id: &str) -> Result<Option<ClockEvent
 pub async fn get_clock_status(pool: &PgPool, user_id: &str) -> Result<Option<ClockEvent>> {
     let event = sqlx::query_as::<_, ClockEvent>(
         r"
-        SELECT id, user_id, company_id, clock_in, clock_out, status, created_at
+        SELECT id, user_id, company_id, clock_in, clock_out, created_at
         FROM clock_events
         WHERE user_id = $1
         ORDER BY created_at DESC
@@ -1950,7 +1957,7 @@ pub async fn get_recent_clock_events(
 ) -> Result<Vec<ClockEvent>> {
     let events = sqlx::query_as::<_, ClockEvent>(
         r"
-        SELECT id, user_id, company_id, clock_in, clock_out, status, created_at
+        SELECT id, user_id, company_id, clock_in, clock_out, created_at
         FROM clock_events
         WHERE user_id = $1
         ORDER BY created_at DESC
@@ -1973,11 +1980,17 @@ pub struct CompanyClockEventRow {
     pub company_id: String,
     pub clock_in: chrono::DateTime<chrono::Utc>,
     pub clock_out: Option<chrono::DateTime<chrono::Utc>>,
-    pub status: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub first_name: String,
     pub last_name: String,
     pub email: String,
+}
+
+impl CompanyClockEventRow {
+    #[must_use]
+    pub fn is_clocked_in(&self) -> bool {
+        self.clock_out.is_none()
+    }
 }
 
 /// Gets all clock events for a company, joined with user name/email.
@@ -1998,7 +2011,7 @@ pub async fn get_company_clock_events(
     let mut query_str = String::from(
         r"
         SELECT ce.id, ce.user_id, ce.company_id, ce.clock_in, ce.clock_out,
-               ce.status, ce.created_at,
+               ce.created_at,
                u.first_name, u.last_name, u.email
         FROM clock_events ce
         JOIN users u ON u.id = ce.user_id
@@ -2011,18 +2024,18 @@ pub async fn get_company_clock_events(
     // Add branch filter if provided
     if branch_id.is_some() {
         bind_count += 1;
-        query_str.push_str(&format!("  AND u.branch_id = ${bind_count}\n"));
+        writeln!(query_str, "  AND u.branch_id = ${bind_count}")?;
     }
 
     // Add date filters
     if from.is_some() {
         bind_count += 1;
-        query_str.push_str(&format!("  AND ce.clock_in >= ${bind_count}\n"));
+        writeln!(query_str, "  AND ce.clock_in >= ${bind_count}")?;
     }
 
     if to.is_some() {
         bind_count += 1;
-        query_str.push_str(&format!("  AND ce.clock_in <= ${bind_count}\n"));
+        writeln!(query_str, "  AND ce.clock_in <= ${bind_count}")?;
     }
 
     query_str.push_str("ORDER BY ce.clock_in DESC");
@@ -2048,4 +2061,80 @@ pub async fn get_company_clock_events(
     let events = query.fetch_all(pool).await?;
 
     Ok(events)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_clocked_in_with_future_clock_in() {
+        let future_time = chrono::Utc::now() + chrono::Duration::seconds(60);
+        let event = ClockEvent {
+            id: "test".to_string(),
+            user_id: "user1".to_string(),
+            company_id: "company1".to_string(),
+            clock_in: future_time,
+            clock_out: None,
+            created_at: chrono::Utc::now(),
+        };
+        assert!(
+            event.is_clocked_in(),
+            "ClockEvent with clock_out=None should be clocked in even if clock_in is in the future"
+        );
+    }
+
+    #[test]
+    fn test_is_clocked_in_with_past_clock_in() {
+        let past_time = chrono::Utc::now() - chrono::Duration::seconds(60);
+        let event = ClockEvent {
+            id: "test".to_string(),
+            user_id: "user1".to_string(),
+            company_id: "company1".to_string(),
+            clock_in: past_time,
+            clock_out: None,
+            created_at: chrono::Utc::now(),
+        };
+        assert!(
+            event.is_clocked_in(),
+            "ClockEvent with clock_out=None should be clocked in"
+        );
+    }
+
+    #[test]
+    fn test_is_clocked_in_with_clock_out() {
+        let past_time = chrono::Utc::now() - chrono::Duration::seconds(60);
+        let event = ClockEvent {
+            id: "test".to_string(),
+            user_id: "user1".to_string(),
+            company_id: "company1".to_string(),
+            clock_in: past_time,
+            clock_out: Some(past_time + chrono::Duration::seconds(60)),
+            created_at: chrono::Utc::now(),
+        };
+        assert!(
+            !event.is_clocked_in(),
+            "ClockEvent with clock_out set should not be clocked in"
+        );
+    }
+
+    #[test]
+    fn test_company_clock_event_row_is_clocked_in() {
+        let future_time = chrono::Utc::now() + chrono::Duration::seconds(60);
+        let row = CompanyClockEventRow {
+            id: "test".to_string(),
+            user_id: "user1".to_string(),
+            company_id: "company1".to_string(),
+            clock_in: future_time,
+            clock_out: None,
+            created_at: chrono::Utc::now(),
+            first_name: "John".to_string(),
+            last_name: "Doe".to_string(),
+            email: "john@example.com".to_string(),
+        };
+        assert!(
+            row.is_clocked_in(),
+            "CompanyClockEventRow with clock_out=None should be clocked in even if clock_in is in the future"
+        );
+    }
 }

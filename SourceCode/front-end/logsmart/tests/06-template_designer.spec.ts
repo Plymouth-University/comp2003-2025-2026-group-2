@@ -154,7 +154,7 @@ test.describe('Template Designer - CRUD Operations', () => {
 	test('save_without_template_name_shows_error', async ({ page }) => {
 		await page.goto('http://localhost:5173/template-designer');
 		await page.waitForLoadState('networkidle');
-		const saveButton = page.getByRole('button', { name: 'Save' });
+		const saveButton = page.getByRole('button', { name: 'Save Template', exact: true });
 		if (await saveButton.isVisible()) {
 			const isDisabled = await saveButton.isDisabled();
 			if (!isDisabled) {

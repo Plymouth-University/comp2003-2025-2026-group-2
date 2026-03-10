@@ -2,6 +2,7 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { browser } from '$app/environment';
 	import { api } from '$lib/api';
+	import { onMount } from 'svelte';
 
 	function validatePassword(pwd: string): { valid: boolean; errors: string[] } {
 		const errors: string[] = [];
@@ -52,7 +53,7 @@
 		loading = false;
 	};
 
-	$effect.pre(() => {
+	onMount(() => {
 		if (!browser) return;
 		const params = new URLSearchParams(window.location.search);
 		const t = params.get('token') || '';

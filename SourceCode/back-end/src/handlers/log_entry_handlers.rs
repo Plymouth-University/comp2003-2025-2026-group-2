@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     AppState,
     dto::{
@@ -387,10 +389,10 @@ pub async fn delete_log_entry(
     tag = "Log Entries"
 )]
 /// Lists all log entries for the company or branch (managers only).
-pub async fn list_company_log_entries(
+pub async fn list_company_log_entries<S: ::std::hash::BuildHasher>(
     ReadBranchUser(_claims, user): ReadBranchUser,
     State(state): State<AppState>,
-    Query(params): Query<std::collections::HashMap<String, String>>,
+    Query(params): Query<HashMap<String, String, S>>,
 ) -> Result<Json<ListLogEntriesResponse>, (StatusCode, Json<serde_json::Value>)> {
     let company_id = user.company_id.clone().ok_or((
         StatusCode::FORBIDDEN,

@@ -387,7 +387,7 @@ impl From<db::UserRecord> for UserResponse {
     fn from(record: db::UserRecord) -> Self {
         let profile_picture_url = record
             .profile_picture_id
-            .map(|id| format!("/api/auth/profile-picture/{}", id));
+            .map(|id| format!("/api/auth/profile-picture/{id}"));
 
         Self {
             id: record.id,
@@ -644,11 +644,20 @@ pub struct ClockEventResponse {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-derive_from!(
-    db::ClockEvent,
-    ClockEventResponse,
-    [id, user_id, clock_in, clock_out, status, created_at]
-);
+impl From<db::ClockEvent> for ClockEventResponse {
+    fn from(event: db::ClockEvent) -> Self {
+        let status = if event.is_clocked_in() { "in" } else { "out" }.to_string();
+
+        Self {
+            id: event.id,
+            user_id: event.user_id,
+            clock_in: event.clock_in,
+            clock_out: event.clock_out,
+            status,
+            created_at: event.created_at,
+        }
+    }
+}
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ClockStatusResponse {
@@ -670,13 +679,23 @@ pub struct CompanyClockEventResponse {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-derive_from!(
-    db::CompanyClockEventRow,
-    CompanyClockEventResponse,
-    [
-        id, user_id, first_name, last_name, email, clock_in, clock_out, status, created_at
-    ]
-);
+impl From<db::CompanyClockEventRow> for CompanyClockEventResponse {
+    fn from(row: db::CompanyClockEventRow) -> Self {
+        let status = if row.is_clocked_in() { "in" } else { "out" }.to_string();
+
+        Self {
+            id: row.id,
+            user_id: row.user_id,
+            first_name: row.first_name,
+            last_name: row.last_name,
+            email: row.email,
+            clock_in: row.clock_in,
+            clock_out: row.clock_out,
+            status,
+            created_at: row.created_at,
+        }
+    }
+}
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct CompanyClockEventsResponse {
