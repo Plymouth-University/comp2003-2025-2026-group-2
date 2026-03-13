@@ -11,7 +11,7 @@ use crate::{
     dto::{
         AuthResponse, ErrorResponse, JwtVerifyResponse, LoginRequest, PasswordResetResponse,
         RegisterRequest, RequestPasswordResetRequest, ResetPasswordRequest, UpdateProfileRequest,
-        UserResponse, VerifyTokenRequest, DeleteAccountRequest,
+        UserResponse, VerifyTokenRequest,
     },
     jwt_manager::JwtManager,
     services,
@@ -277,13 +277,6 @@ pub async fn login(
 
     )
 )]
-pub async fn delete_account(
-    let role = match payload.role.as_str() {
-        "company_manager" => db::UserRole::CompanyManager,
-        "branch_manager" => db::UserRole::BranchManager,
-    }
-)
-
 #[utoipa::path(
     get,
     path = "/auth/me",
