@@ -22,7 +22,7 @@
 	};
 
 	let templateLayout = $derived<TemplateField[]>(
-		data.template?.template_layout || entry?.template_layout || []
+		entry?.template_layout || data.template?.template_layout || []
 	);
 	let rawTemplateName = $derived(
 		data.template?.template_name || entry?.template_name || 'Log Template'
@@ -58,26 +58,51 @@
 		return value.filter((item): item is string => typeof item === 'string');
 	}
 
+	function buildInitialData(layout: TemplateField[]): Record<number, string | number | boolean> {
+		const initialData: Record<number, string | number | boolean> = {};
+		layout.forEach((field: TemplateField, index: number) => {
+			const props = field.props || {};
+			if (field.field_type === 'temperature') {
+				const val = props.value;
+				initialData[index] = val !== undefined && typeof val === 'string' ? parseFloat(val) : 0;
+			} else if (field.field_type === 'text' || field.field_type === 'text_input') {
+				initialData[index] = typeof props.value === 'string' ? props.value : '';
+			} else if (field.field_type === 'checkbox') {
+				initialData[index] = props.value === 'true' || props.value === true;
+			} else if (field.field_type === 'dropdown') {
+				const sel = props.selected;
+				const opts = Array.isArray(props.options) ? props.options : [];
+				initialData[index] = typeof sel === 'string' ? sel : ((opts[0] as string) ?? '');
+			}
+		});
+		return initialData;
+	}
+
+	function toEntryDataValue(value: unknown): string | number | boolean {
+		if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+			return value;
+		}
+		return '';
+	}
+
 	$effect(() => {
+		if (templateLayout.length === 0) {
+			entryData = {};
+			return;
+		}
+
+		const initialData = buildInitialData(templateLayout);
+
 		if (entry && isValidEntryData(entry.entry_data) && Object.keys(entry.entry_data).length > 0) {
-			entryData = { ...entry.entry_data } as Record<number, string | number | boolean>;
-		} else if (templateLayout.length > 0) {
-			const initialData: Record<number, string | number | boolean> = {};
-			templateLayout.forEach((field: TemplateField, index: number) => {
-				const props = field.props || {};
-				if (field.field_type === 'temperature') {
-					const val = props.value;
-					initialData[index] = val !== undefined && typeof val === 'string' ? parseFloat(val) : 0;
-				} else if (field.field_type === 'text' || field.field_type === 'text_input') {
-					initialData[index] = typeof props.value === 'string' ? props.value : '';
-				} else if (field.field_type === 'checkbox') {
-					initialData[index] = props.value === 'true' || props.value === true;
-				} else if (field.field_type === 'dropdown') {
-					const sel = props.selected;
-					const opts = Array.isArray(props.options) ? props.options : [];
-					initialData[index] = typeof sel === 'string' ? sel : ((opts[0] as string) ?? '');
+			const mergedData = { ...initialData };
+			for (const [key, rawValue] of Object.entries(entry.entry_data)) {
+				const numericKey = Number(key);
+				if (Number.isInteger(numericKey) && numericKey >= 0) {
+					mergedData[numericKey] = toEntryDataValue(rawValue);
 				}
-			});
+			}
+			entryData = mergedData;
+		} else {
 			entryData = initialData;
 		}
 	});
