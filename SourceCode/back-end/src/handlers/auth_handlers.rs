@@ -266,17 +266,7 @@ pub async fn login(
 
     Ok(response)
 }
-#[utopa::path(
-    delete,
-    path = "auth/profile",
-    request_body = DeleteAccountRequest,
-    responses(
-        (status = 200, description = "Account deleted successfully"),
-        (status = 400, description = "Invalid request", body = ErrorResponse)
-        (status = 401, description = "")
 
-    )
-)]
 #[utoipa::path(
     get,
     path = "/auth/me",
