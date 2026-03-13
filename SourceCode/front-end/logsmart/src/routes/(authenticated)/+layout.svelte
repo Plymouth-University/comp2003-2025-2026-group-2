@@ -29,7 +29,7 @@
 		style="border-color: var(--border-secondary); background-color: var(--bg-primary);"
 		class="shrink-0 border-b shadow-sm"
 	>
-		<div class="max-w-8xl mx-auto px-6 py-4 lg:px-50">
+		<div class="max-w-9xl mx-auto px-6 py-4 lg:px-30">
 			<div class="flex items-center justify-between">
 				<div class="flex items-center gap-8">
 					<a
