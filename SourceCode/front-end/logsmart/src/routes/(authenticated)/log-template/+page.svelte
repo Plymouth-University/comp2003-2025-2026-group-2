@@ -296,7 +296,11 @@
 								bind:text={entryData[index] as string}
 								size={safeSize}
 								weight={getStringProp(field.props, 'weight', 'normal')}
-								placeholder={getStringProp(field.props, 'text', `Field ${index + 1}`)}
+								placeholder={getStringProp(
+									field.props,
+									'placeholder',
+									getStringProp(field.props, 'text', `Field ${index + 1}`)
+								)}
 								fontFamily={getStringProp(field.props, 'font_family', 'system-ui')}
 								textDecoration={getStringProp(field.props, 'text_decoration', 'none')}
 								color={getStringProp(field.props, 'color')}
