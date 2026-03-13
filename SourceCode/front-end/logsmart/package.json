@@ -26,7 +26,7 @@
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
 		"@tailwindcss/forms": "^0.5.11",
 		"@tailwindcss/vite": "^4.2.1",
-		"@types/node": "^20.19.35",
+		"@types/node": "^20.19.37",
 		"@vite-pwa/sveltekit": "^1.1.0",
 		"eslint": "^9.39.3",
 		"eslint-config-prettier": "^10.1.8",
@@ -50,6 +50,6 @@
 		"@types/pg": "^8.18.0",
 		"cropperjs": "^2.1.0",
 		"openapi-fetch": "^0.15.2",
-		"pg": "^8.19.0"
+		"pg": "^8.20.0"
 	}
 }
