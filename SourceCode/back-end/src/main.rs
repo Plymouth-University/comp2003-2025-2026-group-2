@@ -237,10 +237,6 @@ async fn main() {
             delete(handlers::admin_delete_member),
         )
         .route(
-            "/auth/profile",
-            delete(handlers::delete_account),
-        )
-        .route(
             "/auth/profile-picture",
             post(handlers::upload_profile_picture),
         )

@@ -144,6 +144,24 @@
 		}
 	}
 
+	async function deleteAccount() {
+		if (!confirm('Are you sure you want to delete your account?'))
+			try {
+				const resp = await fetch('/api/auth/profile');
+				if (resp.ok) {
+					showSuccessMessage = true;
+					setTimeout(() => {
+						showSuccessMessage = false;
+					}, 3000);
+				} else {
+					const err = await resp.json();
+					errorMessage = err.error || 'Failed to delete account.';
+				}
+			} catch {
+				errorMessage = 'Failed to delete account.';
+			}
+	}
+
 	$effect(() => {
 		firstName = data.user?.first_name || '';
 		lastName = data.user?.last_name || '';
@@ -390,7 +408,7 @@
 										</div>
 										<button
 											onclick={() => deletePasskey(pk.id)}
-											class="text-red-500 hover:text-red-700"
+											class="cursor-pointer text-red-500 hover:text-red-700"
 											aria-label="Delete passkey"
 										>
 											Delete
@@ -455,7 +473,7 @@
 							</div>
 							<button
 								onclick={handleUnlinkGoogle}
-								class="border-2 px-8 py-2 font-medium hover:opacity-80"
+								class="cursor-pointer border-2 px-8 py-2 font-medium hover:opacity-80"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 							>
 								Unlink Google Account
@@ -540,6 +558,14 @@
 							Accounts are recoverable for 30 days after deletion.
 						</p>
 					</div>
+					<button
+						onclick={deleteAccount}
+						class="cursor-pointer border-2 border-solid px-8 py-2 text-red-500 hover:text-red-700"
+						style="2px solid var(--border-primary);"
+						aria-label="Delete account"
+					>
+						Delete Account
+					</button>
 				</div>
 			</div>
 		</div>
