@@ -88,7 +88,16 @@
 <div class="flex-1 overflow-auto p-6">
 	<div class="mx-auto max-w-4xl">
 		<div class="mb-4 flex items-center justify-between">
-			<h2 class="text-3xl font-bold text-text-secondary">Canvas</h2>
+			<h2 class="text-3xl font-bold text-text-secondary">
+				Canvas
+				<div class="tooltip">
+					﹖
+					<span class="tooltip-text"
+						>Drag and drop log components onto the canvas to create a log template. Save your log
+						template to make it completable.</span
+					>
+				</div>
+			</h2>
 			<div class="flex gap-2">
 				<button
 					class="rounded px-4 py-2 font-medium"
@@ -393,5 +402,26 @@
 		.btn-history:hover {
 			background-color: #536d79;
 		}
+	}
+
+	.tooltip {
+		position: relative;
+		display: inline-block;
+		cursor: help;
+	}
+
+	.tooltip-text {
+		visibility: hidden;
+		background-color: #1f2937;
+		font-size: 2vw;
+		text-align: center;
+		position: absolute;
+		padding: 40%;
+		border-radius: 8%;
+		z-index: 1;
+	}
+
+	.tooltip:hover .tooltip-text {
+		visibility: visible;
 	}
 </style>
