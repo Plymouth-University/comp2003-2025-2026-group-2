@@ -50,21 +50,8 @@ bun run dev
 ```bash
 cd SourceCode/back-end
 
-# Start databases (PostgreSQL and MongoDB)
-docker-compose up -d
-
-# Set up environment
-cp .envrc.example .envrc
-# Edit .envrc with your configuration
-
-# Enter development shell
-nix develop
-
-# Run migrations
-sqlx migrate run
-
-# Start the server
-cargo run
+# Start backend and databases (PostgreSQL and MongoDB)
+docker compose up -d
 ```
 
 ## 📋 Development Workflow
