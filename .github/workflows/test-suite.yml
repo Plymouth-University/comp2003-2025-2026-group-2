@@ -5,13 +5,25 @@ permissions:
 
 on:
   pull_request:
+    paths:
+      - 'SourceCode/back-end/**'
+      - 'SourceCode/front-end/**'
+  workflow_run:
+    workflows: ["Format and Lint Code"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     name: Run Playwright Tests
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
