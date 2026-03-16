@@ -413,7 +413,7 @@
 	.tooltip-text {
 		visibility: hidden;
 		background-color: #1f2937;
-		font-size: 2vw;
+		font-size: 1vw;
 		text-align: center;
 		position: absolute;
 		padding: 40%;
