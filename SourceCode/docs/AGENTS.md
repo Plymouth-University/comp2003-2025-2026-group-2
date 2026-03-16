@@ -35,7 +35,7 @@ cargo clippy --fix --allow-dirty --allow-staged
 cargo clippy
 
 # Run server (requires docker)
-docker compuse up -d
+docker compose up -d
 ```
 
 ### Frontend (Svelte/Bun)
