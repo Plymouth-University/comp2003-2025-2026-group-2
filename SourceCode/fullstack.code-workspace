@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "../.github/workflows"
+		},
+		{
+			"path": "docs"
 		}
 	],
 	"settings": {
