@@ -92,12 +92,12 @@ impl ClockService {
         let event = db::clock_out_at(pool, user_id, clock_out_at)
             .await
             .map_err(|e| {
-            tracing::error!("Database error clocking out: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                json!({"error": "Failed to clock out"}),
-            )
-        })?;
+                tracing::error!("Database error clocking out: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({"error": "Failed to clock out"}),
+                )
+            })?;
 
         event.ok_or((
             StatusCode::BAD_REQUEST,
