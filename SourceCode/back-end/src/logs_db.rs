@@ -1185,11 +1185,7 @@ fn parse_period_to_date(period: &str) -> Option<chrono::NaiveDate> {
     let parts: Vec<&str> = period.split('/').collect();
 
     fn normalize_year(year: i32) -> i32 {
-        if year < 100 {
-            2000 + year
-        } else {
-            year
-        }
+        if year < 100 { 2000 + year } else { year }
     }
 
     match parts.len() {
@@ -1311,14 +1307,14 @@ pub fn get_missed_periods(
                 .clone()
                 .unwrap_or_else(|| vec![0, 1, 2, 3, 4, 5, 6]);
 
-             let start_date = last_period
-                 .map(|d| d + chrono::Duration::days(1))
-                 .unwrap_or_else(|| {
-                     start_from.unwrap_or_else(|| {
-                         tracing::warn!("Failed to determine start date for missed periods");
-                         today
-                     })
-                 });
+            let start_date = last_period
+                .map(|d| d + chrono::Duration::days(1))
+                .unwrap_or_else(|| {
+                    start_from.unwrap_or_else(|| {
+                        tracing::warn!("Failed to determine start date for missed periods");
+                        today
+                    })
+                });
 
             let mut current = start_date;
             while current <= today {
@@ -1366,84 +1362,102 @@ pub fn get_missed_periods(
         Frequency::Monthly => {
             let target_day = schedule.day_of_month.unwrap_or(1);
 
-             let start_date = last_period
-                 .map(|d| {
-                     if d.month() == 12 {
-                         chrono::NaiveDate::from_ymd_opt(d.year() + 1, 1, 1)
-                             .unwrap_or_else(|| {
-                                 tracing::warn!("Invalid date calculated for monthly frequency: {}-01-01", d.year() + 1);
-                                 today
-                             })
-                     } else {
-                         chrono::NaiveDate::from_ymd_opt(d.year(), d.month() + 1, 1)
-                             .unwrap_or_else(|| {
-                                 tracing::warn!("Invalid date calculated for monthly frequency: {}-{}-01", d.year(), d.month() + 1);
-                                 today
-                             })
-                     }
-                 })
-                 .unwrap_or_else(|| {
-                     start_from.unwrap_or_else(|| {
-                         tracing::warn!("Failed to determine start date for missed periods");
-                         today
-                     })
-                 });
+            let start_date = last_period
+                .map(|d| {
+                    if d.month() == 12 {
+                        chrono::NaiveDate::from_ymd_opt(d.year() + 1, 1, 1).unwrap_or_else(|| {
+                            tracing::warn!(
+                                "Invalid date calculated for monthly frequency: {}-01-01",
+                                d.year() + 1
+                            );
+                            today
+                        })
+                    } else {
+                        chrono::NaiveDate::from_ymd_opt(d.year(), d.month() + 1, 1).unwrap_or_else(
+                            || {
+                                tracing::warn!(
+                                    "Invalid date calculated for monthly frequency: {}-{}-01",
+                                    d.year(),
+                                    d.month() + 1
+                                );
+                                today
+                            },
+                        )
+                    }
+                })
+                .unwrap_or_else(|| {
+                    start_from.unwrap_or_else(|| {
+                        tracing::warn!("Failed to determine start date for missed periods");
+                        today
+                    })
+                });
 
-             let mut current = start_date;
-             let mut current_year = current.year();
-             let mut current_month = current.month();
+            let mut current = start_date;
+            let mut current_year = current.year();
+            let mut current_month = current.month();
 
-             while current <= today {
-                 let days_in_month: u32 = if current_month == 12 {
-                     match chrono::NaiveDate::from_ymd_opt(current_year + 1, 1, 1) {
-                         Some(date) => date.pred_opt().map(|d| d.day()).unwrap_or(0),
-                         None => {
-                             tracing::warn!("Invalid date calculated for monthly frequency: {}-12-31", current_year + 1);
-                             break;
-                         }
-                     }
-                 } else {
-                     match chrono::NaiveDate::from_ymd_opt(current_year, current_month + 1, 1) {
-                         Some(date) => date.pred_opt().map(|d| d.day()).unwrap_or(0),
-                         None => {
-                             tracing::warn!("Invalid date calculated for monthly frequency: {}-{}-01", current_year, current_month + 1);
-                             break;
-                         }
-                     }
-                 };
+            while current <= today {
+                let days_in_month: u32 = if current_month == 12 {
+                    match chrono::NaiveDate::from_ymd_opt(current_year + 1, 1, 1) {
+                        Some(date) => date.pred_opt().map(|d| d.day()).unwrap_or(0),
+                        None => {
+                            tracing::warn!(
+                                "Invalid date calculated for monthly frequency: {}-12-31",
+                                current_year + 1
+                            );
+                            break;
+                        }
+                    }
+                } else {
+                    match chrono::NaiveDate::from_ymd_opt(current_year, current_month + 1, 1) {
+                        Some(date) => date.pred_opt().map(|d| d.day()).unwrap_or(0),
+                        None => {
+                            tracing::warn!(
+                                "Invalid date calculated for monthly frequency: {}-{}-01",
+                                current_year,
+                                current_month + 1
+                            );
+                            break;
+                        }
+                    }
+                };
 
-                 let day: u32 = days_in_month.min(u32::from(target_day));
-                 let check_date = chrono::NaiveDate::from_ymd_opt(current_year, current_month, day);
+                let day: u32 = days_in_month.min(u32::from(target_day));
+                let check_date = chrono::NaiveDate::from_ymd_opt(current_year, current_month, day);
 
-                 if let Some(d) = check_date
-                     && d <= today
-                 {
-                     missed.push(format_period_for_monthly(d));
-                 }
+                if let Some(d) = check_date
+                    && d <= today
+                {
+                    missed.push(format_period_for_monthly(d));
+                }
 
-                 if current_month == 12 {
-                     current_month = 1;
-                     current_year += 1;
-                 } else {
-                     current_month += 1;
-                 }
-                 current = match chrono::NaiveDate::from_ymd_opt(current_year, current_month, 1) {
-                     Some(date) => date,
-                     None => {
-                         tracing::warn!("Invalid date calculated for monthly frequency: {}-{}-01", current_year, current_month);
-                         break;
-                     }
-                 };
-             }
+                if current_month == 12 {
+                    current_month = 1;
+                    current_year += 1;
+                } else {
+                    current_month += 1;
+                }
+                current = match chrono::NaiveDate::from_ymd_opt(current_year, current_month, 1) {
+                    Some(date) => date,
+                    None => {
+                        tracing::warn!(
+                            "Invalid date calculated for monthly frequency: {}-{}-01",
+                            current_year,
+                            current_month
+                        );
+                        break;
+                    }
+                };
+            }
         }
         Frequency::Yearly => {
             let target_month = schedule.month_of_year.unwrap_or(1);
             let target_day = schedule.day_of_month.unwrap_or(1);
 
-             let last_year = last_period.map(|d| d.year()).unwrap_or_else(|| {
-                 tracing::warn!("Failed to determine last year for yearly frequency");
-                 today.year() - 1
-             });
+            let last_year = last_period.map(|d| d.year()).unwrap_or_else(|| {
+                tracing::warn!("Failed to determine last year for yearly frequency");
+                today.year() - 1
+            });
 
             let mut current_year = last_year + 1;
             while current_year <= today.year() {
@@ -1544,36 +1558,38 @@ pub fn format_period_for_frequency(frequency: &Frequency) -> String {
 
     match frequency {
         Frequency::Daily => now.format("%d/%m/%Y").to_string(),
-         Frequency::Weekly => {
-             let days_since_monday = now.weekday().num_days_from_monday();
-             let week_start = match (now.date_naive()
-                 - chrono::Duration::days(i64::from(days_since_monday)))
-                 .and_hms_opt(0, 0, 0) {
-                 Some(dt) => dt.and_utc(),
-                 None => {
-                     tracing::warn!("Error finding week start date: {now}");
-                     // Fall back to a simple date format
-                     return now.format("%d/%m/%Y").to_string();
-                 }
-             };
-             let week_end = match (week_start.date_naive() + chrono::Duration::days(6))
-                 .and_hms_opt(23, 59, 59) {
-                 Some(dt) => dt.and_utc(),
-                 None => {
-                     tracing::warn!("Error finding week end date: {now}");
-                     // Fall back to a simple date format
-                     return now.format("%d/%m/%Y").to_string();
-                 }
-             };
+        Frequency::Weekly => {
+            let days_since_monday = now.weekday().num_days_from_monday();
+            let week_start = match (now.date_naive()
+                - chrono::Duration::days(i64::from(days_since_monday)))
+            .and_hms_opt(0, 0, 0)
+            {
+                Some(dt) => dt.and_utc(),
+                None => {
+                    tracing::warn!("Error finding week start date: {now}");
+                    // Fall back to a simple date format
+                    return now.format("%d/%m/%Y").to_string();
+                }
+            };
+            let week_end = match (week_start.date_naive() + chrono::Duration::days(6))
+                .and_hms_opt(23, 59, 59)
+            {
+                Some(dt) => dt.and_utc(),
+                None => {
+                    tracing::warn!("Error finding week end date: {now}");
+                    // Fall back to a simple date format
+                    return now.format("%d/%m/%Y").to_string();
+                }
+            };
 
-             format!(
-                 "{}-{}/{}/{}",
-                 week_start.day(),
-                 week_end.day(),
-                 week_end.month(),
-                 week_end.format("%Y")
-             )
-         }
+            format!(
+                "{}-{}/{}/{}",
+                week_start.day(),
+                week_end.day(),
+                week_end.month(),
+                week_end.format("%Y")
+            )
+        }
         Frequency::Monthly => now.format("%m/%Y").to_string(),
         Frequency::Yearly => now.format("%Y").to_string(),
     }
