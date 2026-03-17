@@ -1,10 +1,21 @@
 use crate::db;
 use axum::http::StatusCode;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde_json::json;
 use sqlx::PgPool;
 
 pub struct ClockService;
+
+const MAX_CLOCK_DURATION_HOURS: i64 = 24;
+
+fn capped_clock_out_time(clock_in: DateTime<Utc>, now: DateTime<Utc>) -> DateTime<Utc> {
+    let max_clock_out = clock_in + Duration::hours(MAX_CLOCK_DURATION_HOURS);
+    if now > max_clock_out {
+        max_clock_out
+    } else {
+        now
+    }
+}
 
 impl ClockService {
     /// Clocks in the user. Returns error if already clocked in.
@@ -53,13 +64,40 @@ impl ClockService {
         pool: &PgPool,
         user_id: &str,
     ) -> Result<db::ClockEvent, (StatusCode, serde_json::Value)> {
-        let event = db::clock_out(pool, user_id).await.map_err(|e| {
-            tracing::error!("Database error clocking out: {:?}", e);
+        let current = db::get_clock_status(pool, user_id).await.map_err(|e| {
+            tracing::error!("Database error checking clock status: {:?}", e);
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
-                json!({"error": "Failed to clock out"}),
+                json!({"error": "Database error"}),
             )
         })?;
+
+        let Some(current_event) = current else {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                json!({"error": "You are not currently clocked in"}),
+            ));
+        };
+
+        if !current_event.is_clocked_in() {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                json!({"error": "You are not currently clocked in"}),
+            ));
+        }
+
+        let now = Utc::now();
+        let clock_out_at = capped_clock_out_time(current_event.clock_in, now);
+
+        let event = db::clock_out_at(pool, user_id, clock_out_at)
+            .await
+            .map_err(|e| {
+                tracing::error!("Database error clocking out: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({"error": "Failed to clock out"}),
+                )
+            })?;
 
         event.ok_or((
             StatusCode::BAD_REQUEST,
@@ -114,5 +152,26 @@ impl ClockService {
                 )
             })?;
         Ok(events)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn caps_to_exactly_24_hours_when_over_limit() {
+        let clock_in = Utc::now() - Duration::hours(24);
+        let now = clock_in + Duration::hours(26);
+        let capped = capped_clock_out_time(clock_in, now);
+        assert_eq!(capped, clock_in + Duration::hours(24));
+    }
+
+    #[test]
+    fn keeps_current_time_when_within_limit() {
+        let now = Utc::now();
+        let clock_in = now - Duration::hours(23);
+        let capped = capped_clock_out_time(clock_in, now);
+        assert_eq!(capped, now);
     }
 }

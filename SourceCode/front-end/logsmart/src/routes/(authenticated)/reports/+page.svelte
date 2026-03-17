@@ -88,7 +88,7 @@
 	let pickerView = $state<'day' | 'month' | 'year'>('day');
 	let slideDirection = $state<'left' | 'right'>('left');
 
-	let calendarDate = new SvelteDate();
+	let calendarDate = $state(new SvelteDate());
 	let activePickerIsFrom = $state(true);
 
 	let reportGenerated = $state(false);
@@ -466,8 +466,31 @@
 				return '';
 			}
 
-			// Field data is keyed by array index
-			const fieldValue = (data as Record<string | number, unknown>)[fieldIndex];
+			const dataRecord = data as Record<string | number, unknown>;
+			const fieldRecord = field as unknown as Record<string, unknown>;
+			const propsRecord = (field.props ?? {}) as Record<string, unknown>;
+
+			// First try index-keyed data, then fall back to common field identifiers.
+			let fieldValue = dataRecord[fieldIndex];
+			if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
+				const possibleIds = [
+					fieldRecord.field_id,
+					fieldRecord.id,
+					fieldRecord.name,
+					propsRecord.name,
+					propsRecord.id,
+					`field_${fieldIndex}`,
+					fieldIndex.toString()
+				].filter(Boolean) as (string | number)[];
+
+				for (const id of possibleIds) {
+					const value = dataRecord[id];
+					if (value !== undefined && value !== null && value !== '') {
+						fieldValue = value;
+						break;
+					}
+				}
+			}
 
 			if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
 				return '';
