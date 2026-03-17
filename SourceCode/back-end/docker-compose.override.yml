@@ -45,7 +45,7 @@ services:
   backend:
     networks:
       - logsmart-net
-    image: rust:latest
+    image: nullstring1/rust
     volumes:
       - .:/app
       - cargo-cache:/usr/local/cargo/registry
