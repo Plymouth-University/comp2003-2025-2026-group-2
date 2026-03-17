@@ -1,0 +1,62 @@
+========================================
+MEETING MINUTES
+========================================
+
+PROJECT: LogSmart
+COURSE:  COMP2003
+DATE:    16-Mar-2026
+TIME:    11:00 AM - 11:15 AM
+LOCATION: SMB 105
+
+---
+ATTENDEES
+---
+* Lilla Radek
+* Ben Daffada
+* Daniel Kern
+
+---
+ABSENTEES
+---
+* NONE
+
+-----------------------------
+DISCUSSION & DECISIONS
+-----------------------------
+
+1. Final Development Push
+   - Reviewed the latest round of bug fixes and backend recompilations.
+   - The team is making the final push to complete the remaining UI pages (Company Settings, Mobile UI) and finalize the Reports/Attendance features.
+
+2. Presentation & Submission Prep
+   - Transitioning heavily into deliverables: Pitch slides, the final Report Document, and final bug crushing before the absolute deadline.
+   - DECISION: All team members will contribute to their respective sections of the pitch slides and report document this week.
+
+-----------------------------
+PAST ITEMS (WORKED ON / COMPLETED)
+-----------------------------
+
+* [TASK: Reports & Attendance]
+  - OWNER: Ben (Finished attendance and reports implementation)
+
+* [TASK: Backend & Roles]
+  - OWNER: Daniel (Recompiled backend, updated user role logic, and completed a large batch of bug fixes)
+
+* [TASK: UX Study & Settings]
+  - OWNER: Lilla (Conducted study, implemented fixes based on findings, and started the Company Settings page)
+
+-----------------------------
+NEW ACTION ITEMS (TO DO NOW)
+-----------------------------
+
+* [TASK 1: Mobile UI & Scheduling]
+  - OWNER: Daniel (Fix bugs, implement scheduling feature, build Mobile UI, and create pitch slides)
+
+* [TASK 2: Finalize Reports & Documentation]
+  - OWNER: Ben (Finish remaining Reports logic, general bug fixes, write the report document, and create pitch slides)
+
+* [TASK 3: Company Settings & Polish]
+  - OWNER: Lilla (Complete the Company Settings page, general bug fixes, contribute to the report, and create pitch slides)
+
+* [TASK 4: UAT Testing]
+  - OWNER: ALL
