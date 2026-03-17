@@ -1925,6 +1925,37 @@ pub async fn clock_out(pool: &PgPool, user_id: &str) -> Result<Option<ClockEvent
     Ok(event)
 }
 
+/// Clocks out a user at a specific timestamp by updating the most recent open clock-in event.
+/// This is used to cap long-running sessions (e.g., max 24 hours) at the service layer.
+///
+/// # Errors
+/// Returns an error if the database update fails.
+pub async fn clock_out_at(
+    pool: &PgPool,
+    user_id: &str,
+    clock_out_at: chrono::DateTime<chrono::Utc>,
+) -> Result<Option<ClockEvent>> {
+    let event = sqlx::query_as::<_, ClockEvent>(
+        r"
+        UPDATE clock_events
+        SET clock_out = $2
+        WHERE id = (
+            SELECT id FROM clock_events
+            WHERE user_id = $1 AND clock_out IS NULL
+            ORDER BY clock_in DESC
+            LIMIT 1
+        )
+        RETURNING id, user_id, company_id, clock_in, clock_out, created_at
+        ",
+    )
+    .bind(user_id)
+    .bind(clock_out_at)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(event)
+}
+
 /// Gets the current clock status for a user (latest event).
 ///
 /// # Errors
