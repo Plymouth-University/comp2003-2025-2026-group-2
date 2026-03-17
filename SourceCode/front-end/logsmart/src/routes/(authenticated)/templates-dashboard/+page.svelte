@@ -73,6 +73,12 @@
 		if (schedule.monthOfYear !== undefined) {
 			apiSchedule.month_of_year = schedule.monthOfYear;
 		}
+		if (schedule.availableFromTime !== undefined) {
+			apiSchedule.available_from_time = schedule.availableFromTime;
+		}
+		if (schedule.dueAtTime !== undefined) {
+			apiSchedule.due_at_time = schedule.dueAtTime;
+		}
 
 		return apiSchedule;
 	}

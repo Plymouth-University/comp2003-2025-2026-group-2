@@ -15,6 +15,7 @@ export const load = async ({
 	const token = cookies.get('ls-token');
 	const templateName = url.searchParams.get('template');
 	const entryId = url.searchParams.get('entry');
+	const period = url.searchParams.get('period');
 	const mode = url.searchParams.get('mode') || 'view';
 
 	if (!token) {
@@ -101,7 +102,8 @@ export const load = async ({
 					'Content-Type': 'application/json'
 				},
 				body: JSON.stringify({
-					template_name: templateName
+					template_name: templateName,
+					...(period && { period })
 				})
 			});
 

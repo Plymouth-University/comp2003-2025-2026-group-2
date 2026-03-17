@@ -2059,7 +2059,10 @@
 			"CreateLogEntryRequest": {
 				"type": "object",
 				"required": ["template_name"],
-				"properties": { "template_name": { "type": "string", "example": "Kitchen Daily Log" } }
+				"properties": {
+					"period": { "type": ["string", "null"], "example": "17/03/2026" },
+					"template_name": { "type": "string", "example": "Kitchen Daily Log" }
+				}
 			},
 			"CreateLogEntryResponse": {
 				"type": "object",
@@ -2099,8 +2102,11 @@
 			},
 			"DueFormInfo": {
 				"type": "object",
-				"required": ["template_name", "template_layout", "period"],
+				"required": ["template_name", "template_layout", "period", "availability_status"],
 				"properties": {
+					"availability_status": { "type": "string" },
+					"available_from": { "type": ["string", "null"] },
+					"due_at": { "type": ["string", "null"] },
 					"last_submitted": { "type": ["string", "null"] },
 					"period": { "type": "string" },
 					"status": { "type": ["string", "null"] },
@@ -2398,12 +2404,14 @@
 				"type": "object",
 				"required": ["frequency"],
 				"properties": {
+					"available_from_time": { "type": ["string", "null"] },
 					"day_of_month": { "type": ["integer", "null"], "format": "int32", "minimum": 0 },
 					"day_of_week": { "type": ["integer", "null"], "format": "int32", "minimum": 0 },
 					"days_of_week": {
 						"type": ["array", "null"],
 						"items": { "type": "integer", "format": "int32", "minimum": 0 }
 					},
+					"due_at_time": { "type": ["string", "null"] },
 					"frequency": { "$ref": "#/components/schemas/Frequency" },
 					"month_of_year": { "type": ["integer", "null"], "format": "int32", "minimum": 0 }
 				}

@@ -961,6 +961,8 @@ export interface components {
 			name: string;
 		};
 		CreateLogEntryRequest: {
+			/** @example 17/03/2026 */
+			period?: string | null;
 			/** @example Kitchen Daily Log */
 			template_name: string;
 		};
@@ -991,6 +993,9 @@ export interface components {
 			message: string;
 		};
 		DueFormInfo: {
+			availability_status: string;
+			available_from?: string | null;
+			due_at?: string | null;
 			last_submitted?: string | null;
 			period: string;
 			status?: string | null;
@@ -1169,11 +1174,13 @@ export interface components {
 			version: number;
 		};
 		Schedule: {
+			available_from_time?: string | null;
 			/** Format: int32 */
 			day_of_month?: number | null;
 			/** Format: int32 */
 			day_of_week?: number | null;
 			days_of_week?: number[] | null;
+			due_at_time?: string | null;
 			frequency: components['schemas']['Frequency'];
 			/** Format: int32 */
 			month_of_year?: number | null;

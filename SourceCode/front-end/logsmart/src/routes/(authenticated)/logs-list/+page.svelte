@@ -7,7 +7,29 @@
 	import { SvelteDate } from 'svelte/reactivity';
 
 	type LogEntry = components['schemas']['LogEntryResponse'];
-	type DueFormInfo = components['schemas']['DueFormInfo'];
+	type DueForm = components['schemas']['DueFormInfo'];
+
+	function parsePeriodToDate(period: string): Date | null {
+		const parts = period.split(/[-/]/);
+		if (parts.length === 1) {
+			const year = parseInt(parts[0], 10);
+			const date = new Date(year, 0, 1);
+			return isNaN(date.getTime()) ? null : date;
+		} else if (parts.length === 2) {
+			const month = parseInt(parts[0], 10);
+			const year = parseInt(parts[1], 10);
+			const date = new Date(year, month - 1, 1);
+			return isNaN(date.getTime()) ? null : date;
+		} else if (parts.length === 3) {
+			const isWeekly = parts[0].includes('-');
+			const day = isWeekly ? parseInt(parts[0].split('-')[1], 10) : parseInt(parts[0], 10);
+			const month = parseInt(parts[1], 10);
+			const year = parseInt(parts[2], 10);
+			const date = new Date(year, month - 1, day);
+			return isNaN(date.getTime()) ? null : date;
+		}
+		return null;
+	}
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -20,21 +42,26 @@
 	const sortedPastLogs = $derived(
 		data.pastLogs
 			? [...data.pastLogs].sort((a, b) => {
-					const dateA = new SvelteDate(a.period);
-					const dateB = new SvelteDate(b.period);
+					const dateA = parsePeriodToDate(a.period);
+					const dateB = parsePeriodToDate(b.period);
+					if (!dateA || !dateB) return 0;
 					return dateB.getTime() - dateA.getTime();
 				})
 			: []
 	);
 
-	const dueTodayTemplateNames = $derived(
-		new Set(data.dueToday?.map((form: DueFormInfo) => form.template_name) || [])
+	const dueTodayPeriods = $derived(
+		new Set(
+			(data.dueToday as DueForm[] | undefined)?.map(
+				(form: DueForm) => `${form.template_name}|${form.period}`
+			) || []
+		)
 	);
 
 	const sortedAllLogs = $derived(
 		data.allLogs
 			? [...data.allLogs]
-					.filter((log) => !dueTodayTemplateNames.has(log.template_name))
+					.filter((log) => !dueTodayPeriods.has(`${log.template_name}|${log.period}`))
 					.sort((a, b) => {
 						const dateA = new SvelteDate(a.period);
 						const dateB = new SvelteDate(b.period);
@@ -99,7 +126,11 @@
 			}
 		}
 
-		window.location.href = `/log-template?template=${encodeURIComponent(templateName)}`;
+		let url = `/log-template?template=${encodeURIComponent(templateName)}`;
+		if (period) {
+			url += `&period=${encodeURIComponent(period)}`;
+		}
+		window.location.href = url;
 	}
 
 	function handleViewLog(entryId: string) {

@@ -1,5 +1,6 @@
 use anyhow::Result;
 use chrono::Datelike;
+use chrono::Timelike;
 use futures_util::TryStreamExt;
 use mongodb::bson::Uuid;
 use schemars::JsonSchema;
@@ -76,10 +77,14 @@ pub enum Frequency {
 #[derive(Debug, serde::Deserialize, serde::Serialize, ToSchema)]
 pub struct Schedule {
     pub frequency: Frequency,
-    pub days_of_week: Option<Vec<u8>>, // for daily schedule (one per day)
-    pub day_of_week: Option<u8>,       // for weekly schedule (one per week)
-    pub day_of_month: Option<u8>,      // for monthly schedule (one per month)
-    pub month_of_year: Option<u8>,     // for yearly schedule (one per year)
+    pub days_of_week: Option<Vec<u8>>,
+    pub day_of_week: Option<u8>,
+    pub day_of_month: Option<u8>,
+    pub month_of_year: Option<u8>,
+    #[serde(default)]
+    pub available_from_time: Option<String>,
+    #[serde(default)]
+    pub due_at_time: Option<String>,
 }
 
 pub type TemplateLayout = Vec<TemplateField>;
@@ -836,6 +841,57 @@ pub async fn has_submitted_entry_for_current_period(
     Ok(result.is_some())
 }
 
+/// Checks if any log entry (draft or submitted) exists for a specific period.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+pub async fn has_entry_for_period(
+    client: &mongodb::Client,
+    company_id: &str,
+    template_name: &str,
+    period: &str,
+) -> Result<bool> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "company_id": company_id,
+        "template_name": template_name,
+        "period": period,
+    };
+
+    let result = collection.find_one(filter).await?;
+    Ok(result.is_some())
+}
+
+/// Returns periods that have entries, for batch checking.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+pub async fn get_periods_with_entries(
+    client: &mongodb::Client,
+    company_id: &str,
+    template_name: &str,
+    periods: &[String],
+) -> Result<std::collections::HashSet<String>> {
+    if periods.is_empty() {
+        return Ok(std::collections::HashSet::new());
+    }
+
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "company_id": company_id,
+        "template_name": template_name,
+        "period": { "$in": periods }
+    };
+
+    let cursor = collection.find(filter).await?;
+    let entries: Vec<LogEntry> = cursor.try_collect().await?;
+    Ok(entries.into_iter().map(|e| e.period).collect())
+}
+
 /// Retrieves a draft log entry for the current period and template.
 ///
 /// # Errors
@@ -1032,6 +1088,139 @@ pub async fn delete_log_entry(client: &mongodb::Client, entry_id: &str) -> Resul
     Ok(())
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AvailabilityStatus {
+    NotAvailable,
+    Available,
+    Overdue,
+}
+
+impl AvailabilityStatus {
+    #[must_use]
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            AvailabilityStatus::NotAvailable => "not_available",
+            AvailabilityStatus::Available => "available",
+            AvailabilityStatus::Overdue => "overdue",
+        }
+    }
+}
+
+#[must_use]
+pub fn parse_time_string(time_str: &str) -> Option<(u32, u32)> {
+    let parts: Vec<&str> = time_str.split(':').collect();
+    if parts.len() != 2 {
+        return None;
+    }
+    let hour: u32 = parts[0].parse().ok()?;
+    let minute: u32 = parts[1].parse().ok()?;
+    if hour > 23 || minute > 59 {
+        return None;
+    }
+    Some((hour, minute))
+}
+
+#[must_use]
+pub fn get_availability_status_for_period(
+    schedule: &Schedule,
+    period: &str,
+    current_datetime: chrono::DateTime<chrono::Local>,
+) -> AvailabilityStatus {
+    let target_date = parse_period_to_date(period);
+    if let Some(target) = target_date {
+        let today = current_datetime.date_naive();
+
+        if target < today {
+            return AvailabilityStatus::Overdue;
+        }
+        if target > today {
+            return AvailabilityStatus::NotAvailable;
+        }
+
+        let current_time = current_datetime.hour() * 60 + current_datetime.minute();
+
+        match schedule.frequency {
+            Frequency::Daily => {
+                if let (Some(from_str), Some(due_str)) =
+                    (&schedule.available_from_time, &schedule.due_at_time)
+                    && let (Some((from_h, from_m)), Some((due_h, due_m))) =
+                        (parse_time_string(from_str), parse_time_string(due_str))
+                {
+                    let from_mins = from_h * 60 + from_m;
+                    let due_mins = due_h * 60 + due_m;
+
+                    if current_time < from_mins {
+                        return AvailabilityStatus::NotAvailable;
+                    }
+                    if current_time >= due_mins {
+                        return AvailabilityStatus::Overdue;
+                    }
+                    return AvailabilityStatus::Available;
+                }
+
+                let default_from = 8 * 60;
+                let default_due = 17 * 60;
+                if current_time < default_from {
+                    return AvailabilityStatus::NotAvailable;
+                }
+                if current_time >= default_due {
+                    return AvailabilityStatus::Overdue;
+                }
+                AvailabilityStatus::Available
+            }
+            Frequency::Weekly | Frequency::Monthly | Frequency::Yearly => {
+                if current_time >= 23 * 60 + 59 {
+                    return AvailabilityStatus::Overdue;
+                }
+                AvailabilityStatus::Available
+            }
+        }
+    } else {
+        AvailabilityStatus::Overdue
+    }
+}
+
+#[must_use]
+fn parse_period_to_date(period: &str) -> Option<chrono::NaiveDate> {
+    let parts: Vec<&str> = period.split('/').collect();
+
+    fn normalize_year(year: i32) -> i32 {
+        if year < 100 {
+            2000 + year
+        } else {
+            year
+        }
+    }
+
+    match parts.len() {
+        1 => {
+            let year: i32 = parts[0].parse().ok()?;
+            chrono::NaiveDate::from_ymd_opt(normalize_year(year), 1, 1)
+        }
+        2 => {
+            let month: u32 = parts[0].parse().ok()?;
+            let year: i32 = parts[1].parse().ok()?;
+            chrono::NaiveDate::from_ymd_opt(normalize_year(year), month, 1)
+        }
+        3 => {
+            if parts[0].contains('-') {
+                let week_parts: Vec<&str> = parts[0].split('-').collect();
+                let _start_day: u32 = week_parts[0].parse().ok()?;
+                let end_day: u32 = week_parts[1].parse().ok()?;
+                let month: u32 = parts[1].parse().ok()?;
+                let year: i32 = parts[2].parse().ok()?;
+                chrono::NaiveDate::from_ymd_opt(normalize_year(year), month, end_day)
+            } else {
+                let day: u32 = parts[0].parse().ok()?;
+                let month: u32 = parts[1].parse().ok()?;
+                let year: i32 = parts[2].parse().ok()?;
+                chrono::NaiveDate::from_ymd_opt(normalize_year(year), month, day)
+            }
+        }
+        _ => None,
+    }
+}
+
 #[must_use]
 pub fn is_form_due_today(schedule: &Schedule) -> bool {
     let today = chrono::Local::now();
@@ -1098,6 +1287,253 @@ pub fn is_form_due_today(schedule: &Schedule) -> bool {
     }
 }
 
+#[must_use]
+pub fn get_missed_periods(
+    schedule: &Schedule,
+    last_submitted_period: Option<&str>,
+    created_at: Option<&str>,
+) -> Vec<String> {
+    let today = chrono::Utc::now().date_naive();
+    let last_period = last_submitted_period.and_then(parse_period_to_date);
+
+    let start_from = created_at.and_then(|c| {
+        chrono::DateTime::parse_from_rfc3339(c)
+            .ok()
+            .map(|dt| dt.date_naive())
+    });
+
+    let mut missed = Vec::new();
+
+    match schedule.frequency {
+        Frequency::Daily => {
+            let days_of_week = schedule
+                .days_of_week
+                .clone()
+                .unwrap_or_else(|| vec![0, 1, 2, 3, 4, 5, 6]);
+
+             let start_date = last_period
+                 .map(|d| d + chrono::Duration::days(1))
+                 .unwrap_or_else(|| {
+                     start_from.unwrap_or_else(|| {
+                         tracing::warn!("Failed to determine start date for missed periods");
+                         today
+                     })
+                 });
+
+            let mut current = start_date;
+            while current <= today {
+                let day_num = match current.weekday() {
+                    chrono::Weekday::Mon => 0,
+                    chrono::Weekday::Tue => 1,
+                    chrono::Weekday::Wed => 2,
+                    chrono::Weekday::Thu => 3,
+                    chrono::Weekday::Fri => 4,
+                    chrono::Weekday::Sat => 5,
+                    chrono::Weekday::Sun => 6,
+                };
+
+                if days_of_week.contains(&day_num) {
+                    missed.push(format_period_for_date(current));
+                }
+                current += chrono::Duration::days(1);
+            }
+        }
+        Frequency::Weekly => {
+            let target_day = schedule.day_of_week.unwrap_or(0);
+
+            let start_date = last_period
+                .map(|d| d + chrono::Duration::weeks(1))
+                .unwrap_or_else(|| start_from.unwrap_or(today));
+
+            let mut current = start_date;
+            while current <= today {
+                let day_num = match current.weekday() {
+                    chrono::Weekday::Mon => 0,
+                    chrono::Weekday::Tue => 1,
+                    chrono::Weekday::Wed => 2,
+                    chrono::Weekday::Thu => 3,
+                    chrono::Weekday::Fri => 4,
+                    chrono::Weekday::Sat => 5,
+                    chrono::Weekday::Sun => 6,
+                };
+
+                if day_num == target_day {
+                    missed.push(format_period_for_weekly(current));
+                }
+                current += chrono::Duration::days(1);
+            }
+        }
+        Frequency::Monthly => {
+            let target_day = schedule.day_of_month.unwrap_or(1);
+
+             let start_date = last_period
+                 .map(|d| {
+                     if d.month() == 12 {
+                         chrono::NaiveDate::from_ymd_opt(d.year() + 1, 1, 1)
+                             .unwrap_or_else(|| {
+                                 tracing::warn!("Invalid date calculated for monthly frequency: {}-01-01", d.year() + 1);
+                                 today
+                             })
+                     } else {
+                         chrono::NaiveDate::from_ymd_opt(d.year(), d.month() + 1, 1)
+                             .unwrap_or_else(|| {
+                                 tracing::warn!("Invalid date calculated for monthly frequency: {}-{}-01", d.year(), d.month() + 1);
+                                 today
+                             })
+                     }
+                 })
+                 .unwrap_or_else(|| {
+                     start_from.unwrap_or_else(|| {
+                         tracing::warn!("Failed to determine start date for missed periods");
+                         today
+                     })
+                 });
+
+             let mut current = start_date;
+             let mut current_year = current.year();
+             let mut current_month = current.month();
+
+             while current <= today {
+                 let days_in_month: u32 = if current_month == 12 {
+                     match chrono::NaiveDate::from_ymd_opt(current_year + 1, 1, 1) {
+                         Some(date) => date.pred_opt().map(|d| d.day()).unwrap_or(0),
+                         None => {
+                             tracing::warn!("Invalid date calculated for monthly frequency: {}-12-31", current_year + 1);
+                             break;
+                         }
+                     }
+                 } else {
+                     match chrono::NaiveDate::from_ymd_opt(current_year, current_month + 1, 1) {
+                         Some(date) => date.pred_opt().map(|d| d.day()).unwrap_or(0),
+                         None => {
+                             tracing::warn!("Invalid date calculated for monthly frequency: {}-{}-01", current_year, current_month + 1);
+                             break;
+                         }
+                     }
+                 };
+
+                 let day: u32 = days_in_month.min(u32::from(target_day));
+                 let check_date = chrono::NaiveDate::from_ymd_opt(current_year, current_month, day);
+
+                 if let Some(d) = check_date
+                     && d <= today
+                 {
+                     missed.push(format_period_for_monthly(d));
+                 }
+
+                 if current_month == 12 {
+                     current_month = 1;
+                     current_year += 1;
+                 } else {
+                     current_month += 1;
+                 }
+                 current = match chrono::NaiveDate::from_ymd_opt(current_year, current_month, 1) {
+                     Some(date) => date,
+                     None => {
+                         tracing::warn!("Invalid date calculated for monthly frequency: {}-{}-01", current_year, current_month);
+                         break;
+                     }
+                 };
+             }
+        }
+        Frequency::Yearly => {
+            let target_month = schedule.month_of_year.unwrap_or(1);
+            let target_day = schedule.day_of_month.unwrap_or(1);
+
+             let last_year = last_period.map(|d| d.year()).unwrap_or_else(|| {
+                 tracing::warn!("Failed to determine last year for yearly frequency");
+                 today.year() - 1
+             });
+
+            let mut current_year = last_year + 1;
+            while current_year <= today.year() {
+                let check_date = chrono::NaiveDate::from_ymd_opt(
+                    current_year,
+                    u32::from(target_month),
+                    u32::from(target_day),
+                );
+
+                if let Some(d) = check_date
+                    && d <= today
+                {
+                    missed.push(d.format("%Y").to_string());
+                }
+                current_year += 1;
+            }
+        }
+    }
+
+    missed
+}
+
+#[must_use]
+fn format_period_for_date(date: chrono::NaiveDate) -> String {
+    format!("{:02}/{:02}/{:04}", date.day(), date.month(), date.year())
+}
+
+#[must_use]
+fn format_period_for_weekly(date: chrono::NaiveDate) -> String {
+    let days_since_monday = date.weekday().num_days_from_monday();
+    let week_start = date - chrono::Duration::days(i64::from(days_since_monday));
+    let week_end = week_start + chrono::Duration::days(6);
+    format!(
+        "{}-{}/{}/{:04}",
+        week_start.day(),
+        week_end.day(),
+        week_end.month(),
+        week_end.year()
+    )
+}
+
+#[must_use]
+fn format_period_for_monthly(date: chrono::NaiveDate) -> String {
+    format!("{:02}/{:04}", date.month(), date.year())
+}
+
+#[must_use]
+pub fn get_available_from_datetime(schedule: &Schedule, period: &str) -> Option<String> {
+    let target_date = parse_period_to_date(period)?;
+
+    match schedule.frequency {
+        Frequency::Daily => {
+            if let Some(from_str) = &schedule.available_from_time
+                && let Some((hour, minute)) = parse_time_string(from_str)
+            {
+                let datetime = target_date.and_hms_opt(hour, minute, 0)?;
+                return Some(datetime.and_utc().to_rfc3339());
+            }
+            let datetime = target_date.and_hms_opt(8, 0, 0)?;
+            Some(datetime.and_utc().to_rfc3339())
+        }
+        Frequency::Weekly | Frequency::Monthly | Frequency::Yearly => {
+            let datetime = target_date.and_hms_opt(0, 0, 0)?;
+            Some(datetime.and_utc().to_rfc3339())
+        }
+    }
+}
+
+#[must_use]
+pub fn get_due_at_datetime(schedule: &Schedule, period: &str) -> Option<String> {
+    let target_date = parse_period_to_date(period)?;
+
+    match schedule.frequency {
+        Frequency::Daily => {
+            if let Some(due_str) = &schedule.due_at_time
+                && let Some((hour, minute)) = parse_time_string(due_str)
+            {
+                let datetime = target_date.and_hms_opt(hour, minute, 0)?;
+                return Some(datetime.and_utc().to_rfc3339());
+            }
+            let datetime = target_date.and_hms_opt(17, 0, 0)?;
+            Some(datetime.and_utc().to_rfc3339())
+        }
+        Frequency::Weekly | Frequency::Monthly | Frequency::Yearly => {
+            let datetime = target_date.and_hms_opt(23, 59, 0)?;
+            Some(datetime.and_utc().to_rfc3339())
+        }
+    }
+}
+
 /// Formats the period string for a given frequency.
 ///
 /// # Panics
@@ -1107,28 +1543,38 @@ pub fn format_period_for_frequency(frequency: &Frequency) -> String {
     let now = chrono::Utc::now();
 
     match frequency {
-        Frequency::Daily => now.format("%d/%m/%y").to_string(),
-        Frequency::Weekly => {
-            let days_since_monday = now.weekday().num_days_from_monday();
-            let week_start = (now.date_naive()
-                - chrono::Duration::days(i64::from(days_since_monday)))
-            .and_hms_opt(0, 0, 0)
-            .unwrap_or_else(|| panic!("Error finding week start date: {now}"))
-            .and_utc();
-            let week_end = (week_start.date_naive() + chrono::Duration::days(6))
-                .and_hms_opt(23, 59, 59)
-                .unwrap_or_else(|| panic!("Error finding week end date: {now}"))
-                .and_utc();
+        Frequency::Daily => now.format("%d/%m/%Y").to_string(),
+         Frequency::Weekly => {
+             let days_since_monday = now.weekday().num_days_from_monday();
+             let week_start = match (now.date_naive()
+                 - chrono::Duration::days(i64::from(days_since_monday)))
+                 .and_hms_opt(0, 0, 0) {
+                 Some(dt) => dt.and_utc(),
+                 None => {
+                     tracing::warn!("Error finding week start date: {now}");
+                     // Fall back to a simple date format
+                     return now.format("%d/%m/%Y").to_string();
+                 }
+             };
+             let week_end = match (week_start.date_naive() + chrono::Duration::days(6))
+                 .and_hms_opt(23, 59, 59) {
+                 Some(dt) => dt.and_utc(),
+                 None => {
+                     tracing::warn!("Error finding week end date: {now}");
+                     // Fall back to a simple date format
+                     return now.format("%d/%m/%Y").to_string();
+                 }
+             };
 
-            format!(
-                "{}-{}/{}/{}",
-                week_start.day(),
-                week_end.day(),
-                week_end.month(),
-                week_end.format("%y")
-            )
-        }
-        Frequency::Monthly => now.format("%m/%y").to_string(),
+             format!(
+                 "{}-{}/{}/{}",
+                 week_start.day(),
+                 week_end.day(),
+                 week_end.month(),
+                 week_end.format("%Y")
+             )
+         }
+        Frequency::Monthly => now.format("%m/%Y").to_string(),
         Frequency::Yearly => now.format("%Y").to_string(),
     }
 }

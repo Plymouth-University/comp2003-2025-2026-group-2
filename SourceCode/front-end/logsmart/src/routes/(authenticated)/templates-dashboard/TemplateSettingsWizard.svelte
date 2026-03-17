@@ -35,6 +35,8 @@
 	let dayOfMonth = $derived(template.schedule.dayOfMonth || 1);
 	let monthOfYear = $derived(template.schedule.monthOfYear || 1);
 	let customIntervalDays = $derived(template.schedule.customIntervalDays || 7);
+	let availableFromTime = $derived(template.schedule.availableFromTime || '08:00');
+	let dueAtTime = $derived(template.schedule.dueAtTime || '17:00');
 
 	function toggleDay(day: DayOfWeek) {
 		if (selectedDays.includes(day)) {
@@ -49,6 +51,8 @@
 
 		if (frequency === 'daily') {
 			schedule.daysOfWeek = selectedDays.length > 0 ? selectedDays : undefined;
+			schedule.availableFromTime = availableFromTime;
+			schedule.dueAtTime = dueAtTime;
 		} else if (frequency === 'weekly') {
 			schedule.dayOfWeek = weeklyDay;
 		} else if (frequency === 'monthly') {
@@ -151,6 +155,46 @@
 									{day.short}
 								</button>
 							{/each}
+						</div>
+					</div>
+
+					<div class="mt-4 space-y-4">
+						<p class="font-medium" style="color: var(--text-secondary);">
+							Set availability window:
+						</p>
+						<div class="grid grid-cols-2 gap-4">
+							<div>
+								<label
+									for="available-from"
+									class="mb-2 block text-sm font-medium"
+									style="color: var(--text-secondary);"
+								>
+									Available from
+								</label>
+								<input
+									id="available-from"
+									type="time"
+									bind:value={availableFromTime}
+									class="w-full rounded border-2 px-4 py-2"
+									style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+								/>
+							</div>
+							<div>
+								<label
+									for="due-at"
+									class="mb-2 block text-sm font-medium"
+									style="color: var(--text-secondary);"
+								>
+									Due at
+								</label>
+								<input
+									id="due-at"
+									type="time"
+									bind:value={dueAtTime}
+									class="w-full rounded border-2 px-4 py-2"
+									style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+								/>
+							</div>
 						</div>
 					</div>
 				{/if}
