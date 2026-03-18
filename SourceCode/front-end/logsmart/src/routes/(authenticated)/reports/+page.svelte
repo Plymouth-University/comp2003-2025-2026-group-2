@@ -2,6 +2,7 @@
 	import { api } from '$lib/api';
 	import type { components } from '$lib/api-types';
 	import { SvelteDate, SvelteMap, SvelteSet } from 'svelte/reactivity';
+	import { PDF_STYLES } from '$lib/utils/pdf-templates';
 
 	type LogEntry = components['schemas']['LogEntryResponse'];
 	type TemplateField = components['schemas']['TemplateField'];
@@ -957,30 +958,15 @@
 		const printWindow = window.open('', '_blank');
 
 		if (printWindow) {
-			printWindow.document.write(`
-				<html>
-				<head>
-					<title>Log Report</title>
-					<style>
-						body { font-family: Arial, sans-serif; margin: 20px; }
-						.header { border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px; }
-						.entry { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; page-break-inside: avoid; }
-						.status { padding: 3px 8px; border-radius: 3px; color: white; font-size: 12px; }
-						.submitted { background-color: #10B981; }
-						.draft { background-color: #F59E0B; }
-						.group-header { font-size: 18px; font-weight: bold; margin: 20px 0 10px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
-						.entry-data { background-color: #f5f5f5; padding: 10px; margin: 5px 0; border-radius: 3px; }
-						@media print {
-							body { margin: 0; }
-							.entry { page-break-inside: avoid; }
-						}
-					</style>
-				</head>
-				<body>
-					${reportContent}
-				</body>
-				</html>
-			`);
+			printWindow.document.write(`<html>
+<head>
+<title>Log Report</title>
+<style>${PDF_STYLES.report}</style>
+</head>
+<body>
+${reportContent}
+</body>
+</html>`);
 			printWindow.document.close();
 			printWindow.print();
 		}
@@ -1014,8 +1000,7 @@
 	}
 
 	function generateWordHTMLContent(): string {
-		return `
-<!DOCTYPE html>
+		return `<!DOCTYPE html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
 <head>
 	<meta charset="utf-8">
@@ -1023,35 +1008,7 @@
 	<meta name="Generator" content="Microsoft Word">
 	<meta name="Originator" content="Microsoft Word">
 	<title>Log Report</title>
-	<style>
-		body { 
-			font-family: Aptos, Verdana, 'Segoe UI', Arial, sans-serif; 
-			font-size: 11pt; 
-			margin: 1in; 
-			line-height: 1.4; 
-			text-align: left;
-		}
-		h1 { font-size: 18pt; font-weight: bold; text-align: center; margin-bottom: 14pt; }
-		h2 { font-size: 14pt; font-weight: bold; margin-top: 16pt; margin-bottom: 8pt; text-align: left; }
-		p { margin: 4pt 0; line-height: 1.4; text-align: left; }
-		.header { border-bottom: 2pt solid black; padding-bottom: 8pt; margin-bottom: 16pt; text-align: left; }
-		.entry-box { 
-			border: 1pt solid #999; 
-			margin: 14pt 0; 
-			padding: 12pt; 
-			text-align: left;
-			page-break-inside: avoid;
-			display: block;
-			orphans: 10;
-			widows: 10;
-		}
-		.entry-title { font-size: 12pt; font-weight: bold; margin-bottom: 4pt; }
-		.entry-id { font-size: 9pt; color: #666; margin-bottom: 4pt; }
-		.status-badge { padding: 3pt 8pt; color: white; font-size: 10pt; margin-bottom: 8pt; display: inline-block; }
-		.entry-data-box { background-color: #f5f5f5; padding: 10pt; margin: 8pt 0; border-left: 3pt solid #10B981; }
-		.field-row { margin: 6pt 0; line-height: 1.5; }
-		.field-label { font-weight: bold; color: #333; }
-	</style>
+	<style>${PDF_STYLES.word}</style>
 </head>
 <body>
 	<div class="header">
