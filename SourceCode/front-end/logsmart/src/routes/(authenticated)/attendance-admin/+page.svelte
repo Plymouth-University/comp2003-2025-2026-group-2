@@ -1,8 +1,12 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import type { components } from '$lib/api-types';
+	import { generateAttendancePdfHtml } from '$lib/utils/pdf-templates';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { SvelteMap, SvelteDate, SvelteURLSearchParams } from 'svelte/reactivity';
+
+	type ClockEvent = components['schemas']['CompanyClockEventResponse'];
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -77,7 +81,7 @@
 
 		// Filter by branch (client-side)
 		if (selectedBranchId && selectedBranchId.trim() !== '') {
-			events = events.filter((e) => {
+			events = events.filter((e: ClockEvent) => {
 				const userBranchId = userToBranchMap.get(e.user_id);
 				return userBranchId === selectedBranchId;
 			});
@@ -87,7 +91,7 @@
 		if (!searchQuery.trim()) return events;
 		const q = searchQuery.toLowerCase();
 		return events.filter(
-			(e) =>
+			(e: ClockEvent) =>
 				e.first_name.toLowerCase().includes(q) ||
 				e.last_name.toLowerCase().includes(q) ||
 				e.email.toLowerCase().includes(q)
@@ -284,41 +288,13 @@
 		const dateRange =
 			dateFrom || dateTo ? `${dateFrom || 'Start'} to ${dateTo || 'Present'}` : 'All time';
 
-		let html = `<!DOCTYPE html><html><head><title>Attendance Report - ${companyName}</title>
-<style>
-	body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
-	h1 { color: #3D7A82; margin-bottom: 4px; }
-	.meta { color: #666; margin-bottom: 16px; font-size: 14px; }
-	table { width: 100%; border-collapse: collapse; font-size: 13px; }
-	th { background-color: #3D7A82; color: white; text-align: left; padding: 8px 12px; }
-	td { padding: 8px 12px; border-bottom: 1px solid #ddd; }
-	tr:nth-child(even) { background-color: #f8f9fa; }
-	.status-in { color: #16a34a; font-weight: bold; }
-	.status-out { color: #6b7280; }
-	.footer { margin-top: 20px; font-size: 11px; color: #999; }
-	@media print { body { margin: 0; } }
-</style></head><body>
-<h1>Attendance Report</h1>
-<div class="meta">${companyName} &mdash; ${dateRange} &mdash; Generated ${new Date().toLocaleString('en-GB')}</div>
-<table>
-<thead><tr><th>Employee</th><th>Email</th><th>Clock In</th><th>Clock Out</th><th>Duration</th><th>Status</th></tr></thead>
-<tbody>`;
-
-		for (const e of events) {
-			const statusClass = e.status === 'in' ? 'status-in' : 'status-out';
-			html += `<tr>
-	<td>${e.first_name} ${e.last_name}</td>
-	<td>${e.email}</td>
-	<td>${formatDateTime(e.clock_in)}</td>
-	<td>${e.clock_out ? formatDateTime(e.clock_out) : '—'}</td>
-	<td>${formatDuration(e.clock_in, e.clock_out)}</td>
-	<td class="${statusClass}">${e.status === 'in' ? 'Clocked In' : 'Clocked Out'}</td>
-</tr>`;
-		}
-
-		html += `</tbody></table>
-<div class="footer">LogSmart Attendance Report &mdash; ${events.length} record(s)</div>
-</body></html>`;
+		const html = generateAttendancePdfHtml({
+			companyName,
+			dateRange,
+			events,
+			formatDateTime,
+			formatDuration
+		});
 
 		const w = window.open('', '_blank');
 		if (w) {

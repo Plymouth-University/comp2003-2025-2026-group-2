@@ -13,7 +13,7 @@
 </script>
 
 <div
-	class="mb-3 flex flex-col gap-3 rounded-lg border-2 p-4 transition-all hover:opacity-80 md:flex-row md:items-center md:justify-between"
+	class="mb-3 flex flex-col gap-3 rounded-lg border-2 p-4 transition-all hover:opacity-80 sm:flex-row sm:items-center sm:justify-between"
 	style="background-color: var(--bg-primary); border-color: var(--border-primary);"
 >
 	<button

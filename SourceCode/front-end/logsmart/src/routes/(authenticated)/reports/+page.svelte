@@ -2,10 +2,19 @@
 	import { api } from '$lib/api';
 	import type { components } from '$lib/api-types';
 	import { SvelteDate, SvelteMap, SvelteSet } from 'svelte/reactivity';
+	import { PDF_STYLES } from '$lib/utils/pdf-templates';
 
 	type LogEntry = components['schemas']['LogEntryResponse'];
 	type TemplateField = components['schemas']['TemplateField'];
-	type TemplateFieldProps = components['schemas']['TemplateFieldProps'];
+
+	type LogComponent = {
+		entry: LogEntry;
+		field: TemplateField;
+		fieldType: string;
+		fieldData: string;
+		fieldIndex: number;
+		componentId: string;
+	};
 
 	// Get user data from parent layout
 	let { data } = $props();
@@ -88,7 +97,8 @@
 	let pickerView = $state<'day' | 'month' | 'year'>('day');
 	let slideDirection = $state<'left' | 'right'>('left');
 
-	let calendarDate = $state(new SvelteDate());
+	// svelte-ignore non_reactive_update
+	let calendarDate = new SvelteDate();
 	let activePickerIsFrom = $state(true);
 
 	let reportGenerated = $state(false);
@@ -409,15 +419,8 @@
 	}
 
 	// Function to extract individual components from entries
-	function extractComponents(entries: LogEntry[], excludedFieldTypes: string[]) {
-		const components: Array<{
-			entry: LogEntry;
-			field: Record<string, unknown>;
-			fieldType: string;
-			fieldData: string;
-			fieldIndex: number;
-			componentId: string;
-		}> = [];
+	function extractComponents(entries: LogEntry[], excludedFieldTypes: string[]): LogComponent[] {
+		const components: LogComponent[] = [];
 
 		entries.forEach((entry) => {
 			if (!entry.template_layout) return;
@@ -957,30 +960,15 @@
 		const printWindow = window.open('', '_blank');
 
 		if (printWindow) {
-			printWindow.document.write(`
-				<html>
-				<head>
-					<title>Log Report</title>
-					<style>
-						body { font-family: Arial, sans-serif; margin: 20px; }
-						.header { border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px; }
-						.entry { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; page-break-inside: avoid; }
-						.status { padding: 3px 8px; border-radius: 3px; color: white; font-size: 12px; }
-						.submitted { background-color: #10B981; }
-						.draft { background-color: #F59E0B; }
-						.group-header { font-size: 18px; font-weight: bold; margin: 20px 0 10px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
-						.entry-data { background-color: #f5f5f5; padding: 10px; margin: 5px 0; border-radius: 3px; }
-						@media print {
-							body { margin: 0; }
-							.entry { page-break-inside: avoid; }
-						}
-					</style>
-				</head>
-				<body>
-					${reportContent}
-				</body>
-				</html>
-			`);
+			printWindow.document.write(`<html>
+<head>
+<title>Log Report</title>
+<style>${PDF_STYLES.report}</style>
+</head>
+<body>
+${reportContent}
+</body>
+</html>`);
 			printWindow.document.close();
 			printWindow.print();
 		}
@@ -1014,8 +1002,7 @@
 	}
 
 	function generateWordHTMLContent(): string {
-		return `
-<!DOCTYPE html>
+		return `<!DOCTYPE html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
 <head>
 	<meta charset="utf-8">
@@ -1023,35 +1010,7 @@
 	<meta name="Generator" content="Microsoft Word">
 	<meta name="Originator" content="Microsoft Word">
 	<title>Log Report</title>
-	<style>
-		body { 
-			font-family: Aptos, Verdana, 'Segoe UI', Arial, sans-serif; 
-			font-size: 11pt; 
-			margin: 1in; 
-			line-height: 1.4; 
-			text-align: left;
-		}
-		h1 { font-size: 18pt; font-weight: bold; text-align: center; margin-bottom: 14pt; }
-		h2 { font-size: 14pt; font-weight: bold; margin-top: 16pt; margin-bottom: 8pt; text-align: left; }
-		p { margin: 4pt 0; line-height: 1.4; text-align: left; }
-		.header { border-bottom: 2pt solid black; padding-bottom: 8pt; margin-bottom: 16pt; text-align: left; }
-		.entry-box { 
-			border: 1pt solid #999; 
-			margin: 14pt 0; 
-			padding: 12pt; 
-			text-align: left;
-			page-break-inside: avoid;
-			display: block;
-			orphans: 10;
-			widows: 10;
-		}
-		.entry-title { font-size: 12pt; font-weight: bold; margin-bottom: 4pt; }
-		.entry-id { font-size: 9pt; color: #666; margin-bottom: 4pt; }
-		.status-badge { padding: 3pt 8pt; color: white; font-size: 10pt; margin-bottom: 8pt; display: inline-block; }
-		.entry-data-box { background-color: #f5f5f5; padding: 10pt; margin: 8pt 0; border-left: 3pt solid #10B981; }
-		.field-row { margin: 6pt 0; line-height: 1.5; }
-		.field-label { font-weight: bold; color: #333; }
-	</style>
+	<style>${PDF_STYLES.word}</style>
 </head>
 <body>
 	<div class="header">
@@ -1097,12 +1056,13 @@
 		return content;
 	}
 
-	function generateWordComponentHTML(component: any): string {
+	function generateWordComponentHTML(component: LogComponent): string {
 		const statusBg = component.entry.status === 'submitted' ? '#10B981' : '#F59E0B';
+		const entryTitle = formatTemplateName(component.entry.template_name, component.entry.period);
 
 		return `
 		<div class="entry-box" style="page-break-inside: avoid; page-break-after: auto;">
-			<p class="entry-title" style="page-break-after: avoid; keep-with-next: always;">${component.entry.template_name}</p>
+			<p class="entry-title" style="page-break-after: avoid; keep-with-next: always;">${entryTitle}</p>
 			<p class="entry-id" style="page-break-after: avoid; keep-with-next: always;">ID: ${component.entry.id.slice(0, 8)}...</p>
 			<p class="status-badge" style="background-color: ${statusBg}; page-break-after: avoid; keep-with-next: always;">${component.entry.status}</p>
 			
@@ -1128,11 +1088,12 @@
 		const excludedFieldTypes = getExcludedFieldTypes();
 		const entryData = parseEntryData(entry.entry_data, entry.template_layout, excludedFieldTypes);
 		const statusBg = entry.status === 'submitted' ? '#10B981' : '#F59E0B';
+		const entryTitle = formatTemplateName(entry.template_name, entry.period);
 
 		// Use paragraphs with Word-specific keep-together formatting
 		return `
 		<div class="entry-box" style="page-break-inside: avoid; page-break-after: auto;">
-			<p class="entry-title" style="page-break-after: avoid; keep-with-next: always;">${entry.template_name}</p>
+			<p class="entry-title" style="page-break-after: avoid; keep-with-next: always;">${entryTitle}</p>
 			<p class="entry-id" style="page-break-after: avoid; keep-with-next: always;">ID: ${entry.id.slice(0, 8)}...</p>
 			<p class="status-badge" style="background-color: ${statusBg}; page-break-after: avoid; keep-with-next: always;">${entry.status}</p>
 			
@@ -1196,11 +1157,12 @@
 		return rtfContent;
 	}
 
-	function generateRTFComponent(component: any): string {
+	function generateRTFComponent(component: LogComponent): string {
 		const statusColor = component.entry.status === 'submitted' ? '\\cf2' : '\\cf3';
+		const entryTitle = formatTemplateName(component.entry.template_name, component.entry.period);
 
 		let rtf = `\\pard\\box\\brdrs\\brdrw10\\brdrcf1\\par`;
-		rtf += `\\b ${component.entry.template_name}\\b0\\par`;
+		rtf += `\\b ${entryTitle}\\b0\\par`;
 		rtf += `\\i ID: ${component.entry.id.slice(0, 8)}...\\i0\\par`;
 		rtf += `${statusColor}\\b ${component.entry.status}\\b0\\cf1\\par\\par`;
 		rtf += `\\b Component Data:\\b0 ${component.fieldData}\\par\\par`;
@@ -1218,9 +1180,10 @@
 		const excludedFieldTypes = getExcludedFieldTypes();
 		const entryData = parseEntryData(entry.entry_data, entry.template_layout, excludedFieldTypes);
 		const statusColor = entry.status === 'submitted' ? '\\cf2' : '\\cf3';
+		const entryTitle = formatTemplateName(entry.template_name, entry.period);
 
 		let rtf = `\\pard\\box\\brdrs\\brdrw10\\brdrcf1\\par`;
-		rtf += `\\b ${entry.template_name}\\b0\\par`;
+		rtf += `\\b ${entryTitle}\\b0\\par`;
 		rtf += `\\i ID: ${entry.id.slice(0, 8)}...\\i0\\par`;
 		rtf += `${statusColor}\\b ${entry.status}\\b0\\cf1\\par\\par`;
 		rtf += `\\b Entry Data:\\b0 ${entryData}\\par\\par`;
@@ -1272,50 +1235,21 @@
 		return content;
 	}
 
-	function generateReportContent(): string {
-		let content = `
-			<div class="header">
-				<h1>Log Report</h1>
-				<p><strong>Date Range:</strong> ${dateFrom} - ${dateTo}</p>
-				<p><strong>Arranged by:</strong> ${arrangeBy === 'date' ? 'Date' : 'Log Type'}</p>
-				<p><strong>Total Entries:</strong> ${filteredEntries.length}</p>
-				<p><strong>Generated on:</strong> ${new Date().toLocaleString()}</p>
-			</div>
-		`;
-
-		if (arrangeBy === 'logType') {
-			const excludedFieldTypes = getExcludedFieldTypes();
-			const components = extractComponents(filteredEntries, excludedFieldTypes);
-			const groupedComponents = components.reduce(
-				(acc: Record<string, typeof components>, component) => {
-					if (!acc[component.fieldType]) acc[component.fieldType] = [];
-					acc[component.fieldType].push(component);
-					return acc;
-				},
-				{}
-			);
-
-			Object.entries(groupedComponents).forEach(([fieldType, componentGroup]) => {
-				content += `<div class="group-header">${fieldType} (${componentGroup.length} components)</div>`;
-				componentGroup.forEach((component) => {
-					content += generateComponentHTML(component);
-				});
-			});
-		} else {
-			filteredEntries.forEach((entry) => {
-				content += generateEntryHTML(entry);
-			});
+	// Helper to format template name with period
+	function formatTemplateName(templateName: string, period?: string): string {
+		if (period && templateName.includes('{period}')) {
+			return templateName.replace('{period}', period);
 		}
-
-		return content;
+		return templateName;
 	}
 
-	function generateComponentHTML(component: any): string {
+	function generateComponentHTML(component: LogComponent): string {
+		const entryTitle = formatTemplateName(component.entry.template_name, component.entry.period);
 		return `
 			<div class="entry">
 				<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
 					<div>
-						<strong>${component.entry.template_name}</strong>
+						<strong>${entryTitle}</strong>
 						<small style="color: #666; margin-left: 10px;">ID: ${component.entry.id.slice(0, 8)}...</small>
 					</div>
 					<span class="status ${component.entry.status === 'submitted' ? 'submitted' : 'draft'}">${component.entry.status}</span>
@@ -1333,11 +1267,12 @@
 	function generateEntryHTML(entry: LogEntry): string {
 		const excludedFieldTypes = getExcludedFieldTypes();
 		const entryData = parseEntryData(entry.entry_data, entry.template_layout, excludedFieldTypes);
+		const entryTitle = formatTemplateName(entry.template_name, entry.period);
 		return `
 			<div class="entry">
 				<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
 					<div>
-						<strong>${entry.template_name}</strong>
+						<strong>${entryTitle}</strong>
 						<small style="color: #666; margin-left: 10px;">ID: ${entry.id.slice(0, 8)}...</small>
 					</div>
 					<span class="status ${entry.status === 'submitted' ? 'submitted' : 'draft'}">${entry.status}</span>
@@ -2225,7 +2160,7 @@
 													xmlns="http://www.w3.org/2000/svg"
 												>
 													<!-- Grid lines -->
-													{#each yTicks as tick}
+													{#each yTicks as tick (tick.value)}
 														<line
 															x1="0"
 															y1={tick.y}
@@ -2422,7 +2357,7 @@
 												<div class="mb-2 flex items-start justify-between">
 													<div>
 														<span class="font-medium" style="color: var(--text-primary);"
-															>{component.entry.template_name}</span
+															>{formatTemplateName(component.entry.template_name, component.entry.period)}</span
 														>
 														<span class="ml-2 text-sm" style="color: var(--text-secondary);"
 															>ID: {component.entry.id.slice(0, 8)}...</span
@@ -2476,7 +2411,7 @@
 											<div class="mb-2 flex items-start justify-between">
 												<div>
 													<span class="font-medium" style="color: var(--text-primary);"
-														>{entry.template_name}</span
+														>{formatTemplateName(entry.template_name, entry.period)}</span
 													>
 													<span class="ml-2 text-sm" style="color: var(--text-secondary);"
 														>ID: {entry.id.slice(0, 8)}...</span
