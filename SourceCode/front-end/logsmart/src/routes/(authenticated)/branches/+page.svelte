@@ -268,12 +268,12 @@
 </svelte:head>
 
 <div class="mx-auto max-w-4xl p-6">
-	<h1 class="mb-8 text-3xl font-bold text-text-primary">BRANCH MANAGEMENT</h1>
+	<h1 class="mb-8 text-3xl font-bold text-text-primary xs:text-2xl">BRANCH MANAGEMENT</h1>
 
 	<!-- Add Branch Form -->
 	{#if canEditBranches}
 		<div class="rounded-base mb-12 border-2 border-border-primary bg-bg-primary p-6 shadow-sm">
-			<h2 class="mb-4 text-xl font-bold text-text-primary">ADD NEW BRANCH</h2>
+			<h2 class="mb-4 text-xl font-bold text-text-primary xs:text-base">ADD NEW BRANCH</h2>
 			<form
 				onsubmit={(e) => {
 					e.preventDefault();
@@ -417,7 +417,7 @@
 				{:else}
 					<!-- View Mode -->
 					<div class="mb-2 flex items-center justify-between">
-						<h3 class="text-xl font-bold text-text-primary">{branch.name}</h3>
+						<h3 class="text-xl font-bold text-text-primary xs:text-base">{branch.name}</h3>
 						{#if branch.has_pending_deletion}
 							<span
 								class="rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800"
