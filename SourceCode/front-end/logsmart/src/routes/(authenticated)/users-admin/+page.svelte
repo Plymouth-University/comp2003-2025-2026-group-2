@@ -34,6 +34,10 @@
 		}
 		selectedUser = members.find((member: Member) => member.email === email) || null;
 	};
+
+	const closeSidebar = () => {
+		selectedUser = null;
+	};
 	const setShowingCreateModel = (show: boolean) => {
 		showingCreateModel = show;
 	};
@@ -125,8 +129,8 @@
 </svelte:head>
 <main class="flex min-h-full bg-bg-secondary">
 	<div class="flex grow overflow-hidden">
-		<div class="mx-auto md:w-4/5">
-			<div class="flex-1 gap-1 overflow-auto p-6">
+		<div class="mx-auto w-full max-w-4xl px-6 py-8">
+			<div class="flex-1 gap-1 overflow-auto py-6">
 				<div id="eventHide" class="flex flex-auto flex-col">
 					{#each invitations as invite (invite.email)}
 						<InviteRow {invite} onCancel={cancelInvitation} />
@@ -137,7 +141,7 @@
 					{#if !isReadonlyHQ}
 						<div class="add-button-container mr-5 flex flex-col place-items-end self-end text-4xl">
 							<button
-								class="z-80 h-20 w-20 cursor-pointer self-end rounded-full border-4 border-border-primary bg-bg-primary text-text-primary drop-shadow-lg duration-300 hover:drop-shadow-2xl"
+								class="z-40 h-20 w-20 cursor-pointer self-end rounded-full border-4 border-border-primary bg-bg-primary text-text-primary drop-shadow-lg duration-300 hover:drop-shadow-2xl"
 								type="button"
 								onclick={() => (showingCreateModel = !showingCreateModel)}
 							>
@@ -157,11 +161,11 @@
 		</div>
 		<SideBar
 			{selectedUser}
-			{setSelectedUser}
 			loggedInUserRole={user.role}
 			{updateMember}
 			{branches}
 			{isReadonlyHQ}
+			onClose={closeSidebar}
 		/>
 	</div>
 </main>
