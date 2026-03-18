@@ -109,10 +109,16 @@
 	<title>Reset Password | LogSmart</title>
 </svelte:head>
 
-<div class="flex min-h-full w-full flex-1 items-center justify-center text-text-primary" style="background-color: var(--bg-secondary);">
-	<section class="w-full max-w-lg flex-1 mx-4 space-y-6 rounded-lg p-8 shadow-lg" style="background-color: var(--bg-primary);">
+<div
+	class="flex min-h-full w-full flex-1 items-center justify-center text-text-primary"
+	style="background-color: var(--bg-secondary);"
+>
+	<section
+		class="mx-4 w-full max-w-lg flex-1 space-y-6 rounded-lg p-8 shadow-lg"
+		style="background-color: var(--bg-primary);"
+	>
 		<div>
-			<h1 class="text-2xl font-semibold text-text-primary" >Reset your password</h1>
+			<h1 class="text-2xl font-semibold text-text-primary">Reset your password</h1>
 			<p class="mt-1 text-sm text-text-secondary">
 				{#if hasToken}
 					Enter a new secure password for your account.

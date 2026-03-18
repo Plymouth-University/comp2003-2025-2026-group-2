@@ -170,23 +170,23 @@
 						>
 							{#snippet meta()}
 								<div>
-								{#if form.status}
-									Status: {form.status}
-									{#if form.last_submitted}
-										| Last submitted: <span title={formatFullDateTime(form.last_submitted)}
-											>{formatDate(form.last_submitted)}</span
-										>
+									{#if form.status}
+										Status: {form.status}
+										{#if form.last_submitted}
+											| Last submitted: <span title={formatFullDateTime(form.last_submitted)}
+												>{formatDate(form.last_submitted)}</span
+											>
+										{/if}
+									{:else}
+										Not yet started
 									{/if}
-								{:else}
-									Not yet started
-								{/if}
 								</div>
 							{/snippet}
 							{#snippet actions()}
 								{#if !isReadonlyHQ}
 									<button
 										onclick={() => handleFillLog(form.template_name, form.period, form.status)}
-										class="rounded lg:px-6 px-3 py-2 font-semibold hover:opacity-80"
+										class="rounded px-3 py-2 font-semibold hover:opacity-80 lg:px-6"
 										style="background-color: #3D7A82; color: white;"
 									>
 										Fill Out
@@ -212,19 +212,21 @@
 							>
 								{#snippet meta()}
 									<div>
-									Created: <span title={formatFullDateTime(log.created_at)}>{formatDate(log.created_at)}</span>
-									{#if log.submitted_at}
-										| Submitted: <span title={formatFullDateTime(log.submitted_at)}
-											>{formatDate(log.submitted_at)}</span
+										Created: <span title={formatFullDateTime(log.created_at)}
+											>{formatDate(log.created_at)}</span
 										>
-									{/if}
-									| Status: {log.status}
+										{#if log.submitted_at}
+											| Submitted: <span title={formatFullDateTime(log.submitted_at)}
+												>{formatDate(log.submitted_at)}</span
+											>
+										{/if}
+										| Status: {log.status}
 									</div>
 								{/snippet}
 								{#snippet actions()}
 									<button
 										onclick={() => handleViewLog(log.id)}
-										class="rounded lg:px-6 px-3 py-2 hover:opacity-80"
+										class="rounded px-3 py-2 hover:opacity-80 lg:px-6"
 										style="background-color: var(--bg-secondary); color: var(--text-primary);"
 									>
 										View
@@ -248,20 +250,22 @@
 							>
 								{#snippet meta()}
 									<div>
-									Created: <span title={formatFullDateTime(log.created_at)}>{formatDate(log.created_at)}</span>
-									{#if log.submitted_at}
-										| Submitted: <span title={formatFullDateTime(log.submitted_at)}
-											>{formatDate(log.submitted_at)}</span
+										Created: <span title={formatFullDateTime(log.created_at)}
+											>{formatDate(log.created_at)}</span
 										>
-									{/if}
-									| Status: {log.status}
+										{#if log.submitted_at}
+											| Submitted: <span title={formatFullDateTime(log.submitted_at)}
+												>{formatDate(log.submitted_at)}</span
+											>
+										{/if}
+										| Status: {log.status}
 									</div>
 								{/snippet}
 								{#snippet actions()}
 									{#if log.status === 'submitted'}
 										<button
 											onclick={() => handleViewLog(log.id)}
-											class="rounded lg:px-6 px-3 py-2 hover:opacity-80"
+											class="rounded px-3 py-2 hover:opacity-80 lg:px-6"
 											style="background-color: var(--bg-secondary); color: var(--text-primary);"
 										>
 											View
@@ -269,7 +273,7 @@
 										{#if !isReadonlyHQ}
 											<button
 												onclick={() => handleUnsubmit(log.id)}
-												class="rounded lg:px-6 px-3 py-2 hover:opacity-80"
+												class="rounded px-3 py-2 hover:opacity-80 lg:px-6"
 												style="background-color: #f59e0b; color: white;"
 											>
 												Unsubmit

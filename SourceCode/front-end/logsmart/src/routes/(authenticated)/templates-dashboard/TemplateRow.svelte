@@ -90,7 +90,7 @@
 			{template.name}
 		</h3>
 		<div
-			class="mt-1 flex flex-wrap gap-2 text-xs sm:gap-4 xs:text-sm"
+			class="mt-1 flex flex-wrap gap-2 text-xs xs:text-sm sm:gap-4"
 			style="color: var(--text-secondary);"
 		>
 			<span class="truncate">Schedule: {formatSchedule(template.schedule)}</span>
