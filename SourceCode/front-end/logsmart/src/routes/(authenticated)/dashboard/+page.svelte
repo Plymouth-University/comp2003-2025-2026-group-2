@@ -212,7 +212,6 @@
 					class:opacity-50={draggedBox === boxId}
 					class:ring-2={dragOverIndex === index && draggedBox !== boxId}
 					class:ring-teal-500={dragOverIndex === index && draggedBox !== boxId}
-					style="min-height: 500px;"
 				>
 					{#if boxId === 'logs'}
 						<!-- Today's Logs Box -->

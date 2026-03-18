@@ -2,14 +2,17 @@
 	import type { PageData } from './$types';
 	import type { components } from '$lib/api-types';
 	import ClockInOut from '$lib/components/ClockInOut.svelte';
+	import LogRow from '$lib/components/logs/LogRow.svelte';
+	import LogSection from '$lib/components/logs/LogSection.svelte';
 	import { SvelteDate } from 'svelte/reactivity';
 
 	type LogEntry = components['schemas']['LogEntryResponse'];
+	type DueFormInfo = components['schemas']['DueFormInfo'];
 
 	let { data } = $props<{ data: PageData }>();
 
 	const isReadonlyHQ = $derived(data?.user?.role === 'staff' && !data?.user?.branch_id);
-	const isMember = $derived(data?.user?.role === 'staff' && !isReadonlyHQ);
+	const isStaff = $derived(data?.user?.role === 'staff' && !isReadonlyHQ);
 	const isAdmin = $derived(
 		data?.user?.role.match(/company_manager|branch_manager|logsmart_admin/) || isReadonlyHQ
 	);
@@ -25,7 +28,7 @@
 	);
 
 	const dueTodayTemplateNames = $derived(
-		new Set(data.dueToday?.map((form) => form.template_name) || [])
+		new Set(data.dueToday?.map((form: DueFormInfo) => form.template_name) || [])
 	);
 
 	const sortedAllLogs = $derived(
@@ -148,229 +151,135 @@
 				</div>
 			{/if}
 
-			{#if isMember}
-				<!-- Clock In / Out Section -->
+			{#if isStaff}
 				<div class="mb-8">
 					<ClockInOut initialStatus={data.clockStatus ?? null} />
 				</div>
+			{/if}
 
-				<div class="mb-8">
-					<h2 class="mb-4 text-3xl font-bold" style="color: var(--text-primary);">
-						Logs Due Today
-					</h2>
-					{#if data.dueToday && data.dueToday.length > 0}
-						<div class="space-y-2">
-							{#each data.dueToday as form (form.template_name + form.period)}
-								<div
-									class="flex items-center justify-between rounded border-2 p-4"
-									style="background-color: var(--bg-primary); border-color: var(--border-primary);"
-								>
-									<div class="min-w-0 flex-1">
-										<div
-											class="text-overflow-ellipsis overflow-hidden text-xl font-semibold whitespace-nowrap"
-											style="color: var(--text-primary);"
-											title={formatTemplateName(form.template_name, form.period)}
-										>
-											{formatTemplateName(form.template_name, form.period)}
-										</div>
-										<div class="text-sm" style="color: var(--text-secondary);">
-											{#if form.status}
-												Status: {form.status}
-												{#if form.last_submitted}
-													| Last submitted: <span title={formatFullDateTime(form.last_submitted)}
-														>{formatDate(form.last_submitted)}</span
-													>
-												{/if}
-											{:else}
-												Not yet started
-											{/if}
-										</div>
-									</div>
-									{#if !isReadonlyHQ}
-										<button
-											onclick={() => handleFillLog(form.template_name, form.period, form.status)}
-											class="rounded px-6 py-2 font-semibold hover:opacity-80"
-											style="background-color: #3D7A82; color: white;"
-										>
-											Fill Out
-										</button>
-									{/if}
-								</div>
-							{/each}
-						</div>
-					{:else}
-						<div
-							class="rounded p-6 text-center"
-							style="background-color: var(--bg-primary); color: var(--text-secondary);"
+			{#if isStaff || isAdmin}
+				<LogSection
+					title="Logs Due Today"
+					hasItems={Boolean(data.dueToday && data.dueToday.length > 0)}
+					emptyMessage="No logs due today"
+				>
+					{#each data.dueToday || [] as form (form.template_name + form.period)}
+						<LogRow
+							title={formatTemplateName(form.template_name, form.period)}
+							titleAttr={formatTemplateName(form.template_name, form.period)}
 						>
-							No logs due today
-						</div>
-					{/if}
-				</div>
-
-				<div>
-					<h2 class="mb-4 text-3xl font-bold" style="color: var(--text-primary);">Past Logs</h2>
-					{#if sortedPastLogs && sortedPastLogs.length > 0}
-						<div class="space-y-2">
-							{#each sortedPastLogs as log (log.id)}
-								<div
-									class="flex items-center justify-between rounded border-2 p-4"
-									style="background-color: var(--bg-primary); border-color: var(--border-primary);"
-								>
-									<div class="min-w-0 flex-1">
-										<div
-											class="text-overflow-ellipsis overflow-hidden text-xl font-semibold whitespace-nowrap"
-											style="color: var(--text-primary);"
-											title={formatTemplateName(log.template_name, log.period)}
+							{#snippet meta()}
+								<div>
+								{#if form.status}
+									Status: {form.status}
+									{#if form.last_submitted}
+										| Last submitted: <span title={formatFullDateTime(form.last_submitted)}
+											>{formatDate(form.last_submitted)}</span
 										>
-											{formatTemplateName(log.template_name, log.period)}
-										</div>
-										<div class="text-sm" style="color: var(--text-secondary);">
-											Created: <span title={formatFullDateTime(log.created_at)}
-												>{formatDate(log.created_at)}</span
-											>
-											{#if log.submitted_at}
-												| Submitted: <span title={formatFullDateTime(log.submitted_at)}
-													>{formatDate(log.submitted_at)}</span
-												>
-											{/if}
-											| Status: {log.status}
-										</div>
+									{/if}
+								{:else}
+									Not yet started
+								{/if}
+								</div>
+							{/snippet}
+							{#snippet actions()}
+								{#if !isReadonlyHQ}
+									<button
+										onclick={() => handleFillLog(form.template_name, form.period, form.status)}
+										class="rounded lg:px-6 px-3 py-2 font-semibold hover:opacity-80"
+										style="background-color: #3D7A82; color: white;"
+									>
+										Fill Out
+									</button>
+								{/if}
+							{/snippet}
+						</LogRow>
+					{/each}
+				</LogSection>
+			{/if}
+
+			{#if isStaff}
+				<div>
+					<LogSection
+						title="Past Logs"
+						hasItems={Boolean(sortedPastLogs && sortedPastLogs.length > 0)}
+						emptyMessage="No past logs found"
+					>
+						{#each sortedPastLogs as log (log.id)}
+							<LogRow
+								title={formatTemplateName(log.template_name, log.period)}
+								titleAttr={formatTemplateName(log.template_name, log.period)}
+							>
+								{#snippet meta()}
+									<div>
+									Created: <span title={formatFullDateTime(log.created_at)}>{formatDate(log.created_at)}</span>
+									{#if log.submitted_at}
+										| Submitted: <span title={formatFullDateTime(log.submitted_at)}
+											>{formatDate(log.submitted_at)}</span
+										>
+									{/if}
+									| Status: {log.status}
 									</div>
+								{/snippet}
+								{#snippet actions()}
 									<button
 										onclick={() => handleViewLog(log.id)}
-										class="rounded px-6 py-2 hover:opacity-80"
+										class="rounded lg:px-6 px-3 py-2 hover:opacity-80"
 										style="background-color: var(--bg-secondary); color: var(--text-primary);"
 									>
 										View
 									</button>
-								</div>
-							{/each}
-						</div>
-					{:else}
-						<div
-							class="rounded p-6 text-center"
-							style="background-color: var(--bg-primary); color: var(--text-secondary);"
-						>
-							No past logs found
-						</div>
-					{/if}
+								{/snippet}
+							</LogRow>
+						{/each}
+					</LogSection>
 				</div>
 			{:else if isAdmin}
-				<div class="mb-8">
-					<h2 class="mb-4 text-3xl font-bold" style="color: var(--text-primary);">
-						Logs Due Today
-					</h2>
-					{#if data.dueToday && data.dueToday.length > 0}
-						<div class="space-y-2">
-							{#each data.dueToday as form (form.template_name + form.period)}
-								<div
-									class="flex items-center justify-between rounded border-2 p-4"
-									style="background-color: var(--bg-primary); border-color: var(--border-primary);"
-								>
-									<div class="min-w-0 flex-1">
-										<div
-											class="text-overflow-ellipsis overflow-hidden text-xl font-semibold whitespace-nowrap"
-											style="color: var(--text-primary);"
-											title={formatTemplateName(form.template_name, form.period)}
-										>
-											{formatTemplateName(form.template_name, form.period)}
-										</div>
-										<div class="text-sm" style="color: var(--text-secondary);">
-											{#if form.status}
-												Status: {form.status}
-												{#if form.last_submitted}
-													| Last submitted: <span title={formatFullDateTime(form.last_submitted)}
-														>{formatDate(form.last_submitted)}</span
-													>
-												{/if}
-											{:else}
-												Not yet started
-											{/if}
-										</div>
-									</div>
-									{#if !isReadonlyHQ}
-										<button
-											onclick={() => handleFillLog(form.template_name, form.period, form.status)}
-											class="rounded px-6 py-2 font-semibold hover:opacity-80"
-											style="background-color: #3D7A82; color: white;"
-										>
-											Fill Out
-										</button>
-									{/if}
-								</div>
-							{/each}
-						</div>
-					{:else}
-						<div
-							class="rounded p-6 text-center"
-							style="background-color: var(--bg-primary); color: var(--text-secondary);"
-						>
-							No logs due today
-						</div>
-					{/if}
-				</div>
-
 				<div>
-					<h2 class="mb-4 text-3xl font-bold" style="color: var(--text-primary);">All Logs</h2>
-					{#if sortedAllLogs && sortedAllLogs.length > 0}
-						<div class="space-y-2">
-							{#each sortedAllLogs as log (log.id)}
-								<div
-									class="flex items-center justify-between rounded border-2 p-4"
-									style="background-color: var(--bg-primary); border-color: var(--border-primary);"
-								>
-									<div class="min-w-0 flex-1">
-										<div
-											class="text-overflow-ellipsis overflow-hidden text-xl font-semibold whitespace-nowrap"
-											style="color: var(--text-primary);"
-											title={formatTemplateName(log.template_name, log.period)}
+					<LogSection
+						title="All Logs"
+						hasItems={Boolean(sortedAllLogs && sortedAllLogs.length > 0)}
+						emptyMessage="No logs found"
+					>
+						{#each sortedAllLogs as log (log.id)}
+							<LogRow
+								title={formatTemplateName(log.template_name, log.period)}
+								titleAttr={formatTemplateName(log.template_name, log.period)}
+							>
+								{#snippet meta()}
+									<div>
+									Created: <span title={formatFullDateTime(log.created_at)}>{formatDate(log.created_at)}</span>
+									{#if log.submitted_at}
+										| Submitted: <span title={formatFullDateTime(log.submitted_at)}
+											>{formatDate(log.submitted_at)}</span
 										>
-											{formatTemplateName(log.template_name, log.period)}
-										</div>
-										<div class="text-sm" style="color: var(--text-secondary);">
-											Created: <span title={formatFullDateTime(log.created_at)}
-												>{formatDate(log.created_at)}</span
-											>
-											{#if log.submitted_at}
-												| Submitted: <span title={formatFullDateTime(log.submitted_at)}
-													>{formatDate(log.submitted_at)}</span
-												>
-											{/if}
-											| Status: {log.status}
-										</div>
+									{/if}
+									| Status: {log.status}
 									</div>
-									<div class="flex gap-2">
-										{#if log.status === 'submitted'}
+								{/snippet}
+								{#snippet actions()}
+									{#if log.status === 'submitted'}
+										<button
+											onclick={() => handleViewLog(log.id)}
+											class="rounded lg:px-6 px-3 py-2 hover:opacity-80"
+											style="background-color: var(--bg-secondary); color: var(--text-primary);"
+										>
+											View
+										</button>
+										{#if !isReadonlyHQ}
 											<button
-												onclick={() => handleViewLog(log.id)}
-												class="rounded px-6 py-2 hover:opacity-80"
-												style="background-color: var(--bg-secondary); color: var(--text-primary);"
+												onclick={() => handleUnsubmit(log.id)}
+												class="rounded lg:px-6 px-3 py-2 hover:opacity-80"
+												style="background-color: #f59e0b; color: white;"
 											>
-												View
+												Unsubmit
 											</button>
-											{#if !isReadonlyHQ}
-												<button
-													onclick={() => handleUnsubmit(log.id)}
-													class="rounded px-6 py-2 hover:opacity-80"
-													style="background-color: #f59e0b; color: white;"
-												>
-													Unsubmit
-												</button>
-											{/if}
 										{/if}
-									</div>
-								</div>
-							{/each}
-						</div>
-					{:else}
-						<div
-							class="rounded p-6 text-center"
-							style="background-color: var(--bg-primary); color: var(--text-secondary);"
-						>
-							No logs found
-						</div>
-					{/if}
+									{/if}
+								{/snippet}
+							</LogRow>
+						{/each}
+					</LogSection>
 				</div>
 			{/if}
 		</div>
