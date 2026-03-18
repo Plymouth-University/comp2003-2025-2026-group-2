@@ -1,9 +1,12 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import type { components } from '$lib/api-types';
 	import { generateAttendancePdfHtml } from '$lib/utils/pdf-templates';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { SvelteMap, SvelteDate, SvelteURLSearchParams } from 'svelte/reactivity';
+
+	type ClockEvent = components['schemas']['CompanyClockEventResponse'];
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -78,7 +81,7 @@
 
 		// Filter by branch (client-side)
 		if (selectedBranchId && selectedBranchId.trim() !== '') {
-			events = events.filter((e) => {
+			events = events.filter((e: ClockEvent) => {
 				const userBranchId = userToBranchMap.get(e.user_id);
 				return userBranchId === selectedBranchId;
 			});
@@ -88,7 +91,7 @@
 		if (!searchQuery.trim()) return events;
 		const q = searchQuery.toLowerCase();
 		return events.filter(
-			(e) =>
+			(e: ClockEvent) =>
 				e.first_name.toLowerCase().includes(q) ||
 				e.last_name.toLowerCase().includes(q) ||
 				e.email.toLowerCase().includes(q)

@@ -92,7 +92,7 @@
 
 {#if isOpen}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+		class="fixed inset-0 z-50 flex mx-4 items-center justify-center bg-black/50"
 		onclick={handleBackdropClick}
 		onkeydown={(e) => e.key === 'Escape' && handleClose()}
 		role="dialog"
@@ -105,7 +105,7 @@
 			style="background-color: var(--bg-primary); border-color: var(--border-primary);"
 		>
 			<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
-				<h2 id="wizard-title" class="text-xl font-bold" style="color: var(--text-primary);">
+				<h2 id="wizard-title" class="md:text-xl font-bold" style="color: var(--text-primary);">
 					Schedule Settings: {template.name}
 				</h2>
 			</div>
@@ -114,7 +114,7 @@
 				<div>
 					<label
 						for="frequency-select"
-						class="mb-2 block font-medium"
+						class="mb-2 block font-medium xs:text-sm"
 						style="color: var(--text-secondary);"
 					>
 						Frequency
@@ -133,17 +133,17 @@
 
 				{#if frequency === 'daily'}
 					<div>
-						<p class="mb-3 font-medium" style="color: var(--text-secondary);">
+						<p class="mb-3 font-medium xs:text-sm" style="color: var(--text-secondary);">
 							Select days when this template should be completed:
 						</p>
 						<p class="mb-3 text-sm" style="color: var(--text-secondary);">
 							Leave all unselected for every day
 						</p>
-						<div class="flex flex-wrap gap-2">
+						<div class="flex flex-wrap gap-2 justify-center">
 							{#each daysOfWeek as day (day.value)}
 								<button
 									type="button"
-									class="rounded border-2 px-3 py-2 font-medium transition-colors"
+									class="rounded border-2 px-3 py-2 font-medium transition-colors xs:text-sm text-base"
 									class:day-selected={selectedDays.includes(day.value)}
 									class:day-unselected={!selectedDays.includes(day.value)}
 									onclick={() => toggleDay(day.value)}
@@ -157,14 +157,14 @@
 
 				{#if frequency === 'weekly'}
 					<div>
-						<p class="mb-3 font-medium" style="color: var(--text-secondary);">
+						<p class="mb-3 font-medium xs:text-sm" style="color: var(--text-secondary);">
 							Select which day of the week this template should be completed on:
 						</p>
-						<div class="flex flex-wrap gap-2">
+						<div class="flex flex-wrap gap-2 justify-center">
 							{#each daysOfWeek as day (day.value)}
 								<button
 									type="button"
-									class="rounded border-2 px-3 py-2 font-medium transition-colors"
+									class="rounded border-2 px-3 py-2 font-medium transition-colors xs:text-sm text-base"
 									class:day-selected={weeklyDay === day.value}
 									class:day-unselected={weeklyDay !== day.value}
 									onclick={() => (weeklyDay = day.value)}
@@ -180,7 +180,7 @@
 					<div>
 						<label
 							for="monthly-day"
-							class="mb-2 block font-medium"
+							class="mb-2 block font-medium xs:text-sm"
 							style="color: var(--text-secondary);"
 						>
 							Day of the month it will become available from
@@ -201,7 +201,7 @@
 					<div>
 						<label
 							for="yearly-date"
-							class="mb-2 block font-medium"
+							class="mb-2 block font-medium text-base xs:text-sm"
 							style="color: var(--text-secondary);"
 						>
 							Date of year it will become available from
@@ -229,7 +229,7 @@
 					<div>
 						<label
 							for="custom-interval"
-							class="mb-2 block font-medium"
+							class="mb-2 block font-medium xs:text-sm"
 							style="color: var(--text-secondary);"
 						>
 							Repeat every X days
@@ -248,7 +248,7 @@
 			</div>
 
 			<div
-				class="flex justify-end gap-3 border-t-2 px-6 py-4"
+				class="flex justify-end gap-3 border-t-2 px-6 py-4 text-base xs:text-sm"
 				style="border-color: var(--border-primary);"
 			>
 				<button
