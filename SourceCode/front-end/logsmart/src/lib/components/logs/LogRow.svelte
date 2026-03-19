@@ -17,7 +17,7 @@
 >
 	<div class="min-w-0 flex-1">
 		<div
-			class="text-ellipsis overflow-hidden text-lg font-semibold whitespace-nowrap lg:text-xl"
+			class="overflow-hidden text-lg font-semibold text-ellipsis whitespace-nowrap lg:text-xl"
 			style="color: var(--text-primary);"
 			title={resolvedTitleAttr}
 		>

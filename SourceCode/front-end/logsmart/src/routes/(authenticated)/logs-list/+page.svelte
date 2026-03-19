@@ -7,7 +7,32 @@
 	import { SvelteDate } from 'svelte/reactivity';
 
 	type LogEntry = components['schemas']['LogEntryResponse'];
-	type DueFormInfo = components['schemas']['DueFormInfo'];
+	type DueForm = components['schemas']['DueFormInfo'];
+
+	function parsePeriodToDate(period: string): Date | null {
+		const slashParts = period.split('/');
+
+		if (slashParts.length === 1) {
+			const year = parseInt(slashParts[0], 10);
+			const date = new Date(year, 0, 1);
+			return isNaN(date.getTime()) ? null : date;
+		} else if (slashParts.length === 2) {
+			const month = parseInt(slashParts[0], 10);
+			const year = parseInt(slashParts[1], 10);
+			const date = new Date(year, month - 1, 1);
+			return isNaN(date.getTime()) ? null : date;
+		} else if (slashParts.length === 3) {
+			const isWeekly = slashParts[0].includes('-');
+			const day = isWeekly
+				? parseInt(slashParts[0].split('-')[1], 10)
+				: parseInt(slashParts[0], 10);
+			const month = parseInt(slashParts[1], 10);
+			const year = parseInt(slashParts[2], 10);
+			const date = new Date(year, month - 1, day);
+			return isNaN(date.getTime()) ? null : date;
+		}
+		return null;
+	}
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -20,24 +45,30 @@
 	const sortedPastLogs = $derived(
 		data.pastLogs
 			? [...data.pastLogs].sort((a, b) => {
-					const dateA = new SvelteDate(a.period);
-					const dateB = new SvelteDate(b.period);
+					const dateA = parsePeriodToDate(a.period);
+					const dateB = parsePeriodToDate(b.period);
+					if (!dateA || !dateB) return 0;
 					return dateB.getTime() - dateA.getTime();
 				})
 			: []
 	);
 
-	const dueTodayTemplateNames = $derived(
-		new Set(data.dueToday?.map((form: DueFormInfo) => form.template_name) || [])
+	const dueTodayPeriods = $derived(
+		new Set(
+			(data.dueToday as DueForm[] | undefined)?.map(
+				(form: DueForm) => `${form.template_name}|${form.period}`
+			) || []
+		)
 	);
 
 	const sortedAllLogs = $derived(
 		data.allLogs
 			? [...data.allLogs]
-					.filter((log) => !dueTodayTemplateNames.has(log.template_name))
+					.filter((log) => !dueTodayPeriods.has(`${log.template_name}|${log.period}`))
 					.sort((a, b) => {
-						const dateA = new SvelteDate(a.period);
-						const dateB = new SvelteDate(b.period);
+						const dateA = parsePeriodToDate(a.period);
+						const dateB = parsePeriodToDate(b.period);
+						if (!dateA || !dateB) return 0;
 						return dateB.getTime() - dateA.getTime();
 					})
 			: []
@@ -99,7 +130,11 @@
 			}
 		}
 
-		window.location.href = `/log-template?template=${encodeURIComponent(templateName)}`;
+		let url = `/log-template?template=${encodeURIComponent(templateName)}`;
+		if (period) {
+			url += `&period=${encodeURIComponent(period)}`;
+		}
+		window.location.href = url;
 	}
 
 	function handleViewLog(entryId: string) {
@@ -170,23 +205,23 @@
 						>
 							{#snippet meta()}
 								<div>
-								{#if form.status}
-									Status: {form.status}
-									{#if form.last_submitted}
-										| Last submitted: <span title={formatFullDateTime(form.last_submitted)}
-											>{formatDate(form.last_submitted)}</span
-										>
+									{#if form.status}
+										Status: {form.status}
+										{#if form.last_submitted}
+											| Last submitted: <span title={formatFullDateTime(form.last_submitted)}
+												>{formatDate(form.last_submitted)}</span
+											>
+										{/if}
+									{:else}
+										Not yet started
 									{/if}
-								{:else}
-									Not yet started
-								{/if}
 								</div>
 							{/snippet}
 							{#snippet actions()}
 								{#if !isReadonlyHQ}
 									<button
 										onclick={() => handleFillLog(form.template_name, form.period, form.status)}
-										class="rounded lg:px-6 px-3 py-2 font-semibold hover:opacity-80"
+										class="rounded px-3 py-2 font-semibold hover:opacity-80 lg:px-6"
 										style="background-color: #3D7A82; color: white;"
 									>
 										Fill Out
@@ -212,19 +247,21 @@
 							>
 								{#snippet meta()}
 									<div>
-									Created: <span title={formatFullDateTime(log.created_at)}>{formatDate(log.created_at)}</span>
-									{#if log.submitted_at}
-										| Submitted: <span title={formatFullDateTime(log.submitted_at)}
-											>{formatDate(log.submitted_at)}</span
+										Created: <span title={formatFullDateTime(log.created_at)}
+											>{formatDate(log.created_at)}</span
 										>
-									{/if}
-									| Status: {log.status}
+										{#if log.submitted_at}
+											| Submitted: <span title={formatFullDateTime(log.submitted_at)}
+												>{formatDate(log.submitted_at)}</span
+											>
+										{/if}
+										| Status: {log.status}
 									</div>
 								{/snippet}
 								{#snippet actions()}
 									<button
 										onclick={() => handleViewLog(log.id)}
-										class="rounded lg:px-6 px-3 py-2 hover:opacity-80"
+										class="rounded px-3 py-2 hover:opacity-80 lg:px-6"
 										style="background-color: var(--bg-secondary); color: var(--text-primary);"
 									>
 										View
@@ -248,20 +285,22 @@
 							>
 								{#snippet meta()}
 									<div>
-									Created: <span title={formatFullDateTime(log.created_at)}>{formatDate(log.created_at)}</span>
-									{#if log.submitted_at}
-										| Submitted: <span title={formatFullDateTime(log.submitted_at)}
-											>{formatDate(log.submitted_at)}</span
+										Created: <span title={formatFullDateTime(log.created_at)}
+											>{formatDate(log.created_at)}</span
 										>
-									{/if}
-									| Status: {log.status}
+										{#if log.submitted_at}
+											| Submitted: <span title={formatFullDateTime(log.submitted_at)}
+												>{formatDate(log.submitted_at)}</span
+											>
+										{/if}
+										| Status: {log.status}
 									</div>
 								{/snippet}
 								{#snippet actions()}
 									{#if log.status === 'submitted'}
 										<button
 											onclick={() => handleViewLog(log.id)}
-											class="rounded lg:px-6 px-3 py-2 hover:opacity-80"
+											class="rounded px-3 py-2 hover:opacity-80 lg:px-6"
 											style="background-color: var(--bg-secondary); color: var(--text-primary);"
 										>
 											View
@@ -269,7 +308,7 @@
 										{#if !isReadonlyHQ}
 											<button
 												onclick={() => handleUnsubmit(log.id)}
-												class="rounded lg:px-6 px-3 py-2 hover:opacity-80"
+												class="rounded px-3 py-2 hover:opacity-80 lg:px-6"
 												style="background-color: #f59e0b; color: white;"
 											>
 												Unsubmit

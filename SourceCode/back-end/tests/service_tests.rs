@@ -84,6 +84,8 @@ fn test_template_creation() {
             day_of_week: None,
             day_of_month: None,
             month_of_year: None,
+            available_from_time: None,
+            due_at_time: None,
         },
         created_by: Uuid::new(),
         version: 1,

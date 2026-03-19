@@ -2357,7 +2357,10 @@ ${reportContent}
 												<div class="mb-2 flex items-start justify-between">
 													<div>
 														<span class="font-medium" style="color: var(--text-primary);"
-															>{formatTemplateName(component.entry.template_name, component.entry.period)}</span
+															>{formatTemplateName(
+																component.entry.template_name,
+																component.entry.period
+															)}</span
 														>
 														<span class="ml-2 text-sm" style="color: var(--text-secondary);"
 															>ID: {component.entry.id.slice(0, 8)}...</span

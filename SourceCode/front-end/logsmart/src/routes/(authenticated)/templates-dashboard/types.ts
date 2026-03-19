@@ -16,6 +16,8 @@ export interface TemplateSchedule {
 	dayOfMonth?: number;
 	monthOfYear?: number;
 	customIntervalDays?: number;
+	availableFromTime?: string;
+	dueAtTime?: string;
 }
 
 export interface Template {
