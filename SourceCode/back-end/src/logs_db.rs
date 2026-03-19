@@ -668,7 +668,7 @@ pub async fn has_entry_for_current_period(
             (start, end)
         }
         Frequency::Weekly => {
-            let days_since_monday = now.weekday().num_days_from_monday();
+            let days_since_monday = now.weekday().num_days_from_sunday();
             let start = (now.date_naive() - chrono::Duration::days(i64::from(days_since_monday)))
                 .and_hms_opt(0, 0, 0)
                 .unwrap_or_else(|| panic!("Error finding week start date: {now}"))
@@ -770,7 +770,7 @@ pub async fn has_submitted_entry_for_current_period(
             (start, end)
         }
         Frequency::Weekly => {
-            let days_since_monday = now.weekday().num_days_from_monday();
+            let days_since_monday = now.weekday().num_days_from_sunday();
             let start = (now.date_naive() - chrono::Duration::days(i64::from(days_since_monday)))
                 .and_hms_opt(0, 0, 0)
                 .unwrap()
@@ -925,7 +925,7 @@ pub async fn get_draft_entry_for_current_period(
             (start, end)
         }
         Frequency::Weekly => {
-            let days_since_monday = now.weekday().num_days_from_monday();
+            let days_since_monday = now.weekday().num_days_from_sunday();
             let start = (now.date_naive() - chrono::Duration::days(i64::from(days_since_monday)))
                 .and_hms_opt(0, 0, 0)
                 .unwrap()
@@ -1121,7 +1121,7 @@ pub fn parse_time_string(time_str: &str) -> Option<(u32, u32)> {
 }
 
 #[must_use]
-fn compute_due_date_for_period(schedule: &Schedule, period: &str) -> Option<chrono::NaiveDate> {
+pub fn compute_due_date_for_period(schedule: &Schedule, period: &str) -> Option<chrono::NaiveDate> {
     let parts: Vec<&str> = period.split('/').collect();
 
     fn normalize_year(year: i32) -> Option<i32> {
@@ -1146,7 +1146,7 @@ fn compute_due_date_for_period(schedule: &Schedule, period: &str) -> Option<chro
             let week_start = week_end - chrono::Duration::days(6);
             let target_day = u32::from(schedule.day_of_week.unwrap_or(0));
             let days_to_add = (target_day as i64)
-                .wrapping_sub(week_start.weekday().num_days_from_monday() as i64);
+                .wrapping_sub(week_start.weekday().num_days_from_sunday() as i64);
             let days_to_add = if days_to_add < 0 {
                 days_to_add + 7
             } else {
@@ -1293,15 +1293,10 @@ pub fn parse_period_to_date(period: &str) -> Option<chrono::NaiveDate> {
 
 #[must_use]
 pub fn validate_and_normalize_period(schedule: &Schedule, period: &str) -> Option<String> {
+    let period = period.trim();
     match schedule.frequency {
         Frequency::Daily => {
             let date = parse_period_to_date(period)?;
-            if period.contains('/') && !period.contains('-') {
-                let parts: Vec<&str> = period.split('/').collect();
-                if parts.len() == 3 {
-                    return Some(period.to_string());
-                }
-            }
             Some(format_period_for_date(date))
         }
         Frequency::Weekly => {
@@ -1343,13 +1338,13 @@ pub fn is_form_due_today(schedule: &Schedule) -> bool {
         Frequency::Daily => {
             if let Some(days) = &schedule.days_of_week {
                 let day_num = match weekday {
-                    chrono::Weekday::Mon => 0,
-                    chrono::Weekday::Tue => 1,
-                    chrono::Weekday::Wed => 2,
-                    chrono::Weekday::Thu => 3,
-                    chrono::Weekday::Fri => 4,
-                    chrono::Weekday::Sat => 5,
-                    chrono::Weekday::Sun => 6,
+                    chrono::Weekday::Sun => 0,
+                    chrono::Weekday::Mon => 1,
+                    chrono::Weekday::Tue => 2,
+                    chrono::Weekday::Wed => 3,
+                    chrono::Weekday::Thu => 4,
+                    chrono::Weekday::Fri => 5,
+                    chrono::Weekday::Sat => 6,
                 };
                 days.contains(&day_num)
             } else {
@@ -1359,13 +1354,13 @@ pub fn is_form_due_today(schedule: &Schedule) -> bool {
         Frequency::Weekly => {
             if let Some(day) = schedule.day_of_week {
                 let day_num = match weekday {
-                    chrono::Weekday::Mon => 0,
-                    chrono::Weekday::Tue => 1,
-                    chrono::Weekday::Wed => 2,
-                    chrono::Weekday::Thu => 3,
-                    chrono::Weekday::Fri => 4,
-                    chrono::Weekday::Sat => 5,
-                    chrono::Weekday::Sun => 6,
+                    chrono::Weekday::Sun => 0,
+                    chrono::Weekday::Mon => 1,
+                    chrono::Weekday::Tue => 2,
+                    chrono::Weekday::Wed => 3,
+                    chrono::Weekday::Thu => 4,
+                    chrono::Weekday::Fri => 5,
+                    chrono::Weekday::Sat => 6,
                 };
                 day_num == day
             } else {
@@ -1436,13 +1431,13 @@ pub fn get_missed_periods(
             let mut current = start_date;
             while current <= today {
                 let day_num = match current.weekday() {
-                    chrono::Weekday::Mon => 0,
-                    chrono::Weekday::Tue => 1,
-                    chrono::Weekday::Wed => 2,
-                    chrono::Weekday::Thu => 3,
-                    chrono::Weekday::Fri => 4,
-                    chrono::Weekday::Sat => 5,
-                    chrono::Weekday::Sun => 6,
+                    chrono::Weekday::Sun => 0,
+                    chrono::Weekday::Mon => 1,
+                    chrono::Weekday::Tue => 2,
+                    chrono::Weekday::Wed => 3,
+                    chrono::Weekday::Thu => 4,
+                    chrono::Weekday::Fri => 5,
+                    chrono::Weekday::Sat => 6,
                 };
 
                 if days_of_week.contains(&day_num) {
@@ -1452,17 +1447,36 @@ pub fn get_missed_periods(
             }
         }
         Frequency::Weekly => {
-            let target_day = schedule.day_of_week.unwrap_or(0);
+            let target_day = u32::from(schedule.day_of_week.unwrap_or(0));
 
             let start_date = if let Some(last) = last_period {
                 let day_after = last + chrono::Duration::days(1);
-                let mut current = day_after;
-                while current.weekday().num_days_from_monday() != u32::from(target_day) {
-                    current += chrono::Duration::days(1);
-                }
-                current
+                let days_to_target = (target_day as i64)
+                    .wrapping_sub(day_after.weekday().num_days_from_sunday() as i64);
+                let days_to_target = if days_to_target <= 0 {
+                    days_to_target + 7
+                } else {
+                    days_to_target
+                };
+                day_after + chrono::Duration::days(days_to_target)
+            } else if let Some(start) = start_from {
+                let days_to_target = (target_day as i64)
+                    .wrapping_sub(start.weekday().num_days_from_sunday() as i64);
+                let days_to_target = if days_to_target < 0 {
+                    days_to_target + 7
+                } else {
+                    days_to_target
+                };
+                start + chrono::Duration::days(days_to_target)
             } else {
-                start_from.unwrap_or(today)
+                let days_to_target = (target_day as i64)
+                    .wrapping_sub(today.weekday().num_days_from_sunday() as i64);
+                let days_to_target = if days_to_target < 0 {
+                    days_to_target + 7
+                } else {
+                    days_to_target
+                };
+                today + chrono::Duration::days(days_to_target)
             };
 
             let mut current = start_date;
@@ -1599,7 +1613,7 @@ fn format_period_for_date(date: chrono::NaiveDate) -> String {
 
 #[must_use]
 fn format_period_for_weekly(date: chrono::NaiveDate) -> String {
-    let days_since_monday = date.weekday().num_days_from_monday();
+    let days_since_monday = date.weekday().num_days_from_sunday();
     let week_start = date - chrono::Duration::days(i64::from(days_since_monday));
     let week_end = week_start + chrono::Duration::days(6);
     format!(
@@ -1689,7 +1703,7 @@ pub fn format_period_for_frequency(frequency: &Frequency) -> String {
     match frequency {
         Frequency::Daily => now.format("%d/%m/%Y").to_string(),
         Frequency::Weekly => {
-            let days_since_monday = now.weekday().num_days_from_monday();
+            let days_since_monday = now.weekday().num_days_from_sunday();
             let week_start = match (now.date_naive()
                 - chrono::Duration::days(i64::from(days_since_monday)))
             .and_hms_opt(0, 0, 0)
