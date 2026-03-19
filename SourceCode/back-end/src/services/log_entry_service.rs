@@ -71,21 +71,34 @@ impl LogEntryService {
             }
         }
 
+        let now = chrono::Utc::now();
         let period_to_use = match period {
-            Some(p) => match logs_db::validate_and_normalize_period(&template.schedule, p) {
-                Some(normalized) => normalized,
-                None => {
-                    return Err((
-                        StatusCode::BAD_REQUEST,
-                        json!({ "error": format!("Invalid period format for {} schedule", match template.schedule.frequency {
-                                logs_db::Frequency::Daily => "daily",
-                                logs_db::Frequency::Weekly => "weekly",
-                                logs_db::Frequency::Monthly => "monthly",
-                                logs_db::Frequency::Yearly => "yearly",
-                            }) }),
-                    ));
+            Some(p) => {
+                match logs_db::validate_period_business_rules(
+                    &template.schedule,
+                    p,
+                    Some(template.created_at),
+                    now,
+                ) {
+                    Ok(normalized) => normalized,
+                    Err(err) => {
+                        return Err((
+                            StatusCode::BAD_REQUEST,
+                            json!({ "error": match err {
+                                logs_db::PeriodValidationError::FormatInvalid => format!("Invalid period format for {} schedule", match template.schedule.frequency {
+                                    logs_db::Frequency::Daily => "daily",
+                                    logs_db::Frequency::Weekly => "weekly",
+                                    logs_db::Frequency::Monthly => "monthly",
+                                    logs_db::Frequency::Yearly => "yearly",
+                                }),
+                                logs_db::PeriodValidationError::DueDateInFuture => "Period due date cannot be in the future".to_string(),
+                                logs_db::PeriodValidationError::WeekdayNotAllowed => "Period weekday is not allowed for this schedule".to_string(),
+                                logs_db::PeriodValidationError::BeforeTemplateCreation => "Period cannot be before template creation date".to_string(),
+                            }}),
+                        ));
+                    }
                 }
-            },
+            }
             None => logs_db::format_period_for_frequency(&template.schedule.frequency),
         };
 
@@ -112,7 +125,6 @@ impl LogEntryService {
         }
 
         let entry_id = Uuid::new_v4().to_string();
-        let now = chrono::Utc::now();
         let period = period_to_use;
 
         let entry = logs_db::LogEntry {

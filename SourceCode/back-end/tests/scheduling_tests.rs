@@ -144,8 +144,7 @@ fn test_get_missed_periods_daily_weekdays() {
         .and_utc()
         .to_rfc3339();
 
-    let missed =
-        back_end::logs_db::get_missed_periods(&schedule, None, Some(&created_at));
+    let missed = back_end::logs_db::get_missed_periods(&schedule, None, Some(&created_at));
 
     // Every day between two_days_ago and today (inclusive) that is Mon-Fri
     // should appear in missed periods
@@ -194,8 +193,7 @@ fn test_get_missed_periods_daily_sunday_only() {
         .and_utc()
         .to_rfc3339();
 
-    let missed =
-        back_end::logs_db::get_missed_periods(&schedule, None, Some(&created_at));
+    let missed = back_end::logs_db::get_missed_periods(&schedule, None, Some(&created_at));
 
     let mut current = two_days_ago;
     while current <= today {
@@ -229,7 +227,11 @@ fn test_format_period_for_frequency_weekly_starts_sunday() {
 
     // The period format is "start_day-end_day/month/year"
     let parts: Vec<&str> = period.split('/').collect();
-    assert_eq!(parts.len(), 3, "Weekly period should have 3 parts: day_range/month/year");
+    assert_eq!(
+        parts.len(),
+        3,
+        "Weekly period should have 3 parts: day_range/month/year"
+    );
 
     let day_range: Vec<&str> = parts[0].split('-').collect();
     assert_eq!(day_range.len(), 2, "Day range should have start and end");

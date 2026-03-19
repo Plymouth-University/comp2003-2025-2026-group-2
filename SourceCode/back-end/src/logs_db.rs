@@ -1329,6 +1329,57 @@ pub fn validate_and_normalize_period(schedule: &Schedule, period: &str) -> Optio
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PeriodValidationError {
+    FormatInvalid,
+    DueDateInFuture,
+    WeekdayNotAllowed,
+    BeforeTemplateCreation,
+}
+
+pub fn validate_period_business_rules(
+    schedule: &Schedule,
+    period: &str,
+    template_created_at: Option<chrono::DateTime<chrono::Utc>>,
+    current_datetime: chrono::DateTime<chrono::Utc>,
+) -> Result<String, PeriodValidationError> {
+    let normalized = validate_and_normalize_period(schedule, period)
+        .ok_or(PeriodValidationError::FormatInvalid)?;
+
+    let due_date = compute_due_date_for_period(schedule, &normalized)
+        .ok_or(PeriodValidationError::FormatInvalid)?;
+
+    let today = current_datetime.date_naive();
+    if due_date > today {
+        return Err(PeriodValidationError::DueDateInFuture);
+    }
+
+    if let Frequency::Daily = schedule.frequency
+        && let Some(days_of_week) = &schedule.days_of_week {
+            let day_num = match due_date.weekday() {
+                chrono::Weekday::Sun => 0,
+                chrono::Weekday::Mon => 1,
+                chrono::Weekday::Tue => 2,
+                chrono::Weekday::Wed => 3,
+                chrono::Weekday::Thu => 4,
+                chrono::Weekday::Fri => 5,
+                chrono::Weekday::Sat => 6,
+            };
+            if !days_of_week.contains(&day_num) {
+                return Err(PeriodValidationError::WeekdayNotAllowed);
+            }
+        }
+
+    if let Some(created_at) = template_created_at {
+        let created_date = created_at.date_naive();
+        if due_date < created_date {
+            return Err(PeriodValidationError::BeforeTemplateCreation);
+        }
+    }
+
+    Ok(normalized)
+}
+
 #[must_use]
 pub fn is_form_due_today(schedule: &Schedule) -> bool {
     let today = chrono::Utc::now();
@@ -1460,8 +1511,8 @@ pub fn get_missed_periods(
                 };
                 day_after + chrono::Duration::days(days_to_target)
             } else if let Some(start) = start_from {
-                let days_to_target = (target_day as i64)
-                    .wrapping_sub(start.weekday().num_days_from_sunday() as i64);
+                let days_to_target =
+                    (target_day as i64).wrapping_sub(start.weekday().num_days_from_sunday() as i64);
                 let days_to_target = if days_to_target < 0 {
                     days_to_target + 7
                 } else {
@@ -1469,8 +1520,8 @@ pub fn get_missed_periods(
                 };
                 start + chrono::Duration::days(days_to_target)
             } else {
-                let days_to_target = (target_day as i64)
-                    .wrapping_sub(today.weekday().num_days_from_sunday() as i64);
+                let days_to_target =
+                    (target_day as i64).wrapping_sub(today.weekday().num_days_from_sunday() as i64);
                 let days_to_target = if days_to_target < 0 {
                     days_to_target + 7
                 } else {
