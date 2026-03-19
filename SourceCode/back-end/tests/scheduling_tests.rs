@@ -25,6 +25,30 @@ fn weekly_schedule(day_of_week: u8) -> Schedule {
     }
 }
 
+fn monthly_schedule(day_of_month: u8) -> Schedule {
+    Schedule {
+        frequency: Frequency::Monthly,
+        days_of_week: None,
+        day_of_week: None,
+        day_of_month: Some(day_of_month),
+        month_of_year: None,
+        available_from_time: None,
+        due_at_time: None,
+    }
+}
+
+fn yearly_schedule(month_of_year: u8, day_of_month: u8) -> Schedule {
+    Schedule {
+        frequency: Frequency::Yearly,
+        days_of_week: None,
+        day_of_week: None,
+        day_of_month: Some(day_of_month),
+        month_of_year: Some(month_of_year),
+        available_from_time: None,
+        due_at_time: None,
+    }
+}
+
 /// Sunday=0 convention should match the frontend:
 ///   0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday,
 ///   4=Thursday, 5=Friday, 6=Saturday
@@ -345,6 +369,87 @@ fn test_get_missed_periods_weekly_with_last_submission() {
         assert!(
             due_date.is_some() && due_date.unwrap() > last_date,
             "Period {period} has due date {:?}, which is not after last submission {last_date}",
+            due_date
+        );
+    }
+}
+
+#[test]
+fn test_validate_and_normalize_period_daily_rejects_non_daily_shapes() {
+    let schedule = daily_schedule(None);
+
+    assert_eq!(
+        back_end::logs_db::validate_and_normalize_period(&schedule, "2026"),
+        None,
+        "Daily period must not accept yearly format"
+    );
+    assert_eq!(
+        back_end::logs_db::validate_and_normalize_period(&schedule, "29-4/4/2026"),
+        None,
+        "Daily period must not accept weekly format"
+    );
+    assert_eq!(
+        back_end::logs_db::validate_and_normalize_period(&schedule, "4/4/2026"),
+        Some("04/04/2026".to_string()),
+        "Daily period should accept DD/MM/YYYY format"
+    );
+}
+
+#[test]
+fn test_get_missed_periods_monthly_no_period_before_created_at() {
+    use back_end::logs_db::compute_due_date_for_period;
+
+    let schedule = monthly_schedule(5);
+
+    let created_date = chrono::NaiveDate::from_ymd_opt(2025, 1, 20).unwrap();
+    let created_at = created_date
+        .and_hms_opt(14, 30, 0)
+        .unwrap()
+        .and_utc()
+        .to_rfc3339();
+
+    let missed = back_end::logs_db::get_missed_periods(&schedule, None, Some(&created_at));
+
+    assert!(
+        !missed.is_empty(),
+        "Should have at least one missed period for monthly schedule"
+    );
+
+    for period in &missed {
+        let due_date = compute_due_date_for_period(&schedule, period);
+        assert!(
+            due_date.is_some() && due_date.unwrap() >= created_date,
+            "Period {period} has due date {:?}, which is before created_at {created_date}",
+            due_date
+        );
+    }
+}
+
+#[test]
+fn test_get_missed_periods_yearly_no_period_before_created_at() {
+    use back_end::logs_db::compute_due_date_for_period;
+
+    let schedule = yearly_schedule(1, 5);
+
+    let created_date = chrono::NaiveDate::from_ymd_opt(2025, 2, 20).unwrap();
+    let created_at = created_date
+        .and_hms_opt(14, 30, 0)
+        .unwrap()
+        .and_utc()
+        .to_rfc3339();
+
+    let missed = back_end::logs_db::get_missed_periods(&schedule, None, Some(&created_at));
+
+    assert!(
+        !missed.is_empty(),
+        "Should have at least one missed period for yearly schedule"
+    );
+
+    for period in &missed {
+        let due_date = compute_due_date_for_period(&schedule, period);
+        assert!(
+            due_date.is_some() && due_date.unwrap() >= created_date,
+            "Period {period} has due date {:?}, which is before created_at {created_date}",
             due_date
         );
     }

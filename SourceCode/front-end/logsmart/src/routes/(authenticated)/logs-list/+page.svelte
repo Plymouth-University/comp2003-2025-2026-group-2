@@ -34,23 +34,6 @@
 		return null;
 	}
 
-	console.assert(
-		parsePeriodToDate('2026')?.toDateString() === new Date(2026, 0, 1).toDateString(),
-		'Yearly parsing failed'
-	);
-	console.assert(
-		parsePeriodToDate('04/2026')?.toDateString() === new Date(2026, 3, 1).toDateString(),
-		'Monthly parsing failed'
-	);
-	console.assert(
-		parsePeriodToDate('15/04/2026')?.toDateString() === new Date(2026, 3, 15).toDateString(),
-		'Daily parsing failed'
-	);
-	console.assert(
-		parsePeriodToDate('29-4/4/2026')?.toDateString() === new Date(2026, 3, 4).toDateString(),
-		'Weekly parsing failed'
-	);
-
 	let { data } = $props<{ data: PageData }>();
 
 	const isReadonlyHQ = $derived(data?.user?.role === 'staff' && !data?.user?.branch_id);

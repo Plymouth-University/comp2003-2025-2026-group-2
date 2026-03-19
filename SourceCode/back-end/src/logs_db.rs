@@ -1296,6 +1296,10 @@ pub fn validate_and_normalize_period(schedule: &Schedule, period: &str) -> Optio
     let period = period.trim();
     match schedule.frequency {
         Frequency::Daily => {
+            let parts: Vec<&str> = period.split('/').collect();
+            if parts.len() != 3 || parts[0].contains('-') {
+                return None;
+            }
             let date = parse_period_to_date(period)?;
             Some(format_period_for_date(date))
         }
@@ -1460,6 +1464,7 @@ pub fn get_missed_periods(
             .ok()
             .map(|dt| dt.date_naive())
     });
+    let created_date = start_from;
 
     let mut missed = Vec::new();
 
@@ -1604,6 +1609,7 @@ pub fn get_missed_periods(
 
                 if let Some(d) = check_date
                     && d <= today
+                    && created_date.map_or(true, |created| d >= created)
                 {
                     missed.push(format_period_for_monthly(d));
                 }
@@ -1646,6 +1652,7 @@ pub fn get_missed_periods(
 
                 if let Some(d) = check_date
                     && d <= today
+                    && created_date.map_or(true, |created| d >= created)
                 {
                     missed.push(d.format("%Y").to_string());
                 }
