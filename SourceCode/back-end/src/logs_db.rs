@@ -1336,7 +1336,7 @@ pub fn validate_and_normalize_period(schedule: &Schedule, period: &str) -> Optio
 
 #[must_use]
 pub fn is_form_due_today(schedule: &Schedule) -> bool {
-    let today = chrono::Local::now();
+    let today = chrono::Utc::now();
     let weekday = today.weekday();
 
     match schedule.frequency {
