@@ -96,7 +96,7 @@
 
 {#if isOpen}
 	<div
-		class="fixed inset-0 z-50 flex mx-4 items-center justify-center bg-black/50"
+		class="fixed inset-0 z-50 mx-4 flex items-center justify-center bg-black/50"
 		onclick={handleBackdropClick}
 		onkeydown={(e) => e.key === 'Escape' && handleClose()}
 		role="dialog"
@@ -109,7 +109,7 @@
 			style="background-color: var(--bg-primary); border-color: var(--border-primary);"
 		>
 			<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
-				<h2 id="wizard-title" class="md:text-xl font-bold" style="color: var(--text-primary);">
+				<h2 id="wizard-title" class="font-bold md:text-xl" style="color: var(--text-primary);">
 					Schedule Settings: {template.name}
 				</h2>
 			</div>
@@ -143,11 +143,11 @@
 						<p class="mb-3 text-sm" style="color: var(--text-secondary);">
 							Leave all unselected for every day
 						</p>
-						<div class="flex flex-wrap gap-2 justify-center">
+						<div class="flex flex-wrap justify-center gap-2">
 							{#each daysOfWeek as day (day.value)}
 								<button
 									type="button"
-									class="rounded border-2 px-3 py-2 font-medium transition-colors xs:text-sm text-base"
+									class="rounded border-2 px-3 py-2 text-base font-medium transition-colors xs:text-sm"
 									class:day-selected={selectedDays.includes(day.value)}
 									class:day-unselected={!selectedDays.includes(day.value)}
 									onclick={() => toggleDay(day.value)}
@@ -204,11 +204,11 @@
 						<p class="mb-3 font-medium xs:text-sm" style="color: var(--text-secondary);">
 							Select which day of the week this template should be completed on:
 						</p>
-						<div class="flex flex-wrap gap-2 justify-center">
+						<div class="flex flex-wrap justify-center gap-2">
 							{#each daysOfWeek as day (day.value)}
 								<button
 									type="button"
-									class="rounded border-2 px-3 py-2 font-medium transition-colors xs:text-sm text-base"
+									class="rounded border-2 px-3 py-2 text-base font-medium transition-colors xs:text-sm"
 									class:day-selected={weeklyDay === day.value}
 									class:day-unselected={weeklyDay !== day.value}
 									onclick={() => (weeklyDay = day.value)}
@@ -245,7 +245,7 @@
 					<div>
 						<label
 							for="yearly-date"
-							class="mb-2 block font-medium text-base xs:text-sm"
+							class="mb-2 block text-base font-medium xs:text-sm"
 							style="color: var(--text-secondary);"
 						>
 							Date of year it will become available from
