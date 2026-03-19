@@ -48,7 +48,7 @@ pub async fn list_due_forms_today(
             .map_err(|(status, err)| (status, Json(err)))?;
 
     let mut due_forms = Vec::new();
-    let now = chrono::Local::now();
+    let now = chrono::Utc::now();
 
     for template in templates {
         let last_submitted = logs_db::get_latest_submitted_entry(
@@ -149,7 +149,10 @@ pub async fn list_due_forms_today(
                     logs_db::get_available_from_datetime(&template.schedule, &period);
                 let due_at = logs_db::get_due_at_datetime(&template.schedule, &period);
 
-                if due_forms.iter().any(|f| f.period == period) {
+                if due_forms
+                    .iter()
+                    .any(|f| f.template_name == template.template_name && f.period == period)
+                {
                     continue;
                 }
 

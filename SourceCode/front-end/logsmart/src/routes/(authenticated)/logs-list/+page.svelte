@@ -10,26 +10,46 @@
 	type DueForm = components['schemas']['DueFormInfo'];
 
 	function parsePeriodToDate(period: string): Date | null {
-		const parts = period.split(/[-/]/);
-		if (parts.length === 1) {
-			const year = parseInt(parts[0], 10);
+		const slashParts = period.split('/');
+
+		if (slashParts.length === 1) {
+			const year = parseInt(slashParts[0], 10);
 			const date = new Date(year, 0, 1);
 			return isNaN(date.getTime()) ? null : date;
-		} else if (parts.length === 2) {
-			const month = parseInt(parts[0], 10);
-			const year = parseInt(parts[1], 10);
+		} else if (slashParts.length === 2) {
+			const month = parseInt(slashParts[0], 10);
+			const year = parseInt(slashParts[1], 10);
 			const date = new Date(year, month - 1, 1);
 			return isNaN(date.getTime()) ? null : date;
-		} else if (parts.length === 3) {
-			const isWeekly = parts[0].includes('-');
-			const day = isWeekly ? parseInt(parts[0].split('-')[1], 10) : parseInt(parts[0], 10);
-			const month = parseInt(parts[1], 10);
-			const year = parseInt(parts[2], 10);
+		} else if (slashParts.length === 3) {
+			const isWeekly = slashParts[0].includes('-');
+			const day = isWeekly
+				? parseInt(slashParts[0].split('-')[1], 10)
+				: parseInt(slashParts[0], 10);
+			const month = parseInt(slashParts[1], 10);
+			const year = parseInt(slashParts[2], 10);
 			const date = new Date(year, month - 1, day);
 			return isNaN(date.getTime()) ? null : date;
 		}
 		return null;
 	}
+
+	console.assert(
+		parsePeriodToDate('2026')?.toDateString() === new Date(2026, 0, 1).toDateString(),
+		'Yearly parsing failed'
+	);
+	console.assert(
+		parsePeriodToDate('04/2026')?.toDateString() === new Date(2026, 3, 1).toDateString(),
+		'Monthly parsing failed'
+	);
+	console.assert(
+		parsePeriodToDate('15/04/2026')?.toDateString() === new Date(2026, 3, 15).toDateString(),
+		'Daily parsing failed'
+	);
+	console.assert(
+		parsePeriodToDate('29-4/4/2026')?.toDateString() === new Date(2026, 3, 4).toDateString(),
+		'Weekly parsing failed'
+	);
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -63,8 +83,9 @@
 			? [...data.allLogs]
 					.filter((log) => !dueTodayPeriods.has(`${log.template_name}|${log.period}`))
 					.sort((a, b) => {
-						const dateA = new SvelteDate(a.period);
-						const dateB = new SvelteDate(b.period);
+						const dateA = parsePeriodToDate(a.period);
+						const dateB = parsePeriodToDate(b.period);
+						if (!dateA || !dateB) return 0;
 						return dateB.getTime() - dateA.getTime();
 					})
 			: []

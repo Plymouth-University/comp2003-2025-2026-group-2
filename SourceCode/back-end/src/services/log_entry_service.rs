@@ -72,7 +72,20 @@ impl LogEntryService {
         }
 
         let period_to_use = match period {
-            Some(p) => p.to_string(),
+            Some(p) => match logs_db::validate_and_normalize_period(&template.schedule, p) {
+                Some(normalized) => normalized,
+                None => {
+                    return Err((
+                        StatusCode::BAD_REQUEST,
+                        json!({ "error": format!("Invalid period format for {} schedule", match template.schedule.frequency {
+                                logs_db::Frequency::Daily => "daily",
+                                logs_db::Frequency::Weekly => "weekly",
+                                logs_db::Frequency::Monthly => "monthly",
+                                logs_db::Frequency::Yearly => "yearly",
+                            }) }),
+                    ));
+                }
+            },
             None => logs_db::format_period_for_frequency(&template.schedule.frequency),
         };
 
