@@ -1359,20 +1359,21 @@ pub fn validate_period_business_rules(
     }
 
     if let Frequency::Daily = schedule.frequency
-        && let Some(days_of_week) = &schedule.days_of_week {
-            let day_num = match due_date.weekday() {
-                chrono::Weekday::Sun => 0,
-                chrono::Weekday::Mon => 1,
-                chrono::Weekday::Tue => 2,
-                chrono::Weekday::Wed => 3,
-                chrono::Weekday::Thu => 4,
-                chrono::Weekday::Fri => 5,
-                chrono::Weekday::Sat => 6,
-            };
-            if !days_of_week.contains(&day_num) {
-                return Err(PeriodValidationError::WeekdayNotAllowed);
-            }
+        && let Some(days_of_week) = &schedule.days_of_week
+    {
+        let day_num = match due_date.weekday() {
+            chrono::Weekday::Sun => 0,
+            chrono::Weekday::Mon => 1,
+            chrono::Weekday::Tue => 2,
+            chrono::Weekday::Wed => 3,
+            chrono::Weekday::Thu => 4,
+            chrono::Weekday::Fri => 5,
+            chrono::Weekday::Sat => 6,
+        };
+        if !days_of_week.contains(&day_num) {
+            return Err(PeriodValidationError::WeekdayNotAllowed);
         }
+    }
 
     if let Some(created_at) = template_created_at {
         let created_date = created_at.date_naive();
@@ -1609,7 +1610,7 @@ pub fn get_missed_periods(
 
                 if let Some(d) = check_date
                     && d <= today
-                    && created_date.map_or(true, |created| d >= created)
+                    && created_date.is_none_or(|created| d >= created)
                 {
                     missed.push(format_period_for_monthly(d));
                 }
@@ -1652,7 +1653,7 @@ pub fn get_missed_periods(
 
                 if let Some(d) = check_date
                     && d <= today
-                    && created_date.map_or(true, |created| d >= created)
+                    && created_date.is_none_or(|created| d >= created)
                 {
                     missed.push(d.format("%Y").to_string());
                 }
