@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { api } from '$lib/api';
 	import type { components } from '$lib/api-types';
+	import { onMount } from 'svelte';
 	import { SvelteDate, SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { PDF_STYLES } from '$lib/utils/pdf-templates';
 
 	type LogEntry = components['schemas']['LogEntryResponse'];
 	type TemplateField = components['schemas']['TemplateField'];
+	type TemplateFieldProps = components['schemas']['TemplateFieldProps'];
 
 	type LogComponent = {
 		entry: LogEntry;
@@ -14,6 +16,25 @@
 		fieldData: string;
 		fieldIndex: number;
 		componentId: string;
+	};
+
+	type SavedReportParams = {
+		date_from_iso: string;
+		date_to_iso: string;
+		selected_branch_ids: string[];
+		selected_log_type_ids: string[];
+		arrange_by: 'date' | 'logType';
+		include_temperature_graphs: boolean;
+		params_version: number;
+	};
+
+	type ReportRun = {
+		id: string;
+		name?: string | null;
+		params: SavedReportParams;
+		created_at: string;
+		last_used_at: string;
+		use_count: number;
 	};
 
 	// Get user data from parent layout
@@ -108,6 +129,10 @@
 	let logEntries = $state<LogEntry[]>([]);
 	let filteredEntries = $state<LogEntry[]>([]);
 	let includeTemperatureGraphs = $state(false);
+	let reportRuns = $state<ReportRun[]>([]);
+	let isReportRunsLoading = $state(false);
+	let reportRunsError = $state<string | null>(null);
+	let deletingReportId = $state<string | null>(null);
 
 	// Temperature graph data types
 	type TemperatureDataPoint = {
@@ -854,6 +879,129 @@
 		}
 	}
 
+	function getSelectedLogTypeIds(): string[] {
+		return logTypes.filter((type) => type.id !== 'all' && type.checked).map((type) => type.id);
+	}
+
+	function applySelectedLogTypeIds(selectedIds: string[]) {
+		const selectedSet = new SvelteSet(selectedIds);
+		logTypes = logTypes.map((type) => {
+			if (type.id === 'all') {
+				return { ...type, checked: false };
+			}
+			return { ...type, checked: selectedSet.has(type.id) };
+		});
+		handleIndividualCheckboxChange();
+	}
+
+	function buildCurrentReportParams(): SavedReportParams {
+		const selectedBranchIds = [...selectedBranches].sort();
+		const selectedLogTypeIds = getSelectedLogTypeIds().sort();
+		return {
+			date_from_iso: dateFromISO,
+			date_to_iso: dateToISO,
+			selected_branch_ids: selectedBranchIds,
+			selected_log_type_ids: selectedLogTypeIds,
+			arrange_by: arrangeBy,
+			include_temperature_graphs: includeTemperatureGraphs,
+			params_version: 1
+		};
+	}
+
+	function applyReportParams(params: SavedReportParams) {
+		dateFromISO = params.date_from_iso;
+		dateToISO = params.date_to_iso;
+		dateFrom = formatFromISO(params.date_from_iso) || dateFrom;
+		dateTo = formatFromISO(params.date_to_iso) || dateTo;
+		selectedBranches = [...params.selected_branch_ids];
+		arrangeBy = params.arrange_by;
+		includeTemperatureGraphs = params.include_temperature_graphs;
+		applySelectedLogTypeIds(params.selected_log_type_ids);
+	}
+
+	function formatFromISO(iso: string): string {
+		const parts = iso.split('-');
+		if (parts.length !== 3) return '';
+		const [year, month, day] = parts;
+		return `${day}/${month}/${year}`;
+	}
+
+	async function loadReportRuns() {
+		isReportRunsLoading = true;
+		reportRunsError = null;
+		try {
+			const res = await fetch('/api/reports/runs?limit=20');
+			if (!res.ok) {
+				throw new Error('Failed to load saved reports');
+			}
+			const data = (await res.json()) as { report_runs?: ReportRun[] };
+			reportRuns = data.report_runs ?? [];
+		} catch (err) {
+			reportRunsError = err instanceof Error ? err.message : 'Failed to load saved reports';
+		} finally {
+			isReportRunsLoading = false;
+		}
+	}
+
+	async function saveReportRun() {
+		const payload = {
+			params: buildCurrentReportParams()
+		};
+
+		const res = await fetch('/api/reports/runs', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify(payload)
+		});
+
+		if (!res.ok) {
+			throw new Error('Failed to save report settings');
+		}
+	}
+
+	async function runSavedReport(run: ReportRun) {
+		applyReportParams(run.params);
+
+		await generateReport();
+		await loadReportRuns();
+	}
+
+	async function deleteReportRun(reportId: string) {
+		deletingReportId = reportId;
+		reportRunsError = null;
+		try {
+			const res = await fetch(`/api/reports/runs/${reportId}`, {
+				method: 'DELETE'
+			});
+			if (!res.ok) {
+				let errorMessage = 'Failed to delete saved report';
+				try {
+					const data = (await res.json()) as { error?: string };
+					if (data.error) {
+						errorMessage = `${errorMessage} (${res.status}): ${data.error}`;
+					} else {
+						errorMessage = `${errorMessage} (${res.status})`;
+					}
+				} catch {
+					errorMessage = `${errorMessage} (${res.status})`;
+				}
+
+				console.error('Delete report failed', { reportId, status: res.status });
+				throw new Error(errorMessage);
+			}
+			await loadReportRuns();
+		} catch (err) {
+			console.error('Delete report exception', { reportId, err });
+			reportRunsError = err instanceof Error ? err.message : 'Failed to delete saved report';
+		} finally {
+			deletingReportId = null;
+		}
+	}
+
+	onMount(async () => {
+		await loadReportRuns();
+	});
+
 	async function generateReport() {
 		isLoading = true;
 		error = null;
@@ -942,6 +1090,13 @@
 				temperatureGraphs = extractTemperatureGraphData(filteredEntries);
 			} else {
 				temperatureGraphs = [];
+			}
+
+			try {
+				await saveReportRun();
+				await loadReportRuns();
+			} catch {
+				// Saving report run should never block report generation success.
 			}
 
 			reportGenerated = true;
@@ -2023,6 +2178,54 @@ ${reportContent}
 							<polyline points="6 3 11 8 6 13"></polyline>
 						</svg>
 					</button>
+				</div>
+
+				<!-- Saved Report Runs -->
+				<div class="mt-8">
+					<h3 class="mb-3 text-lg font-bold" style="color: var(--text-primary);">Recent Reports</h3>
+					{#if reportRunsError}
+						<p class="mb-2 text-sm text-red-500">{reportRunsError}</p>
+					{/if}
+					{#if isReportRunsLoading}
+						<p class="text-sm" style="color: var(--text-secondary);">Loading saved reports...</p>
+					{:else if reportRuns.length === 0}
+						<p class="text-sm" style="color: var(--text-secondary);">No saved reports yet.</p>
+					{:else}
+						<div class="space-y-2">
+							{#each reportRuns as run (run.id)}
+								<div
+									class="w-full rounded border-2 px-3 py-2"
+									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+								>
+									<button
+										type="button"
+										onclick={() => runSavedReport(run)}
+										class="w-full text-left hover:opacity-80"
+									>
+										<div class="text-sm font-semibold">
+											{formatFromISO(run.params.date_from_iso)} - {formatFromISO(
+												run.params.date_to_iso
+											)}
+										</div>
+										<div class="text-xs" style="color: var(--text-secondary);">
+											Used {run.use_count} time(s) • {new Date(run.last_used_at).toLocaleString()}
+										</div>
+									</button>
+									<div class="mt-2 flex justify-end">
+										<button
+											type="button"
+											disabled={deletingReportId === run.id}
+											onclick={() => deleteReportRun(run.id)}
+											class="rounded border px-2 py-1 text-xs hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+											style="border-color: #dc2626; color: #dc2626;"
+										>
+											{deletingReportId === run.id ? 'Deleting...' : 'Delete'}
+										</button>
+									</div>
+								</div>
+							{/each}
+						</div>
+					{/if}
 				</div>
 			</div>
 

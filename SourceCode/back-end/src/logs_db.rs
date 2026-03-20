@@ -3,6 +3,7 @@ use chrono::Datelike;
 use chrono::Timelike;
 use futures_util::TryStreamExt;
 use mongodb::bson::Uuid;
+use mongodb::options::ReturnDocument;
 use schemars::JsonSchema;
 use utoipa::ToSchema;
 
@@ -523,6 +524,300 @@ pub struct LogEntry {
     pub submitted_at: Option<chrono::DateTime<chrono::Utc>>,
     pub status: LogStatus,
     pub period: String,
+}
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct ReportRunDocument {
+    pub report_id: String,
+    pub user_id: String,
+    pub company_id: String,
+    pub name: Option<String>,
+    pub params: crate::dto::ReportRunParams,
+    #[serde(default)]
+    pub params_key: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub last_used_at: chrono::DateTime<chrono::Utc>,
+    pub use_count: u32,
+}
+
+#[must_use]
+pub fn normalize_report_params(
+    params: &crate::dto::ReportRunParams,
+) -> crate::dto::ReportRunParams {
+    let mut normalized = params.clone();
+    normalized.selected_branch_ids.sort();
+    normalized.selected_branch_ids.dedup();
+    normalized.selected_log_type_ids.sort();
+    normalized.selected_log_type_ids.dedup();
+    normalized
+}
+
+pub fn report_params_key(params: &crate::dto::ReportRunParams) -> Result<String> {
+    let normalized = normalize_report_params(params);
+    serde_json::to_string(&normalized).map_err(Into::into)
+}
+
+/// Creates a saved report run for a user.
+///
+/// # Errors
+/// Returns an error if insertion fails.
+pub async fn create_report_run(
+    client: &mongodb::Client,
+    report_run: &ReportRunDocument,
+) -> Result<ReportRunDocument> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<ReportRunDocument> = db.collection("report_runs");
+
+    let normalized_params = normalize_report_params(&report_run.params);
+    let params_key = report_params_key(&normalized_params)?;
+
+    let params_bson = mongodb::bson::to_bson(&normalized_params)?;
+    let filter = mongodb::bson::doc! {
+        "user_id": &report_run.user_id,
+        "company_id": &report_run.company_id,
+        "params_key": &params_key,
+    };
+
+    let existing = if let Some(existing) = collection.find_one(filter.clone()).await? {
+        Some(existing)
+    } else {
+        let direct = collection
+            .find_one(mongodb::bson::doc! {
+                "user_id": &report_run.user_id,
+                "company_id": &report_run.company_id,
+                "params": params_bson,
+            })
+            .await?;
+
+        if direct.is_some() {
+            direct
+        } else {
+            // Backward-compat: old rows may have equivalent params but different array ordering.
+            let mut cursor = collection
+                .find(mongodb::bson::doc! {
+                    "user_id": &report_run.user_id,
+                    "company_id": &report_run.company_id,
+                })
+                .limit(200)
+                .await?;
+
+            let mut matched: Option<ReportRunDocument> = None;
+            while let Some(candidate) = cursor.try_next().await? {
+                let candidate_key = if candidate.params_key.is_empty() {
+                    report_params_key(&candidate.params)?
+                } else {
+                    candidate.params_key.clone()
+                };
+
+                if candidate_key == params_key {
+                    matched = Some(candidate);
+                    break;
+                }
+            }
+
+            matched
+        }
+    };
+
+    if let Some(existing) = existing {
+        let updated = collection
+            .find_one_and_update(
+                mongodb::bson::doc! {
+                    "report_id": &existing.report_id,
+                    "user_id": &existing.user_id,
+                    "company_id": &existing.company_id,
+                },
+                mongodb::bson::doc! {
+                    "$set": {
+                        "last_used_at": mongodb::bson::to_bson(&chrono::Utc::now())?,
+                        "name": mongodb::bson::to_bson(&report_run.name)?,
+                        "params_key": &params_key,
+                        "params": mongodb::bson::to_bson(&normalized_params)?,
+                    },
+                    "$inc": {
+                        "use_count": 1,
+                    }
+                },
+            )
+            .return_document(ReturnDocument::After)
+            .await?;
+
+        if let Some(updated) = updated {
+            return Ok(updated);
+        }
+
+        return Ok(existing);
+    }
+
+    let mut to_insert = report_run.clone();
+    to_insert.params = normalized_params;
+    to_insert.params_key = params_key;
+
+    collection.insert_one(&to_insert).await?;
+    Ok(to_insert)
+}
+
+/// Lists saved report runs for a user.
+///
+/// # Errors
+/// Returns an error if query fails.
+pub async fn list_report_runs(
+    client: &mongodb::Client,
+    user_id: &str,
+    company_id: &str,
+    limit: i64,
+) -> Result<Vec<ReportRunDocument>> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<ReportRunDocument> = db.collection("report_runs");
+
+    let filter = mongodb::bson::doc! {
+        "user_id": user_id,
+        "company_id": company_id,
+    };
+
+    let mut cursor = collection
+        .find(filter)
+        .sort(mongodb::bson::doc! { "last_used_at": -1, "created_at": -1 })
+        .limit(limit)
+        .await?;
+
+    let mut runs = Vec::new();
+    while let Some(run) = cursor.try_next().await? {
+        runs.push(run);
+    }
+
+    Ok(runs)
+}
+
+/// Marks a saved report run as used.
+///
+/// # Errors
+/// Returns an error if update fails.
+pub async fn touch_report_run(
+    client: &mongodb::Client,
+    report_id: &str,
+    user_id: &str,
+    company_id: &str,
+) -> Result<bool> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<ReportRunDocument> = db.collection("report_runs");
+
+    let filter = mongodb::bson::doc! {
+        "report_id": report_id,
+        "user_id": user_id,
+        "company_id": company_id,
+    };
+
+    let update = mongodb::bson::doc! {
+        "$set": {
+            "last_used_at": mongodb::bson::to_bson(&chrono::Utc::now())?,
+        },
+        "$inc": {
+            "use_count": 1,
+        }
+    };
+
+    let result = collection.update_one(filter, update).await?;
+    Ok(result.matched_count > 0)
+}
+
+/// Deletes a saved report run.
+///
+/// # Errors
+/// Returns an error if delete fails.
+pub async fn delete_report_run(
+    client: &mongodb::Client,
+    report_id: &str,
+    user_id: &str,
+    company_id: &str,
+) -> Result<bool> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<ReportRunDocument> = db.collection("report_runs");
+
+    let id_filter = mongodb::bson::doc! {
+        "report_id": report_id,
+        "user_id": user_id,
+        "company_id": company_id,
+    };
+
+    let Some(target) = collection.find_one(id_filter).await? else {
+        tracing::warn!(
+            target: "report_runs",
+            "mongo delete: target not found for report_id={}, user_id={}, company_id={}",
+            report_id,
+            user_id,
+            company_id
+        );
+        return Ok(false);
+    };
+
+    let params_key = if target.params_key.is_empty() {
+        report_params_key(&target.params)?
+    } else {
+        target.params_key
+    };
+
+    tracing::info!(
+        target: "report_runs",
+        "mongo delete: resolved params_key for report_id={} key_len={}",
+        report_id,
+        params_key.len()
+    );
+
+    let mut cursor = collection
+        .find(mongodb::bson::doc! {
+            "user_id": user_id,
+            "company_id": company_id,
+        })
+        .limit(500)
+        .await?;
+
+    let mut report_ids_to_delete = Vec::new();
+    let mut scanned_count: usize = 0;
+    while let Some(candidate) = cursor.try_next().await? {
+        scanned_count += 1;
+        let candidate_key = if candidate.params_key.is_empty() {
+            report_params_key(&candidate.params)?
+        } else {
+            candidate.params_key.clone()
+        };
+
+        if candidate_key == params_key {
+            report_ids_to_delete.push(candidate.report_id);
+        }
+    }
+
+    if report_ids_to_delete.is_empty() {
+        report_ids_to_delete.push(report_id.to_string());
+    }
+
+    tracing::info!(
+        target: "report_runs",
+        "mongo delete: scanned={} matched_ids={} for report_id={} user_id={} company_id={}",
+        scanned_count,
+        report_ids_to_delete.len(),
+        report_id,
+        user_id,
+        company_id
+    );
+
+    let result = collection
+        .delete_many(mongodb::bson::doc! {
+            "user_id": user_id,
+            "company_id": company_id,
+            "report_id": { "$in": report_ids_to_delete },
+        })
+        .await?;
+
+    tracing::info!(
+        target: "report_runs",
+        "mongo delete: deleted_count={} for report_id={} user_id={} company_id={}",
+        result.deleted_count,
+        report_id,
+        user_id,
+        company_id
+    );
+    Ok(result.deleted_count > 0)
 }
 
 /// Creates a new log entry.
