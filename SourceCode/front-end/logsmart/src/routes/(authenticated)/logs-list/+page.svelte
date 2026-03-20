@@ -215,6 +215,9 @@
 									{:else}
 										Not yet started
 									{/if}
+								{:else}
+									Not yet started
+								{/if}
 								</div>
 							{/snippet}
 							{#snippet actions()}
