@@ -1,10 +1,19 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/xGnTrW1S)
 [![Open in Codespaces](https://classroom.github.com/assets/launch-codespace-2972f46106e565e64193e422d61a12cf1da4916b45550586e14ef0a7c637dd04.svg)](https://classroom.github.com/open-in-codespaces?assignment_repo_id=20873211)
+![PRs](https://img.shields.io/github/issues-pr/Plymouth-University/comp2003-2025-2026-group-2)
 
 # LogSmart - COMP2003-2025-2026
 
-A security log management system for tracking and analyzing security events.
+Introducing LogSmart, the template-based digital logging system initially designed for the food service industry. Replace your paper logs with an instant, secure, and eco-friendly solution that optimizes your daily operations. Featuring a custom WYSIWYG template designer, AI-assisted template generation, scheduled logs, built-in report generation and simple user administration tools.
 
+
+| Contributor | Commits | Lines (Rounded) |
+| :--- | :--- | :--- |
+| **NullString1** | 188 | ~52500 |
+| **Lilla-Rad** | 21 | ~500 |
+| **BenD2006** | 24 | ~2500 |
+
+![](https://github.com/Plymouth-University/comp2003-2025-2026-group-2/blob/main/Design%20Documents/template_designer.png)
 ## 🔗 Links
 
 - **Production:** [https://logsmart.app/](https://logsmart.app/)
