@@ -493,6 +493,8 @@ pub struct OAuthCallbackRequest {
 pub struct CreateLogEntryRequest {
     #[schema(example = "Kitchen Daily Log")]
     pub template_name: String,
+    #[schema(example = "17/03/2026")]
+    pub period: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -523,6 +525,9 @@ pub struct DueFormInfo {
     pub last_submitted: Option<String>,
     pub period: String,
     pub status: Option<String>,
+    pub availability_status: String,
+    pub available_from: Option<String>,
+    pub due_at: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]

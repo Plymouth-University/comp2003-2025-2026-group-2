@@ -1,7 +1,12 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
-	let { title, hasItems, emptyMessage, children }: {
+	let {
+		title,
+		hasItems,
+		emptyMessage,
+		children
+	}: {
 		title: string;
 		hasItems: boolean;
 		emptyMessage: string;

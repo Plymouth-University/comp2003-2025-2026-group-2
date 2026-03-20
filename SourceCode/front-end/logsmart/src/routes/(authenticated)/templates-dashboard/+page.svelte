@@ -41,6 +41,12 @@
 		if (apiSchedule.month_of_year !== null && apiSchedule.month_of_year !== undefined) {
 			schedule.monthOfYear = apiSchedule.month_of_year;
 		}
+		if (apiSchedule.available_from_time !== null && apiSchedule.available_from_time !== undefined) {
+			schedule.availableFromTime = apiSchedule.available_from_time;
+		}
+		if (apiSchedule.due_at_time !== null && apiSchedule.due_at_time !== undefined) {
+			schedule.dueAtTime = apiSchedule.due_at_time;
+		}
 
 		return schedule;
 	}
@@ -72,6 +78,12 @@
 		}
 		if (schedule.monthOfYear !== undefined) {
 			apiSchedule.month_of_year = schedule.monthOfYear;
+		}
+		if (schedule.availableFromTime !== undefined) {
+			apiSchedule.available_from_time = schedule.availableFromTime;
+		}
+		if (schedule.dueAtTime !== undefined) {
+			apiSchedule.due_at_time = schedule.dueAtTime;
 		}
 
 		return apiSchedule;

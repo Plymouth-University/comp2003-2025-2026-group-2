@@ -2,10 +2,13 @@
 	import type { PageData } from './$types';
 	import { goto } from '$app/navigation';
 	import ClockInOut from '$lib/components/ClockInOut.svelte';
+	import type { components } from '$lib/api-types';
+
+	type Log = components['schemas']['DueFormInfo'];
 
 	let { data } = $props<{ data: PageData }>();
 
-	const todaysLogs = $derived(data?.todaysLogs ?? []);
+	const todaysLogs = $derived(data?.todaysLogs ?? []) as Log[];
 	const clockStatus = $derived(data?.clockStatus ?? null);
 
 	const handleCreateNewTemplate = () => {

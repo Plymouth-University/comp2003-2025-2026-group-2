@@ -88,7 +88,9 @@
 			<div
 				class="rounded-base relative border-2 border-border-primary bg-bg-primary p-4 shadow-sm md:p-6"
 			>
-				<div class="flex items-center justify-between border-b-2 border-border-primary pb-4 md:pb-5">
+				<div
+					class="flex items-center justify-between border-b-2 border-border-primary pb-4 md:pb-5"
+				>
 					<span class="text-lg font-medium text-text-primary">Profile</span>
 					<button
 						type="button"
@@ -168,16 +170,20 @@
 								disabled
 							/>
 							<button
-								class="mb-2 ml-auto rounded border-2 border-border-primary bg-bg-primary sm:px-4 px-2 py-2 font-bold text-text-primary hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+								class="mb-2 ml-auto rounded border-2 border-border-primary bg-bg-primary px-2 py-2 font-bold text-text-primary hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
 								type="button"
 								disabled={isReadonlyHQ}
 								onclick={() => {
 									if (selectedUser)
-										api.POST('/auth/password/request-reset', { body: { email: selectedUser?.email } });
+										api.POST('/auth/password/request-reset', {
+											body: { email: selectedUser?.email }
+										});
 								}}>Reset</button
 							>
 						</div>
-						<label for="sidebar-role-mobile" class="mb-1 text-sm font-medium text-text-primary">Role</label>
+						<label for="sidebar-role-mobile" class="mb-1 text-sm font-medium text-text-primary"
+							>Role</label
+						>
 						<select
 							class="mb-3 w-full border-2 border-border-primary bg-bg-primary px-3 py-1 text-text-primary"
 							name="role"
@@ -196,7 +202,9 @@
 								<option id="logsmart_adminRole" value="logsmart_admin">Internal Admin</option>
 							{/if}
 						</select>
-						<label for="sidebar-branch-mobile" class="mb-1 text-sm font-medium text-text-primary">Branch</label>
+						<label for="sidebar-branch-mobile" class="mb-1 text-sm font-medium text-text-primary"
+							>Branch</label
+						>
 						<select
 							class="mb-3 w-full border-2 border-border-primary bg-bg-primary px-3 py-1 text-text-primary"
 							name="branch"
@@ -252,134 +260,135 @@
 			? 'flex'
 			: 'hidden'} flex-col items-center p-6"
 	>
-	<span class="mb-1 text-xl font-bold text-text-primary">Profile</span>
-	<div class="flex flex-col justify-items-center">
-		<form
-			class="mb-4 flex flex-col items-center px-8 pt-2 pb-8"
-			onsubmit={(e) => e.preventDefault()}
-		>
-			<div class="mb-4">
-				<ProfilePictureUploader
-					currentPictureUrl={profilePictureUrl}
-					{firstName}
-					{lastName}
-					disabled={isReadonlyHQ}
-					triggerOnImageClick={true}
-					showUploadButton={false}
-					targetUserEmail={selectedUser?.email || ''}
-					onUploadComplete={handlePictureUpload}
-					onDeleteComplete={handlePictureDelete}
-				/>
-			</div>
-			<input
-				class="mb-2 border-2 border-border-primary bg-bg-primary px-3 py-1 text-text-primary"
-				id="fname"
-				type="text"
-				bind:value={firstName}
-				required
-				placeholder="First Name"
-				disabled={isReadonlyHQ}
-			/>
-			<input
-				class="mb-2 border-2 border-border-primary bg-bg-primary px-3 py-1 text-text-primary"
-				id="lname"
-				type="text"
-				bind:value={lastName}
-				required
-				placeholder="Last Name"
-				disabled={isReadonlyHQ}
-			/>
-			<input
-				class="mb-2 border-2 border-border-primary bg-bg-primary px-3 py-1 text-text-primary"
-				id="sidebar-email"
-				type="text"
-				value={selectedUser?.email}
-				disabled
-				required
-				placeholder="Email"
-			/>
-			<div class="flex flex-col gap-4 md:flex-row">
+		<span class="mb-1 text-xl font-bold text-text-primary">Profile</span>
+		<div class="flex flex-col justify-items-center">
+			<form
+				class="mb-4 flex flex-col items-center px-8 pt-2 pb-8"
+				onsubmit={(e) => e.preventDefault()}
+			>
+				<div class="mb-4">
+					<ProfilePictureUploader
+						currentPictureUrl={profilePictureUrl}
+						{firstName}
+						{lastName}
+						disabled={isReadonlyHQ}
+						triggerOnImageClick={true}
+						showUploadButton={false}
+						targetUserEmail={selectedUser?.email || ''}
+						onUploadComplete={handlePictureUpload}
+						onDeleteComplete={handlePictureDelete}
+					/>
+				</div>
 				<input
-					class="mb-2 w-[60%] cursor-not-allowed border-2 border-border-secondary bg-bg-secondary px-3 py-1 text-text-secondary select-none"
-					id="password"
+					class="mb-2 border-2 border-border-primary bg-bg-primary px-3 py-1 text-text-primary"
+					id="fname"
 					type="text"
-					value="*******"
-					disabled
+					bind:value={firstName}
+					required
+					placeholder="First Name"
+					disabled={isReadonlyHQ}
 				/>
+				<input
+					class="mb-2 border-2 border-border-primary bg-bg-primary px-3 py-1 text-text-primary"
+					id="lname"
+					type="text"
+					bind:value={lastName}
+					required
+					placeholder="Last Name"
+					disabled={isReadonlyHQ}
+				/>
+				<input
+					class="mb-2 border-2 border-border-primary bg-bg-primary px-3 py-1 text-text-primary"
+					id="sidebar-email"
+					type="text"
+					value={selectedUser?.email}
+					disabled
+					required
+					placeholder="Email"
+				/>
+				<div class="flex flex-col gap-4 md:flex-row">
+					<input
+						class="mb-2 w-[60%] cursor-not-allowed border-2 border-border-secondary bg-bg-secondary px-3 py-1 text-text-secondary select-none"
+						id="password"
+						type="text"
+						value="*******"
+						disabled
+					/>
+					<button
+						class="mb-2 rounded border-2 border-border-primary bg-bg-primary px-4 py-2 font-bold text-text-primary hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+						type="button"
+						disabled={isReadonlyHQ}
+						onclick={() => {
+							if (selectedUser)
+								api.POST('/auth/password/request-reset', { body: { email: selectedUser?.email } });
+						}}>Reset</button
+					>
+				</div>
+				<label for="sidebar-role" class="mb-1 text-sm font-medium text-text-primary">Role</label>
+				<select
+					class="mb-3 border-2 border-border-primary bg-bg-primary px-3 py-1 text-text-primary"
+					name="role"
+					id="sidebar-role"
+					bind:value={role}
+					disabled={isReadonlyHQ}
+				>
+					<option value="staff">Staff</option>
+					<option value="branch_manager" disabled={loggedInUserRole == 'branch_manager'}
+						>Branch Manager</option
+					>
+					<option value="company_manager" disabled={loggedInUserRole == 'branch_manager'}
+						>Company Manager</option
+					>
+					{#if loggedInUserRole === 'logsmart_admin'}
+						<option id="logsmart_adminRole" value="logsmart_admin">Internal Admin</option>
+					{/if}
+				</select>
+				<label for="sidebar-branch" class="mb-1 text-sm font-medium text-text-primary">Branch</label
+				>
+				<select
+					class="mb-3 border-2 border-border-primary bg-bg-primary px-3 py-1 text-text-primary"
+					name="branch"
+					id="sidebar-branch"
+					bind:value={branchId}
+					disabled={isReadonlyHQ}
+				>
+					<option
+						value={null}
+						disabled={loggedInUserRole == 'branch_manager' || role == 'branch_manager'}
+						>No Branch (HQ)</option
+					>
+					{#each branches as branch (branch.id)}
+						<option value={branch.id}>{branch.name}</option>
+					{/each}
+				</select>
 				<button
-					class="mb-2 rounded border-2 border-border-primary bg-bg-primary px-4 py-2 font-bold text-text-primary hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+					class="m-5 mb-0 rounded border-2 border-border-primary bg-bg-primary px-4 py-2 font-bold text-text-primary hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 					type="button"
 					disabled={isReadonlyHQ}
-					onclick={() => {
-						if (selectedUser)
-							api.POST('/auth/password/request-reset', { body: { email: selectedUser?.email } });
-					}}>Reset</button
-				>
-			</div>
-			<label for="sidebar-role" class="mb-1 text-sm font-medium text-text-primary">Role</label>
-			<select
-				class="mb-3 border-2 border-border-primary bg-bg-primary px-3 py-1 text-text-primary"
-				name="role"
-				id="sidebar-role"
-				bind:value={role}
-				disabled={isReadonlyHQ}
-			>
-				<option value="staff">Staff</option>
-				<option value="branch_manager" disabled={loggedInUserRole == 'branch_manager'}
-					>Branch Manager</option
-				>
-				<option value="company_manager" disabled={loggedInUserRole == 'branch_manager'}
-					>Company Manager</option
-				>
-				{#if loggedInUserRole === 'logsmart_admin'}
-					<option id="logsmart_adminRole" value="logsmart_admin">Internal Admin</option>
-				{/if}
-			</select>
-			<label for="sidebar-branch" class="mb-1 text-sm font-medium text-text-primary">Branch</label>
-			<select
-				class="mb-3 border-2 border-border-primary bg-bg-primary px-3 py-1 text-text-primary"
-				name="branch"
-				id="sidebar-branch"
-				bind:value={branchId}
-				disabled={isReadonlyHQ}
-			>
-				<option
-					value={null}
-					disabled={loggedInUserRole == 'branch_manager' || role == 'branch_manager'}
-					>No Branch (HQ)</option
-				>
-				{#each branches as branch (branch.id)}
-					<option value={branch.id}>{branch.name}</option>
-				{/each}
-			</select>
-			<button
-				class="m-5 mb-0 rounded border-2 border-border-primary bg-bg-primary px-4 py-2 font-bold text-text-primary hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-				type="button"
-				disabled={isReadonlyHQ}
-				onclick={async () => {
-					const response = await api.PUT('/auth/admin/update-member', {
-						body: {
-							email: selectedUser?.email as string,
-							first_name: firstName,
-							last_name: lastName,
-							role: role,
-							branch_id: branchId || undefined
-						}
-					});
-
-					if (!response.error && selectedUser) {
-						updateMember(selectedUser.email, {
-							first_name: firstName,
-							last_name: lastName,
-							role: role,
-							branch_id: branchId
+					onclick={async () => {
+						const response = await api.PUT('/auth/admin/update-member', {
+							body: {
+								email: selectedUser?.email as string,
+								first_name: firstName,
+								last_name: lastName,
+								role: role,
+								branch_id: branchId || undefined
+							}
 						});
-					} else if (response.error) {
-						alert(`Failed to update member: ${response.error.error}`);
-					}
-				}}>Save</button
-			>
-		</form>
+
+						if (!response.error && selectedUser) {
+							updateMember(selectedUser.email, {
+								first_name: firstName,
+								last_name: lastName,
+								role: role,
+								branch_id: branchId
+							});
+						} else if (response.error) {
+							alert(`Failed to update member: ${response.error.error}`);
+						}
+					}}>Save</button
+				>
+			</form>
+		</div>
 	</div>
-</div>
 {/if}

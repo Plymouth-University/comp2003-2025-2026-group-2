@@ -35,6 +35,8 @@
 	let dayOfMonth = $derived(template.schedule.dayOfMonth || 1);
 	let monthOfYear = $derived(template.schedule.monthOfYear || 1);
 	let customIntervalDays = $derived(template.schedule.customIntervalDays || 7);
+	let availableFromTime = $derived(template.schedule.availableFromTime || '08:00');
+	let dueAtTime = $derived(template.schedule.dueAtTime || '17:00');
 
 	function toggleDay(day: DayOfWeek) {
 		if (selectedDays.includes(day)) {
@@ -49,6 +51,8 @@
 
 		if (frequency === 'daily') {
 			schedule.daysOfWeek = selectedDays.length > 0 ? selectedDays : undefined;
+			schedule.availableFromTime = availableFromTime;
+			schedule.dueAtTime = dueAtTime;
 		} else if (frequency === 'weekly') {
 			schedule.dayOfWeek = weeklyDay;
 		} else if (frequency === 'monthly') {
@@ -92,7 +96,7 @@
 
 {#if isOpen}
 	<div
-		class="fixed inset-0 z-50 flex mx-4 items-center justify-center bg-black/50"
+		class="fixed inset-0 z-50 mx-4 flex items-center justify-center bg-black/50"
 		onclick={handleBackdropClick}
 		onkeydown={(e) => e.key === 'Escape' && handleClose()}
 		role="dialog"
@@ -105,7 +109,7 @@
 			style="background-color: var(--bg-primary); border-color: var(--border-primary);"
 		>
 			<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
-				<h2 id="wizard-title" class="md:text-xl font-bold" style="color: var(--text-primary);">
+				<h2 id="wizard-title" class="font-bold md:text-xl" style="color: var(--text-primary);">
 					Schedule Settings: {template.name}
 				</h2>
 			</div>
@@ -139,11 +143,11 @@
 						<p class="mb-3 text-sm" style="color: var(--text-secondary);">
 							Leave all unselected for every day
 						</p>
-						<div class="flex flex-wrap gap-2 justify-center">
+						<div class="flex flex-wrap justify-center gap-2">
 							{#each daysOfWeek as day (day.value)}
 								<button
 									type="button"
-									class="rounded border-2 px-3 py-2 font-medium transition-colors xs:text-sm text-base"
+									class="rounded border-2 px-3 py-2 text-base font-medium transition-colors xs:text-sm"
 									class:day-selected={selectedDays.includes(day.value)}
 									class:day-unselected={!selectedDays.includes(day.value)}
 									onclick={() => toggleDay(day.value)}
@@ -153,6 +157,46 @@
 							{/each}
 						</div>
 					</div>
+
+					<div class="mt-4 space-y-4">
+						<p class="font-medium" style="color: var(--text-secondary);">
+							Set availability window:
+						</p>
+						<div class="grid grid-cols-2 gap-4">
+							<div>
+								<label
+									for="available-from"
+									class="mb-2 block text-sm font-medium"
+									style="color: var(--text-secondary);"
+								>
+									Available from
+								</label>
+								<input
+									id="available-from"
+									type="time"
+									bind:value={availableFromTime}
+									class="w-full rounded border-2 px-4 py-2"
+									style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+								/>
+							</div>
+							<div>
+								<label
+									for="due-at"
+									class="mb-2 block text-sm font-medium"
+									style="color: var(--text-secondary);"
+								>
+									Due at
+								</label>
+								<input
+									id="due-at"
+									type="time"
+									bind:value={dueAtTime}
+									class="w-full rounded border-2 px-4 py-2"
+									style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+								/>
+							</div>
+						</div>
+					</div>
 				{/if}
 
 				{#if frequency === 'weekly'}
@@ -160,11 +204,11 @@
 						<p class="mb-3 font-medium xs:text-sm" style="color: var(--text-secondary);">
 							Select which day of the week this template should be completed on:
 						</p>
-						<div class="flex flex-wrap gap-2 justify-center">
+						<div class="flex flex-wrap justify-center gap-2">
 							{#each daysOfWeek as day (day.value)}
 								<button
 									type="button"
-									class="rounded border-2 px-3 py-2 font-medium transition-colors xs:text-sm text-base"
+									class="rounded border-2 px-3 py-2 text-base font-medium transition-colors xs:text-sm"
 									class:day-selected={weeklyDay === day.value}
 									class:day-unselected={weeklyDay !== day.value}
 									onclick={() => (weeklyDay = day.value)}
@@ -201,7 +245,7 @@
 					<div>
 						<label
 							for="yearly-date"
-							class="mb-2 block font-medium text-base xs:text-sm"
+							class="mb-2 block text-base font-medium xs:text-sm"
 							style="color: var(--text-secondary);"
 						>
 							Date of year it will become available from

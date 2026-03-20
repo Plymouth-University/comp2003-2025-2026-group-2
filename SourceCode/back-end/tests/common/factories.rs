@@ -281,6 +281,8 @@ impl TemplateFactory {
                 day_of_week: None,
                 day_of_month: None,
                 month_of_year: None,
+                available_from_time: None,
+                due_at_time: None,
             },
             created_by: mongodb::bson::Uuid::new(),
             version: 1,
@@ -298,6 +300,8 @@ impl TemplateFactory {
                 day_of_week: Some(1),                    // Monday
                 day_of_month: None,
                 month_of_year: None,
+                available_from_time: None,
+                due_at_time: None,
             },
             ..Self::create_basic()
         }
