@@ -13,6 +13,7 @@ Introducing LogSmart, the template-based digital logging system initially design
 | **Lilla-Rad** | 21 | ~500 |
 | **BenD2006** | 24 | ~2500 |
 
+![](https://github.com/Plymouth-University/comp2003-2025-2026-group-2/blob/main/Design%20Documents/template_designer.png)
 ## 🔗 Links
 
 - **Production:** [https://logsmart.app/](https://logsmart.app/)
