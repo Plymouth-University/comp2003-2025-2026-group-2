@@ -138,6 +138,7 @@ pub struct Company {
     pub name: String,
     pub address: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
+    pub logo_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -570,7 +571,36 @@ where
         name,
         address,
         created_at: now,
+        logo_id: None,
     })
+}
+
+/// Updates a given company's logo
+///
+/// # Errors
+/// Returns an error if database query fails
+pub async fn update_company_logo_id(
+    pool: &PgPool,
+    company_id: &str,
+    company_logo_id: Option<&str>,
+) -> Result<Company> {
+    sqlx::query(
+        r"
+        UPDATE companies
+        SET logo_id = $1
+        WHERE id = $2
+        ",
+    )
+    .bind(company_logo_id)
+    .bind(company_id)
+    .execute(pool)
+    .await?;
+
+    let company = get_company_by_id(pool, company_id)
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("Company not found"))?;
+
+    Ok(company)
 }
 
 /// Retrieves a company by its ID.
