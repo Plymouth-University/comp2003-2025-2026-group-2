@@ -95,6 +95,7 @@ impl CompanyFactory {
             name: "Test Company".to_string(),
             address: "123 Test Street".to_string(),
             created_at: Utc::now(),
+            logo_id: None,
         }
     }
 
@@ -595,6 +596,7 @@ pub async fn create_test_company(pool: &sqlx::PgPool, name: &str, address: &str)
     .bind(&company.id)
     .bind(&company.name)
     .bind(&company.address)
+    .bind(&company.logo_id)
     .fetch_one(pool)
     .await
     .map(|row| Company {
@@ -602,6 +604,7 @@ pub async fn create_test_company(pool: &sqlx::PgPool, name: &str, address: &str)
         name: row.get("name"),
         address: row.get("address"),
         created_at: row.get("created_at"),
+        logo_id: row.get("logo_id"),
     })
     .unwrap()
 }
