@@ -56,11 +56,7 @@
 	);
 
 	const dueTodayPeriods = $derived(
-		new Set(
-			dueToday?.map(
-				(form: DueForm) => `${form.template_name}|${form.period}`
-			) || []
-		)
+		new Set(dueToday?.map((form: DueForm) => `${form.template_name}|${form.period}`) || [])
 	);
 
 	const sortedAllLogs = $derived(
@@ -207,7 +203,7 @@
 						>
 							{#snippet meta()}
 								<div>
-									Period: {form.period} | 
+									Period: {form.period} |
 									{#if form.status}
 										Status: {form.status}
 										{#if form.last_submitted}
@@ -215,14 +211,12 @@
 												>{formatDate(form.last_submitted)}</span
 											>
 										{/if}
+									{:else if form.availability_status === 'overdue'}
+										Status: overdue
+									{:else if form.availability_status === 'not_available'}
+										Status: not yet started
 									{:else}
-										{#if form.availability_status === 'overdue'}
-											Status: overdue
-										{:else if form.availability_status === 'not_available'}
-											Status: not yet started
-										{:else}
-											Status: Available
-										{/if}
+										Status: Available
 									{/if}
 								</div>
 							{/snippet}
