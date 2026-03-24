@@ -653,11 +653,9 @@ pub async fn list_user_log_entries(
 
         if let Some(status) = params.get("status")
             && let Some(filter_status) = logs_db::LogStatus::from_str(status)
-        {
-            if derived_status != filter_status {
+            && derived_status != filter_status {
                 response_entries.pop();
             }
-        }
     }
 
     Ok(Json(ListLogEntriesResponse {
