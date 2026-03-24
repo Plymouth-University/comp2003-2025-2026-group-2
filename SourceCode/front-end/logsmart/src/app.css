@@ -20,6 +20,7 @@
 	--color-component-temperature: var(--component-temperature);
 	--color-component-dropdown: var(--component-dropdown);
 	--color-component-label: var(--component-label);
+	--color-scheme: var(--color-scheme);
 	--breakpoint-xs: 350px;
 }
 
@@ -35,6 +36,7 @@
 	--component-temperature: #fef3c7;
 	--component-dropdown: #f3e8ff;
 	--component-label: #ffe4e6;
+	--color-scheme: light;
 }
 
 .dark {
@@ -49,4 +51,5 @@
 	--component-temperature: #78350f;
 	--component-dropdown: #581c87;
 	--component-label: #881337;
+	--color-scheme: dark;
 }
