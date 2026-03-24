@@ -17,9 +17,7 @@
 
 	function formatSchedule(schedule: TemplateSchedule): string {
 		const times = schedule.availableFromTime && schedule.dueAtTime;
-		const window = times
-			? `${schedule.availableFromTime}-${schedule.dueAtTime}`
-			: '08:00-17:00';
+		const window = times ? `${schedule.availableFromTime}-${schedule.dueAtTime}` : '08:00-17:00';
 
 		switch (schedule.frequency) {
 			case 'daily':

@@ -1301,7 +1301,7 @@ pub fn derive_log_status(
     current_datetime: chrono::DateTime<chrono::Utc>,
 ) -> (LogStatus, AvailabilityStatus) {
     let availability = get_availability_status_for_period(schedule, period, current_datetime);
-    
+
     if stored_status == LogStatus::Overdue {
         return (stored_status, availability);
     }

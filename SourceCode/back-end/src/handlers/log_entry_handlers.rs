@@ -160,7 +160,10 @@ pub async fn list_due_forms_today(
                     logs_db::get_availability_status_for_period(&template.schedule, &period, now);
 
                 let derived_draft_status = draft_entry.map(|e| {
-                    logs_db::derive_log_status(e.status, &template.schedule, &period, now).0.as_str().to_string()
+                    logs_db::derive_log_status(e.status, &template.schedule, &period, now)
+                        .0
+                        .as_str()
+                        .to_string()
                 });
 
                 due_forms.push(DueFormInfo {
@@ -540,21 +543,26 @@ pub async fn list_company_log_entries<S: ::std::hash::BuildHasher>(
                 )
             })?;
 
-        let (processed_layout, derived_status, availability_status) = if let Some(template) = template {
-            let layout = logs_db::process_template_layout_with_period_string(
-                &template.template_layout,
-                &e.period,
-            );
-            let (status, availability) = logs_db::derive_log_status(
-                e.status,
-                &template.schedule,
-                &e.period,
-                chrono::Utc::now(),
-            );
-            (layout, status, availability)
-        } else {
-            (Vec::new(), e.status, logs_db::AvailabilityStatus::NotAvailable)
-        };
+        let (processed_layout, derived_status, availability_status) =
+            if let Some(template) = template {
+                let layout = logs_db::process_template_layout_with_period_string(
+                    &template.template_layout,
+                    &e.period,
+                );
+                let (status, availability) = logs_db::derive_log_status(
+                    e.status,
+                    &template.schedule,
+                    &e.period,
+                    chrono::Utc::now(),
+                );
+                (layout, status, availability)
+            } else {
+                (
+                    Vec::new(),
+                    e.status,
+                    logs_db::AvailabilityStatus::NotAvailable,
+                )
+            };
 
         response_entries.push(LogEntryResponse {
             id: e.entry_id,
@@ -622,21 +630,26 @@ pub async fn list_user_log_entries(
                 )
             })?;
 
-        let (processed_layout, derived_status, availability_status) = if let Some(template) = template {
-            let layout = logs_db::process_template_layout_with_period_string(
-                &template.template_layout,
-                &e.period,
-            );
-            let (status, availability) = logs_db::derive_log_status(
-                e.status,
-                &template.schedule,
-                &e.period,
-                chrono::Utc::now(),
-            );
-            (layout, status, availability)
-        } else {
-            (Vec::new(), e.status, logs_db::AvailabilityStatus::NotAvailable)
-        };
+        let (processed_layout, derived_status, availability_status) =
+            if let Some(template) = template {
+                let layout = logs_db::process_template_layout_with_period_string(
+                    &template.template_layout,
+                    &e.period,
+                );
+                let (status, availability) = logs_db::derive_log_status(
+                    e.status,
+                    &template.schedule,
+                    &e.period,
+                    chrono::Utc::now(),
+                );
+                (layout, status, availability)
+            } else {
+                (
+                    Vec::new(),
+                    e.status,
+                    logs_db::AvailabilityStatus::NotAvailable,
+                )
+            };
 
         response_entries.push(LogEntryResponse {
             id: e.entry_id,
@@ -653,9 +666,10 @@ pub async fn list_user_log_entries(
 
         if let Some(status) = params.get("status")
             && let Some(filter_status) = logs_db::LogStatus::from_str(status)
-            && derived_status != filter_status {
-                response_entries.pop();
-            }
+            && derived_status != filter_status
+        {
+            response_entries.pop();
+        }
     }
 
     Ok(Json(ListLogEntriesResponse {
