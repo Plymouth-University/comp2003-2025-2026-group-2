@@ -7,7 +7,7 @@ use crate::{
         ErrorResponse, ListLogEntriesResponse, LogEntryResponse, SubmitLogEntryResponse,
         UpdateLogEntryRequest,
     },
-    logs_db,
+    logs_db::{self, LogStatus},
     middleware::{AnyAuthUser, BranchManagerUser, ReadBranchUser},
     services,
 };
@@ -104,7 +104,7 @@ pub async fn list_due_forms_today(
                     .as_ref()
                     .and_then(|e| e.submitted_at.map(|ts| ts.to_rfc3339())),
                 period: period.clone(),
-                status: None,
+                status: Some(LogStatus::Overdue.as_str().to_string()),
                 availability_status: status.as_str().to_string(),
                 available_from,
                 due_at,
