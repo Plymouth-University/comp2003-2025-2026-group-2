@@ -1,7 +1,7 @@
 use crate::services::log_entry_service::LogEntryService;
 use axum::http::StatusCode;
 use back_end::db::{self, UserRole};
-use back_end::logs_db::{self, Frequency, Schedule, TemplateDocument};
+use back_end::logs_db::{self, Frequency, LogStatus, Schedule, TemplateDocument};
 use back_end::tests::common::{factories::*, setup_test_db};
 use back_end::AppState;
 use chrono::Utc;
@@ -512,13 +512,21 @@ fn test_frequency_periods() {
 
 #[test]
 fn test_log_entry_status_values() {
-    // Test common log entry status values
-    let statuses = vec!["draft", "submitted", "reviewed", "approved"];
-    
-    for status in statuses {
-        let status_value = json!(status);
-        assert_eq!(status_value.as_str().unwrap(), status);
-    }
+    assert_eq!(LogStatus::Draft.as_str(), "draft");
+    assert_eq!(LogStatus::Submitted.as_str(), "submitted");
+    assert_eq!(LogStatus::Reviewed.as_str(), "reviewed");
+    assert_eq!(LogStatus::Approved.as_str(), "approved");
+    assert_eq!(LogStatus::Overdue.as_str(), "overdue");
+}
+
+#[test]
+fn test_log_status_from_str() {
+    assert_eq!(LogStatus::from_str("draft"), Some(LogStatus::Draft));
+    assert_eq!(LogStatus::from_str("submitted"), Some(LogStatus::Submitted));
+    assert_eq!(LogStatus::from_str("reviewed"), Some(LogStatus::Reviewed));
+    assert_eq!(LogStatus::from_str("approved"), Some(LogStatus::Approved));
+    assert_eq!(LogStatus::from_str("overdue"), Some(LogStatus::Overdue));
+    assert_eq!(LogStatus::from_str("invalid"), None);
 }
 
 #[test]

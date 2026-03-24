@@ -521,7 +521,7 @@ pub struct LogEntry {
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
     pub submitted_at: Option<chrono::DateTime<chrono::Utc>>,
-    pub status: String,
+    pub status: LogStatus,
     pub period: String,
 }
 
@@ -626,7 +626,7 @@ pub async fn get_latest_submitted_entry(
         "user_id": user_id,
         "company_id": company_id,
         "template_name": template_name,
-        "status": "submitted",
+        "status": mongodb::bson::to_bson(&LogStatus::Submitted)?,
     };
 
     let result = collection
@@ -830,7 +830,7 @@ pub async fn has_submitted_entry_for_current_period(
     let filter = mongodb::bson::doc! {
         "company_id": company_id,
         "template_name": template_name,
-        "status": "submitted",
+        "status": mongodb::bson::to_bson(&LogStatus::Submitted)?,
         "created_at": {
             "$gte": mongodb::bson::to_bson(&period_start)?,
             "$lte": mongodb::bson::to_bson(&period_end)?,
@@ -986,7 +986,7 @@ pub async fn get_draft_entry_for_current_period(
         "user_id": user_id,
         "company_id": company_id,
         "template_name": template_name,
-        "status": "draft",
+        "status": mongodb::bson::to_bson(&LogStatus::Draft)?,
         "created_at": {
             "$gte": mongodb::bson::to_bson(&period_start)?,
             "$lte": mongodb::bson::to_bson(&period_end)?,
@@ -1038,7 +1038,7 @@ pub async fn submit_log_entry(client: &mongodb::Client, entry_id: &str) -> Resul
 
     let update = mongodb::bson::doc! {
         "$set": {
-            "status": "submitted",
+            "status": mongodb::bson::to_bson(&LogStatus::Submitted)?,
             "submitted_at": mongodb::bson::to_bson(&chrono::Utc::now())?,
             "updated_at": mongodb::bson::to_bson(&chrono::Utc::now())?,
         }
@@ -1062,7 +1062,7 @@ pub async fn unsubmit_log_entry(client: &mongodb::Client, entry_id: &str) -> Res
 
     let update = mongodb::bson::doc! {
         "$set": {
-            "status": "draft",
+            "status": mongodb::bson::to_bson(&LogStatus::Draft)?,
             "submitted_at": mongodb::bson::Bson::Null,
             "updated_at": mongodb::bson::to_bson(&chrono::Utc::now())?,
         }
@@ -1102,6 +1102,52 @@ impl AvailabilityStatus {
             AvailabilityStatus::NotAvailable => "not_available",
             AvailabilityStatus::Available => "available",
             AvailabilityStatus::Overdue => "overdue",
+        }
+    }
+}
+
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Default,
+    serde::Serialize,
+    serde::Deserialize,
+    utoipa::ToSchema,
+)]
+#[serde(rename_all = "lowercase")]
+pub enum LogStatus {
+    #[default]
+    Draft,
+    Submitted,
+    Reviewed,
+    Approved,
+    Overdue,
+}
+
+impl LogStatus {
+    #[must_use]
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            LogStatus::Draft => "draft",
+            LogStatus::Submitted => "submitted",
+            LogStatus::Reviewed => "reviewed",
+            LogStatus::Approved => "approved",
+            LogStatus::Overdue => "overdue",
+        }
+    }
+
+    #[must_use]
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "draft" => Some(LogStatus::Draft),
+            "submitted" => Some(LogStatus::Submitted),
+            "reviewed" => Some(LogStatus::Reviewed),
+            "approved" => Some(LogStatus::Approved),
+            "overdue" => Some(LogStatus::Overdue),
+            _ => None,
         }
     }
 }
@@ -1245,6 +1291,26 @@ pub fn get_availability_status_for_period(
     } else {
         AvailabilityStatus::Overdue
     }
+}
+
+#[must_use]
+pub fn derive_log_status(
+    stored_status: LogStatus,
+    schedule: &Schedule,
+    period: &str,
+    current_datetime: chrono::DateTime<chrono::Utc>,
+) -> (LogStatus, AvailabilityStatus) {
+    let availability = get_availability_status_for_period(schedule, period, current_datetime);
+
+    if stored_status == LogStatus::Overdue {
+        return (stored_status, availability);
+    }
+
+    if availability == AvailabilityStatus::Overdue && stored_status != LogStatus::Submitted {
+        return (LogStatus::Overdue, availability);
+    }
+
+    (stored_status, availability)
 }
 
 #[must_use]

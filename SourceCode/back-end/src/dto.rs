@@ -504,6 +504,7 @@ pub struct LogEntryResponse {
     pub template_layout: logs_db::TemplateLayout,
     pub entry_data: serde_json::Value,
     pub status: String,
+    pub availability_status: String,
     pub created_at: String,
     pub updated_at: String,
     pub submitted_at: Option<String>,

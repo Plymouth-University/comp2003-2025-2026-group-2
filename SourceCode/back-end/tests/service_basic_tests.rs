@@ -1,5 +1,6 @@
 use back_end::common::factories::*;
 use back_end::db::UserRole;
+use back_end::logs_db::LogStatus;
 
 #[tokio::test]
 async fn test_user_factory_basic() {
@@ -45,7 +46,7 @@ async fn test_template_factory_basic() {
 async fn test_log_entry_factory_basic() {
     let entry = LogEntryFactory::create_basic();
     assert_eq!(entry.template_name, "Test Template");
-    assert_eq!(entry.status, "draft");
+    assert_eq!(entry.status, LogStatus::Draft);
     assert!(entry.submitted_at.is_none());
 }
 
