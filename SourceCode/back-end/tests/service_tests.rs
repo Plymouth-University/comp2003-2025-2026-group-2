@@ -38,6 +38,7 @@ fn test_company_creation() {
         name: "Test Company".to_string(),
         address: "123 Test St".to_string(),
         created_at: Utc::now(),
+        logo_id: None,
     };
 
     assert_eq!(company.name, "Test Company");

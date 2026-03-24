@@ -267,12 +267,14 @@ fn test_company_creation() {
         name: "Test Company".to_string(),
         address: "123 Test St".to_string(),
         created_at: now,
+        logo_id: None,
     };
 
     assert_eq!(company.id, "company1");
     assert_eq!(company.name, "Test Company");
     assert_eq!(company.address, "123 Test St");
     assert_eq!(company.created_at, now);
+    assert_eq!(company.logo_id, None);
 }
 
 #[test]

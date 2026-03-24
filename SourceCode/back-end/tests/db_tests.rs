@@ -280,10 +280,12 @@ fn test_company_creation() {
         name: "Test Company".to_string(),
         address: "123 Main St".to_string(),
         created_at: chrono::Utc::now(),
+        logo_id: None,
     };
     assert_eq!(company.id, "company1");
     assert_eq!(company.name, "Test Company");
     assert_eq!(company.address, "123 Main St");
+    assert_eq!(company.logo_id, None);
 }
 
 #[test]
