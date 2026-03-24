@@ -36,6 +36,8 @@
 
 	let { data } = $props<{ data: PageData }>();
 
+	const dueToday = $derived(data?.dueToday || []) as DueForm[] | undefined;
+
 	const isReadonlyHQ = $derived(data?.user?.role === 'staff' && !data?.user?.branch_id);
 	const isStaff = $derived(data?.user?.role === 'staff' && !isReadonlyHQ);
 	const isAdmin = $derived(
@@ -55,7 +57,7 @@
 
 	const dueTodayPeriods = $derived(
 		new Set(
-			(data.dueToday as DueForm[] | undefined)?.map(
+			dueToday?.map(
 				(form: DueForm) => `${form.template_name}|${form.period}`
 			) || []
 		)
@@ -195,16 +197,17 @@
 			{#if isStaff || isAdmin}
 				<LogSection
 					title="Logs Due Today"
-					hasItems={Boolean(data.dueToday && data.dueToday.length > 0)}
+					hasItems={Boolean(dueToday && dueToday.length > 0)}
 					emptyMessage="No logs due today"
 				>
-					{#each data.dueToday || [] as form (form.template_name + form.period)}
+					{#each dueToday || [] as form (form.template_name + form.period)}
 						<LogRow
 							title={formatTemplateName(form.template_name, form.period)}
 							titleAttr={formatTemplateName(form.template_name, form.period)}
 						>
 							{#snippet meta()}
 								<div>
+									Period: {form.period} | 
 									{#if form.status}
 										Status: {form.status}
 										{#if form.last_submitted}
@@ -213,7 +216,13 @@
 											>
 										{/if}
 									{:else}
-										Not yet started
+										{#if form.availability_status === 'overdue'}
+											Status: overdue
+										{:else if form.availability_status === 'not_available'}
+											Status: not yet started
+										{:else}
+											Status: Available
+										{/if}
 									{/if}
 								</div>
 							{/snippet}

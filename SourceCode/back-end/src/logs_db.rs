@@ -521,7 +521,7 @@ pub struct LogEntry {
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
     pub submitted_at: Option<chrono::DateTime<chrono::Utc>>,
-    pub status: String,
+    pub status: LogStatus,
     pub period: String,
 }
 
@@ -1106,6 +1106,51 @@ impl AvailabilityStatus {
     }
 }
 
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Default,
+    serde::Serialize,
+    serde::Deserialize,
+    utoipa::ToSchema,
+)]
+pub enum LogStatus {
+    #[default]
+    Draft,
+    Submitted,
+    Reviewed,
+    Approved,
+    Overdue,
+}
+
+impl LogStatus {
+    #[must_use]
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            LogStatus::Draft => "draft",
+            LogStatus::Submitted => "submitted",
+            LogStatus::Reviewed => "reviewed",
+            LogStatus::Approved => "approved",
+            LogStatus::Overdue => "overdue",
+        }
+    }
+
+    #[must_use]
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "draft" => Some(LogStatus::Draft),
+            "submitted" => Some(LogStatus::Submitted),
+            "reviewed" => Some(LogStatus::Reviewed),
+            "approved" => Some(LogStatus::Approved),
+            "overdue" => Some(LogStatus::Overdue),
+            _ => None,
+        }
+    }
+}
+
 #[must_use]
 pub fn parse_time_string(time_str: &str) -> Option<(u32, u32)> {
     let parts: Vec<&str> = time_str.split(':').collect();
@@ -1245,6 +1290,25 @@ pub fn get_availability_status_for_period(
     } else {
         AvailabilityStatus::Overdue
     }
+}
+
+#[must_use]
+pub fn derive_log_status(
+    stored_status: LogStatus,
+    schedule: &Schedule,
+    period: &str,
+    current_datetime: chrono::DateTime<chrono::Utc>,
+) -> LogStatus {
+    if stored_status == LogStatus::Overdue {
+        return stored_status;
+    }
+
+    let availability = get_availability_status_for_period(schedule, period, current_datetime);
+    if availability == AvailabilityStatus::Overdue && stored_status != LogStatus::Submitted {
+        return LogStatus::Overdue;
+    }
+
+    stored_status
 }
 
 #[must_use]

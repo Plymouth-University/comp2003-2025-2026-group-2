@@ -1,6 +1,7 @@
 use back_end::db::{Company, Invitation, UserRecord, UserRole};
 use back_end::logs_db::{
-    Frequency, LogEntry, Position, Schedule, TemplateDocument, TemplateField, TemplateFieldProps,
+    Frequency, LogEntry, LogStatus, Position, Schedule, TemplateDocument, TemplateField,
+    TemplateFieldProps,
 };
 use chrono::Utc;
 use mongodb::bson::Uuid;
@@ -109,12 +110,12 @@ fn test_log_entry_creation() {
         created_at: Utc::now(),
         updated_at: Utc::now(),
         submitted_at: None,
-        status: "draft".to_string(),
+        status: LogStatus::Draft,
         period: "2024-01".to_string(),
     };
 
     assert_eq!(entry.template_name, "Test Template");
-    assert_eq!(entry.status, "draft");
+    assert_eq!(entry.status, LogStatus::Draft);
     assert_eq!(entry.branch_id, Some("branch123".to_string()));
     assert!(entry.submitted_at.is_none());
 }

@@ -3,7 +3,7 @@
 use crate::{
     db::{Company, Invitation, Passkey, PasskeySession, SecurityLog, UserRecord, UserRole},
     logs_db::{
-        Frequency, LogEntry, Position, Schedule, TemplateDocument, TemplateField,
+        Frequency, LogEntry, LogStatus, Position, Schedule, TemplateDocument, TemplateField,
         TemplateFieldProps,
     },
 };
@@ -328,7 +328,7 @@ impl LogEntryFactory {
             created_at: Utc::now(),
             updated_at: Utc::now(),
             submitted_at: None,
-            status: "draft".to_string(),
+            status: LogStatus::Draft,
             period: "2024-01".to_string(),
         }
     }
@@ -338,7 +338,7 @@ impl LogEntryFactory {
     pub fn create_submitted() -> LogEntry {
         LogEntry {
             submitted_at: Some(Utc::now()),
-            status: "submitted".to_string(),
+            status: LogStatus::Submitted,
             ..Self::create_basic()
         }
     }

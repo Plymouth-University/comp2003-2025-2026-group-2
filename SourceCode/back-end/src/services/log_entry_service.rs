@@ -137,7 +137,7 @@ impl LogEntryService {
             created_at: now,
             updated_at: now,
             submitted_at: None,
-            status: "draft".to_string(),
+            status: logs_db::LogStatus::Draft,
             period,
         };
 
