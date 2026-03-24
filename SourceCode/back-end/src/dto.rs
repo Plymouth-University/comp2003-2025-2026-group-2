@@ -66,9 +66,7 @@ pub struct UserDto {
 derive_from!(
     crate::db::UserRecord,
     UserDto,
-    [
-        id, email, first_name, last_name, company_id, branch_id, role, created_at
-    ]
+    [id, email, first_name, last_name, company_id, branch_id, role, created_at]
 );
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -217,9 +215,7 @@ pub struct SecurityLogDto {
 derive_from!(
     crate::db::SecurityLog,
     SecurityLogDto,
-    [
-        id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
-    ]
+    [id, event_type, user_id, email, ip_address, user_agent, details, success, created_at]
 );
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
@@ -504,6 +500,7 @@ pub struct LogEntryResponse {
     pub template_layout: logs_db::TemplateLayout,
     pub entry_data: serde_json::Value,
     pub status: String,
+    pub availability_status: String,
     pub created_at: String,
     pub updated_at: String,
     pub submitted_at: Option<String>,

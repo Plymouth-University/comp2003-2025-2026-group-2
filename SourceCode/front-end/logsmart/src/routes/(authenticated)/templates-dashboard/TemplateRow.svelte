@@ -16,10 +16,10 @@
 	} = $props();
 
 	function formatSchedule(schedule: TemplateSchedule): string {
-		const availabilityWindow =
-			schedule.availableFromTime && schedule.dueAtTime
-				? `, ${schedule.availableFromTime}-${schedule.dueAtTime}`
-				: '08:00-17:00'; // Default availability window if not set
+		const times = schedule.availableFromTime && schedule.dueAtTime;
+		const window = times
+			? `${schedule.availableFromTime}-${schedule.dueAtTime}`
+			: '08:00-17:00';
 
 		switch (schedule.frequency) {
 			case 'daily':
@@ -33,9 +33,9 @@
 						saturday: 'Sat',
 						sunday: 'Sun'
 					};
-					return `Daily (${schedule.daysOfWeek.map((d) => dayLabels[d]).join(', ')}${availabilityWindow})`;
+					return `Daily (${schedule.daysOfWeek.map((d) => dayLabels[d]).join(', ')}) (${window})`;
 				}
-				return `Daily${availabilityWindow ? ` (${availabilityWindow.slice(2)})` : ''}`;
+				return `Daily (${window})`;
 			case 'weekly':
 				if (schedule.dayOfWeek) {
 					const dayLabels: Record<DayOfWeek, string> = {

@@ -626,7 +626,7 @@ pub async fn get_latest_submitted_entry(
         "user_id": user_id,
         "company_id": company_id,
         "template_name": template_name,
-        "status": "submitted",
+        "status": mongodb::bson::to_bson(&LogStatus::Submitted)?,
     };
 
     let result = collection
@@ -830,7 +830,7 @@ pub async fn has_submitted_entry_for_current_period(
     let filter = mongodb::bson::doc! {
         "company_id": company_id,
         "template_name": template_name,
-        "status": "submitted",
+        "status": mongodb::bson::to_bson(&LogStatus::Submitted)?,
         "created_at": {
             "$gte": mongodb::bson::to_bson(&period_start)?,
             "$lte": mongodb::bson::to_bson(&period_end)?,
@@ -986,7 +986,7 @@ pub async fn get_draft_entry_for_current_period(
         "user_id": user_id,
         "company_id": company_id,
         "template_name": template_name,
-        "status": "draft",
+        "status": mongodb::bson::to_bson(&LogStatus::Draft)?,
         "created_at": {
             "$gte": mongodb::bson::to_bson(&period_start)?,
             "$lte": mongodb::bson::to_bson(&period_end)?,
@@ -1038,7 +1038,7 @@ pub async fn submit_log_entry(client: &mongodb::Client, entry_id: &str) -> Resul
 
     let update = mongodb::bson::doc! {
         "$set": {
-            "status": "submitted",
+            "status": mongodb::bson::to_bson(&LogStatus::Submitted)?,
             "submitted_at": mongodb::bson::to_bson(&chrono::Utc::now())?,
             "updated_at": mongodb::bson::to_bson(&chrono::Utc::now())?,
         }
@@ -1062,7 +1062,7 @@ pub async fn unsubmit_log_entry(client: &mongodb::Client, entry_id: &str) -> Res
 
     let update = mongodb::bson::doc! {
         "$set": {
-            "status": "draft",
+            "status": mongodb::bson::to_bson(&LogStatus::Draft)?,
             "submitted_at": mongodb::bson::Bson::Null,
             "updated_at": mongodb::bson::to_bson(&chrono::Utc::now())?,
         }
@@ -1117,6 +1117,7 @@ impl AvailabilityStatus {
     serde::Deserialize,
     utoipa::ToSchema,
 )]
+#[serde(rename_all = "lowercase")]
 pub enum LogStatus {
     #[default]
     Draft,
@@ -1298,17 +1299,18 @@ pub fn derive_log_status(
     schedule: &Schedule,
     period: &str,
     current_datetime: chrono::DateTime<chrono::Utc>,
-) -> LogStatus {
-    if stored_status == LogStatus::Overdue {
-        return stored_status;
-    }
-
+) -> (LogStatus, AvailabilityStatus) {
     let availability = get_availability_status_for_period(schedule, period, current_datetime);
-    if availability == AvailabilityStatus::Overdue && stored_status != LogStatus::Submitted {
-        return LogStatus::Overdue;
+    
+    if stored_status == LogStatus::Overdue {
+        return (stored_status, availability);
     }
 
-    stored_status
+    if availability == AvailabilityStatus::Overdue && stored_status != LogStatus::Submitted {
+        return (LogStatus::Overdue, availability);
+    }
+
+    (stored_status, availability)
 }
 
 #[must_use]
