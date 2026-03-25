@@ -248,6 +248,18 @@ async fn main() {
             "/auth/profile-picture/{user_id}",
             get(handlers::get_profile_picture),
         )
+        .route(
+            "/companies/{company_id}/logo",
+            post(handlers::upload_company_logo),
+        )
+        .route(
+            "/companies/{company_id}/logo",
+            get(handlers::get_company_logo),
+        )
+        .route(
+            "/companies/{company_id}/logo",
+            delete(handlers::delete_company_logo),
+        )
         .route("/logs/templates", post(handlers::add_template))
         .route("/logs/templates", get(handlers::get_template))
         .route("/logs/templates/all", get(handlers::get_all_templates))

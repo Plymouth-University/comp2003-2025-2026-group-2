@@ -4,6 +4,7 @@ pub mod db;
 pub mod dto;
 pub mod email;
 pub mod handlers;
+pub mod images_db;
 pub mod jwt_manager;
 pub mod llm;
 pub mod logs_db;
