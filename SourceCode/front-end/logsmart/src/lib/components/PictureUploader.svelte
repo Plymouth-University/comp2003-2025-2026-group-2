@@ -10,7 +10,9 @@
 		lastName = '',
 		triggerOnImageClick = false,
 		showUploadButton = true,
-		targetUserEmail = ''
+		targetUserEmail = '',
+		type = 'pfp',
+		companyId = '',
 	}: {
 		currentPictureUrl?: string | null;
 		onUploadComplete?: (url: string) => void;
@@ -21,8 +23,12 @@
 		triggerOnImageClick?: boolean;
 		showUploadButton?: boolean;
 		targetUserEmail?: string;
+		type?: 'pfp' | 'company_logo';
+		companyId?: string;
 	} = $props();
 	const uid = $props.id();
+
+	let pictureLabel = $derived(type === 'company_logo' ? 'Company logo' : 'Picture');
 
 	let fileInput: HTMLInputElement | null = $state(null);
 	let imageElement: HTMLImageElement | null = $state(null);
@@ -157,9 +163,22 @@
 				throw new Error('Failed to process image');
 			}
 
-			const uploadUrl = targetUserEmail
-				? `/api/auth/profile-picture?email=${encodeURIComponent(targetUserEmail)}`
-				: '/api/auth/profile-picture';
+			let uploadUrl: string;
+			let responseField: string;
+
+			if (type === 'company_logo') {
+				if (!companyId) {
+					throw new Error('Company ID is required for company logo upload');
+				}
+				uploadUrl = `/api/companies/${encodeURIComponent(companyId)}/logo`;
+				responseField = 'logo_url';
+			} else {
+				uploadUrl = targetUserEmail
+					? `/api/auth/profile-picture?email=${encodeURIComponent(targetUserEmail)}`
+					: '/api/auth/profile-picture';
+				responseField = 'profile_picture_url';
+			}
+
 			const response = await fetch(uploadUrl, {
 				method: 'POST',
 				body: blob,
@@ -179,7 +198,7 @@
 			cropper = null;
 
 			if (onUploadComplete) {
-				onUploadComplete(data.profile_picture_url);
+				onUploadComplete(data[responseField]);
 			}
 		} catch (err) {
 			errorMessage = err instanceof Error ? err.message : 'Failed to upload picture';
@@ -200,15 +219,28 @@
 	}
 
 	async function handleDelete() {
-		if (!confirm('Are you sure you want to delete your profile picture?')) return;
+		const message = type === 'company_logo'
+			? 'Are you sure you want to delete the company logo?'
+			: 'Are you sure you want to delete your profile picture?';
+		if (!confirm(message)) return;
 
 		isLoading = true;
 		errorMessage = '';
 
 		try {
-			const deleteUrl = targetUserEmail
-				? `/api/auth/profile-picture?email=${encodeURIComponent(targetUserEmail)}`
-				: '/api/auth/profile-picture';
+			let deleteUrl: string;
+
+			if (type === 'company_logo') {
+				if (!companyId) {
+					throw new Error('Company ID is required for company logo deletion');
+				}
+				deleteUrl = `/api/companies/${encodeURIComponent(companyId)}/logo`;
+			} else {
+				deleteUrl = targetUserEmail
+					? `/api/auth/profile-picture?email=${encodeURIComponent(targetUserEmail)}`
+					: '/api/auth/profile-picture';
+			}
+
 			const response = await fetch(deleteUrl, {
 				method: 'DELETE'
 			});
@@ -239,7 +271,7 @@
 	});
 </script>
 
-<div class="profile-picture-uploader">
+<div class="picture-uploader">
 	{#if showCropper}
 		<div class="cropper-modal">
 			<div class="cropper-container" bind:this={cropperContainer}>
@@ -263,7 +295,7 @@
 				disabled={disabled || isLoading}
 			>
 				{#if currentPictureUrl}
-					<img src={currentPictureUrl} alt="Profile" class="profile-preview" />
+					<img src={currentPictureUrl} alt={pictureLabel} class="picture-preview" />
 				{:else}
 					<div class="no-picture">
 						<span class="initials">
@@ -278,7 +310,7 @@
 		{:else}
 			<div class="current-picture">
 				{#if currentPictureUrl}
-					<img src={currentPictureUrl} alt="Profile" class="profile-preview" />
+					<img src={currentPictureUrl} alt={pictureLabel} class="picture-preview" />
 				{:else}
 					<div class="no-picture">
 						<span class="initials">
@@ -301,15 +333,15 @@
 				onchange={handleFileSelect}
 				disabled={disabled || isLoading}
 				class="file-input"
-				id="{uid}-profile-picture-input"
+				id="{uid}-picture-input"
 			/>
 			{#if showUploadButton}
 				<label
-					for="{uid}-profile-picture-input"
+					for="{uid}-picture-input"
 					class="btn-upload"
 					class:disabled={disabled || isLoading}
 				>
-					{isLoading ? 'Uploading...' : currentPictureUrl ? 'Change Logo' : 'Upload Logo'}
+					{isLoading ? 'Uploading...' : currentPictureUrl ? 'Change Picture' : 'Upload Picture'}
 				</label>
 			{/if}
 
@@ -328,7 +360,7 @@
 </div>
 
 <style>
-	.profile-picture-uploader {
+	.picture-uploader {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
@@ -371,7 +403,7 @@
 		opacity: 1;
 	}
 
-	.profile-preview {
+	.picture-preview {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;

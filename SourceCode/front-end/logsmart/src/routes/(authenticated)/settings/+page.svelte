@@ -5,7 +5,7 @@
 	import { startRegistration } from '@simplewebauthn/browser';
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import ProfilePictureUploader from '$lib/components/ProfilePictureUploader.svelte';
+	import ProfilePictureUploader from '$lib/components/PictureUploader.svelte';
 
 	let { data, form } = $props<{ data: PageData; form: ActionData }>();
 
@@ -324,6 +324,7 @@
 						<!-- Profile Picture on the right side -->
 						<div class="flex flex-1 flex-col items-center justify-start pt-4 md:pt-0 md:pl-8">
 							<ProfilePictureUploader
+								type="pfp"
 								currentPictureUrl={effectivePictureUrl}
 								{firstName}
 								{lastName}

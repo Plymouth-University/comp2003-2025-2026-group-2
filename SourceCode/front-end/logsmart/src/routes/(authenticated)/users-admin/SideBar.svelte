@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { api } from '$lib/api';
 	import type { Member } from './+page.svelte';
-	import ProfilePictureUploader from '$lib/components/ProfilePictureUploader.svelte';
+	import PictureUploader from '$lib/components/PictureUploader.svelte';
 	import { invalidateAll } from '$app/navigation';
 
 	const { selectedUser, loggedInUserRole, updateMember, branches, isReadonlyHQ, onClose } = $props<{
@@ -122,7 +122,8 @@
 						onsubmit={(e) => e.preventDefault()}
 					>
 						<div class="mb-4">
-							<ProfilePictureUploader
+							<PictureUploader
+								type="pfp"
 								currentPictureUrl={profilePictureUrl}
 								{firstName}
 								{lastName}
@@ -267,7 +268,8 @@
 				onsubmit={(e) => e.preventDefault()}
 			>
 				<div class="mb-4">
-					<ProfilePictureUploader
+					<PictureUploader
+						type="pfp"
 						currentPictureUrl={profilePictureUrl}
 						{firstName}
 						{lastName}

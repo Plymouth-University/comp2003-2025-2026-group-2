@@ -1,10 +1,8 @@
 <script lang="ts">
 	import type { PageData, ActionData } from './$types';
 	import { enhance } from '$app/forms';
-	import { startRegistration } from '@simplewebauthn/browser';
 	import { invalidateAll } from '$app/navigation';
-	import { onMount } from 'svelte';
-	import ProfilePictureUploader from '$lib/components/ProfilePictureUploader.svelte';
+	import PictureUploader from '$lib/components/PictureUploader.svelte';
 
 	let { data, form } = $props<{ data: PageData; form: ActionData }>();
 
@@ -169,7 +167,9 @@
 
 						<!-- Company Logo -->
 						<div class="flex flex-1 flex-col items-center justify-start pt-4 md:pt-0 md:pl-8">
-							<ProfilePictureUploader
+							<PictureUploader
+								type="company_logo"
+								companyId={data.company?.company_id}
 								currentPictureUrl={effectivePictureUrl}
 								onUploadComplete={() => {
 									invalidateAll();
