@@ -107,6 +107,7 @@
 	const yyyy = today.getFullYear();
 	const currentDateFormatted = `${dd}/${mm}/${yyyy}`;
 	const currentDateISO = `${yyyy}-${mm}-${dd}`;
+	const todayDate = new Date(yyyy, today.getMonth(), today.getDate());
 
 	let dateFrom = $state(currentDateFormatted);
 	let dateTo = $state(currentDateFormatted);
@@ -121,6 +122,8 @@
 	// svelte-ignore non_reactive_update
 	let calendarDate = new SvelteDate();
 	let activePickerIsFrom = $state(true);
+	let dateFromPickerContainer: HTMLDivElement | null = null;
+	let dateToPickerContainer: HTMLDivElement | null = null;
 
 	let reportGenerated = $state(false);
 	let arrangeBy = $state<'date' | 'logType'>('date');
@@ -633,19 +636,48 @@
 			if (isFrom) {
 				dateFromISO = iso;
 			} else {
-				dateToISO = iso;
+				if (iso <= currentDateISO) {
+					dateToISO = iso;
+				}
 			}
 		}
+	}
+
+	function clampDateToTodayOnBlur() {
+		const iso = formatToISO(dateTo);
+		if (iso && iso > currentDateISO) {
+			dateTo = currentDateFormatted;
+			dateToISO = currentDateISO;
+		}
+	}
+
+	function isFutureCalendarDay(day: number): boolean {
+		const selectedDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day);
+		return selectedDate.getTime() > todayDate.getTime();
+	}
+
+	function resetPickerStateToToday() {
+		pickerView = 'day';
+		slideDirection = 'left';
+		calendarDate = new SvelteDate(today.getFullYear(), today.getMonth(), today.getDate());
 	}
 
 	// Toggle date picker
 	function toggleDatePicker(isFrom: boolean) {
 		if (isFrom) {
-			showDateFromPicker = !showDateFromPicker;
+			const willOpen = !showDateFromPicker;
+			showDateFromPicker = willOpen;
 			showDateToPicker = false;
+			if (willOpen) {
+				resetPickerStateToToday();
+			}
 		} else {
-			showDateToPicker = !showDateToPicker;
+			const willOpen = !showDateToPicker;
+			showDateToPicker = willOpen;
 			showDateFromPicker = false;
+			if (willOpen) {
+				resetPickerStateToToday();
+			}
 		}
 		activePickerIsFrom = isFrom;
 	}
@@ -738,6 +770,9 @@
 			dateFromISO = iso;
 			showDateFromPicker = false;
 		} else {
+			if (iso > currentDateISO) {
+				return;
+			}
 			dateTo = formatted;
 			dateToISO = iso;
 			showDateToPicker = false;
@@ -910,9 +945,9 @@
 
 	function applyReportParams(params: SavedReportParams) {
 		dateFromISO = params.date_from_iso;
-		dateToISO = params.date_to_iso;
+		dateToISO = params.date_to_iso > currentDateISO ? currentDateISO : params.date_to_iso;
 		dateFrom = formatFromISO(params.date_from_iso) || dateFrom;
-		dateTo = formatFromISO(params.date_to_iso) || dateTo;
+		dateTo = formatFromISO(dateToISO) || dateTo;
 		selectedBranches = [...params.selected_branch_ids];
 		arrangeBy = params.arrange_by;
 		includeTemperatureGraphs = params.include_temperature_graphs;
@@ -1000,6 +1035,26 @@
 
 	onMount(async () => {
 		await loadReportRuns();
+	});
+
+	onMount(() => {
+		const handleDocumentPointerDown = (event: PointerEvent) => {
+			const target = event.target as Node | null;
+			if (!target) return;
+
+			const clickedInsideFrom = dateFromPickerContainer?.contains(target) ?? false;
+			const clickedInsideTo = dateToPickerContainer?.contains(target) ?? false;
+
+			if (!clickedInsideFrom && !clickedInsideTo) {
+				showDateFromPicker = false;
+				showDateToPicker = false;
+			}
+		};
+
+		document.addEventListener('pointerdown', handleDocumentPointerDown);
+		return () => {
+			document.removeEventListener('pointerdown', handleDocumentPointerDown);
+		};
 	});
 
 	async function generateReport() {
@@ -1446,7 +1501,7 @@ ${reportContent}
 <svelte:head>
 	<title>Generate Report</title>
 </svelte:head>
-<div class="min-h-full" style="background-color: var(--bg-secondary);">
+<div class="reports-page min-h-full" style="background-color: var(--bg-secondary);">
 	<!-- Main Content -->
 	<div class="mx-auto max-w-7xl px-6 py-8">
 		<h1 class="mb-8 text-center text-3xl font-bold md:text-4xl" style="color: var(--text-primary);">
@@ -1463,7 +1518,7 @@ ${reportContent}
 						class="mb-3 block text-lg font-bold"
 						style="color: var(--text-primary);">Date From:</label
 					>
-					<div class="relative">
+					<div class="relative" bind:this={dateFromPickerContainer}>
 						<div class="flex items-center gap-2">
 							<input
 								id="date-from"
@@ -1478,7 +1533,7 @@ ${reportContent}
 								type="button"
 								onclick={() => toggleDatePicker(true)}
 								aria-label="Open calendar for start date"
-								class="border-2 p-2"
+								class="transform border-2 p-2 transition-all duration-150 hover:scale-105"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 							>
 								<svg
@@ -1500,12 +1555,13 @@ ${reportContent}
 						<!-- Modern Date Picker -->
 						{#if showDateFromPicker}
 							<div
-								class="absolute top-full left-0 z-50 mt-2 rounded-lg border-2 p-4 shadow-lg"
+								class="date-picker absolute top-full left-0 z-50 mt-2 rounded-lg border-2 p-4 shadow-lg"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); min-width: 280px; sm:min-width: 320px; overflow: hidden; right: auto;"
 							>
 								<!-- Day View -->
 								{#if pickerView === 'day'}
-									<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
+									{#key `from-day-${calendarDate.getFullYear()}-${calendarDate.getMonth()}-${slideDirection}`}
+										<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
 										<!-- Month/Year Header -->
 										<div class="mb-4 flex items-center justify-between">
 											<button
@@ -1566,7 +1622,7 @@ ${reportContent}
 
 										<!-- Calendar Days -->
 										<div class="grid grid-cols-7 gap-1">
-											{#each getCalendarDays(calendarDate) as day (day ?? 'empty')}
+											{#each getCalendarDays(calendarDate) as day, index (`from-${calendarDate.getFullYear()}-${calendarDate.getMonth()}-${index}`)}
 												{#if day === null}
 													<div class="aspect-square"></div>
 												{:else}
@@ -1584,12 +1640,14 @@ ${reportContent}
 												{/if}
 											{/each}
 										</div>
-									</div>
+										</div>
+									{/key}
 								{/if}
 
 								<!-- Month View -->
 								{#if pickerView === 'month'}
-									<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
+									{#key `from-month-${calendarDate.getFullYear()}-${slideDirection}`}
+										<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
 										<!-- Year Header -->
 										<div class="mb-4 flex items-center justify-between">
 											<button
@@ -1654,12 +1712,14 @@ ${reportContent}
 												</button>
 											{/each}
 										</div>
-									</div>
+										</div>
+									{/key}
 								{/if}
 
 								<!-- Year View -->
 								{#if pickerView === 'year'}
-									<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
+									{#key `from-year-${Math.floor(calendarDate.getFullYear() / 12)}-${slideDirection}`}
+										<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
 										<!-- Year Range Header -->
 										<div class="mb-4 flex items-center justify-between">
 											<button
@@ -1719,7 +1779,8 @@ ${reportContent}
 												</button>
 											{/each}
 										</div>
-									</div>
+										</div>
+									{/key}
 								{/if}
 							</div>
 						{/if}
@@ -1733,13 +1794,14 @@ ${reportContent}
 						class="mb-3 block text-lg font-bold"
 						style="color: var(--text-primary);">Date To:</label
 					>
-					<div class="relative">
+					<div class="relative" bind:this={dateToPickerContainer}>
 						<div class="flex items-center gap-2">
 							<input
 								id="date-to"
 								type="text"
 								bind:value={dateTo}
 								oninput={(e) => updateDateFromText(e.currentTarget.value, false)}
+								onblur={clampDateToTodayOnBlur}
 								placeholder="DD/MM/YYYY"
 								class="flex-1 border-2 px-4 py-2"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
@@ -1748,7 +1810,7 @@ ${reportContent}
 								type="button"
 								onclick={() => toggleDatePicker(false)}
 								aria-label="Open calendar for end date"
-								class="border-2 p-2"
+								class="transform border-2 p-2 transition-all duration-150 hover:scale-105"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 							>
 								<svg
@@ -1770,12 +1832,13 @@ ${reportContent}
 						<!-- Modern Date Picker -->
 						{#if showDateToPicker}
 							<div
-								class="absolute top-full left-0 z-50 mt-2 rounded-lg border-2 p-4 shadow-lg"
+								class="date-picker absolute top-full left-0 z-50 mt-2 rounded-lg border-2 p-4 shadow-lg"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); min-width: 280px; sm:min-width: 320px; overflow: hidden; right: auto;"
 							>
 								<!-- Day View -->
 								{#if pickerView === 'day'}
-									<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
+									{#key `to-day-${calendarDate.getFullYear()}-${calendarDate.getMonth()}-${slideDirection}`}
+										<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
 										<!-- Month/Year Header -->
 										<div class="mb-4 flex items-center justify-between">
 											<button
@@ -1838,14 +1901,15 @@ ${reportContent}
 
 										<!-- Calendar Days -->
 										<div class="grid grid-cols-7 gap-1">
-											{#each getCalendarDays(calendarDate) as day (day ?? 'empty')}
+											{#each getCalendarDays(calendarDate) as day, index (`to-${calendarDate.getFullYear()}-${calendarDate.getMonth()}-${index}`)}
 												{#if day === null}
 													<div class="aspect-square"></div>
 												{:else}
 													<button
 														type="button"
 														onclick={() => selectDay(day)}
-														class="flex aspect-square items-center justify-center rounded transition-colors"
+														disabled={isFutureCalendarDay(day)}
+														class="flex aspect-square items-center justify-center rounded transition-colors disabled:cursor-not-allowed disabled:opacity-40"
 														class:font-bold={isSelectedDay(day)}
 														style={isSelectedDay(day)
 															? 'background-color: #3D7A82; color: white;'
@@ -1856,12 +1920,14 @@ ${reportContent}
 												{/if}
 											{/each}
 										</div>
-									</div>
+										</div>
+									{/key}
 								{/if}
 
 								<!-- Month View -->
 								{#if pickerView === 'month'}
-									<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
+									{#key `to-month-${calendarDate.getFullYear()}-${slideDirection}`}
+										<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
 										<!-- Year Header -->
 										<div class="mb-4 flex items-center justify-between">
 											<button
@@ -1926,12 +1992,14 @@ ${reportContent}
 												</button>
 											{/each}
 										</div>
-									</div>
+										</div>
+									{/key}
 								{/if}
 
 								<!-- Year View -->
 								{#if pickerView === 'year'}
-									<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
+									{#key `to-year-${Math.floor(calendarDate.getFullYear() / 12)}-${slideDirection}`}
+										<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
 										<!-- Year Range Header -->
 										<div class="mb-4 flex items-center justify-between">
 											<button
@@ -1991,7 +2059,8 @@ ${reportContent}
 												</button>
 											{/each}
 										</div>
-									</div>
+										</div>
+									{/key}
 								{/if}
 							</div>
 						{/if}
@@ -2111,7 +2180,7 @@ ${reportContent}
 						<button
 							type="button"
 							onclick={() => (arrangeBy = 'date')}
-							class="flex-1 border-2 px-4 py-2 font-bold transition-all"
+							class="transform flex-1 border-2 px-4 py-2 font-bold transition-all duration-200 hover:scale-105 hover:shadow-md"
 							style={arrangeBy === 'date'
 								? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
 								: 'border-color: var(--border-primary); background-color: transparent; color: var(--text-secondary);'}
@@ -2121,7 +2190,7 @@ ${reportContent}
 						<button
 							type="button"
 							onclick={() => (arrangeBy = 'logType')}
-							class="flex-1 border-2 px-4 py-2 font-bold transition-all"
+							class="transform flex-1 border-2 px-4 py-2 font-bold transition-all duration-200 hover:scale-105 hover:shadow-md"
 							style={arrangeBy === 'logType'
 								? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
 								: 'border-color: var(--border-primary); background-color: transparent; color: var(--text-secondary);'}
@@ -2163,7 +2232,7 @@ ${reportContent}
 				<div class="flex justify-center">
 					<button
 						onclick={generateReport}
-						class="flex items-center gap-2 border-2 px-8 py-2 font-medium hover:opacity-80"
+						class="transform flex items-center gap-2 border-2 px-8 py-2 font-medium transition-all duration-200 hover:scale-105 hover:opacity-90 hover:shadow-md"
 						style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 					>
 						Generate
@@ -2216,7 +2285,7 @@ ${reportContent}
 											type="button"
 											disabled={deletingReportId === run.id}
 											onclick={() => deleteReportRun(run.id)}
-											class="rounded border px-2 py-1 text-xs hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+											class="cursor-pointer rounded border px-2 py-1 text-xs transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
 											style="border-color: #dc2626; color: #dc2626;"
 										>
 											{deletingReportId === run.id ? 'Deleting...' : 'Delete'}
@@ -2712,6 +2781,20 @@ ${reportContent}
 
 	.slide-right {
 		animation: slideInFromRight 0.3s ease-out;
+	}
+
+	.reports-page button:not(:disabled) {
+		cursor: pointer;
+	}
+
+	.date-picker button:not(:disabled) {
+		cursor: pointer;
+		transition: transform 0.12s ease, filter 0.12s ease;
+	}
+
+	.date-picker button:not(:disabled):hover {
+		transform: translateY(-1px) scale(1.02);
+		filter: brightness(0.96);
 	}
 
 	/* Temperature graph chart styles */
