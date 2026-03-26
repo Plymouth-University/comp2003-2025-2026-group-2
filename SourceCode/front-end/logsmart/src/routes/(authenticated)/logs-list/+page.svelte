@@ -4,6 +4,7 @@
 	import ClockInOut from '$lib/components/ClockInOut.svelte';
 	import LogRow from '$lib/components/logs/LogRow.svelte';
 	import LogSection from '$lib/components/logs/LogSection.svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { SvelteDate } from 'svelte/reactivity';
 
 	type LogEntry = components['schemas']['LogEntryResponse'];
@@ -71,6 +72,52 @@
 					})
 			: []
 	);
+
+	let showToast = $state(false);
+	let toastType = $state<'success' | 'error'>('success');
+	let toastMessage = $state('');
+	let toastSequence = $state(0);
+	let toastTimer = $state<number | null>(null);
+	const TOAST_DURATION_MS = 5000;
+
+	function showTimedToast(
+		type: 'success' | 'error',
+		message: string,
+		durationMs = TOAST_DURATION_MS
+	) {
+		toastType = type;
+		toastMessage = message;
+		toastSequence += 1;
+		showToast = true;
+
+		if (toastTimer !== null) {
+			window.clearTimeout(toastTimer);
+		}
+
+		toastTimer = window.setTimeout(() => {
+			showToast = false;
+			toastTimer = null;
+		}, durationMs);
+	}
+
+	onMount(() => {
+		const params = new URLSearchParams(window.location.search);
+		const toastToken = params.get('toast');
+
+		if (toastToken === 'log_submitted_success') {
+			showTimedToast('success', 'Log submitted successfully');
+			params.delete('toast');
+			const nextQuery = params.toString();
+			const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
+			window.history.replaceState(window.history.state, '', nextUrl);
+		}
+	});
+
+	onDestroy(() => {
+		if (toastTimer !== null) {
+			window.clearTimeout(toastTimer);
+		}
+	});
 
 	function formatDate(dateString: string): string {
 		const date = new SvelteDate(dateString);
@@ -168,6 +215,48 @@
 		}
 	}
 </script>
+
+{#if showToast}
+	{#key toastSequence}
+		<div
+			class="fixed right-4 bottom-4 z-50 w-full max-w-sm overflow-hidden rounded-lg border px-4 py-3 text-left shadow-lg"
+			style={toastType === 'success'
+				? 'border-color: #16a34a; background-color: #f0fdf4;'
+				: 'border-color: #dc2626; background-color: #fef2f2;'}
+		>
+			<div class="mb-2 flex items-start justify-between gap-3">
+				<p
+					class="text-sm font-semibold"
+					style={toastType === 'success' ? 'color: #166534;' : 'color: #991b1b;'}
+				>
+					{toastMessage}
+				</p>
+				<button
+					type="button"
+					onclick={() => {
+						showToast = false;
+						if (toastTimer !== null) {
+							window.clearTimeout(toastTimer);
+							toastTimer = null;
+						}
+					}}
+					class="rounded px-2 py-0.5 text-xs font-semibold transition-opacity hover:opacity-80"
+					style={toastType === 'success'
+						? 'background-color: #dcfce7; color: #166534; cursor: pointer;'
+						: 'background-color: #fee2e2; color: #991b1b; cursor: pointer;'}
+				>
+					Close
+				</button>
+			</div>
+			<div
+				class="logs-toast-progress absolute right-0 bottom-0 left-0 h-1"
+				style={toastType === 'success'
+					? `background-color: #16a34a; animation-duration: ${TOAST_DURATION_MS}ms;`
+					: `background-color: #dc2626; animation-duration: ${TOAST_DURATION_MS}ms;`}
+			></div>
+		</div>
+	{/key}
+{/if}
 
 <svelte:head>
 	<title>Logs List</title>
@@ -327,3 +416,21 @@
 		</div>
 	</div>
 </main>
+
+<style>
+	@keyframes logsToastCountdown {
+		from {
+			transform: scaleX(1);
+		}
+		to {
+			transform: scaleX(0);
+		}
+	}
+
+	.logs-toast-progress {
+		transform-origin: left center;
+		animation-name: logsToastCountdown;
+		animation-timing-function: linear;
+		animation-fill-mode: forwards;
+	}
+</style>
