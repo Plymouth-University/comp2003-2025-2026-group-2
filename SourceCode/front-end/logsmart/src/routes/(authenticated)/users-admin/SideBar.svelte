@@ -3,13 +3,19 @@
 	import type { Member } from './+page.svelte';
 	import PictureUploader from '$lib/components/PictureUploader.svelte';
 	import { invalidateAll } from '$app/navigation';
+	import { onDestroy } from 'svelte';
 
 	const { selectedUser, loggedInUserRole, updateMember, branches, isReadonlyHQ, onClose } = $props<{
 		selectedUser: Member | null;
 		loggedInUserRole: string;
 		updateMember: (
 			email: string,
-			updates: { first_name: string; last_name: string; role: string; branch_id: string | null }
+			updates: {
+				first_name: string;
+				last_name: string;
+				role: Member['role'];
+				branch_id: string | null;
+			}
 		) => void;
 		branches: Array<{ id: string; name: string }>;
 		isReadonlyHQ: boolean;
@@ -30,6 +36,17 @@
 	let lastName = $state('');
 	let role = $state('');
 	let branchId = $state(null as string | null);
+	let isSaving = $state(false);
+	let saveStatus = $state<'idle' | 'success' | 'error'>('idle');
+	let saveMessage = $state('');
+	let showUpdatePopup = $state(false);
+	let updatePopupType = $state<'success' | 'error'>('success');
+	let updatePopupTitle = $state('');
+	let updatePopupDetails = $state<string[]>([]);
+	let updateToastTimer = $state<number | null>(null);
+	let lastSelectedEmail = $state<string | null>(null);
+	let toastSequence = $state(0);
+	const TOAST_DURATION_MS = 5000;
 
 	let profilePictureUrl = $derived(
 		selectedUser?.profile_picture_url
@@ -39,10 +56,54 @@
 
 	$effect(() => {
 		if (selectedUser) {
+			const hasSelectedUserChanged = selectedUser.email !== lastSelectedEmail;
+			lastSelectedEmail = selectedUser.email;
 			firstName = selectedUser.first_name;
 			lastName = selectedUser.last_name;
 			role = selectedUser.role;
 			branchId = selectedUser.branch_id || null;
+			saveStatus = 'idle';
+			saveMessage = '';
+			if (hasSelectedUserChanged) {
+				showUpdatePopup = false;
+			}
+		}
+	});
+
+	function getRoleLabel(value: string): string {
+		switch (value) {
+			case 'company_manager':
+				return 'Company Manager';
+			case 'branch_manager':
+				return 'Branch Manager';
+			case 'logsmart_admin':
+				return 'Internal Admin';
+			default:
+				return 'Staff';
+		}
+	}
+
+	function getBranchLabel(id: string | null): string {
+		if (!id) return 'No Branch (HQ)';
+		const branch = branches.find((item: { id: string; name: string }) => item.id === id);
+		return branch?.name || 'Unknown Branch';
+	}
+
+	function showTimedToast(durationMs = TOAST_DURATION_MS) {
+		if (updateToastTimer !== null) {
+			window.clearTimeout(updateToastTimer);
+		}
+		toastSequence += 1;
+		showUpdatePopup = true;
+		updateToastTimer = window.setTimeout(() => {
+			showUpdatePopup = false;
+			updateToastTimer = null;
+		}, durationMs);
+	}
+
+	onDestroy(() => {
+		if (updateToastTimer !== null) {
+			window.clearTimeout(updateToastTimer);
 		}
 	});
 
@@ -72,6 +133,55 @@
 		await invalidateAll();
 	}
 </script>
+
+{#if showUpdatePopup}
+	{#key toastSequence}
+		<div
+			class="fixed right-4 bottom-4 z-50 w-full max-w-sm overflow-hidden rounded-lg border px-4 py-3 text-left shadow-lg"
+			style={updatePopupType === 'success'
+				? 'border-color: #16a34a; background-color: #f0fdf4;'
+				: 'border-color: #dc2626; background-color: #fef2f2;'}
+		>
+			<div class="mb-1 flex items-start justify-between gap-3">
+				<p
+					class="text-sm font-semibold"
+					style={updatePopupType === 'success' ? 'color: #166534;' : 'color: #991b1b;'}
+				>
+					{updatePopupTitle}
+				</p>
+				<button
+					type="button"
+					onclick={() => {
+						showUpdatePopup = false;
+						if (updateToastTimer !== null) {
+							window.clearTimeout(updateToastTimer);
+							updateToastTimer = null;
+						}
+					}}
+					class="rounded px-2 py-0.5 text-xs font-semibold transition-opacity hover:opacity-80"
+					style={updatePopupType === 'success'
+						? 'background-color: #dcfce7; color: #166534; cursor: pointer;'
+						: 'background-color: #fee2e2; color: #991b1b; cursor: pointer;'}
+				>
+					Close
+				</button>
+			</div>
+			<div class="space-y-1 text-xs" style="color: #334155;">
+				{#if updatePopupDetails.length > 0}
+					{#each updatePopupDetails as detail (detail)}
+						<p>{detail}</p>
+					{/each}
+				{/if}
+			</div>
+			<div
+				class="toast-progress absolute right-0 bottom-0 left-0 h-1"
+				style={updatePopupType === 'success'
+					? `background-color: #16a34a; animation-duration: ${TOAST_DURATION_MS}ms;`
+					: `background-color: #dc2626; animation-duration: ${TOAST_DURATION_MS}ms;`}
+			></div>
+		</div>
+	{/key}
+{/if}
 
 <svelte:window onresize={handleResize} />
 
@@ -366,8 +476,18 @@
 				<button
 					class="m-5 mb-0 rounded border-2 border-border-primary bg-bg-primary px-4 py-2 font-bold text-text-primary hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 					type="button"
-					disabled={isReadonlyHQ}
+					disabled={isReadonlyHQ || isSaving}
 					onclick={async () => {
+						if (!selectedUser) return;
+						const previousFirstName = selectedUser.first_name;
+						const previousLastName = selectedUser.last_name;
+						const previousRole = selectedUser.role;
+						const previousBranchId = selectedUser.branch_id || null;
+
+						isSaving = true;
+						saveStatus = 'idle';
+						saveMessage = '';
+						showUpdatePopup = false;
 						const response = await api.PUT('/auth/admin/update-member', {
 							body: {
 								email: selectedUser?.email as string,
@@ -385,12 +505,69 @@
 								role: role,
 								branch_id: branchId
 							});
+
+							const changes: string[] = [];
+							if (previousFirstName !== firstName || previousLastName !== lastName) {
+								changes.push(
+									`Name: ${previousFirstName} ${previousLastName} -> ${firstName} ${lastName}`
+								);
+							}
+							if (previousRole !== role) {
+								changes.push(
+									`Role: ${getRoleLabel(previousRole)} -> ${getRoleLabel(role)}`
+								);
+							}
+							if (previousBranchId !== branchId) {
+								changes.push(
+									`Branch: ${getBranchLabel(previousBranchId)} -> ${getBranchLabel(branchId)}`
+								);
+							}
+
+							saveStatus = 'success';
+							saveMessage = 'Member updated successfully.';
+							updatePopupType = 'success';
+							updatePopupTitle = 'Profile updated successfully';
+							updatePopupDetails =
+								changes.length > 0 ? changes : ['No field values changed.'];
+							showTimedToast();
 						} else if (response.error) {
-							alert(`Failed to update member: ${response.error.error}`);
+							saveStatus = 'error';
+							saveMessage = `Failed to update member: ${response.error.error}`;
+							updatePopupType = 'error';
+							updatePopupTitle = 'Unable to update profile';
+							updatePopupDetails = [response.error.error || 'Unknown error'];
+							showTimedToast();
 						}
+						isSaving = false;
 					}}>Save</button
 				>
+				{#if saveStatus !== 'idle'}
+					<p
+						class="mt-2 text-sm"
+						style={saveStatus === 'success' ? 'color: #16a34a;' : 'color: #dc2626;'}
+					>
+						{saveMessage}
+					</p>
+				{/if}
 			</form>
 		</div>
 	</div>
 {/if}
+
+<style>
+	@keyframes toastCountdown {
+		from {
+			transform: scaleX(1);
+		}
+		to {
+			transform: scaleX(0);
+		}
+	}
+
+	.toast-progress {
+		transform-origin: left center;
+		animation-name: toastCountdown;
+		animation-timing-function: linear;
+		animation-fill-mode: forwards;
+	}
+</style>
