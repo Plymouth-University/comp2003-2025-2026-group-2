@@ -119,7 +119,7 @@
 								Templates Dashboard
 							</a>
 						{/if}
-						{#if isCompanyManager || isReadonlyHQ}
+						{#if isCompanyManager || isReadonlyHQ || data?.user?.role === 'logsmart_admin'}
 							<a
 								href="/branches"
 								class="hover:opacity-80"
@@ -260,7 +260,7 @@
 							Templates Dashboard
 						</a>
 					{/if}
-					{#if isCompanyManager || isReadonlyHQ}
+					{#if isCompanyManager || isReadonlyHQ || data?.user?.role === 'logsmart_admin'}
 						<a
 							href="/branches"
 							class="block hover:opacity-80"
