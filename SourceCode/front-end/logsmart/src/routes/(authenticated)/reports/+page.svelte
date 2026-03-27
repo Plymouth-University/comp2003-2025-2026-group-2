@@ -1504,7 +1504,10 @@ ${reportContent}
 <div class="reports-page min-h-full" style="background-color: var(--bg-secondary);">
 	<!-- Main Content -->
 	<div class="mx-auto max-w-7xl px-6 py-6 lg:py-4">
-		<h1 class="mb-8 text-center text-3xl font-bold md:text-4xl lg:mb-5" style="color: var(--text-primary);">
+		<h1
+			class="mb-8 text-center text-3xl font-bold md:text-4xl lg:mb-5"
+			style="color: var(--text-primary);"
+		>
 			Generate Report
 		</h1>
 
@@ -2105,7 +2108,7 @@ ${reportContent}
 											logType.checked = !logType.checked;
 											handleIndividualCheckboxChange();
 										}}
-										class="w-full border-2 px-2 py-2 text-center text-xs font-semibold whitespace-nowrap transition-all duration-150 hover:-translate-y-0.5"
+										class="w-full border-2 px-1.5 py-2 text-center text-[11px] leading-tight font-medium whitespace-nowrap transition-all duration-150 hover:-translate-y-0.5"
 										style={logType.checked
 											? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 6px rgba(61, 122, 130, 0.25);'
 											: 'border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);'}
@@ -2244,17 +2247,22 @@ ${reportContent}
 						? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
 						: 'border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);'}
 				>
-					<div class="flex items-start justify-between gap-4 sm:items-center">
-						<div>
+					<div class="flex min-w-0 items-start justify-between gap-3 sm:items-center">
+						<div class="min-w-0">
 							<p class="text-base font-semibold">Temperature Graphs</p>
 							<p
-								class="mt-1 text-[11px] whitespace-nowrap"
-								style={includeTemperatureGraphs ? 'color: rgba(255, 255, 255, 0.9);' : 'color: var(--text-secondary);'}
+								class="mt-1 text-[11px] wrap-break-word sm:whitespace-nowrap"
+								style={includeTemperatureGraphs
+									? 'color: rgba(255, 255, 255, 0.9);'
+									: 'color: var(--text-secondary);'}
 							>
 								Line graphs for temperature fields (requires 2+ entries)
 							</p>
 						</div>
-						<span class="min-w-11 text-right text-xs font-semibold tracking-wide" style={includeTemperatureGraphs ? 'color: white;' : 'color: var(--text-secondary);'}>
+						<span
+							class="min-w-11 shrink-0 text-right text-xs font-semibold tracking-wide"
+							style={includeTemperatureGraphs ? 'color: white;' : 'color: var(--text-secondary);'}
+						>
 							{includeTemperatureGraphs ? 'ON' : 'OFF'}
 						</span>
 					</div>
@@ -2309,7 +2317,9 @@ ${reportContent}
 								>
 									<div class="flex items-center justify-between gap-2">
 										<div class="text-sm font-semibold">
-											{formatFromISO(run.params.date_from_iso)} - {formatFromISO(run.params.date_to_iso)}
+											{formatFromISO(run.params.date_from_iso)} - {formatFromISO(
+												run.params.date_to_iso
+											)}
 										</div>
 										<button
 											type="button"
