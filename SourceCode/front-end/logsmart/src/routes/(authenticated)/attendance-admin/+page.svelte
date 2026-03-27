@@ -334,7 +334,7 @@
 	<title>Attendance</title>
 </svelte:head>
 
-			<div class="attendance-page h-full w-full" style="background-color: var(--bg-secondary);">
+<div class="attendance-page h-full w-full" style="background-color: var(--bg-secondary);">
 	<div class="mx-auto max-w-7xl px-6 py-8">
 		<!-- Header -->
 		<div class="mb-6 flex flex-wrap items-center justify-between gap-4">

@@ -95,10 +95,10 @@
 
 	let logTypes = $state([
 		{ id: 'all', label: 'All', checked: true },
-		{ id: 'type1', label: 'Text Logs', checked: true },
-		{ id: 'type2', label: 'Checkbox Logs', checked: true },
-		{ id: 'type3', label: 'Temperature Logs', checked: true },
-		{ id: 'type4', label: 'Dropdown Logs', checked: true }
+		{ id: 'type1', label: 'Text', checked: true },
+		{ id: 'type2', label: 'Checkbox', checked: true },
+		{ id: 'type3', label: 'Temperature', checked: true },
+		{ id: 'type4', label: 'Dropdown', checked: true }
 	]);
 
 	const today = new Date();
@@ -1503,16 +1503,16 @@ ${reportContent}
 </svelte:head>
 <div class="reports-page min-h-full" style="background-color: var(--bg-secondary);">
 	<!-- Main Content -->
-	<div class="mx-auto max-w-7xl px-6 py-8">
-		<h1 class="mb-8 text-center text-3xl font-bold md:text-4xl" style="color: var(--text-primary);">
+	<div class="mx-auto max-w-7xl px-6 py-6 lg:py-4">
+		<h1 class="mb-8 text-center text-3xl font-bold md:text-4xl lg:mb-5" style="color: var(--text-primary);">
 			Generate Report
 		</h1>
 
-		<div class="flex flex-col gap-8 lg:flex-row lg:gap-8">
+		<div class="flex flex-col gap-8 lg:flex-row lg:gap-6">
 			<!-- Left Side - Form -->
 			<div class="w-full lg:w-96">
 				<!-- Date From -->
-				<div class="mb-8">
+				<div class="mb-8 lg:mb-5">
 					<label
 						for="date-from"
 						class="mb-3 block text-lg font-bold"
@@ -1788,7 +1788,7 @@ ${reportContent}
 				</div>
 
 				<!-- Date To -->
-				<div class="mb-8">
+				<div class="mb-8 lg:mb-5">
 					<label
 						for="date-to"
 						class="mb-3 block text-lg font-bold"
@@ -2068,34 +2068,59 @@ ${reportContent}
 				</div>
 
 				<!-- Log Types -->
-				<div class="mb-8">
+				<div class="mb-8 lg:mb-5">
 					<fieldset>
 						<legend class="mb-3 block text-lg font-bold" style="color: var(--text-primary);"
 							>Log Types:</legend
 						>
 						<div class="space-y-2">
-							{#each logTypes as logType (logType.id)}
-								<label class="flex cursor-pointer items-center gap-3">
-									<input
-										type="checkbox"
-										bind:checked={logType.checked}
-										onchange={(e) =>
-											logType.id === 'all'
-												? handleAllCheckboxChange(e.currentTarget.checked)
-												: handleIndividualCheckboxChange()}
-										class="h-5 w-5 cursor-pointer border-2"
-										style="border-color: var(--border-primary);"
-									/>
-									<span style="color: var(--text-primary);">{logType.label}</span>
-								</label>
+							{#each logTypes.filter((logType) => logType.id === 'all') as logType (logType.id)}
+								<button
+									type="button"
+									aria-pressed={logType.checked}
+									onclick={() => {
+										if (logType.id === 'all') {
+											const nextChecked = !logType.checked;
+											logType.checked = nextChecked;
+											handleAllCheckboxChange(nextChecked);
+										} else {
+											logType.checked = !logType.checked;
+											handleIndividualCheckboxChange();
+										}
+									}}
+									class="w-full border-2 px-4 py-1.5 text-center text-xs font-semibold transition-all duration-150 hover:-translate-y-0.5"
+									style={logType.checked
+										? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 6px rgba(61, 122, 130, 0.25);'
+										: 'border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);'}
+								>
+									{logType.label}
+								</button>
 							{/each}
+							<div class="grid grid-cols-4 gap-2">
+								{#each logTypes.filter((logType) => logType.id !== 'all') as logType (logType.id)}
+									<button
+										type="button"
+										aria-pressed={logType.checked}
+										onclick={() => {
+											logType.checked = !logType.checked;
+											handleIndividualCheckboxChange();
+										}}
+										class="w-full border-2 px-2 py-2 text-center text-xs font-semibold whitespace-nowrap transition-all duration-150 hover:-translate-y-0.5"
+										style={logType.checked
+											? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 6px rgba(61, 122, 130, 0.25);'
+											: 'border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);'}
+									>
+										{logType.label}
+									</button>
+								{/each}
+							</div>
 						</div>
 					</fieldset>
 				</div>
 
 				<!-- Branch Filter (for company managers and HQ, when branches exist) -->
 				{#if canSeeBranchFilter}
-					<div class="branch-filter-container mb-8" style="position: relative;">
+					<div class="branch-filter-container mb-8 lg:mb-5" style="position: relative;">
 						<legend class="mb-3 block text-lg font-bold" style="color: var(--text-primary);"
 							>Branches:</legend
 						>
@@ -2172,7 +2197,7 @@ ${reportContent}
 				{/if}
 
 				<!-- Arrange By Options -->
-				<div class="mb-8">
+				<div class="mb-8 lg:mb-5">
 					<legend class="mb-3 block text-lg font-bold" style="color: var(--text-primary);"
 						>Arrange By:</legend
 					>
@@ -2180,53 +2205,60 @@ ${reportContent}
 						<button
 							type="button"
 							onclick={() => (arrangeBy = 'date')}
-							class="flex-1 transform border-2 px-4 py-2 font-bold transition-all duration-200 hover:scale-105 hover:shadow-md"
+							class="flex-1 transform border-2 px-4 py-1.5 text-sm font-semibold transition-all duration-200 hover:scale-105 hover:shadow-md"
 							style={arrangeBy === 'date'
 								? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
 								: 'border-color: var(--border-primary); background-color: transparent; color: var(--text-secondary);'}
 						>
-							Arrange By Date
+							Date
 						</button>
 						<button
 							type="button"
 							onclick={() => (arrangeBy = 'logType')}
-							class="flex-1 transform border-2 px-4 py-2 font-bold transition-all duration-200 hover:scale-105 hover:shadow-md"
+							class="flex-1 transform border-2 px-4 py-1.5 text-sm font-semibold transition-all duration-200 hover:scale-105 hover:shadow-md"
 							style={arrangeBy === 'logType'
 								? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
 								: 'border-color: var(--border-primary); background-color: transparent; color: var(--text-secondary);'}
 						>
-							Arrange By Log Type
+							Log Type
 						</button>
 					</div>
 				</div>
 
 				<!-- Temperature Graphs Toggle -->
-				<div class="mb-8">
-					<label class="flex cursor-pointer items-center gap-3">
-						<input
-							type="checkbox"
-							bind:checked={includeTemperatureGraphs}
-							onchange={() => {
-								if (reportGenerated) {
-									// Re-extract graphs if report is already generated
-									if (includeTemperatureGraphs) {
-										temperatureGraphs = extractTemperatureGraphData(filteredEntries);
-									} else {
-										temperatureGraphs = [];
-									}
-								}
-							}}
-							class="h-5 w-5 cursor-pointer"
-							style="accent-color: #3D7A82;"
-						/>
-						<span class="text-base font-medium" style="color: var(--text-primary);">
-							Include Temperature Graphs
+				<button
+					type="button"
+					aria-pressed={includeTemperatureGraphs}
+					onclick={() => {
+						includeTemperatureGraphs = !includeTemperatureGraphs;
+						if (reportGenerated) {
+							if (includeTemperatureGraphs) {
+								temperatureGraphs = extractTemperatureGraphData(filteredEntries);
+							} else {
+								temperatureGraphs = [];
+							}
+						}
+					}}
+					class="mb-8 w-full border-2 px-4 py-3 text-left transition-all duration-150 hover:-translate-y-0.5 lg:mb-5"
+					style={includeTemperatureGraphs
+						? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
+						: 'border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);'}
+				>
+					<div class="flex items-start justify-between gap-4 sm:items-center">
+						<div>
+							<p class="text-base font-semibold">Temperature Graphs</p>
+							<p
+								class="mt-1 text-[11px] whitespace-nowrap"
+								style={includeTemperatureGraphs ? 'color: rgba(255, 255, 255, 0.9);' : 'color: var(--text-secondary);'}
+							>
+								Line graphs for temperature fields (requires 2+ entries)
+							</p>
+						</div>
+						<span class="min-w-11 text-right text-xs font-semibold tracking-wide" style={includeTemperatureGraphs ? 'color: white;' : 'color: var(--text-secondary);'}>
+							{includeTemperatureGraphs ? 'ON' : 'OFF'}
 						</span>
-					</label>
-					<p class="mt-1 ml-8 text-xs" style="color: var(--text-secondary);">
-						Generates line graphs for temperature fields (requires 2+ entries)
-					</p>
-				</div>
+					</div>
+				</button>
 
 				<!-- Generate Button -->
 				<div class="flex justify-center">
@@ -2250,7 +2282,7 @@ ${reportContent}
 				</div>
 
 				<!-- Saved Report Runs -->
-				<div class="mt-8">
+				<div class="mt-8 lg:mt-5">
 					<h3 class="mb-3 text-lg font-bold" style="color: var(--text-primary);">Recent Reports</h3>
 					{#if reportRunsError}
 						<p class="mb-2 text-sm text-red-500">{reportRunsError}</p>
@@ -2260,36 +2292,40 @@ ${reportContent}
 					{:else if reportRuns.length === 0}
 						<p class="text-sm" style="color: var(--text-secondary);">No saved reports yet.</p>
 					{:else}
-						<div class="space-y-2">
+						<div class="space-y-2 lg:max-h-58 lg:overflow-y-auto lg:pr-1">
 							{#each reportRuns as run (run.id)}
 								<div
-									class="w-full rounded border-2 px-3 py-2"
+									class="w-full cursor-pointer rounded border-2 px-3 py-1.5 transition-all duration-150 hover:opacity-95 hover:shadow-md"
 									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+									role="button"
+									tabindex="0"
+									onclick={() => runSavedReport(run)}
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											runSavedReport(run);
+										}
+									}}
 								>
-									<button
-										type="button"
-										onclick={() => runSavedReport(run)}
-										class="w-full text-left hover:opacity-80"
-									>
+									<div class="flex items-center justify-between gap-2">
 										<div class="text-sm font-semibold">
-											{formatFromISO(run.params.date_from_iso)} - {formatFromISO(
-												run.params.date_to_iso
-											)}
+											{formatFromISO(run.params.date_from_iso)} - {formatFromISO(run.params.date_to_iso)}
 										</div>
-										<div class="text-xs" style="color: var(--text-secondary);">
-											Used {run.use_count} time(s) • {new Date(run.last_used_at).toLocaleString()}
-										</div>
-									</button>
-									<div class="mt-2 flex justify-end">
 										<button
 											type="button"
 											disabled={deletingReportId === run.id}
-											onclick={() => deleteReportRun(run.id)}
-											class="cursor-pointer rounded border px-2 py-1 text-xs transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+											onclick={(e) => {
+												e.stopPropagation();
+												deleteReportRun(run.id);
+											}}
+											class="cursor-pointer rounded border px-2 py-0.5 text-xs transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
 											style="border-color: #dc2626; color: #dc2626;"
 										>
 											{deletingReportId === run.id ? 'Deleting...' : 'Delete'}
 										</button>
+									</div>
+									<div class="text-xs" style="color: var(--text-secondary);">
+										Used {run.use_count} time(s) • {new Date(run.last_used_at).toLocaleString()}
 									</div>
 								</div>
 							{/each}
@@ -2308,7 +2344,7 @@ ${reportContent}
 						class="transform border-2 px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
-						📄 Download PDF
+						Download PDF
 					</button>
 					<button
 						onclick={() => exportToWord('docx')}
@@ -2316,7 +2352,7 @@ ${reportContent}
 						class="transform border-2 px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 hover:border-green-400 hover:bg-green-50 hover:text-green-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
-						📊 Download DOCX
+						Download DOCX
 					</button>
 					<button
 						onclick={() => exportToWord('rtf')}
@@ -2324,13 +2360,13 @@ ${reportContent}
 						class="transform border-2 px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
-						📝 Download RTF
+						Download RTF
 					</button>
 				</div>
 
 				<!-- Report Preview Area -->
 				<div
-					class="min-h-100 border-2 p-4 sm:min-h-150 sm:p-8"
+					class="min-h-104 border-2 p-4 sm:min-h-120 sm:p-6 lg:min-h-108 lg:p-5"
 					style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 				>
 					{#if isLoading}
