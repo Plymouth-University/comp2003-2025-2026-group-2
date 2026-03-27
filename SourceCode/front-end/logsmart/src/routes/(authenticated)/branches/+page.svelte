@@ -444,14 +444,14 @@
 								<button
 									type="button"
 									onclick={() => startEditingBranch(branch)}
-									class="rounded-base border-2 border-border-primary bg-bg-secondary px-4 py-1 text-sm font-bold text-text-primary shadow-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+									class="rounded-base border-2 border-border-primary bg-bg-secondary px-4 py-1 text-sm font-bold text-text-primary shadow-sm transition-all duration-150 hover:scale-105 hover:opacity-80"
 								>
 									EDIT
 								</button>
 								<button
 									type="button"
 									onclick={() => startDeleteBranch(branch)}
-									class="rounded-base border-2 border-red-600 bg-red-200 px-4 py-1 text-sm font-bold shadow-sm hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+									class="rounded-base border-2 border-red-600 bg-red-200 px-4 py-1 text-sm font-bold shadow-sm transition-all duration-150 hover:scale-105 hover:opacity-80"
 								>
 									DELETE
 								</button>
@@ -474,7 +474,7 @@
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+		class="branches-modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
 		onclick={(e) => e.target === e.currentTarget && cancelDeleteBranch()}
 	>
 		<div
@@ -579,3 +579,24 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	.branches-page button:not(:disabled),
+	.branches-modal button:not(:disabled) {
+		cursor: pointer;
+		transition:
+			transform 0.12s ease,
+			filter 0.12s ease;
+	}
+
+	.branches-page button:not(:disabled):hover,
+	.branches-modal button:not(:disabled):hover {
+		transform: translateY(-1px) scale(1.02);
+		filter: brightness(0.96);
+	}
+
+	.branches-page button:disabled,
+	.branches-modal button:disabled {
+		cursor: not-allowed;
+	}
+</style>

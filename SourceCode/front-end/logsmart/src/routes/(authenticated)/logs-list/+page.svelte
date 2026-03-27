@@ -262,7 +262,7 @@
 	<title>Logs List</title>
 </svelte:head>
 <main>
-	<div class="min-h-full" style="background-color: var(--bg-secondary);">
+	<div class="logs-page min-h-full" style="background-color: var(--bg-secondary);">
 		<div class="mx-auto max-w-7xl px-6 py-8">
 			{#if data.error}
 				<div
@@ -432,5 +432,13 @@
 		animation-name: logsToastCountdown;
 		animation-timing-function: linear;
 		animation-fill-mode: forwards;
+	}
+
+	.logs-page button:not(:disabled) {
+		cursor: pointer;
+	}
+
+	.logs-page button:disabled {
+		cursor: not-allowed;
 	}
 </style>

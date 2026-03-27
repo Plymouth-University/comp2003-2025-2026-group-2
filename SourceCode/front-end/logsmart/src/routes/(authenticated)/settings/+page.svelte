@@ -175,7 +175,7 @@
 <svelte:head>
 	<title>Settings</title>
 </svelte:head>
-<div class="min-h-full" style="background-color: var(--bg-secondary);">
+<div class="settings-page min-h-full" style="background-color: var(--bg-secondary);">
 	<div class="mx-auto max-w-7xl px-6 py-8">
 		<!-- Header -->
 		<h1 class="mb-8 text-3xl font-bold" style="color: var(--text-primary);">Settings</h1>
@@ -530,3 +530,21 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	.settings-page button:not(:disabled) {
+		cursor: pointer;
+		transition:
+			transform 0.12s ease,
+			filter 0.12s ease;
+	}
+
+	.settings-page button:not(:disabled):hover {
+		transform: translateY(-1px) scale(1.02);
+		filter: brightness(0.96);
+	}
+
+	.settings-page button:disabled {
+		cursor: not-allowed;
+	}
+</style>

@@ -155,7 +155,7 @@
 						{/if}
 						<button
 							onclick={handleLogout}
-							class="rounded px-4 py-2 hover:opacity-80"
+							class="transform cursor-pointer rounded px-4 py-2 transition-all duration-150 hover:scale-105 hover:opacity-80"
 							style="background-color: var(--bg-secondary); color: var(--text-primary);"
 						>
 							Logout
@@ -287,7 +287,7 @@
 						</a>
 						<button
 							onclick={handleLogout}
-							class="block w-full rounded px-4 py-2 text-left hover:opacity-80"
+							class="block w-full transform cursor-pointer rounded px-4 py-2 text-left transition-all duration-150 hover:scale-105 hover:opacity-80"
 							style="background-color: var(--bg-secondary); color: var(--text-primary);"
 						>
 							Logout

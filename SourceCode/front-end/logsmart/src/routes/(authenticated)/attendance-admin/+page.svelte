@@ -4,6 +4,7 @@
 	import { generateAttendancePdfHtml } from '$lib/utils/pdf-templates';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import { onMount } from 'svelte';
 	import { SvelteMap, SvelteDate, SvelteURLSearchParams } from 'svelte/reactivity';
 
 	type ClockEvent = components['schemas']['CompanyClockEventResponse'];
@@ -68,10 +69,32 @@
 
 	let showDateFromPicker = $state(false);
 	let showDateToPicker = $state(false);
+	let dateFromPickerContainer: HTMLDivElement | null = null;
+	let dateToPickerContainer: HTMLDivElement | null = null;
 	let pickerView = $state<'day' | 'month' | 'year'>('day');
 	let slideDirection = $state<'left' | 'right'>('left');
 	let calendarDate = $state(new Date());
 	let activePickerIsFrom = $state(true);
+
+	onMount(() => {
+		const handleDocumentPointerDown = (event: PointerEvent) => {
+			const target = event.target as Node | null;
+			if (!target) return;
+
+			const clickedInsideFrom = dateFromPickerContainer?.contains(target) ?? false;
+			const clickedInsideTo = dateToPickerContainer?.contains(target) ?? false;
+
+			if (!clickedInsideFrom && !clickedInsideTo) {
+				showDateFromPicker = false;
+				showDateToPicker = false;
+			}
+		};
+
+		document.addEventListener('pointerdown', handleDocumentPointerDown);
+		return () => {
+			document.removeEventListener('pointerdown', handleDocumentPointerDown);
+		};
+	});
 
 	// Search / filter
 	let searchQuery = $state('');
@@ -311,7 +334,7 @@
 	<title>Attendance</title>
 </svelte:head>
 
-<div class="h-full w-full" style="background-color: var(--bg-secondary);">
+			<div class="attendance-page h-full w-full" style="background-color: var(--bg-secondary);">
 	<div class="mx-auto max-w-7xl px-6 py-8">
 		<!-- Header -->
 		<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -359,7 +382,7 @@
 				<label for="filter-from" class="text-xs font-medium" style="color: var(--text-secondary);"
 					>From</label
 				>
-				<div class="relative">
+				<div class="relative" bind:this={dateFromPickerContainer}>
 					<div class="flex items-center gap-2">
 						<input
 							id="filter-from"
@@ -373,7 +396,7 @@
 							type="button"
 							onclick={() => toggleDatePicker(true)}
 							aria-label="Open calendar for start date"
-							class="border-2 p-2"
+							class="transform border-2 p-2 transition-all duration-150 hover:scale-105"
 							style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
 						>
 							<svg
@@ -394,7 +417,7 @@
 
 					{#if showDateFromPicker}
 						<div
-							class="absolute top-full left-0 z-50 mt-2 rounded-lg border-2 p-4 shadow-lg"
+							class="date-picker absolute top-full left-0 z-50 mt-2 rounded-lg border-2 p-4 shadow-lg"
 							style="border-color: var(--border-primary); background-color: var(--bg-primary); min-width: 280px; overflow: hidden;"
 						>
 							{#if pickerView === 'day'}
@@ -597,7 +620,7 @@
 				<label for="filter-to" class="text-xs font-medium" style="color: var(--text-secondary);"
 					>To</label
 				>
-				<div class="relative">
+				<div class="relative" bind:this={dateToPickerContainer}>
 					<div class="flex items-center gap-2">
 						<input
 							id="filter-to"
@@ -611,7 +634,7 @@
 							type="button"
 							onclick={() => toggleDatePicker(false)}
 							aria-label="Open calendar for end date"
-							class="border-2 p-2"
+							class="transform border-2 p-2 transition-all duration-150 hover:scale-105"
 							style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
 						>
 							<svg
@@ -632,7 +655,7 @@
 
 					{#if showDateToPicker}
 						<div
-							class="absolute top-full left-0 z-50 mt-2 rounded-lg border-2 p-4 shadow-lg"
+							class="date-picker absolute top-full left-0 z-50 mt-2 rounded-lg border-2 p-4 shadow-lg"
 							style="border-color: var(--border-primary); background-color: var(--bg-primary); min-width: 280px; overflow: hidden;"
 						>
 							{#if pickerView === 'day'}
@@ -968,5 +991,21 @@
 
 	.slide-right {
 		animation: slideInFromRight 0.3s ease-out;
+	}
+
+	.attendance-page button:not(:disabled) {
+		cursor: pointer;
+	}
+
+	.date-picker button:not(:disabled) {
+		cursor: pointer;
+		transition:
+			transform 0.12s ease,
+			filter 0.12s ease;
+	}
+
+	.date-picker button:not(:disabled):hover {
+		transform: translateY(-1px) scale(1.02);
+		filter: brightness(0.96);
 	}
 </style>

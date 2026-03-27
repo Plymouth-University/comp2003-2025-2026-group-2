@@ -147,7 +147,7 @@
 				<button
 					onclick={handleClockOut}
 					disabled={loading}
-					class="cursor-pointer border-2 px-6 py-2 font-medium transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+					class="transform cursor-pointer border-2 px-6 py-2 font-medium transition-all duration-150 hover:scale-105 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
 					style="border-color: #ef4444; color: #ef4444; background-color: var(--bg-primary);"
 				>
 					{loading ? 'Processing...' : 'Clock Out'}
@@ -156,7 +156,7 @@
 				<button
 					onclick={handleClockIn}
 					disabled={loading}
-					class="cursor-pointer border-2 px-6 py-2 font-medium transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+					class="transform cursor-pointer border-2 px-6 py-2 font-medium transition-all duration-150 hover:scale-105 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
 					style="border-color: #22c55e; color: #22c55e; background-color: var(--bg-primary);"
 				>
 					{loading ? 'Processing...' : 'Clock In'}

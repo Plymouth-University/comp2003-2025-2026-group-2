@@ -567,4 +567,12 @@
 		animation-timing-function: linear;
 		animation-fill-mode: forwards;
 	}
+
+	#userSidebar button:not(:disabled) {
+		cursor: pointer;
+	}
+
+	#userSidebar button:disabled {
+		cursor: not-allowed;
+	}
 </style>
