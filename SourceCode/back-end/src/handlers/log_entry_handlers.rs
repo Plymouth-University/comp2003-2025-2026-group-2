@@ -7,7 +7,7 @@ use crate::{
         ErrorResponse, ListLogEntriesResponse, LogEntryResponse, SubmitLogEntryResponse,
         UpdateLogEntryRequest,
     },
-    logs_db,
+    logs_db::{self, LogStatus},
     middleware::{AnyAuthUser, BranchManagerUser, ReadBranchUser},
     services,
 };
@@ -104,7 +104,7 @@ pub async fn list_due_forms_today(
                     .as_ref()
                     .and_then(|e| e.submitted_at.map(|ts| ts.to_rfc3339())),
                 period: period.clone(),
-                status: None,
+                status: Some(LogStatus::Overdue.as_str().to_string()),
                 availability_status: status.as_str().to_string(),
                 available_from,
                 due_at,
@@ -159,13 +159,20 @@ pub async fn list_due_forms_today(
                 let status =
                     logs_db::get_availability_status_for_period(&template.schedule, &period, now);
 
+                let derived_draft_status = draft_entry.map(|e| {
+                    logs_db::derive_log_status(e.status, &template.schedule, &period, now)
+                        .0
+                        .as_str()
+                        .to_string()
+                });
+
                 due_forms.push(DueFormInfo {
                     template_name: template.template_name,
                     template_layout: processed_layout,
                     last_submitted: last_submitted
                         .and_then(|e| e.submitted_at.map(|ts| ts.to_rfc3339())),
                     period,
-                    status: draft_entry.map(|e| e.status),
+                    status: derived_draft_status,
                     availability_status: status.as_str().to_string(),
                     available_from,
                     due_at,
@@ -275,12 +282,19 @@ pub async fn get_log_entry(
         &entry.period,
     );
 
+    let availability = logs_db::get_availability_status_for_period(
+        &template.schedule,
+        &entry.period,
+        chrono::Utc::now(),
+    );
+
     Ok(Json(LogEntryResponse {
         id: entry.entry_id,
         template_name: entry.template_name,
         template_layout: processed_layout,
         entry_data: entry.entry_data,
-        status: entry.status,
+        status: entry.status.as_str().to_string(),
+        availability_status: availability.as_str().to_string(),
         created_at: entry.created_at.to_rfc3339(),
         updated_at: entry.updated_at.to_rfc3339(),
         submitted_at: entry.submitted_at.map(|ts| ts.to_rfc3339()),
@@ -346,12 +360,19 @@ pub async fn update_log_entry(
         &updated_entry.period,
     );
 
+    let availability = logs_db::get_availability_status_for_period(
+        &template.schedule,
+        &updated_entry.period,
+        chrono::Utc::now(),
+    );
+
     Ok(Json(LogEntryResponse {
         id: updated_entry.entry_id,
         template_name: updated_entry.template_name,
         template_layout: processed_layout,
         entry_data: updated_entry.entry_data,
-        status: updated_entry.status,
+        status: updated_entry.status.as_str().to_string(),
+        availability_status: availability.as_str().to_string(),
         created_at: updated_entry.created_at.to_rfc3339(),
         updated_at: updated_entry.updated_at.to_rfc3339(),
         submitted_at: updated_entry.submitted_at.map(|ts| ts.to_rfc3339()),
@@ -522,21 +543,34 @@ pub async fn list_company_log_entries<S: ::std::hash::BuildHasher>(
                 )
             })?;
 
-        let processed_layout = if let Some(template) = template {
-            logs_db::process_template_layout_with_period_string(
-                &template.template_layout,
-                &e.period,
-            )
-        } else {
-            Vec::new()
-        };
+        let (processed_layout, derived_status, availability_status) =
+            if let Some(template) = template {
+                let layout = logs_db::process_template_layout_with_period_string(
+                    &template.template_layout,
+                    &e.period,
+                );
+                let (status, availability) = logs_db::derive_log_status(
+                    e.status,
+                    &template.schedule,
+                    &e.period,
+                    chrono::Utc::now(),
+                );
+                (layout, status, availability)
+            } else {
+                (
+                    Vec::new(),
+                    e.status,
+                    logs_db::AvailabilityStatus::NotAvailable,
+                )
+            };
 
         response_entries.push(LogEntryResponse {
             id: e.entry_id,
             template_name: e.template_name,
             template_layout: processed_layout,
             entry_data: e.entry_data,
-            status: e.status,
+            status: derived_status.as_str().to_string(),
+            availability_status: availability_status.as_str().to_string(),
             created_at: e.created_at.to_rfc3339(),
             updated_at: e.updated_at.to_rfc3339(),
             submitted_at: e.submitted_at.map(|ts| ts.to_rfc3339()),
@@ -584,10 +618,6 @@ pub async fn list_user_log_entries(
         entries.retain(|e| e.template_name == *template_name);
     }
 
-    if let Some(status) = params.get("status") {
-        entries.retain(|e| e.status == *status);
-    }
-
     let mut response_entries = Vec::new();
     for e in entries {
         let template = logs_db::get_template_by_name(&state.mongodb, &e.template_name, &company_id)
@@ -600,26 +630,46 @@ pub async fn list_user_log_entries(
                 )
             })?;
 
-        let processed_layout = if let Some(template) = template {
-            logs_db::process_template_layout_with_period_string(
-                &template.template_layout,
-                &e.period,
-            )
-        } else {
-            Vec::new()
-        };
+        let (processed_layout, derived_status, availability_status) =
+            if let Some(template) = template {
+                let layout = logs_db::process_template_layout_with_period_string(
+                    &template.template_layout,
+                    &e.period,
+                );
+                let (status, availability) = logs_db::derive_log_status(
+                    e.status,
+                    &template.schedule,
+                    &e.period,
+                    chrono::Utc::now(),
+                );
+                (layout, status, availability)
+            } else {
+                (
+                    Vec::new(),
+                    e.status,
+                    logs_db::AvailabilityStatus::NotAvailable,
+                )
+            };
 
         response_entries.push(LogEntryResponse {
             id: e.entry_id,
             template_name: e.template_name,
             template_layout: processed_layout,
             entry_data: e.entry_data,
-            status: e.status,
+            status: derived_status.as_str().to_string(),
+            availability_status: availability_status.as_str().to_string(),
             created_at: e.created_at.to_rfc3339(),
             updated_at: e.updated_at.to_rfc3339(),
             submitted_at: e.submitted_at.map(|ts| ts.to_rfc3339()),
             period: e.period,
         });
+
+        if let Some(status) = params.get("status")
+            && let Some(filter_status) = logs_db::LogStatus::from_str(status)
+            && derived_status != filter_status
+        {
+            response_entries.pop();
+        }
     }
 
     Ok(Json(ListLogEntriesResponse {
