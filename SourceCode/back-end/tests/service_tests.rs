@@ -33,13 +33,7 @@ fn test_user_creation() {
 
 #[test]
 fn test_company_creation() {
-    let company = Company {
-        id: Uuid::new().to_string(),
-        name: "Test Company".to_string(),
-        address: "123 Test St".to_string(),
-        created_at: Utc::now(),
-        logo_id: None,
-    };
+    let company = Company::default().with_name_and_address("Test Company", "123 Main St");
 
     assert_eq!(company.name, "Test Company");
     assert_eq!(company.address, "123 Test St");

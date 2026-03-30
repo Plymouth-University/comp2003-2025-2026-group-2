@@ -96,6 +96,10 @@ impl CompanyFactory {
             address: "123 Test Street".to_string(),
             created_at: Utc::now(),
             logo_id: None,
+            data_exported_at: None,
+            deleted_at: None,
+            deletion_requested_at: None,
+            deletion_token: None,
         }
     }
 
@@ -605,6 +609,10 @@ pub async fn create_test_company(pool: &sqlx::PgPool, name: &str, address: &str)
         address: row.get("address"),
         created_at: row.get("created_at"),
         logo_id: row.get("logo_id"),
+        data_exported_at: row.get("data_exported_at"),
+        deleted_at: row.get("deleted_at"),
+        deletion_requested_at: row.get("deletion_requested_at"),
+        deletion_token: row.get("deletion_token"),
     })
     .unwrap()
 }
