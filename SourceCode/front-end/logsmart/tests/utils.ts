@@ -177,17 +177,28 @@ const register = async (browser: Browser, close = true) => {
 	await page.getByRole('link', { name: 'Register Company' }).click();
 	await page.waitForURL('**/register-company');
 
-	await page.getByRole('textbox', { name: 'Company Name' }).click();
-	await page.getByRole('textbox', { name: 'Company Name' }).fill(companyName);
-	await page.getByRole('textbox', { name: 'Company Name' }).dispatchEvent('input');
-	await page.getByRole('textbox', { name: 'Company Name' }).dispatchEvent('blur');
-
-	await page.getByRole('textbox', { name: 'Company Address' }).click();
-	await page
-		.getByRole('textbox', { name: 'Company Address' })
-		.fill('TestAddress1, ABC\nSecond Line,\n2!');
-	await page.getByRole('textbox', { name: 'Company Address' }).dispatchEvent('input');
-	await page.getByRole('textbox', { name: 'Company Address' }).dispatchEvent('blur');
+	await page.evaluate(
+		(companyName, companyAddress) => {
+			const companyNameInput = document.querySelector(
+				'input[placeholder="LogSmart Ltd"]'
+			) as HTMLInputElement;
+			if (companyNameInput) {
+				companyNameInput.value = companyName;
+				companyNameInput.dispatchEvent(new Event('input', { bubbles: true }));
+				companyNameInput.dispatchEvent(new Event('blur', { bubbles: true }));
+			}
+			const companyAddressInput = document.querySelector(
+				'input[placeholder="Search for address..."]'
+			) as HTMLInputElement;
+			if (companyAddressInput) {
+				companyAddressInput.value = companyAddress;
+				companyAddressInput.dispatchEvent(new Event('input', { bubbles: true }));
+				companyAddressInput.dispatchEvent(new Event('blur', { bubbles: true }));
+			}
+		},
+		companyName,
+		'TestAddress1, ABC\nSecond Line,\n2!'
+	);
 
 	await page.waitForTimeout(1000);
 	await expect(page.getByRole('button', { name: 'Next Step' })).toBeEnabled();
