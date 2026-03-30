@@ -90,7 +90,7 @@ test.describe('Company Data Export & Deletion', () => {
 		await page.getByRole('button', { name: /Export Company Data|Re-export Company Data/ }).click();
 		await page.waitForTimeout(2000);
 
-		const deleteButton = page.getByRole('button', { name: 'Delete Company', exact: true });
+		const deleteButton = page.getByRole('button', { name: 'Delete Company' });
 		await expect(deleteButton).toBeEnabled({ timeout: 10000 });
 	});
 });
