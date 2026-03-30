@@ -140,6 +140,31 @@ const getBranchDeletionToken = async (email: string, maxAttempts = 30): Promise<
 	return null;
 };
 
+const getCompanyDeletionToken = async (email: string, maxAttempts = 30): Promise<string | null> => {
+	for (let i = 0; i < maxAttempts; i++) {
+		const mailhogEmail = await getEmailByRecipient(email);
+
+		if (mailhogEmail) {
+			const body = decodeMailBody(mailhogEmail);
+
+			const tokenMatch = body.match(/token=([a-zA-Z0-9_-]+)/);
+			const companyIdMatch = body.match(/company_id=([a-zA-Z0-9_-]+)/);
+			const companyNameMatch = body.match(/delete '([^']+)'/);
+			if (tokenMatch && companyIdMatch) {
+				return JSON.stringify({
+					token: tokenMatch[1],
+					companyId: companyIdMatch[1],
+					companyName: companyNameMatch ? companyNameMatch[1] : null
+				});
+			}
+		}
+
+		await new Promise((resolve) => setTimeout(resolve, 500));
+	}
+
+	return null;
+};
+
 const clearMailhogEmails = async (): Promise<void> => {
 	try {
 		await fetch(`${MAILHOG_API_URL}/v1/messages`, { method: 'DELETE' });
@@ -406,6 +431,7 @@ export {
 	getEmailByRecipient,
 	getInvitationToken,
 	getBranchDeletionToken,
+	getCompanyDeletionToken,
 	getPasswordResetToken,
 	clearMailhogEmails,
 	requestPasswordResetToken,

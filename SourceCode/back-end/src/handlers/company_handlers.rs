@@ -565,6 +565,42 @@ pub async fn delete_company(
 
 #[utoipa::path(
     get,
+    path = "/companies/{company_id}/validate-deletion-token",
+    responses(
+        (status = 200, description = "Token valid, returns company name", body = serde_json::Value),
+        (status = 400, description = "Invalid or expired token", body = ErrorResponse),
+        (status = 404, description = "Company not found", body = ErrorResponse),
+    ),
+    tag = "Company"
+)]
+pub async fn validate_company_deletion_token(
+    State(state): State<AppState>,
+    axum::extract::Path(company_id): axum::extract::Path<String>,
+    axum::extract::Query(token): axum::extract::Query<serde_json::Value>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    let token = token.get("token").and_then(|t| t.as_str()).unwrap_or("");
+
+    if token.is_empty() {
+        return Err(err_bad_request("Confirmation token is required"));
+    }
+
+    let company = db::get_company_by_id(&state.postgres, &company_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Database error fetching company: {:?}", e);
+            err_internal("Database error")
+        })?
+        .ok_or_else(|| err_not_found("Company not found"))?;
+
+    if company.deletion_token.as_deref() != Some(token) {
+        return Err(err_bad_request("Invalid or expired confirmation token"));
+    }
+
+    Ok(Json(json!({ "companyName": company.name })))
+}
+
+#[utoipa::path(
+    get,
     path = "/companies/{company_id}/confirm-deletion",
     responses(
         (status = 200, description = "Company deletion confirmed", body = serde_json::Value),

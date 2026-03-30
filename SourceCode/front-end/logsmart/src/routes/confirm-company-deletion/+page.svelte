@@ -5,9 +5,11 @@
 	let companyId = $derived(page.url.searchParams.get('company_id'));
 	let token = $derived(page.url.searchParams.get('token'));
 	let isLoading = $state(true);
-	let isDeleting = $state(false);
 	let error = $state<string | null>(null);
 	let success = $state<string | null>(null);
+	let companyName = $state<string | null>(null);
+	let typedCompanyName = $state('');
+	let deletionStarted = $state(false);
 
 	$effect(() => {
 		if (!companyId || !token) {
@@ -16,13 +18,36 @@
 			return;
 		}
 
-		confirmDeletion();
+		validateTokenAndGetCompanyName();
 	});
+
+	async function validateTokenAndGetCompanyName() {
+		if (!companyId || !token) return;
+		error = null;
+
+		try {
+			const response = await fetch(
+				`/api/companies/${companyId}/validate-deletion-token?token=${encodeURIComponent(token)}`
+			);
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				error = data.error || 'Failed to validate token. The token may have expired.';
+			} else {
+				companyName = data.companyName;
+			}
+		} catch (err) {
+			console.error('Error validating token:', err);
+			error = 'An unexpected error occurred. Please try again.';
+		} finally {
+			isLoading = false;
+		}
+	}
 
 	async function confirmDeletion() {
 		if (!companyId || !token) return;
-
-		isDeleting = true;
+		deletionStarted = true;
 		error = null;
 		success = null;
 
@@ -47,14 +72,17 @@
 			console.error('Error confirming deletion:', err);
 			error = 'An unexpected error occurred. Please try again.';
 		} finally {
-			isDeleting = false;
-			isLoading = false;
+			deletionStarted = false;
 		}
 	}
 
 	function goToHome() {
 		goto('/');
 	}
+
+	let isNameValid = $derived(
+		companyName !== null && typedCompanyName.trim() === companyName.trim()
+	);
 </script>
 
 <svelte:head>
@@ -103,7 +131,7 @@
 					class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"
 					style="border-color: var(--text-primary);"
 				></div>
-				<p style="color: var(--text-secondary);">Confirming deletion...</p>
+				<p style="color: var(--text-secondary);">Validating confirmation link...</p>
 			</div>
 		{:else if success}
 			<div
@@ -135,6 +163,52 @@
 			>
 				Return to Home
 			</button>
+		{:else if companyName}
+			<div class="space-y-4">
+				<p class="text-center" style="color: var(--text-secondary);">
+					To confirm deletion, please type the company name exactly as shown:
+				</p>
+				<div
+					class="rounded-lg p-4 text-center"
+					style="background-color: var(--bg-secondary); border: 1px solid var(--border-primary);"
+				>
+					<p class="font-mono text-lg font-bold" style="color: var(--text-primary);">
+						{companyName}
+					</p>
+				</div>
+				<div>
+					<label
+						for="companyNameInput"
+						class="mb-1 block text-sm font-medium"
+						style="color: var(--text-secondary);"
+					>
+						Type company name to confirm
+					</label>
+					<input
+						id="companyNameInput"
+						type="text"
+						bind:value={typedCompanyName}
+						placeholder="Enter company name"
+						class="w-full rounded-lg border p-3"
+						style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-primary);"
+					/>
+				</div>
+				<button
+					onclick={confirmDeletion}
+					disabled={!isNameValid || deletionStarted}
+					class="w-full rounded-lg py-3 font-semibold transition-opacity disabled:opacity-50"
+					style="background-color: #dc2626; color: white;"
+				>
+					{deletionStarted ? 'Deleting...' : 'Delete Company'}
+				</button>
+				<button
+					onclick={goToHome}
+					class="w-full rounded-lg py-3 font-semibold transition-opacity hover:opacity-80"
+					style="background-color: var(--bg-secondary); color: var(--text-primary);"
+				>
+					Cancel
+				</button>
+			</div>
 		{/if}
 	</div>
 </div>

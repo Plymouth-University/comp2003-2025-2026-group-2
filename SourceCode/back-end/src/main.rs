@@ -268,6 +268,10 @@ async fn main() {
         )
         .route("/companies/{company_id}", delete(handlers::delete_company))
         .route(
+            "/companies/{company_id}/validate-deletion-token",
+            get(handlers::validate_company_deletion_token),
+        )
+        .route(
             "/companies/{company_id}/confirm-deletion",
             get(handlers::confirm_company_deletion),
         )
