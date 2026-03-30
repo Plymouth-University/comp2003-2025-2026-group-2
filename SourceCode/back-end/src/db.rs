@@ -643,7 +643,7 @@ pub async fn update_company_logo_id(
 pub async fn get_company_by_id(pool: &PgPool, id: &str) -> Result<Option<Company>> {
     let company = sqlx::query_as::<_, Company>(
         r"
-        SELECT id, name, address, created_at, logo_id, data_exported_at, deleted_at
+        SELECT id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token
         FROM companies
         WHERE id = $1
         ",

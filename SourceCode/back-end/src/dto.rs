@@ -163,12 +163,16 @@ pub struct CompanyDto {
     pub name: String,
     pub address: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
+    pub logo_id: Option<String>,
+    pub data_exported_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub deletion_requested_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 derive_from!(
     crate::db::Company,
     CompanyDto,
-    [id, name, address, created_at]
+    [id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at]
 );
 
 derive_from!(
