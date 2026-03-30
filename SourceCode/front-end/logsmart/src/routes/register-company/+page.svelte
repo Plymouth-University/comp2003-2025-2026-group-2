@@ -15,6 +15,11 @@
 	let step = $state(1);
 	let companyName = $state('');
 	let companyAddress = $state('');
+	let addressSearchQuery = $state('');
+	let addressSearchResults: Array<{ display_name: string; lat: string; lon: string }> = $state([]);
+	let showAddressResults = $state(false);
+	let addressSearchTimeout: ReturnType<typeof setTimeout> | null = null;
+	let isSearchingAddress = $state(false);
 	let firstName = $state('');
 	let lastName = $state('');
 	let email = $state('');
@@ -34,6 +39,65 @@
 		password: false,
 		confirmPassword: false
 	});
+
+	async function searchAddresses(query: string) {
+		if (!query || query.length < 3) {
+			addressSearchResults = [];
+			showAddressResults = false;
+			return;
+		}
+
+		isSearchingAddress = true;
+		try {
+			const response = await fetch(
+				`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`,
+				{
+					headers: {
+						'Accept-Language': 'en',
+						'User-Agent': 'LogSmart/1.0'
+					}
+				}
+			);
+
+			if (response.ok) {
+				const results = await response.json();
+				addressSearchResults = results;
+				showAddressResults = results.length > 0;
+			}
+		} catch (err) {
+			console.error('Error searching addresses:', err);
+		} finally {
+			isSearchingAddress = false;
+		}
+	}
+
+	function handleAddressInput(event: Event) {
+		const target = event.target as HTMLInputElement;
+		companyAddress = target.value;
+		addressSearchQuery = target.value;
+
+		if (addressSearchTimeout) {
+			clearTimeout(addressSearchTimeout);
+		}
+
+		addressSearchTimeout = setTimeout(() => {
+			searchAddresses(addressSearchQuery);
+		}, 500);
+	}
+
+	function selectAddress(result: { display_name: string }) {
+		companyAddress = result.display_name;
+		addressSearchQuery = result.display_name;
+		showAddressResults = false;
+		addressSearchResults = [];
+	}
+
+	function handleClickOutside(event: MouseEvent) {
+		const target = event.target as HTMLElement;
+		if (!target.closest('.address-search-container')) {
+			showAddressResults = false;
+		}
+	}
 
 	const companyNameValid = $derived(companyName.trim().length > 0);
 	const companyAddressValid = $derived(companyAddress.trim().length > 0);
@@ -113,6 +177,8 @@
 	}
 </script>
 
+<svelte:window onclick={handleClickOutside} />
+
 <svelte:head>
 	<title>Register Company - LogSmart</title>
 </svelte:head>
@@ -187,17 +253,45 @@
 					{/if}
 				</label>
 
-				<label class="mb-4 flex flex-col">
+				<label class="mb-4 flex flex-col relative address-search-container">
 					<span class="mb-1 text-sm font-medium text-text-primary">Company Address</span>
-					<textarea
-						bind:value={companyAddress}
+					<input
+						type="text"
+						value={companyAddress}
+						oninput={handleAddressInput}
 						onblur={() => (touched.companyAddress = true)}
+						autocomplete="off"
 						aria-invalid={!companyAddressValid}
-						placeholder="Plymouth, UK"
-						rows="3"
+						placeholder="Search for address..."
 						class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
 						required
-					></textarea>
+					/>
+					{#if isSearchingAddress}
+						<div class="absolute z-10 w-full rounded-md border border-gray-300 bg-white p-2 text-center dark:bg-gray-800" style="top: 70px;">
+							<span class="text-sm text-gray-500">Searching...</span>
+						</div>
+					{:else if showAddressResults && addressSearchResults.length > 0}
+						<ul
+							class="absolute z-10 max-h-60 w-full overflow-auto rounded-md border border-gray-300 bg-white shadow-lg dark:bg-gray-800"
+							style="top: 70px;"
+						>
+							{#each addressSearchResults as result}
+								<li>
+									<button
+										type="button"
+										class="w-full cursor-pointer px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+										style="color: var(--text-primary);"
+										onmousedown={() => selectAddress(result)}
+									>
+										{result.display_name}
+									</button>
+								</li>
+							{/each}
+						</ul>
+					{/if}
+					<p class="mt-1 text-xs" style="color: var(--text-secondary);">
+						>(search for locations, POIs, or addresses)
+					</p>
 					{#if touched.companyAddress && !companyAddressValid}
 						<div class="mt-2 text-sm text-red-600 dark:text-red-400">
 							Company address is required.
