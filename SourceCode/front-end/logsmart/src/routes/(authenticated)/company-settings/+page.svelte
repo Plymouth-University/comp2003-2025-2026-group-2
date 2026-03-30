@@ -1,62 +1,202 @@
 <script lang="ts">
-	import type { PageData, ActionData } from './$types';
-	import { enhance } from '$app/forms';
+	import type { PageData } from './$types';
 	import { invalidateAll } from '$app/navigation';
 	import PictureUploader from '$lib/components/PictureUploader.svelte';
 
-	let { data, form } = $props<{ data: PageData; form: ActionData }>();
+	let { data } = $props<{ data: PageData }>();
 
-	let companyName = $derived(data.company?.company_name || '');
-	let companyAddress = $derived(data.company?.company_address || '');
-	let email = $derived(data.user?.email || '');
-	let logoUrl = $derived(data.company?.company_logo_url || null);
+	let companyName = $state(data.company?.name || '');
+	let companyAddress = $state(data.company?.address || '');
+	let logoUrl = $derived(data.company?.logo_url || null);
+	let dataExportedAt = $derived(data.company?.data_exported_at || null);
+
+	$effect(() => {
+		if (data.company?.name) {
+			companyName = data.company.name;
+		}
+		if (data.company?.address) {
+			companyAddress = data.company.address;
+		}
+	});
 
 	let effectivePictureUrl = $derived(logoUrl);
 
 	let isSubmitting = $state(false);
 	let showSuccessMessage = $state(false);
+	let successMessage = $state('');
 	let errorMessage = $state('');
 
-	async function deleteCompany() {
-		if (!confirm('Are you sure you want to delete the company?'))
-			try {
-				const resp = await fetch('/api/auth/');
-				if (resp.ok) {
-					showSuccessMessage = true;
-					setTimeout(() => {
-						showSuccessMessage = false;
-					}, 3000);
-				} else {
-					const err = await resp.json();
-					errorMessage = err.error || 'Failed to delete company.';
+	let addressSearchQuery = $state('');
+	let addressSearchResults: Array<{ display_name: string; lat: string; lon: string }> = $state([]);
+	let showAddressResults = $state(false);
+	let addressSearchTimeout: ReturnType<typeof setTimeout> | null = null;
+	let isSearchingAddress = $state(false);
+
+	async function searchAddresses(query: string) {
+		if (!query || query.length < 3) {
+			addressSearchResults = [];
+			showAddressResults = false;
+			return;
+		}
+
+		isSearchingAddress = true;
+		try {
+			const response = await fetch(
+				`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`,
+				{
+					headers: {
+						'Accept-Language': 'en',
+						'User-Agent': 'LogSmart/1.0'
+					}
 				}
-			} catch {
-				errorMessage = 'Failed to delete company.';
+			);
+
+			if (response.ok) {
+				const results = await response.json();
+				addressSearchResults = results;
+				showAddressResults = results.length > 0;
 			}
+		} catch (error) {
+			console.error('Error searching addresses:', error);
+		} finally {
+			isSearchingAddress = false;
+		}
 	}
 
-	$effect(() => {
-		companyName = data.user?.company_name || '';
-		companyAddress = data.company?.company_address || '';
-	});
+	function handleAddressInput(event: Event) {
+		const target = event.target as HTMLInputElement;
+		companyAddress = target.value;
+		addressSearchQuery = target.value;
 
-	$effect(() => {
-		if (form?.success) {
+		if (addressSearchTimeout) {
+			clearTimeout(addressSearchTimeout);
+		}
+
+		addressSearchTimeout = setTimeout(() => {
+			searchAddresses(addressSearchQuery);
+		}, 500);
+	}
+
+	function selectAddress(result: { display_name: string }) {
+		companyAddress = result.display_name;
+		addressSearchQuery = result.display_name;
+		showAddressResults = false;
+		addressSearchResults = [];
+	}
+
+	function handleClickOutside(event: MouseEvent) {
+		const target = event.target as HTMLElement;
+		if (!target.closest('.address-search-container')) {
+			showAddressResults = false;
+		}
+	}
+
+	async function handleUpdateCompany(e: Event) {
+		e.preventDefault();
+		if (!data.company?.id) return;
+
+		isSubmitting = true;
+		errorMessage = '';
+		showSuccessMessage = false;
+
+		try {
+			const res = await fetch(`/api/companies/${data.company.id}`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					name: companyName,
+					address: companyAddress
+				})
+			});
+
+			if (!res.ok) {
+				const err = await res.json();
+				errorMessage = err.error || 'Failed to update company';
+				return;
+			}
+
+			successMessage = 'Company details saved successfully!';
 			showSuccessMessage = true;
-			errorMessage = '';
-
 			setTimeout(() => {
 				showSuccessMessage = false;
 			}, 3000);
-		} else if (form?.message) {
-			errorMessage = form.message;
-			console.error('Form error:', form);
-			setTimeout(() => {
-				errorMessage = '';
-			}, 5000);
+			invalidateAll();
+		} catch {
+			errorMessage = 'Failed to update company';
+		} finally {
+			isSubmitting = false;
 		}
-	});
+	}
+
+	async function handleExportData() {
+		if (!data.company?.id) return;
+
+		isSubmitting = true;
+		errorMessage = '';
+		showSuccessMessage = false;
+
+		try {
+			const res = await fetch(`/api/companies/${data.company.id}/export`, {
+				method: 'POST'
+			});
+
+			if (!res.ok) {
+				const err = await res.json();
+				errorMessage = err.error || 'Failed to export data';
+				return;
+			}
+
+			const result = await res.json();
+			successMessage = result.message || 'Data export initiated';
+			showSuccessMessage = true;
+			setTimeout(() => {
+				showSuccessMessage = false;
+			}, 3000);
+			invalidateAll();
+		} catch {
+			errorMessage = 'Failed to export data';
+		} finally {
+			isSubmitting = false;
+		}
+	}
+
+	async function deleteCompany() {
+		if (!data.company?.id) return;
+		if (!confirm('Are you sure you want to delete the company?')) return;
+
+		isSubmitting = true;
+		errorMessage = '';
+		showSuccessMessage = false;
+
+		try {
+			const res = await fetch(`/api/companies/${data.company.id}`, {
+				method: 'DELETE'
+			});
+
+			if (!res.ok) {
+				const err = await res.json();
+				errorMessage = err.error || 'Failed to delete company';
+				return;
+			}
+
+			const result = await res.json();
+			successMessage = result.message || 'Company deletion requested';
+			showSuccessMessage = true;
+			setTimeout(() => {
+				showSuccessMessage = false;
+			}, 3000);
+			invalidateAll();
+		} catch {
+			errorMessage = 'Failed to delete company';
+		} finally {
+			isSubmitting = false;
+		}
+	}
 </script>
+
+<svelte:window onclick={handleClickOutside} />
 
 <svelte:head>
 	<title>Company Settings</title>
@@ -70,7 +210,7 @@
 		{#if showSuccessMessage}
 			<div class="mb-6 border-2 border-green-500 bg-green-50 px-6 py-4 dark:bg-green-900">
 				<p class="font-medium text-green-700 dark:text-green-200">
-					✓ {form?.message || 'Changes saved successfully!'}
+					✓ {successMessage}
 				</p>
 			</div>
 		{/if}
@@ -93,18 +233,7 @@
 				</div>
 				<div class="px-6 py-6" style="background-color: var(--bg-primary);">
 					<div class="flex flex-col gap-6 md:flex-row">
-						<form
-							method="POST"
-							action="?/updateCompany"
-							use:enhance={() => {
-								isSubmitting = true;
-								return async ({ update }) => {
-									await update();
-									isSubmitting = false;
-								};
-							}}
-							class="max-w-2xl flex-1 space-y-4"
-						>
+						<form onsubmit={handleUpdateCompany} class="max-w-2xl flex-1 space-y-4">
 							<!-- Company Name -->
 							<div>
 								<label
@@ -127,7 +256,7 @@
 							</div>
 
 							<!-- Company Address -->
-							<div>
+							<div class="relative address-search-container">
 								<label
 									for="companyAddress"
 									class="mb-2 block text-sm font-medium"
@@ -139,12 +268,41 @@
 									id="companyAddress"
 									name="companyAddress"
 									type="text"
-									bind:value={companyAddress}
+									value={companyAddress}
+									oninput={handleAddressInput}
 									class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
 									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
-									placeholder="Enter the address of headquarters"
+									placeholder="Search for address..."
+									autocomplete="off"
 									required
 								/>
+								{#if isSearchingAddress}
+									<div
+										class="absolute z-10 w-full rounded-md border border-gray-300 bg-white p-2 text-center dark:bg-gray-800"
+									>
+										<span class="text-sm text-gray-500">Searching...</span>
+									</div>
+								{:else if showAddressResults && addressSearchResults.length > 0}
+									<ul
+										class="absolute z-10 max-h-60 w-full overflow-auto rounded-md border border-gray-300 bg-white shadow-lg dark:bg-gray-800"
+									>
+										{#each addressSearchResults as result}
+											<li>
+												<button
+													type="button"
+													class="w-full cursor-pointer px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+													style="color: var(--text-primary);"
+													onclick={() => selectAddress(result)}
+												>
+													{result.display_name}
+												</button>
+											</li>
+										{/each}
+									</ul>
+								{/if}
+								<p class="mt-1 text-xs" style="color: var(--text-secondary);">
+									>(search for locations, POIs, or addresses)
+								</p>
 							</div>
 
 							<!-- Save Button -->
@@ -154,9 +312,8 @@
 									disabled={isSubmitting ||
 										!companyName.trim() ||
 										!companyAddress.trim() ||
-										(companyName == data.user?.company_name &&
-											companyName == data.company?.company_name &&
-											companyAddress == data.company?.company_address)}
+										(companyName === data.company?.name &&
+											companyAddress === data.company?.address)}
 									class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 								>
@@ -169,7 +326,7 @@
 						<div class="flex flex-1 flex-col items-center justify-start pt-4 md:pt-0 md:pl-8">
 							<PictureUploader
 								type="company_logo"
-								companyId={data.company?.company_id}
+								companyId={data.company?.id}
 								currentPictureUrl={effectivePictureUrl}
 								onUploadComplete={() => {
 									invalidateAll();
@@ -195,28 +352,24 @@
 					<div class="max-w-2xl">
 						<p class="mb-4" style="color: var(--text-secondary);">
 							Data will be sent to the email address used to register your company.
+							{#if dataExportedAt}
+								<span class="text-green-600"
+									>Data exported on {new Date(dataExportedAt).toLocaleDateString()}</span
+								>
+							{/if}
 						</p>
-						<form
-							method="POST"
-							action="?/exportData"
-							use:enhance={() => {
-								isSubmitting = true;
-								return async ({ update }) => {
-									await update();
-									isSubmitting = false;
-								};
-							}}
+						<button
+							onclick={handleExportData}
+							disabled={isSubmitting}
+							class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+							style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 						>
-							<input type="hidden" name="email" value={email} />
-							<button
-								type="submit"
-								disabled={isSubmitting}
-								class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
-							>
-								{isSubmitting ? 'Exporting...' : 'Export Company Data'}
-							</button>
-						</form>
+							{isSubmitting
+								? 'Exporting...'
+								: dataExportedAt
+									? 'Re-export Company Data'
+									: 'Export Company Data'}
+						</button>
 					</div>
 				</div>
 			</div>
@@ -238,12 +391,19 @@
 					</div>
 					<button
 						onclick={deleteCompany}
-						class="cursor-pointer border-2 border-solid px-8 py-2 text-red-500 hover:text-red-700"
+						disabled={!dataExportedAt || isSubmitting}
+						class="cursor-pointer border-2 border-solid px-8 py-2 text-red-500 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
 						style="2px solid var(--border-primary);"
 						aria-label="Delete company"
+						title={!dataExportedAt ? 'You must export company data before requesting deletion' : ''}
 					>
 						Delete Company
 					</button>
+					{#if !dataExportedAt}
+						<p class="mt-2 text-sm" style="color: var(--text-secondary);">
+							Export company data to enable deletion
+						</p>
+					{/if}
 				</div>
 			</div>
 		</div>

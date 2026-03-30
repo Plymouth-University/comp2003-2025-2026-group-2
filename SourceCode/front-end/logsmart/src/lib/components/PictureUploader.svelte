@@ -12,7 +12,7 @@
 		showUploadButton = true,
 		targetUserEmail = '',
 		type = 'pfp',
-		companyId = '',
+		companyId = ''
 	}: {
 		currentPictureUrl?: string | null;
 		onUploadComplete?: (url: string) => void;
@@ -219,9 +219,10 @@
 	}
 
 	async function handleDelete() {
-		const message = type === 'company_logo'
-			? 'Are you sure you want to delete the company logo?'
-			: 'Are you sure you want to delete your profile picture?';
+		const message =
+			type === 'company_logo'
+				? 'Are you sure you want to delete the company logo?'
+				: 'Are you sure you want to delete your profile picture?';
 		if (!confirm(message)) return;
 
 		isLoading = true;
@@ -336,11 +337,7 @@
 				id="{uid}-picture-input"
 			/>
 			{#if showUploadButton}
-				<label
-					for="{uid}-picture-input"
-					class="btn-upload"
-					class:disabled={disabled || isLoading}
-				>
+				<label for="{uid}-picture-input" class="btn-upload" class:disabled={disabled || isLoading}>
 					{isLoading ? 'Uploading...' : currentPictureUrl ? 'Change Picture' : 'Upload Picture'}
 				</label>
 			{/if}
