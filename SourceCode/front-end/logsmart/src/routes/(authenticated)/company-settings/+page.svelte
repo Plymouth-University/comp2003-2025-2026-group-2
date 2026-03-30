@@ -248,6 +248,9 @@
 									name="companyName"
 									type="text"
 									bind:value={companyName}
+									oninput={() => {
+										// Force reactivity update
+									}}
 									class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
 									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 									placeholder="Enter the company's name"
@@ -268,7 +271,7 @@
 									id="companyAddress"
 									name="companyAddress"
 									type="text"
-									value={companyAddress}
+									bind:value={companyAddress}
 									oninput={handleAddressInput}
 									class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
 									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
