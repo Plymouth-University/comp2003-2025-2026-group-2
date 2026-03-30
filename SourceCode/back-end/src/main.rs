@@ -260,6 +260,17 @@ async fn main() {
             "/companies/{company_id}/logo",
             delete(handlers::delete_company_logo),
         )
+        .route("/companies/{company_id}", get(handlers::get_company))
+        .route("/companies/{company_id}", put(handlers::update_company))
+        .route(
+            "/companies/{company_id}/export",
+            post(handlers::export_company_data),
+        )
+        .route("/companies/{company_id}", delete(handlers::delete_company))
+        .route(
+            "/companies/{company_id}/confirm-deletion",
+            get(handlers::confirm_company_deletion),
+        )
         .route("/logs/templates", post(handlers::add_template))
         .route("/logs/templates", get(handlers::get_template))
         .route("/logs/templates/all", get(handlers::get_all_templates))
