@@ -228,3 +228,81 @@ pub async fn send_branch_deleted_notification_email(
     tracing::info!("Branch deleted notification email sent to {}", to_email);
     Ok(())
 }
+
+/// Sends company data export email.
+///
+/// # Errors
+/// Returns an error if the email fails to send.
+pub async fn send_company_data_export(
+    to_email: &str,
+    company_name: &str,
+    company_address: &str,
+) -> Result<()> {
+    let subject = "Company Data Export - LogSmart";
+    let body = format!(
+        "Hello,\n\n\
+        Your company data export for '{company_name}' is ready.\n\n\
+        Company Details:\n\
+        - Name: {company_name}\n\
+        - Address: {company_address}\n\n\
+        Please note that this data will be retained on our servers for 30 days after the company deletion request.\n\n\
+        If you did not request this export, please contact your system administrator immediately.\n\n\
+        Best regards,\n\
+        The LogSmart Team"
+    );
+
+    send_email(to_email, subject, &body).await?;
+    tracing::info!("Company data export email sent to {}", to_email);
+    Ok(())
+}
+
+/// Sends company deletion request email with confirmation link.
+///
+/// # Errors
+/// Returns an error if the email fails to send.
+pub async fn send_company_deletion_request(
+    to_email: &str,
+    company_name: &str,
+    company_id: &str,
+    token: &str,
+) -> Result<()> {
+    let confirm_link = format!(
+        "https://logsmart.app/confirm-company-deletion?company_id={}&token={}",
+        company_id, token
+    );
+    let subject = "Confirm Company Deletion - LogSmart";
+    let body = format!(
+        "Hello,\n\n\
+        A request to delete '{company_name}' has been made.\n\n\
+        To confirm deletion, click the link below:\n{}\n\n\
+        This link will expire in 7 days.\n\n\
+        If you did not request this deletion, please ignore this email.\n\n\
+        Best regards,\n\
+        The LogSmart Team",
+        confirm_link
+    );
+
+    send_email(to_email, subject, &body).await?;
+    tracing::info!("Company deletion request email sent to {}", to_email);
+    Ok(())
+}
+
+/// Sends company deletion notification after confirmation.
+///
+/// # Errors
+/// Returns an error if the email fails to send.
+pub async fn send_company_deleted_notification(company_name: &str) -> Result<()> {
+    let subject = "Company Deleted - LogSmart";
+    let body = format!(
+        "Hello,\n\n\
+        The company '{company_name}' has been deleted.\n\n\
+        All data will be retained for 30 days before permanent deletion.\n\n\
+        If you did not request this deletion, please contact support immediately.\n\n\
+        Best regards,\n\
+        The LogSmart Team"
+    );
+
+    send_email("support@logsmart.app", subject, &body).await?;
+    tracing::info!("Company deletion notification sent for {}", company_name);
+    Ok(())
+}
