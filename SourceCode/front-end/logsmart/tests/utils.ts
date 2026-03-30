@@ -176,43 +176,42 @@ const register = async (browser: Browser, close = true) => {
 	await page.goto('http://localhost:5173/');
 	await page.getByRole('link', { name: 'Register Company' }).click();
 	await page.waitForURL('**/register-company');
-	
+
 	await page.getByRole('textbox', { name: 'Company Name' }).click();
 	await page.getByRole('textbox', { name: 'Company Name' }).fill(companyName);
+	await page.getByRole('textbox', { name: 'Company Name' }).dispatchEvent('input');
 	await page.getByRole('textbox', { name: 'Company Name' }).dispatchEvent('blur');
-	
-	await page
-		.getByRole('textbox', { name: 'Company Address' })
-		.click();
+
+	await page.getByRole('textbox', { name: 'Company Address' }).click();
 	await page
 		.getByRole('textbox', { name: 'Company Address' })
 		.fill('TestAddress1, ABC\nSecond Line,\n2!');
-	await page
-		.getByRole('textbox', { name: 'Company Address' })
-		.dispatchEvent('blur');
-	
-	await page.waitForTimeout(500);
+	await page.getByRole('textbox', { name: 'Company Address' }).dispatchEvent('input');
+	await page.getByRole('textbox', { name: 'Company Address' }).dispatchEvent('blur');
+
+	await page.waitForTimeout(1000);
+	await expect(page.getByRole('button', { name: 'Next Step' })).toBeEnabled();
 	await page.getByRole('button', { name: 'Next Step' }).click();
 	await page.getByRole('textbox', { name: 'First Name' }).click();
 	await page.getByRole('textbox', { name: 'First Name' }).fill(firstName);
 	await page.getByRole('textbox', { name: 'First Name' }).dispatchEvent('blur');
-	
+
 	await page.getByRole('textbox', { name: 'Last Name' }).click();
 	await page.getByRole('textbox', { name: 'Last Name' }).fill(lastName);
 	await page.getByRole('textbox', { name: 'Last Name' }).dispatchEvent('blur');
-	
+
 	await page.getByRole('textbox', { name: 'Email' }).click();
 	await page.getByRole('textbox', { name: 'Email' }).fill(email);
 	await page.getByRole('textbox', { name: 'Email' }).dispatchEvent('blur');
-	
-	await page.getByRole('textbox', { name: 'Password' }).click();
-	await page.getByRole('textbox', { name: 'Password' }).fill(password);
-	await page.getByRole('textbox', { name: 'Password' }).dispatchEvent('blur');
-	
-	await page.getByRole('textbox', { name: 'Confirm Password' }).click();
-	await page.getByRole('textbox', { name: 'Confirm Password' }).fill(password);
-	await page.getByRole('textbox', { name: 'Confirm Password' }).dispatchEvent('blur');
-	
+
+	await page.getByPlaceholder('Min 8 chars').click();
+	await page.getByPlaceholder('Min 8 chars').fill(password);
+	await page.getByPlaceholder('Min 8 chars').dispatchEvent('blur');
+
+	await page.getByPlaceholder('Re-enter password').click();
+	await page.getByPlaceholder('Re-enter password').fill(password);
+	await page.getByPlaceholder('Re-enter password').dispatchEvent('blur');
+
 	await page.waitForTimeout(500);
 	await page.getByRole('button', { name: 'Create Account' }).click();
 	if (
