@@ -11,7 +11,7 @@ Introducing LogSmart, the template-based digital logging system initially design
 | :--- | :--- | :--- |
 | **NullString1** | 188 | ~52500 |
 | **Lilla-Rad** | 21 | ~500 |
-| **BenD2006** | 24 | ~2500 |
+| **BenD2006** | 37 | ~3000 |
 
 ![](https://github.com/Plymouth-University/comp2003-2025-2026-group-2/blob/main/Design%20Documents/template_designer.png)
 ## 🔗 Links
