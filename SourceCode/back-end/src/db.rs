@@ -626,7 +626,7 @@ pub async fn update_company_logo_id(
         UPDATE companies
         SET logo_id = $1
         WHERE id = $2
-        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at
+        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token
         ",
     )
     .bind(company_logo_id)
@@ -691,7 +691,7 @@ pub async fn mark_company_data_exported(pool: &PgPool, company_id: &str) -> Resu
         UPDATE companies
         SET data_exported_at = NOW()
         WHERE id = $1
-        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at
+        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token
         ",
     )
     .bind(company_id)
