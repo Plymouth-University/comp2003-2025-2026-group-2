@@ -1320,3 +1320,199 @@ async fn test_get_company_details() {
     assert_eq!(body["name"], "View Company");
     assert_eq!(body["address"], "777 View Rd");
 }
+
+#[tokio::test]
+async fn test_export_company_data_returns_structure() {
+    let mut app = setup_test_app().await;
+
+    let (_, register_body) = make_request(
+        &mut app,
+        "POST",
+        "/auth/register",
+        Some(json!({
+            "email": "exportstruct@example.com",
+            "first_name": "Export",
+            "last_name": "Struct",
+            "password": "SecurePass123!",
+            "company_name": "Export Struct Company",
+            "company_address": "123 Export St"
+        })),
+        None,
+    )
+    .await;
+
+    let token = register_body["token"].as_str().unwrap();
+    let company_id = register_body["user"]["company_id"].as_str().unwrap();
+
+    let (status, body) = make_request(
+        &mut app,
+        "POST",
+        &format!("/companies/{}/export", company_id),
+        None,
+        Some(token),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert!(body["company"].is_object());
+    assert!(body["users"].is_array());
+    assert!(body["branches"].is_array());
+    assert!(body["exported_at"].is_string());
+}
+
+#[tokio::test]
+async fn test_delete_company_after_export_succeeds() {
+    let mut app = setup_test_app().await;
+
+    let (_, register_body) = make_request(
+        &mut app,
+        "POST",
+        "/auth/register",
+        Some(json!({
+            "email": "deletetest@example.com",
+            "first_name": "Delete",
+            "last_name": "Test",
+            "password": "SecurePass123!",
+            "company_name": "Delete Test Company",
+            "company_address": "456 Delete Ave"
+        })),
+        None,
+    )
+    .await;
+
+    let token = register_body["token"].as_str().unwrap();
+    let company_id = register_body["user"]["company_id"].as_str().unwrap();
+
+    let (export_status, _) = make_request(
+        &mut app,
+        "POST",
+        &format!("/companies/{}/export", company_id),
+        None,
+        Some(token),
+    )
+    .await;
+    assert_eq!(export_status, StatusCode::OK);
+
+    let (status, body) = make_request(
+        &mut app,
+        "DELETE",
+        &format!("/companies/{}", company_id),
+        None,
+        Some(token),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert!(body["message"].as_str().unwrap().contains("deletion"));
+}
+
+#[tokio::test]
+async fn test_confirm_company_deletion_invalid_token() {
+    let mut app = setup_test_app().await;
+
+    let (status, body) = make_request(
+        &mut app,
+        "GET",
+        "/companies/test-company-id/confirm-deletion?token=invalid-token",
+        None,
+        None,
+    )
+    .await;
+
+    assert!(status == StatusCode::BAD_REQUEST || status == StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn test_update_company_details() {
+    let mut app = setup_test_app().await;
+
+    let (_, register_body) = make_request(
+        &mut app,
+        "POST",
+        "/auth/register",
+        Some(json!({
+            "email": "updatetest@example.com",
+            "first_name": "Update",
+            "last_name": "Test",
+            "password": "SecurePass123!",
+            "company_name": "Original Name",
+            "company_address": "111 Original St"
+        })),
+        None,
+    )
+    .await;
+
+    let token = register_body["token"].as_str().unwrap();
+    let company_id = register_body["user"]["company_id"].as_str().unwrap();
+
+    let (status, body) = make_request(
+        &mut app,
+        "PUT",
+        &format!("/companies/{}", company_id),
+        Some(json!({
+            "name": "Updated Company Name",
+            "address": "222 Updated Ave"
+        })),
+        Some(token),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["name"], "Updated Company Name");
+    assert_eq!(body["address"], "222 Updated Ave");
+}
+
+#[tokio::test]
+async fn test_cannot_update_other_company() {
+    let mut app = setup_test_app().await;
+
+    let (_, register_body1) = make_request(
+        &mut app,
+        "POST",
+        "/auth/register",
+        Some(json!({
+            "email": "company1@example.com",
+            "first_name": "Company",
+            "last_name": "One",
+            "password": "SecurePass123!",
+            "company_name": "Company One",
+            "company_address": "111 First St"
+        })),
+        None,
+    )
+    .await;
+
+    let token1 = register_body1["token"].as_str().unwrap();
+
+    let (_, register_body2) = make_request(
+        &mut app,
+        "POST",
+        "/auth/register",
+        Some(json!({
+            "email": "company2@example.com",
+            "first_name": "Company",
+            "last_name": "Two",
+            "password": "SecurePass123!",
+            "company_name": "Company Two",
+            "company_address": "222 Second St"
+        })),
+        None,
+    )
+    .await;
+
+    let company2_id = register_body2["user"]["company_id"].as_str().unwrap();
+
+    let (status, _) = make_request(
+        &mut app,
+        "PUT",
+        &format!("/companies/{}", company2_id),
+        Some(json!({
+            "name": "Hacked Name",
+            "address": "Hacked Address"
+        })),
+        Some(token1),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}
