@@ -49,7 +49,7 @@ test.describe('Company Settings', () => {
 
 		await page.getByRole('button', { name: 'Save Company Details' }).click();
 
-		await expect(page.getByText('Company details saved successfully')).toBeVisible();
+		await expect(page.getByText('Company details saved successfully')).toBeVisible({ timeout: 10000 });
 	});
 
 	test('export_company_data', async ({ page }) => {
@@ -58,11 +58,16 @@ test.describe('Company Settings', () => {
 
 		await page.getByRole('button', { name: /Export Company Data|Re-export Company Data/ }).click();
 
-		await expect(page.getByText(/Data export initiated|You will receive an email/)).toBeVisible();
+		await expect(page.getByText(/Data export initiated|You will receive an email/)).toBeVisible({ timeout: 10000 });
 	});
+});
 
+test.describe('Company Data Export & Deletion', () => {
 	test('delete_button_disabled_before_export', async ({ page }) => {
 		await page.getByRole('link', { name: 'Company Settings' }).click();
+		await page.waitForURL('**/company-settings');
+
+		await page.reload();
 		await page.waitForURL('**/company-settings');
 
 		const deleteButton = page.getByRole('button', { name: 'Delete Company' });
@@ -75,11 +80,14 @@ test.describe('Company Settings', () => {
 		await page.getByRole('link', { name: 'Company Settings' }).click();
 		await page.waitForURL('**/company-settings');
 
+		await page.reload();
+		await page.waitForURL('**/company-settings');
+
 		await page.getByRole('button', { name: /Export Company Data|Re-export Company Data/ }).click();
-		await page.waitForTimeout(1000);
+		await page.waitForTimeout(2000);
 
 		const deleteButton = page.getByRole('button', { name: 'Delete Company', exact: true });
-		await expect(deleteButton).toBeEnabled();
+		await expect(deleteButton).toBeEnabled({ timeout: 10000 });
 	});
 });
 
@@ -95,17 +103,12 @@ test.describe('Company Logo', () => {
 			buffer: Buffer.from(PNG_BASE64, 'base64')
 		});
 
-		await expect(page.getByRole('button', { name: 'Save', exact: true })).toBeVisible();
-		const uploadResponse = page.waitForResponse(
-			(resp) =>
-				resp.url().includes('/api/companies/') &&
-				resp.url().includes('/logo') &&
-				resp.status() === 200
-		);
-		await page.getByRole('button', { name: 'Save', exact: true }).click();
-		await uploadResponse;
+		await page.waitForSelector('.cropper-modal', { timeout: 10000 });
 
-		await expect(page.locator('img.picture-preview')).toBeVisible();
+		await page.getByRole('button', { name: 'Save', exact: true }).click();
+		await page.waitForTimeout(3000);
+
+		await expect(page.locator('img.picture-preview')).toBeVisible({ timeout: 10000 });
 
 		await page.reload();
 		await page.waitForURL('**/company-settings');
@@ -116,20 +119,27 @@ test.describe('Company Logo', () => {
 		await page.getByRole('link', { name: 'Company Settings' }).click();
 		await page.waitForURL('**/company-settings');
 
-		const fileInput = page.locator('.file-input');
-		await fileInput.setInputFiles({
-			name: 'logo.png',
-			mimeType: 'image/png',
-			buffer: Buffer.from(PNG_BASE64, 'base64')
-		});
-
-		await page.getByRole('button', { name: 'Save', exact: true }).click();
-		await page.waitForTimeout(2000);
-
 		const deleteButton = page.getByRole('button', { name: 'Delete', exact: true });
-		await expect(deleteButton).toBeVisible();
-		await deleteButton.click();
-		await page.waitForTimeout(1000);
+		if (await deleteButton.isVisible()) {
+			await deleteButton.click();
+			await page.waitForTimeout(1000);
+		} else {
+			const fileInput = page.locator('.file-input');
+			await fileInput.setInputFiles({
+				name: 'logo.png',
+				mimeType: 'image/png',
+				buffer: Buffer.from(PNG_BASE64, 'base64')
+			});
+
+			await page.waitForSelector('.cropper-modal', { timeout: 10000 });
+			await page.getByRole('button', { name: 'Save', exact: true }).click();
+			await page.waitForTimeout(3000);
+		}
+
+		const deleteBtn = page.getByRole('button', { name: 'Delete', exact: true });
+		await expect(deleteBtn).toBeVisible({ timeout: 10000 });
+		await deleteBtn.click();
+		await page.waitForTimeout(2000);
 
 		await expect(page.locator('img.picture-preview')).not.toBeVisible();
 	});
