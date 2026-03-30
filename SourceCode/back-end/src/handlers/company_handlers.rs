@@ -2,6 +2,7 @@ use crate::{
     AppState, db,
     dto::ErrorResponse,
     images_db,
+    logs_db,
     middleware::ManageCompanyUser,
     utils::{err_bad_request, err_forbidden, err_internal, err_not_found},
 };
@@ -13,6 +14,53 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+
+#[derive(Debug, Serialize)]
+pub struct CompanyExportData {
+    pub company: CompanyExportInfo,
+    pub users: Vec<UserExportInfo>,
+    pub branches: Vec<BranchExportInfo>,
+    pub invitations: Vec<InvitationExportInfo>,
+    pub log_templates: Vec<serde_json::Value>,
+    pub exported_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CompanyExportInfo {
+    pub id: String,
+    pub name: String,
+    pub address: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UserExportInfo {
+    pub id: String,
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub role: String,
+    pub branch_id: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BranchExportInfo {
+    pub id: String,
+    pub name: String,
+    pub address: String,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct InvitationExportInfo {
+    pub id: String,
+    pub email: String,
+    pub role: String,
+    pub branch_id: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub expires_at: chrono::DateTime<chrono::Utc>,
+}
 
 #[derive(Debug, Deserialize, Serialize, utoipa::ToSchema)]
 pub struct CompanyResponse {
@@ -328,7 +376,7 @@ pub async fn update_company(
     post,
     path = "/companies/{company_id}/export",
     responses(
-        (status = 200, description = "Data export initiated", body = serde_json::Value),
+        (status = 200, description = "Company data exported", body = CompanyExportData),
         (status = 403, description = "Forbidden", body = ErrorResponse),
         (status = 404, description = "Company not found", body = ErrorResponse),
     ),
@@ -339,7 +387,7 @@ pub async fn export_company_data(
     ManageCompanyUser(_claims, user): ManageCompanyUser,
     State(state): State<AppState>,
     axum::extract::Path(company_id): axum::extract::Path<String>,
-) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+) -> Result<Json<CompanyExportData>, (StatusCode, Json<serde_json::Value>)> {
     if user.company_id.as_ref() != Some(&company_id) {
         return Err(err_forbidden("You can only export your own company data"));
     }
@@ -353,14 +401,87 @@ pub async fn export_company_data(
         .ok_or_else(|| err_not_found("Company not found"))?;
 
     let company_email = user.email.clone();
-
     let company_name = company.name.clone();
     let company_address = company.address.clone();
 
+    let company_info = CompanyExportInfo {
+        id: company.id.clone(),
+        name: company.name.clone(),
+        address: company.address.clone(),
+        created_at: company.created_at,
+    };
+
+    let db_users = db::get_users_by_company_id(&state.postgres, &company_id)
+        .await
+        .unwrap_or_default();
+    let users: Vec<UserExportInfo> = db_users
+        .into_iter()
+        .map(|u| UserExportInfo {
+            id: u.id,
+            email: u.email,
+            first_name: u.first_name,
+            last_name: u.last_name,
+            role: format!("{:?}", u.role),
+            branch_id: u.branch_id,
+            created_at: u.created_at,
+        })
+        .collect();
+
+    let branches = db::get_branches_by_company_id(&state.postgres, &company_id)
+        .await
+        .unwrap_or_default();
+    let branch_exports: Vec<BranchExportInfo> = branches
+        .into_iter()
+        .map(|b| BranchExportInfo {
+            id: b.id,
+            name: b.name,
+            address: b.address,
+            created_at: b.created_at,
+        })
+        .collect();
+
+    let invitations = db::get_pending_invitations_by_company_id(&state.postgres, &company_id)
+        .await
+        .unwrap_or_default();
+    let invitation_exports: Vec<InvitationExportInfo> = invitations
+        .into_iter()
+        .map(|i| InvitationExportInfo {
+            id: i.id,
+            email: i.email,
+            role: format!("{:?}", i.role),
+            branch_id: i.branch_id,
+            created_at: i.created_at,
+            expires_at: i.expires_at,
+        })
+        .collect();
+
+    let log_templates = match logs_db::get_templates_by_company(&state.mongo, &company_id).await {
+        Ok(templates) => templates,
+        Err(e) => {
+            tracing::warn!("Failed to fetch log templates for export: {:?}", e);
+            vec![]
+        }
+    };
+
+    let export_data = CompanyExportData {
+        company: company_info,
+        users,
+        branches: branch_exports,
+        invitations: invitation_exports,
+        log_templates,
+        exported_at: chrono::Utc::now(),
+    };
+
+    let export_json = serde_json::to_string(&export_data).unwrap_or_default();
+
     tokio::spawn(async move {
-        if let Err(e) =
-            crate::email::send_company_data_export(&company_email, &company_name, &company_address)
-                .await
+        if let Err(e) = crate::email::send_company_data_export(
+            &company_email,
+            &company_name,
+            &company_address,
+            &export_json,
+        )
+        .await
         {
             tracing::error!("Failed to send company data export email: {:?}", e);
         }
@@ -370,9 +491,7 @@ pub async fn export_company_data(
         tracing::error!("Failed to mark company data as exported: {:?}", e);
     }
 
-    Ok(Json(
-        json!({ "message": "Data export initiated. You will receive an email shortly." }),
-    ))
+    Ok(Json(export_data))
 }
 
 #[utoipa::path(

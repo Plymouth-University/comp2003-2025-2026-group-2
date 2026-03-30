@@ -237,18 +237,45 @@ pub async fn send_company_data_export(
     to_email: &str,
     company_name: &str,
     company_address: &str,
+    export_data: &str,
 ) -> Result<()> {
     let subject = "Company Data Export - LogSmart";
+    
+    let data_summary = if export_data.is_empty() {
+        String::new()
+    } else {
+        match serde_json::from_str::<serde_json::Value>(export_data) {
+            Ok(data) => {
+                let users_count = data["users"].as_array().map(|a| a.len()).unwrap_or(0);
+                let branches_count = data["branches"].as_array().map(|a| a.len()).unwrap_or(0);
+                let invitations_count = data["invitations"].as_array().map(|a| a.len()).unwrap_or(0);
+                let templates_count = data["log_templates"].as_array().map(|a| a.len()).unwrap_or(0);
+                format!(
+                    "\nExport Summary:\n\
+                    - Users: {}\n\
+                    - Branches: {}\n\
+                    - Pending Invitations: {}\n\
+                    - Log Templates: {}",
+                    users_count, branches_count, invitations_count, templates_count
+                )
+            }
+            Err(_) => String::new(),
+        }
+    };
+
     let body = format!(
         "Hello,\n\n\
         Your company data export for '{company_name}' is ready.\n\n\
         Company Details:\n\
         - Name: {company_name}\n\
-        - Address: {company_address}\n\n\
+        - Address: {company_address}\n\
+        {}\n\n\
+        The full export data is available via the API and was included in this notification.\n\
         Please note that this data will be retained on our servers for 30 days after the company deletion request.\n\n\
         If you did not request this export, please contact your system administrator immediately.\n\n\
         Best regards,\n\
-        The LogSmart Team"
+        The LogSmart Team",
+        data_summary
     );
 
     send_email(to_email, subject, &body).await?;
