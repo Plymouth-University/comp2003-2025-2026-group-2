@@ -28,7 +28,9 @@ test.beforeEach(async ({ page }) => {
 test.describe('Confirm Company Deletion Page', () => {
 	test('shows_error_when_missing_params', async ({ page }) => {
 		await page.goto('http://localhost:5173/confirm-company-deletion');
-		await expect(page.getByText('Missing company ID or confirmation token')).toBeVisible({ timeout: 10000 });
+		await expect(page.getByText('Missing company ID or confirmation token')).toBeVisible({
+			timeout: 10000
+		});
 	});
 
 	test('shows_error_when_invalid_token', async ({ page }) => {

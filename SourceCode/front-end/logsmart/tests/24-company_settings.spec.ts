@@ -49,7 +49,9 @@ test.describe('Company Settings', () => {
 
 		await page.getByRole('button', { name: 'Save Company Details' }).click();
 
-		await expect(page.getByText('Company details saved successfully')).toBeVisible({ timeout: 10000 });
+		await expect(page.getByText('Company details saved successfully')).toBeVisible({
+			timeout: 10000
+		});
 	});
 
 	test('export_company_data', async ({ page }) => {
@@ -58,7 +60,9 @@ test.describe('Company Settings', () => {
 
 		await page.getByRole('button', { name: /Export Company Data|Re-export Company Data/ }).click();
 
-		await expect(page.getByText(/Data export initiated|You will receive an email/)).toBeVisible({ timeout: 10000 });
+		await expect(page.getByText(/Data export initiated|You will receive an email/)).toBeVisible({
+			timeout: 10000
+		});
 	});
 });
 
