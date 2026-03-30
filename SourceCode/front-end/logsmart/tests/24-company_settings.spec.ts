@@ -120,14 +120,15 @@ test.describe('Company Logo', () => {
 	});
 
 	test('delete_company_logo', async ({ page }) => {
+		page.on('dialog', async (dialog) => {
+			await dialog.accept();
+		});
+
 		await page.getByRole('link', { name: 'Company Settings' }).click();
 		await page.waitForURL('**/company-settings');
 
 		const deleteButton = page.getByRole('button', { name: 'Delete', exact: true });
-		if (await deleteButton.isVisible()) {
-			await deleteButton.click();
-			await page.waitForTimeout(1000);
-		} else {
+		if (!(await deleteButton.isVisible())) {
 			const fileInput = page.locator('.file-input');
 			await fileInput.setInputFiles({
 				name: 'logo.png',
@@ -137,14 +138,14 @@ test.describe('Company Logo', () => {
 
 			await page.waitForSelector('.cropper-modal', { timeout: 10000 });
 			await page.getByRole('button', { name: 'Save', exact: true }).click();
-			await page.waitForTimeout(3000);
+			await expect(page.locator('img.picture-preview')).toBeVisible({ timeout: 10000 });
 		}
 
 		const deleteBtn = page.getByRole('button', { name: 'Delete', exact: true });
 		await expect(deleteBtn).toBeVisible({ timeout: 10000 });
 		await deleteBtn.click();
-		await page.waitForTimeout(2000);
-
-		await expect(page.locator('img.picture-preview')).not.toBeVisible();
+		await expect(deleteBtn).toBeHidden({ timeout: 10000 });
+		await page.reload();
+		await expect(page.locator('div.no-picture')).toBeVisible();
 	});
 });
