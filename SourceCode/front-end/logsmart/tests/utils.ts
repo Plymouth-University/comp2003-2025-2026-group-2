@@ -177,14 +177,14 @@ const register = async (browser: Browser, close = true) => {
 	await page.getByRole('link', { name: 'Register Company' }).click();
 	await page.waitForURL('**/register-company');
 
-	await page.evaluate(() => {
+	await page.evaluate((companyName) => {
 		const companyNameInput = document.querySelector(
 			'input[placeholder="LogSmart Ltd"]'
 		) as HTMLInputElement;
 		if (companyNameInput) {
 			Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set.call(
 				companyNameInput,
-				'TestCompany'
+				companyName
 			);
 			companyNameInput.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true }));
 		}
@@ -200,7 +200,7 @@ const register = async (browser: Browser, close = true) => {
 				new InputEvent('input', { bubbles: true, cancelable: true })
 			);
 		}
-	});
+	}, companyName);
 
 	await page.waitForTimeout(1000);
 	await expect(page.getByRole('button', { name: 'Next Step' })).toBeEnabled();
