@@ -23,7 +23,7 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('Profile Picture', () => {
 	test('upload_and_persist_profile_picture', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 
 		const fileInput = page.locator('.file-input');

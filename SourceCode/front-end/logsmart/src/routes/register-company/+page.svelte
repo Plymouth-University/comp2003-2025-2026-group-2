@@ -257,7 +257,7 @@
 					<span class="mb-1 text-sm font-medium text-text-primary">Company Address</span>
 					<input
 						type="text"
-						value={companyAddress}
+						bind:value={companyAddress}
 						oninput={handleAddressInput}
 						onblur={() => (touched.companyAddress = true)}
 						autocomplete="off"
@@ -278,7 +278,7 @@
 							class="absolute z-10 max-h-60 w-full overflow-auto rounded-md border border-gray-300 bg-white shadow-lg dark:bg-gray-800"
 							style="top: 70px;"
 						>
-							{#each addressSearchResults as result}
+							{#each addressSearchResults as result (result.lat + '-' + result.lon)}
 								<li>
 									<button
 										type="button"
@@ -293,7 +293,7 @@
 						</ul>
 					{/if}
 					<p class="mt-1 text-xs" style="color: var(--text-secondary);">
-						>(search for locations, POIs, or addresses)
+						&gt;(search for locations, POIs, or addresses)
 					</p>
 					{#if touched.companyAddress && !companyAddressValid}
 						<div class="mt-2 text-sm text-red-600 dark:text-red-400">

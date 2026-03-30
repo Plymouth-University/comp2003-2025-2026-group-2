@@ -5,8 +5,8 @@
 
 	let { data } = $props<{ data: PageData }>();
 
-	let companyName = $state(data.company?.name || '');
-	let companyAddress = $state(data.company?.address || '');
+	let companyName = $derived(data.company?.name || '');
+	let companyAddress = $derived(data.company?.address || '');
 	let logoUrl = $derived(data.company?.logo_url || null);
 	let dataExportedAt = $derived(data.company?.data_exported_at || null);
 
@@ -289,7 +289,7 @@
 									<ul
 										class="absolute z-10 max-h-60 w-full overflow-auto rounded-md border border-gray-300 bg-white shadow-lg dark:bg-gray-800"
 									>
-										{#each addressSearchResults as result}
+										{#each addressSearchResults as result (result.lat + result.lon)}
 											<li>
 												<button
 													type="button"

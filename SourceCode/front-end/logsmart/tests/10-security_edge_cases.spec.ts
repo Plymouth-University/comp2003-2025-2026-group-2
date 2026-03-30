@@ -96,7 +96,7 @@ test.describe('Security: XSS Prevention', () => {
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
 		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		await page.waitForLoadState('networkidle');
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
@@ -232,7 +232,7 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
 		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		await page.waitForLoadState('networkidle');
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
@@ -382,7 +382,7 @@ test.describe('Edge Cases: Concurrent Operations', () => {
 		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
 		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		await page.waitForLoadState('networkidle');
 
