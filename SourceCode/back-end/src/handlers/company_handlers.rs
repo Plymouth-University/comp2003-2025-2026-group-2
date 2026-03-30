@@ -2,7 +2,7 @@ use crate::{
     AppState, db,
     dto::ErrorResponse,
     images_db,
-    logs_db,
+    logs_db::{self, TemplateDocument},
     middleware::ManageCompanyUser,
     utils::{err_bad_request, err_forbidden, err_internal, err_not_found},
 };
@@ -14,18 +14,19 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use utoipa::ToSchema;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct CompanyExportData {
     pub company: CompanyExportInfo,
     pub users: Vec<UserExportInfo>,
     pub branches: Vec<BranchExportInfo>,
     pub invitations: Vec<InvitationExportInfo>,
-    pub log_templates: Vec<serde_json::Value>,
+    pub log_templates: Vec<TemplateDocument>,
     pub exported_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct CompanyExportInfo {
     pub id: String,
     pub name: String,
@@ -33,7 +34,7 @@ pub struct CompanyExportInfo {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct UserExportInfo {
     pub id: String,
     pub email: String,
@@ -44,7 +45,7 @@ pub struct UserExportInfo {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct BranchExportInfo {
     pub id: String,
     pub name: String,
@@ -52,7 +53,7 @@ pub struct BranchExportInfo {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct InvitationExportInfo {
     pub id: String,
     pub email: String,
@@ -359,7 +360,7 @@ pub async fn update_company(
     .await
     .map_err(|e| {
         tracing::error!("Failed to update company: {:?}", e);
-        err_internal("Failed to update company")
+        err_internal(e.to_string().as_str())
     })?;
 
     // Note: Possible performance issue
@@ -455,7 +456,7 @@ pub async fn export_company_data(
         })
         .collect();
 
-    let log_templates = match logs_db::get_templates_by_company(&state.mongo, &company_id).await {
+    let log_templates = match logs_db::get_templates_by_company(&state.mongodb, &company_id).await {
         Ok(templates) => templates,
         Err(e) => {
             tracing::warn!("Failed to fetch log templates for export: {:?}", e);
@@ -536,7 +537,7 @@ pub async fn delete_company(
         .await
         .map_err(|e| {
             tracing::error!("Failed to request company deletion: {:?}", e);
-            err_internal("Failed to request deletion")
+            err_internal(e.to_string().as_str())
         })?;
 
     let deletion_token = updated_company.deletion_token.unwrap_or_default();

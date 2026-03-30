@@ -253,7 +253,7 @@
 					{/if}
 				</label>
 
-				<label class="mb-4 flex flex-col relative address-search-container">
+				<label class="address-search-container relative mb-4 flex flex-col">
 					<span class="mb-1 text-sm font-medium text-text-primary">Company Address</span>
 					<input
 						type="text"
@@ -267,7 +267,10 @@
 						required
 					/>
 					{#if isSearchingAddress}
-						<div class="absolute z-10 w-full rounded-md border border-gray-300 bg-white p-2 text-center dark:bg-gray-800" style="top: 70px;">
+						<div
+							class="absolute z-10 w-full rounded-md border border-gray-300 bg-white p-2 text-center dark:bg-gray-800"
+							style="top: 70px;"
+						>
 							<span class="text-sm text-gray-500">Searching...</span>
 						</div>
 					{:else if showAddressResults && addressSearchResults.length > 0}

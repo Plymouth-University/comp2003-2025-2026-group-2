@@ -256,7 +256,7 @@
 							</div>
 
 							<!-- Company Address -->
-							<div class="relative address-search-container">
+							<div class="address-search-container relative">
 								<label
 									for="companyAddress"
 									class="mb-2 block text-sm font-medium"

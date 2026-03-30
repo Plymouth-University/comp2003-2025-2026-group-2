@@ -670,7 +670,7 @@ pub async fn update_company(
         UPDATE companies
         SET name = $1, address = $2
         WHERE id = $3
-        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at
+        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token
         ",
     )
     .bind(name)

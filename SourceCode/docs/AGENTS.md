@@ -187,3 +187,6 @@ SourceCode/
 - Backend unit tests: Inline in `src/` with `#[cfg(test)]`
 - Backend integration tests: `back-end/tests/`
 - Frontend e2e: `front-end/logsmart/tests/` (Playwright)
+
+## Database
+- Always use TIMESTAMPTZ over TIMESTAMP

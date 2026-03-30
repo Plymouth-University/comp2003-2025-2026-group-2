@@ -1401,16 +1401,15 @@ async fn test_delete_company_after_export_succeeds() {
         Some(token),
     )
     .await;
-
     assert_eq!(status, StatusCode::OK);
-    assert!(body["message"].as_str().unwrap().contains("deletion"));
+    assert!(body["message"].as_str().unwrap().contains("Deletion"));
 }
 
 #[tokio::test]
 async fn test_confirm_company_deletion_invalid_token() {
     let mut app = setup_test_app().await;
 
-    let (status, body) = make_request(
+    let (status, _body) = make_request(
         &mut app,
         "GET",
         "/companies/test-company-id/confirm-deletion?token=invalid-token",
