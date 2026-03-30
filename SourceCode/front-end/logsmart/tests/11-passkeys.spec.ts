@@ -112,7 +112,7 @@ test.describe('Passkey Management', () => {
 		await expect(page.locator('text=Key To Delete')).toBeVisible();
 
 		// Delete
-		await page.getByRole('button', { name: 'Delete' }).click();
+		await page.getByRole('button', { name: 'Delete passkey' }).click();
 
 		// Verify gone
 		await expect(page.locator('text=Key To Delete')).not.toBeVisible();
