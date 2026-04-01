@@ -158,6 +158,13 @@ impl AuthService {
             ));
         }
 
+        if user.company_deleted_at.is_some() {
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                json!({"error": "Your company has been deleted. Please contact support."}),
+            ));
+        }
+
         let password_valid = if let Some(password_hash) = &user.password_hash {
             verify_password(password, password_hash).map_err(|e| {
                 tracing::error!("Password verification error: {:?}", e);
@@ -515,6 +522,20 @@ impl AuthService {
         }
 
         let user = user.unwrap();
+
+        if user.deleted_at.is_some() {
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                json!({"error": "Account deactivated"}),
+            ));
+        }
+
+        if user.company_deleted_at.is_some() {
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                json!({"error": "Your company has been deleted. Please contact support."}),
+            ));
+        }
 
         if let Some(password_hash) = user.password_hash.as_ref() {
             let password_valid = verify_password(password, password_hash).map_err(|e| {

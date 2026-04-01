@@ -234,6 +234,13 @@ impl GoogleOAuthClient {
                 user_agent,
             )
             .await;
+
+            if existing_user.company_deleted_at.is_some() {
+                return Err((
+                    StatusCode::UNAUTHORIZED,
+                    json!({"error": "Your company has been deleted. Please contact support."}),
+                ));
+            }
             return Ok(existing_user);
         }
 

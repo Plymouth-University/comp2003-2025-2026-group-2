@@ -551,10 +551,7 @@ pub async fn delete_company(
         )
         .await
         {
-            tracing::error!(
-                "Failed to send company deletion request email: {:?}",
-                e
-            );
+            tracing::error!("Failed to send company deletion request email: {:?}", e);
         }
     });
 
@@ -632,8 +629,6 @@ pub async fn confirm_company_deletion(
         return Err(err_bad_request("Invalid or expired confirmation token"));
     }
 
-    let company_email = company.name.clone();
-
     let _company = db::confirm_company_deletion(&state.postgres, &company_id, token)
         .await
         .map_err(|e| {
@@ -641,12 +636,17 @@ pub async fn confirm_company_deletion(
             err_internal("Failed to confirm deletion")
         })?;
 
+    if let Ok(users) = db::get_users_by_company_id(&state.postgres, &company_id).await {
+        for user in users {
+            state.user_cache.invalidate(&user.id).await;
+        }
+    }
+
+    let company_email = company.name.clone();
+
     tokio::spawn(async move {
         if let Err(e) = crate::email::send_company_deleted_notification(&company_email).await {
-            tracing::error!(
-                "Failed to send company deletion notification: {:?}",
-                e
-            );
+            tracing::error!("Failed to send company deletion notification: {:?}", e);
         }
     });
 
