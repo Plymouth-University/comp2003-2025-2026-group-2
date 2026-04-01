@@ -40,10 +40,10 @@ test.describe('Profile Picture', () => {
 		await page.getByRole('button', { name: 'Save', exact: true }).click();
 		await uploadResponse;
 
-		await expect(page.locator('img.profile-preview')).toBeVisible();
+		await expect(page.locator('img.picture-preview')).toBeVisible();
 
 		await page.reload();
 		await page.waitForURL('**/settings');
-		await expect(page.locator('img.profile-preview')).toBeVisible();
+		await expect(page.locator('img.picture-preview')).toBeVisible();
 	});
 });
