@@ -20,6 +20,7 @@ fn create_test_user_record() -> UserRecord {
         oauth_subject: None,
         oauth_picture: None,
         profile_picture_id: None,
+        company_deleted_at: None,
     }
 }
 
@@ -169,6 +170,7 @@ fn test_user_record_role_methods() {
         oauth_subject: None,
         oauth_picture: None,
         profile_picture_id: None,
+        company_deleted_at: None,
     };
 
     assert!(!user.is_branch_manager());

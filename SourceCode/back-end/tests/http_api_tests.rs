@@ -14,6 +14,7 @@ use std::sync::Arc;
 use tokio::time::sleep;
 use tower::ServiceExt;
 use url::Url;
+use uuid::Uuid;
 use webauthn_rs::WebauthnBuilder;
 
 async fn test_register_handler(
@@ -89,6 +90,71 @@ async fn get_test_db_pool() -> PgPool {
         .expect("Failed to connect to test db")
 }
 
+async fn setup_test_app_with_pool() -> (Router, PgPool) {
+    let pool = get_test_db_pool().await;
+
+    let rp_id = "localhost";
+    let rp_origin = Url::parse("https://localhost").expect("Invalid URL");
+    let builder = WebauthnBuilder::new(rp_id, &rp_origin).expect("Invalid configuration");
+    let webauthn = Arc::new(builder.build().expect("Invalid configuration"));
+
+    let mut rate_limit = back_end::rate_limit::RateLimitState::new();
+    rate_limit.disabled = true;
+
+    let state = AppState {
+        postgres: pool.clone(),
+        rate_limit,
+        metrics: back_end::metrics::Metrics::new(),
+        mongodb: back_end::logs_db::init_mongodb()
+            .await
+            .expect("Failed to initialize MongoDB"),
+        webauthn,
+        google_oauth: None,
+        oauth_state_store: Arc::new(handlers::OAuthStateStore::default()),
+        user_cache: moka::future::Cache::builder()
+            .max_capacity(50)
+            .time_to_live(std::time::Duration::from_secs(300))
+            .build(),
+    };
+
+    let app = Router::new()
+        .route("/auth/register", post(test_register_handler))
+        .route("/auth/login", post(test_login_handler))
+        .route("/auth/verify", post(handlers::verify_token))
+        .route("/auth/me", get(handlers::get_current_user))
+        .route("/auth/invitations/send", post(test_invite_handler))
+        .route(
+            "/auth/invitations/accept",
+            post(test_accept_invitation_handler),
+        )
+        .route("/companies/{company_id}", get(handlers::get_company))
+        .route("/companies/{company_id}", put(handlers::update_company))
+        .route(
+            "/companies/{company_id}/export",
+            post(handlers::export_company_data),
+        )
+        .route("/companies/{company_id}", delete(handlers::delete_company))
+        .route(
+            "/companies/{company_id}/confirm-deletion",
+            get(handlers::confirm_company_deletion),
+        )
+        .route(
+            "/companies/{company_id}/logo",
+            post(handlers::upload_company_logo),
+        )
+        .route(
+            "/companies/{company_id}/logo",
+            get(handlers::get_company_logo),
+        )
+        .route(
+            "/companies/{company_id}/logo",
+            delete(handlers::delete_company_logo),
+        )
+        .with_state(state);
+
+    (app, pool)
+}
+
 async fn setup_test_app() -> Router {
     let pool = get_test_db_pool().await;
 
@@ -121,6 +187,7 @@ async fn setup_test_app() -> Router {
     let app = Router::new()
         .route("/auth/register", post(test_register_handler))
         .route("/auth/login", post(test_login_handler))
+        .route("/auth/verify", post(handlers::verify_token))
         .route("/auth/me", get(handlers::get_current_user))
         .route("/auth/invitations/send", post(test_invite_handler))
         .route(
@@ -1419,6 +1486,167 @@ async fn test_confirm_company_deletion_invalid_token() {
     .await;
 
     assert!(status == StatusCode::BAD_REQUEST || status == StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn test_login_blocked_after_company_deletion() {
+    let (mut app, pool) = setup_test_app_with_pool().await;
+
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let email = format!("deletionlogin_{}@example.com", unique_id);
+
+    let (_, register_body) = make_request(
+        &mut app,
+        "POST",
+        "/auth/register",
+        Some(json!({
+            "email": email,
+            "first_name": "Test",
+            "last_name": "User",
+            "password": "TestPassword123!",
+            "company_name": format!("Deletion Test Co {}", unique_id),
+            "company_address": "456 Test Ave"
+        })),
+        None,
+    )
+    .await;
+
+    let token = register_body["token"].as_str().unwrap();
+    let company_id = register_body["user"]["company_id"].as_str().unwrap();
+
+    let (export_status, _) = make_request(
+        &mut app,
+        "POST",
+        &format!("/companies/{}/export", company_id),
+        None,
+        Some(token),
+    )
+    .await;
+    assert_eq!(export_status, StatusCode::OK);
+
+    let (delete_request_status, _) = make_request(
+        &mut app,
+        "DELETE",
+        &format!("/companies/{}", company_id),
+        None,
+        Some(token),
+    )
+    .await;
+    assert_eq!(delete_request_status, StatusCode::OK);
+
+    let row: (String,) = sqlx::query_as("SELECT deletion_token FROM companies WHERE id = $1")
+        .bind(company_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    let deletion_token = row.0;
+
+    let (confirm_status, _) = make_request(
+        &mut app,
+        "GET",
+        &format!("/companies/{}/confirm-deletion?token={}", company_id, deletion_token),
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(confirm_status, StatusCode::OK);
+
+    let (login_status, login_body) = make_request(
+        &mut app,
+        "POST",
+        "/auth/login",
+        Some(json!({
+            "email": email,
+            "password": "TestPassword123!"
+        })),
+        None,
+    )
+    .await;
+
+    assert_eq!(login_status, StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        login_body["error"].as_str().unwrap(),
+        "Your company has been deleted. Please contact support."
+    );
+}
+
+#[tokio::test]
+async fn test_api_calls_blocked_after_company_deletion() {
+    let (mut app, pool) = setup_test_app_with_pool().await;
+
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let email = format!("deletionapi_{}@example.com", unique_id);
+
+    let (_, register_body) = make_request(
+        &mut app,
+        "POST",
+        "/auth/register",
+        Some(json!({
+            "email": email,
+            "first_name": "Test",
+            "last_name": "User",
+            "password": "TestPassword123!",
+            "company_name": format!("Deletion API Co {}", unique_id),
+            "company_address": "456 API Ave"
+        })),
+        None,
+    )
+    .await;
+
+    let token = register_body["token"].as_str().unwrap();
+    let company_id = register_body["user"]["company_id"].as_str().unwrap();
+
+    let (export_status, _) = make_request(
+        &mut app,
+        "POST",
+        &format!("/companies/{}/export", company_id),
+        None,
+        Some(token),
+    )
+    .await;
+    assert_eq!(export_status, StatusCode::OK);
+
+    let (delete_request_status, _) = make_request(
+        &mut app,
+        "DELETE",
+        &format!("/companies/{}", company_id),
+        None,
+        Some(token),
+    )
+    .await;
+    assert_eq!(delete_request_status, StatusCode::OK);
+
+    let row: (String,) = sqlx::query_as("SELECT deletion_token FROM companies WHERE id = $1")
+        .bind(company_id)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    let deletion_token = row.0;
+
+    let (confirm_status, _) = make_request(
+        &mut app,
+        "GET",
+        &format!("/companies/{}/confirm-deletion?token={}", company_id, deletion_token),
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(confirm_status, StatusCode::OK);
+
+    let (me_status, me_body) = make_request(
+        &mut app,
+        "GET",
+        "/auth/me",
+        None,
+        Some(token),
+    )
+    .await;
+
+    assert_eq!(me_status, StatusCode::UNAUTHORIZED);
+    assert_eq!(
+        me_body["error"].as_str().unwrap(),
+        "Your company has been deleted. Please contact support."
+    );
 }
 
 #[tokio::test]

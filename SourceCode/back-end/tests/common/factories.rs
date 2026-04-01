@@ -27,6 +27,7 @@ impl UserFactory {
             company_id: Some(Uuid::new_v4().to_string()),
             branch_id: None,
             company_name: Some("Test Company".to_string()),
+            company_deleted_at: None,
             role: UserRole::Staff,
             created_at: Utc::now(),
             deleted_at: None,
@@ -528,6 +529,7 @@ pub async fn create_test_user(
         oauth_subject: row.get("oauth_subject"),
         oauth_picture: row.get("oauth_picture"),
         profile_picture_id: row.get("profile_picture_id"),
+        company_deleted_at: row.get("company_deleted_at"),
     })
     .unwrap()
 }
@@ -581,6 +583,7 @@ pub async fn create_test_user_with_role(
         oauth_subject: row.get("oauth_subject"),
         oauth_picture: row.get("oauth_picture"),
         profile_picture_id: row.get("profile_picture_id"),
+        company_deleted_at: row.get("company_deleted_at"),
     })
     .unwrap()
 }

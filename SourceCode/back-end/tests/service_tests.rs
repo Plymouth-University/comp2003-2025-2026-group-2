@@ -23,6 +23,7 @@ fn test_user_creation() {
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
 
     assert_eq!(user.email, "test@example.com");
