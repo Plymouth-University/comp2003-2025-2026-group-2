@@ -385,7 +385,7 @@
 		height: 40px;
 		border-radius: 50%;
 		background: var(--button-text);
-		color: var(--step-num-col);
+		color: var(--text-secondary);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -405,11 +405,11 @@
 
 	.step-label {
 		font-size: 0.875rem;
-		color: var(--step-num-col);
+		color: var(--text-secondary);
 	}
 
 	.step.active .step-label {
-		color: var(--step-label-active);
+		color: var(--text-primary);
 		font-weight: 600;
 	}
 
@@ -438,7 +438,7 @@
 	}
 
 	.subtitle {
-		color: var(--step-num-col);
+		color: var(--text-secondary);
 		margin: 0 0 1.5rem 0;
 	}
 
@@ -508,12 +508,12 @@
 	}
 
 	.btn-primary:hover:not([disabled]) {
-		background: #1e5cff;
+		background: var(--step-active);
 	}
 
 	.btn-secondary {
 		background: var(--button-text);
-		color: #374151;
+		color: var(--pass-toggle);
 	}
 
 	.btn-secondary:hover {
@@ -538,7 +538,7 @@
 	.footer-text {
 		text-align: center;
 		margin-top: 1.5rem;
-		color: var(--step-num-col);
+		color: var(--text-secondary);
 	}
 
 	.footer-text a {
@@ -567,7 +567,7 @@
 		background: none;
 		border: none;
 		cursor: pointer;
-		color: var(--step-num-col);
+		color: var(--text-secondary);
 		padding: 0.25rem;
 		display: flex;
 		align-items: center;
