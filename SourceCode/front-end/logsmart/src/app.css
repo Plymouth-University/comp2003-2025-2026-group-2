@@ -33,16 +33,13 @@
 	--border-primary: #000100;
 	--border-secondary: #e5e7eb;
 	/* Accept-invitation */
-	--step-num-col: #6b7280;
 	--step-active: #2f6fff;
 	--step-comp-bg: #10b981;
-	--step-label-active: #111827;
 	--input-invite: #d1d7e0;
 	--input-focus: #6b8cff;
 	--field-error: #C56371;
 	--error-bg: #fdecea;
 	--error-col: #821313;
-	--button-disabled: #1e5cff;
 	--pass-toggle: #374151;
 	/* Template Designer */
 	--component-text-input: #cfd1d9;
