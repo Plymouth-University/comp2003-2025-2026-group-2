@@ -157,7 +157,7 @@
 					<p class="mb-6 text-gray-600">
 						Click the button below to accept your invitation and create your account.
 					</p>
-					<button type="button" class="btn btn-primary" onclick={nextStep}>
+					<button type="button" class="btn btn-primary cursor-pointer" onclick={nextStep}>
 						Accept Invitation
 					</button>
 				</div>
@@ -384,8 +384,8 @@
 		width: 40px;
 		height: 40px;
 		border-radius: 50%;
-		background: #e5e7eb;
-		color: #6b7280;
+		background: var(--button-text);
+		color: var(--step-num-col);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -394,39 +394,39 @@
 	}
 
 	.step.active .step-number {
-		background: #2f6fff;
-		color: white;
+		background: var(--step-active);
+		color: var(--button-text);
 	}
 
 	.step.completed .step-number {
-		background: #10b981;
-		color: white;
+		background: var(--step-comp-bg);
+		color: var(--button-text);
 	}
 
 	.step-label {
 		font-size: 0.875rem;
-		color: #6b7280;
+		color: var(--step-num-col);
 	}
 
 	.step.active .step-label {
-		color: #111827;
+		color: var(--step-label-active);
 		font-weight: 600;
 	}
 
 	.progress-line {
 		width: 80px;
 		height: 2px;
-		background: #e5e7eb;
+		background: var(--button-text);
 		transition: all 0.3s;
 	}
 
 	.progress-line.completed {
-		background: #10b981;
+		background: var(--step-comp-bg);
 	}
 
 	.form {
 		width: 100%;
-		background: white;
+		background: var(--button-text);
 		padding: 2rem;
 		border-radius: 8px;
 		box-shadow: 0 6px 20px rgba(20, 20, 50, 0.08);
@@ -438,7 +438,7 @@
 	}
 
 	.subtitle {
-		color: #6b7280;
+		color: var(--step-num-col);
 		margin: 0 0 1.5rem 0;
 	}
 
@@ -462,7 +462,7 @@
 
 	input {
 		padding: 0.5rem 0.75rem;
-		border: 1px solid #d1d7e0;
+		border: 1px solid var(--input-invite);
 		border-radius: 6px;
 		font-size: 1rem;
 		outline: none;
@@ -472,19 +472,19 @@
 	}
 
 	input:focus {
-		border-color: #6b8cff;
+		border-color: var(--input-focus);
 		box-shadow: 0 0 0 3px rgba(107, 140, 255, 0.12);
 	}
 
 	.field-error {
-		color: #c93838;
+		color: var(--field-error);
 		font-size: 0.875rem;
 		margin-top: 0.5rem;
 	}
 
 	.error {
-		background: #fdecea;
-		color: #821313;
+		background: var(--error-bg);
+		color: var(--error-col);
 		padding: 0.5rem 0.75rem;
 		border-radius: 6px;
 		margin-bottom: 1rem;
@@ -503,8 +503,8 @@
 
 	.btn-primary {
 		width: 100%;
-		background: #2f6fff;
-		color: white;
+		background: var(--step-active);
+		color: var(--button-text);
 	}
 
 	.btn-primary:hover:not([disabled]) {
@@ -512,12 +512,12 @@
 	}
 
 	.btn-secondary {
-		background: #f3f4f6;
+		background: var(--button-text);
 		color: #374151;
 	}
 
 	.btn-secondary:hover {
-		background: #e5e7eb;
+		background: var(--border-secondary);
 	}
 
 	.btn[disabled] {
@@ -538,11 +538,11 @@
 	.footer-text {
 		text-align: center;
 		margin-top: 1.5rem;
-		color: #6b7280;
+		color: var(--step-num-col);
 	}
 
 	.footer-text a {
-		color: #2f6fff;
+		color: var(--step-active);
 		text-decoration: none;
 	}
 
@@ -567,7 +567,7 @@
 		background: none;
 		border: none;
 		cursor: pointer;
-		color: #6b7280;
+		color: var(--step-num-col);
 		padding: 0.25rem;
 		display: flex;
 		align-items: center;
@@ -575,6 +575,6 @@
 	}
 
 	.password-toggle:hover {
-		color: #374151;
+		color: var(--pass-toggle);
 	}
 </style>
