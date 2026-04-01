@@ -824,7 +824,7 @@
 		<div class="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 transform">
 			<div class="menu-bar flex items-center gap-1 rounded-full px-4 py-2 shadow-xl">
 				<button
-					class="menu-btn rounded-full px-4 py-2"
+					class="menu-btn cursor-pointer rounded-full px-4 py-2"
 					class:menu-btn-active={leftSidebarOpen}
 					onclick={toggleLeftSidebar}
 					aria-label="Toggle templates/AI sidebar"
@@ -835,7 +835,7 @@
 				</button>
 				<div class="menu-divider"></div>
 				<button
-					class="menu-btn rounded-full px-4 py-2"
+					class="menu-btn cursor-pointer rounded-full px-4 py-2"
 					class:menu-btn-active={rightSidebarOpen}
 					onclick={toggleRightSidebar}
 					aria-label="Toggle components/properties sidebar"

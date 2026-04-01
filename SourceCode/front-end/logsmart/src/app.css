@@ -21,6 +21,7 @@
 	--color-component-dropdown: var(--component-dropdown);
 	--color-component-label: var(--component-label);
 	--color-scheme: var(--color-scheme);
+
 	--breakpoint-xs: 350px;
 }
 
@@ -36,6 +37,26 @@
 	--component-temperature: #fef3c7;
 	--component-dropdown: #f3e8ff;
 	--component-label: #ffe4e6;
+	--create-button: #4cc650;
+	--create-button-hover: #111827;
+	--create-button-active: #111827;
+	--history-button: #546e7a;
+	--history-button-hover: #0a587c;
+	--history-button-active: #455a64;
+	--snap-on: #dcfce7;
+	--save-template: #111827;
+	--delete-button: #d9534f;
+	--delete-button-hover: #c9302c;
+	--delete-button-active: #ac2925;
+	--template-edit-button: #337ab7;
+	--template-edit-hover: #286090;
+	--template-edit-active: #204d74;
+	--template-settings-button: #5bc0de;
+	--template-settings-hover: #31b0d5;
+	--template-settings-active: #269abc;
+	--retry-button: #337ab7;
+	--retry-button-hover: #286090;
+	--retry-button-active: #204d74;
 	--color-scheme: light;
 }
 
@@ -46,10 +67,30 @@
 	--text-secondary: #9ca3af;
 	--border-primary: #4b5563;
 	--border-secondary: #374151;
-	--component-text-input: #0c4a6e;
-	--component-checkbox: #14532d;
-	--component-temperature: #78350f;
-	--component-dropdown: #581c87;
-	--component-label: #881337;
+	--component-text-input: #a1a6b4;
+	--component-checkbox: #7698b3;
+	--component-temperature: #83b5d1;
+	--component-dropdown: #7f557d;
+	--component-label: #673c4f;
+	--create-button: #15682b;
+	--create-button-hover: #0c3d19;
+	--create-button-active: #073e1b;
+	--history-button: #546e7a;
+	--history-button-hover: #002f45;
+	--history-button-active: #455a64;
+	--snap-on: #dcfce7;
+	--save-template: #111827;
+	--delete-button: #d9534f;
+	--delete-button-hover: #c9302c;
+	--delete-button-active: #ac2925;
+	--template-edit-button: #337ab7;
+	--template-edit-hover: #286090;
+	--template-edit-active: #204d74;
+	--template-settings-button: #5bc0de;
+	--template-settings-hover: #31b0d5;
+	--template-settings-active: #269abc;
+	--retry-button: #337ab7;
+	--retry-button-hover: #286090;
+	--retry-button-active: #204d74;
 	--color-scheme: dark;
 }
