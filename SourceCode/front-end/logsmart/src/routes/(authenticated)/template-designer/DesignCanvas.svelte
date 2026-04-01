@@ -118,7 +118,7 @@
 				{/if}
 				{#if selectedItemId}
 					<button
-						class="btn-delete rounded px-4 py-2 font-medium text-white"
+						class="btn-delete cursor-pointer rounded px-4 py-2 font-medium text-white"
 						onclick={onDeleteSelected}
 					>
 						Delete Selected
@@ -320,69 +320,49 @@
 	}
 
 	.btn-delete {
-		background-color: #d9534f;
+		background-color: var(--delete-button);
 		transition: background-color 0.15s ease;
 	}
 	.btn-delete:hover {
-		background-color: #c9302c;
+		background-color: var(--delete-button-hover);
 	}
 	.btn-delete:active {
-		background-color: #ac2925;
-	}
-	@media (prefers-color-scheme: dark) {
-		.btn-delete:hover {
-			background-color: #c12e2a;
-		}
+		background-color: var(--delete-button-active);
 	}
 
 	.btn-save {
-		background-color: #337ab7;
+		background-color: var(--template-edit-button);
 		transition: background-color 0.15s ease;
 	}
 	.btn-save:hover:not(:disabled) {
-		background-color: #286090;
+		background-color: var(--template-edit-active);
 	}
 	.btn-save:active:not(:disabled) {
-		background-color: #204d74;
-	}
-	@media (prefers-color-scheme: dark) {
-		.btn-save:hover:not(:disabled) {
-			background-color: #275f8c;
-		}
+		background-color: var(--template-edit-active);
 	}
 
 	.btn-snap-on {
-		background-color: #2c7c2c;
-		color: white;
+		background-color: var(--snap-on);
+		color: var(--button-text);
 		transition: background-color 0.15s ease;
 	}
 	.btn-snap-on:hover {
-		background-color: #236b23;
+		background-color: var(--snap-on-hover);
 	}
 	.btn-snap-on:active {
-		background-color: #1a5a1a;
-	}
-	@media (prefers-color-scheme: dark) {
-		.btn-snap-on:hover {
-			background-color: #226a22;
-		}
+		background-color: var(--snap-on-active);
 	}
 
 	.btn-snap-off {
-		background-color: #6c757d;
-		color: white;
+		background-color: var(--snap-off);
+		color: var(--button-text);
 		transition: background-color 0.15s ease;
 	}
 	.btn-snap-off:hover {
-		background-color: #5a6268;
+		background-color: var(--snap-off-hover);
 	}
 	.btn-snap-off:active {
-		background-color: #4e555b;
-	}
-	@media (prefers-color-scheme: dark) {
-		.btn-snap-off:hover {
-			background-color: #596167;
-		}
+		background-color: var(--snap-off-active);
 	}
 
 	.btn-history {
