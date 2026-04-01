@@ -240,7 +240,7 @@ pub async fn send_company_data_export(
     export_data: &str,
 ) -> Result<()> {
     let subject = "Company Data Export - LogSmart";
-    
+
     let data_summary = if export_data.is_empty() {
         String::new()
     } else {
@@ -248,8 +248,12 @@ pub async fn send_company_data_export(
             Ok(data) => {
                 let users_count = data["users"].as_array().map(|a| a.len()).unwrap_or(0);
                 let branches_count = data["branches"].as_array().map(|a| a.len()).unwrap_or(0);
-                let invitations_count = data["invitations"].as_array().map(|a| a.len()).unwrap_or(0);
-                let templates_count = data["log_templates"].as_array().map(|a| a.len()).unwrap_or(0);
+                let invitations_count =
+                    data["invitations"].as_array().map(|a| a.len()).unwrap_or(0);
+                let templates_count = data["log_templates"]
+                    .as_array()
+                    .map(|a| a.len())
+                    .unwrap_or(0);
                 format!(
                     "\nExport Summary:\n\
                     - Users: {}\n\

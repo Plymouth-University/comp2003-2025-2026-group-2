@@ -67,6 +67,7 @@ pub struct UserRecord {
     pub company_id: Option<String>,
     pub branch_id: Option<String>,
     pub company_name: Option<String>,
+    pub company_deleted_at: Option<chrono::DateTime<chrono::Utc>>,
     pub role: UserRole,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -309,6 +310,7 @@ where
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     })
 }
 
@@ -345,7 +347,8 @@ pub async fn get_user_by_email(pool: &PgPool, email: &str) -> Result<Option<User
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
                users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
-               companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
+               companies.name as company_name, companies.deleted_at as company_deleted_at,
+               users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.email = $1 AND users.deleted_at IS NULL
@@ -373,7 +376,8 @@ pub async fn get_users_by_role(
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
                users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
-               companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
+               companies.name as company_name, companies.deleted_at as company_deleted_at,
+               users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE NOT users.id = $1 AND users.company_id = $2 AND users.role = $3 AND users.branch_id = $4 AND users.deleted_at IS NULL
@@ -398,7 +402,8 @@ pub async fn get_user_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRecord
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
             users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
-            companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
+            companies.name as company_name, companies.deleted_at as company_deleted_at,
+            users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.id = $1 AND users.deleted_at IS NULL
@@ -435,7 +440,8 @@ pub async fn get_user_by_oauth(
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
             users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
-            companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
+            companies.name as company_name, companies.deleted_at as company_deleted_at,
+            users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.oauth_provider = $1 AND users.oauth_subject = $2 AND users.deleted_at IS NULL
@@ -505,6 +511,7 @@ where
         oauth_provider: Some(oauth_provider),
         oauth_subject: Some(oauth_subject),
         oauth_picture,
+        company_deleted_at: None,
     })
 }
 
@@ -725,7 +732,11 @@ pub async fn request_company_deletion(pool: &PgPool, company_id: &str) -> Result
 ///
 /// # Errors
 /// Returns an error if database query fails or token is invalid.
-pub async fn confirm_company_deletion(pool: &PgPool, company_id: &str, token: &str) -> Result<Company> {
+pub async fn confirm_company_deletion(
+    pool: &PgPool,
+    company_id: &str,
+    token: &str,
+) -> Result<Company> {
     let company = sqlx::query_as(
         r"
         UPDATE companies
@@ -1310,7 +1321,8 @@ pub async fn get_users_by_company_id(pool: &PgPool, company_id: &str) -> Result<
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
                users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
-               companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
+               companies.name as company_name, companies.deleted_at as company_deleted_at,
+               users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.company_id = $1 AND users.deleted_at IS NULL
@@ -1691,6 +1703,7 @@ pub async fn accept_invitation_with_user_creation(
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     })
 }
 
@@ -2036,7 +2049,8 @@ pub async fn get_company_members_for_user(pool: &PgPool, user_id: &str) -> Resul
         r"
         SELECT target_user.id, target_user.email, target_user.first_name, target_user.last_name, 
                target_user.password_hash, target_user.company_id, target_user.branch_id, target_user.role, target_user.created_at, target_user.deleted_at, 
-               companies.name as company_name, target_user.oauth_provider, target_user.oauth_subject, target_user.oauth_picture, target_user.profile_picture_id
+               companies.name as company_name, companies.deleted_at as company_deleted_at,
+               target_user.oauth_provider, target_user.oauth_subject, target_user.oauth_picture, target_user.profile_picture_id
         FROM users as request_user
         JOIN users as target_user ON request_user.company_id = target_user.company_id
         LEFT JOIN companies ON target_user.company_id = companies.id

@@ -172,7 +172,16 @@ pub struct CompanyDto {
 derive_from!(
     crate::db::Company,
     CompanyDto,
-    [id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at]
+    [
+        id,
+        name,
+        address,
+        created_at,
+        logo_id,
+        data_exported_at,
+        deleted_at,
+        deletion_requested_at
+    ]
 );
 
 derive_from!(
