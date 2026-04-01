@@ -106,7 +106,7 @@
 		<div class="flex w-full shrink-0 gap-1 sm:w-auto sm:gap-2">
 			<button
 				type="button"
-				class="btn-edit flex-1 rounded px-2 py-2 text-xs font-medium text-white sm:flex-none sm:px-4 sm:text-base"
+				class="btn-edit flex-1 cursor-pointer rounded px-2 py-2 text-xs font-medium text-white sm:flex-none sm:px-4 sm:text-base"
 				onclick={() => onEdit(template)}
 				title="Edit template design"
 			>
@@ -115,7 +115,7 @@
 			</button>
 			<button
 				type="button"
-				class="btn-settings flex-1 rounded px-2 py-2 text-xs font-medium text-white sm:flex-none sm:px-4 sm:text-base"
+				class="btn-settings flex-1 cursor-pointer rounded px-2 py-2 text-xs font-medium text-white sm:flex-none sm:px-4 sm:text-base"
 				onclick={() => onSettings(template)}
 				title="Schedule settings"
 			>
@@ -124,7 +124,7 @@
 			</button>
 			<button
 				type="button"
-				class="btn-delete flex-none rounded px-2 py-2 text-xs font-medium text-white sm:px-4 sm:text-base"
+				class="btn-delete flex-none cursor-pointer rounded px-2 py-2 text-xs font-medium text-white sm:px-4 sm:text-base"
 				onclick={() => onDelete(template)}
 				title="Delete template"
 			>
@@ -136,42 +136,42 @@
 
 <style>
 	.btn-edit {
-		background-color: #337ab7;
+		background-color: var(--template-edit-button);
 		transition: background-color 0.15s ease;
 	}
 
 	.btn-edit:hover {
-		background-color: #286090;
+		background-color: var(--template-edit-hover);
 	}
 
 	.btn-edit:active {
-		background-color: #204d74;
+		background-color: var(--template-edit-active);
 	}
 
 	.btn-settings {
-		background-color: #5bc0de;
+		background-color: var(--template-settings-button);
 		transition: background-color 0.15s ease;
 	}
 
 	.btn-settings:hover {
-		background-color: #31b0d5;
+		background-color: var(--template-settings-hover);
 	}
 
 	.btn-settings:active {
-		background-color: #269abc;
+		background-color: var(--template-settings-active);
 	}
 
 	.btn-delete {
-		background-color: #d9534f;
+		background-color: var(--delete-button);
 		transition: background-color 0.15s ease;
 	}
 
 	.btn-delete:hover {
-		background-color: #c9302c;
+		background-color: var(--delete-button-hover);
 	}
 
 	.btn-delete:active {
-		background-color: #ac2925;
+		background-color: var(--delete-button-active);
 	}
 
 	button:not(:disabled) {

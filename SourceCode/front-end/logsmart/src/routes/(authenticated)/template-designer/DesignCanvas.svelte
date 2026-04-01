@@ -98,7 +98,7 @@
 			</h2>
 			<div class="flex gap-2">
 				<button
-					class="rounded px-4 py-2 font-medium"
+					class="cursor-pointer rounded px-4 py-2 font-medium"
 					class:btn-snap-on={snapEnabled}
 					class:btn-snap-off={!snapEnabled}
 					onclick={() => (snapEnabled = !snapEnabled)}
@@ -107,7 +107,7 @@
 				</button>
 				{#if isEditing && onShowHistory}
 					<button
-						class="btn-history rounded px-4 py-2 font-medium text-white"
+						class="btn-history cursor-pointer rounded px-4 py-2 font-medium text-white"
 						onclick={() => {
 							console.log('History button clicked');
 							if (onShowHistory) onShowHistory();
@@ -126,7 +126,7 @@
 				{/if}
 				{#if isEditing}
 					<button
-						class="btn-delete rounded px-4 py-2 font-medium text-white disabled:opacity-50"
+						class="btn-delete cursor-pointer rounded px-4 py-2 font-medium text-white disabled:opacity-50"
 						onclick={onDeleteTemplate}
 						disabled={deleting || loading}
 					>
@@ -138,7 +138,7 @@
 					</button>
 				{/if}
 				<button
-					class="btn-save rounded px-4 py-2 font-medium text-white disabled:opacity-50"
+					class="btn-save cursor-pointer rounded px-4 py-2 font-medium text-white disabled:opacity-50"
 					onclick={onSave}
 					disabled={saving || loading}
 				>
@@ -386,19 +386,14 @@
 	}
 
 	.btn-history {
-		background-color: #607d8b;
+		background-color: var(--history-button);
 		transition: background-color 0.15s ease;
 	}
 	.btn-history:hover {
-		background-color: #546e7a;
+		background-color: var(--history-button-hover);
 	}
 	.btn-history:active {
-		background-color: #455a64;
-	}
-	@media (prefers-color-scheme: dark) {
-		.btn-history:hover {
-			background-color: #536d79;
-		}
+		background-color: var(--history-button-active);
 	}
 
 	.tooltip {
