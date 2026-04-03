@@ -273,7 +273,7 @@ async fn main() {
         )
         .route(
             "/companies/{company_id}/confirm-deletion",
-            get(handlers::confirm_company_deletion),
+            post(handlers::confirm_company_deletion),
         )
         .route("/logs/templates", post(handlers::add_template))
         .route("/logs/templates", get(handlers::get_template))

@@ -12,6 +12,7 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use dashmap::DashMap;
+
 use serde::Deserialize;
 use serde_json::json;
 use std::sync::Arc;
@@ -274,45 +275,64 @@ pub async fn google_callback(
         return Ok(response);
     }
 
-    let user = oauth_client
-        .get_or_create_user(&state.postgres, user_info, ip_address, user_agent, false)
-        .await
-        .map_err(|(status, value)| (status, Json(value)))?;
-
-    let token = oauth_client
-        .generate_jwt_for_user(user.id.as_str())
-        .map_err(|(status, value)| (status, Json(value)))?;
-
     let frontend_url =
         std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
 
-    let cookie_domain = std::env::var("COOKIE_DOMAIN").unwrap_or_default();
-    let domain_attr = if cookie_domain.is_empty() {
-        String::new()
-    } else {
-        format!("; Domain={cookie_domain}")
-    };
+    match oauth_client
+        .get_or_create_user(&state.postgres, user_info, ip_address, user_agent, false)
+        .await
+    {
+        Ok(user) => {
+            let token = oauth_client
+                .generate_jwt_for_user(user.id.as_str())
+                .map_err(|(status, value)| (status, Json(value)))?;
 
-    let max_age = 60 * 60 * 24 * 7;
-    let cookie = format!(
-        "ls-token={token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={max_age}{domain_attr}",
-    );
+            let cookie_domain = std::env::var("COOKIE_DOMAIN").unwrap_or_default();
+            let domain_attr = if cookie_domain.is_empty() {
+                String::new()
+            } else {
+                format!("; Domain={cookie_domain}")
+            };
 
-    let redirect_url = format!("{frontend_url}/dashboard");
+            let max_age = 60 * 60 * 24 * 7;
+            let cookie = format!(
+                "ls-token={token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={max_age}{domain_attr}",
+            );
 
-    let mut response = Redirect::to(&redirect_url).into_response();
-    response.headers_mut().insert(
-        HeaderName::from_static("set-cookie"),
-        HeaderValue::from_str(&cookie).map_err(|e| {
-            tracing::error!("Invalid cookie value: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({"error": "Internal server error"})),
-            )
-        })?,
-    );
+            let redirect_url = format!("{frontend_url}/dashboard");
 
-    Ok(response)
+            let mut response = Redirect::to(&redirect_url).into_response();
+            response.headers_mut().insert(
+                HeaderName::from_static("set-cookie"),
+                HeaderValue::from_str(&cookie).map_err(|e| {
+                    tracing::error!("Invalid cookie value: {:?}", e);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(json!({"error": "Internal server error"})),
+                    )
+                })?,
+            );
+
+            Ok(response)
+        }
+        Err((_status, value)) => {
+            let error_code = value
+                .get("error")
+                .and_then(|e| e.as_str())
+                .map(|e| match e {
+                    "user_not_found" => "user_not_found",
+                    "account_locked" => "account_locked",
+                    "invalid_credentials" => "invalid_credentials",
+                    _ => "authentication_failed",
+                })
+                .unwrap_or("authentication_failed");
+
+            let redirect_url = format!(
+                "{frontend_url}/login?oauth_error={error_code}"
+            );
+            Ok(Redirect::to(&redirect_url).into_response())
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, ToSchema)]

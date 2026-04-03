@@ -282,7 +282,7 @@ fn test_user_creation() {
 
 #[test]
 fn test_company_creation() {
-    let company = Company::default().with_name_and_address("Test Company", "123 Main St");
+    let company = Company::new().with_name_and_address("Test Company", "123 Main St");
 
     assert_eq!(company.name, "Test Company");
     assert_eq!(company.address, "123 Main St");

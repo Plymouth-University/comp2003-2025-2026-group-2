@@ -136,7 +136,7 @@ async fn setup_test_app_with_pool() -> (Router, PgPool) {
         .route("/companies/{company_id}", delete(handlers::delete_company))
         .route(
             "/companies/{company_id}/confirm-deletion",
-            get(handlers::confirm_company_deletion),
+            post(handlers::confirm_company_deletion),
         )
         .route(
             "/companies/{company_id}/logo",
@@ -1543,9 +1543,9 @@ async fn test_login_blocked_after_company_deletion() {
 
     let (confirm_status, _) = make_request(
         &mut app,
-        "GET",
-        &format!("/companies/{}/confirm-deletion?token={}", company_id, deletion_token),
-        None,
+        "POST",
+        &format!("/companies/{}/confirm-deletion", company_id),
+        Some(json!({ "token": deletion_token })),
         None,
     )
     .await;
@@ -1625,24 +1625,17 @@ async fn test_api_calls_blocked_after_company_deletion() {
 
     let (confirm_status, _) = make_request(
         &mut app,
-        "GET",
-        &format!("/companies/{}/confirm-deletion?token={}", company_id, deletion_token),
-        None,
+        "POST",
+        &format!("/companies/{}/confirm-deletion", company_id),
+        Some(json!({ "token": deletion_token })),
         None,
     )
     .await;
     assert_eq!(confirm_status, StatusCode::OK);
 
-    let (me_status, me_body) = make_request(
-        &mut app,
-        "GET",
-        "/auth/me",
-        None,
-        Some(token),
-    )
-    .await;
+    let (me_status, me_body) = make_request(&mut app, "GET", "/auth/me", None, Some(token)).await;
 
-    assert_eq!(me_status, StatusCode::UNAUTHORIZED);
+    assert_eq!(me_status, StatusCode::FORBIDDEN);
     assert_eq!(
         me_body["error"].as_str().unwrap(),
         "Your company has been deleted. Please contact support."

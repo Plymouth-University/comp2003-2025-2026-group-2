@@ -131,7 +131,7 @@ impl IntoResponse for RoleError {
             }
             RoleError::CompanyDeleted(msg) => {
                 let body = Json(json!({ "error": msg }));
-                (axum::http::StatusCode::UNAUTHORIZED, body).into_response()
+                (axum::http::StatusCode::FORBIDDEN, body).into_response()
             }
         }
     }

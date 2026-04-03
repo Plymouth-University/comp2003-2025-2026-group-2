@@ -144,25 +144,25 @@ pub struct Company {
     pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
     pub deletion_requested_at: Option<chrono::DateTime<chrono::Utc>>,
     pub deletion_token: Option<String>,
+    pub deletion_requested_by_email: Option<String>,
 }
 
-impl Default for Company {
-    fn default() -> Self {
+impl Company {
+    pub fn new() -> Self {
         Self {
             id: Uuid::new_v4().to_string(),
-            name: "Default Company".to_string(),
-            address: "123 Default St".to_string(),
+            name: String::new(),
+            address: String::new(),
             created_at: chrono::Utc::now(),
             logo_id: None,
             data_exported_at: None,
             deleted_at: None,
             deletion_requested_at: None,
             deletion_token: None,
+            deletion_requested_by_email: None,
         }
     }
-}
 
-impl Company {
     #[must_use]
     pub fn is_deleted(&self) -> bool {
         self.deleted_at.is_some()
@@ -414,14 +414,14 @@ pub async fn get_user_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRecord
     .await?;
 
     if let Some(u) = &user {
-        tracing::info!(
+        tracing::debug!(
             "DB: Found user {} with company_id: {:?}, branch_id: {:?}",
             u.email,
             u.company_id,
             u.branch_id
         );
     } else {
-        tracing::info!("DB: User {} not found", id);
+        tracing::debug!("DB: User {} not found", id);
     }
 
     Ok(user)
@@ -611,11 +611,7 @@ where
         name,
         address,
         created_at: now,
-        logo_id: None,
-        data_exported_at: None,
-        deleted_at: None,
-        deletion_requested_at: None,
-        deletion_token: None,
+        ..Default::default()
     })
 }
 
@@ -633,7 +629,7 @@ pub async fn update_company_logo_id(
         UPDATE companies
         SET logo_id = $1
         WHERE id = $2
-        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token
+        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token, deletion_requested_by_email
         ",
     )
     .bind(company_logo_id)
@@ -650,7 +646,7 @@ pub async fn update_company_logo_id(
 pub async fn get_company_by_id(pool: &PgPool, id: &str) -> Result<Option<Company>> {
     let company = sqlx::query_as::<_, Company>(
         r"
-        SELECT id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token
+        SELECT id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token, deletion_requested_by_email
         FROM companies
         WHERE id = $1
         ",
@@ -677,7 +673,7 @@ pub async fn update_company(
         UPDATE companies
         SET name = $1, address = $2
         WHERE id = $3
-        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token
+        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token, deletion_requested_by_email
         ",
     )
     .bind(name)
@@ -698,7 +694,7 @@ pub async fn mark_company_data_exported(pool: &PgPool, company_id: &str) -> Resu
         UPDATE companies
         SET data_exported_at = NOW()
         WHERE id = $1
-        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token
+        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token, deletion_requested_by_email
         ",
     )
     .bind(company_id)
@@ -711,17 +707,22 @@ pub async fn mark_company_data_exported(pool: &PgPool, company_id: &str) -> Resu
 ///
 /// # Errors
 /// Returns an error if database query fails.
-pub async fn request_company_deletion(pool: &PgPool, company_id: &str) -> Result<Company> {
+pub async fn request_company_deletion(
+    pool: &PgPool,
+    company_id: &str,
+    requester_email: &str,
+) -> Result<Company> {
     let token = Uuid::new_v4().to_string();
     sqlx::query_as(
         r"
         UPDATE companies
-        SET deletion_requested_at = NOW(), deletion_token = $1
-        WHERE id = $2
-        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token
+        SET deletion_requested_at = NOW(), deletion_token = $1, deletion_requested_by_email = $2
+        WHERE id = $3
+        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token, deletion_requested_by_email
         ",
     )
     .bind(&token)
+    .bind(requester_email)
     .bind(company_id)
     .fetch_one(pool)
     .await
@@ -742,7 +743,7 @@ pub async fn confirm_company_deletion(
         UPDATE companies
         SET deleted_at = NOW(), deletion_token = NULL
         WHERE id = $1 AND deletion_token = $2 AND deletion_requested_at IS NOT NULL
-        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token
+        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token, deletion_requested_by_email
         ",
     )
     .bind(company_id)
@@ -1326,6 +1327,32 @@ pub async fn get_users_by_company_id(pool: &PgPool, company_id: &str) -> Result<
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.company_id = $1 AND users.deleted_at IS NULL
+        "
+    )
+    .bind(company_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(users)
+}
+
+/// Retrieves all users belonging to a specific company, including soft-deleted ones.
+///
+/// # Errors
+/// Returns an error if database query fails.
+pub async fn get_all_users_by_company_id(
+    pool: &PgPool,
+    company_id: &str,
+) -> Result<Vec<UserRecord>> {
+    let users = sqlx::query_as::<_, UserRecord>(
+        r"
+        SELECT users.id, users.email, users.first_name, users.last_name, 
+               users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
+               companies.name as company_name, companies.deleted_at as company_deleted_at,
+               users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
+        FROM users
+        LEFT JOIN companies ON users.company_id = companies.id
+        WHERE users.company_id = $1
         "
     )
     .bind(company_id)

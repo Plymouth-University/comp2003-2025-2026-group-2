@@ -52,12 +52,11 @@
 		success = null;
 
 		try {
-			const response = await fetch(
-				`/api/companies/${companyId}/confirm-deletion?token=${encodeURIComponent(token)}`,
-				{
-					method: 'GET'
-				}
-			);
+			const response = await fetch(`/api/companies/${companyId}/confirm-deletion`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ token })
+			});
 
 			const data = await response.json();
 

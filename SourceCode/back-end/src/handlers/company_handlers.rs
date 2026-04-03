@@ -363,11 +363,17 @@ pub async fn update_company(
         err_internal(e.to_string().as_str())
     })?;
 
-    // Note: Possible performance issue
-    if let Ok(users) = db::get_users_by_company_id(&state.postgres, &company_id).await {
-        for user in users {
-            state.user_cache.invalidate(&user.id).await;
+    // Invalidate cache for all users in the company, including soft-deleted ones
+    let all_users = match db::get_all_users_by_company_id(&state.postgres, &company_id).await {
+        Ok(users) => users,
+        Err(e) => {
+            tracing::warn!("Failed to fetch users for cache invalidation: {e:?}");
+            Vec::new()
         }
+    };
+
+    for user in &all_users {
+        state.user_cache.invalidate(&user.id).await;
     }
 
     Ok(Json(CompanyResponse::from(company)))
@@ -475,6 +481,13 @@ pub async fn export_company_data(
 
     let export_json = serde_json::to_string(&export_data).unwrap_or_default();
 
+    db::mark_company_data_exported(&state.postgres, &company_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to mark company data as exported: {:?}", e);
+            err_internal("Failed to mark data as exported")
+        })?;
+
     tokio::spawn(async move {
         if let Err(e) = crate::email::send_company_data_export(
             &company_email,
@@ -487,10 +500,6 @@ pub async fn export_company_data(
             tracing::error!("Failed to send company data export email: {:?}", e);
         }
     });
-
-    if let Err(e) = db::mark_company_data_exported(&state.postgres, &company_id).await {
-        tracing::error!("Failed to mark company data as exported: {:?}", e);
-    }
 
     Ok(Json(export_data))
 }
@@ -530,10 +539,16 @@ pub async fn delete_company(
         ));
     }
 
+    if company.deletion_requested_at.is_some() {
+        return Err(err_bad_request(
+            "A deletion request is already pending. Please check your email to confirm.",
+        ));
+    }
+
     let company_email = user.email.clone();
     let company_name = company.name.clone();
 
-    let updated_company = db::request_company_deletion(&state.postgres, &company_id)
+    let updated_company = db::request_company_deletion(&state.postgres, &company_id, &company_email)
         .await
         .map_err(|e| {
             tracing::error!("Failed to request company deletion: {:?}", e);
@@ -597,8 +612,9 @@ pub async fn validate_company_deletion_token(
 }
 
 #[utoipa::path(
-    get,
+    post,
     path = "/companies/{company_id}/confirm-deletion",
+    request_body = serde_json::Value,
     responses(
         (status = 200, description = "Company deletion confirmed", body = serde_json::Value),
         (status = 400, description = "Invalid or expired token", body = ErrorResponse),
@@ -609,9 +625,9 @@ pub async fn validate_company_deletion_token(
 pub async fn confirm_company_deletion(
     State(state): State<AppState>,
     axum::extract::Path(company_id): axum::extract::Path<String>,
-    axum::extract::Query(token): axum::extract::Query<serde_json::Value>,
+    Json(payload): Json<serde_json::Value>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    let token = token.get("token").and_then(|t| t.as_str()).unwrap_or("");
+    let token = payload.get("token").and_then(|t| t.as_str()).unwrap_or("");
 
     if token.is_empty() {
         return Err(err_bad_request("Confirmation token is required"));
@@ -629,24 +645,36 @@ pub async fn confirm_company_deletion(
         return Err(err_bad_request("Invalid or expired confirmation token"));
     }
 
-    let _company = db::confirm_company_deletion(&state.postgres, &company_id, token)
+    let updated_company = db::confirm_company_deletion(&state.postgres, &company_id, token)
         .await
         .map_err(|e| {
             tracing::error!("Failed to confirm company deletion: {:?}", e);
             err_internal("Failed to confirm deletion")
         })?;
 
-    if let Ok(users) = db::get_users_by_company_id(&state.postgres, &company_id).await {
-        for user in users {
-            state.user_cache.invalidate(&user.id).await;
-        }
+    // Invalidate cache for all users in the company, including soft-deleted ones
+    // Note: This runs after deletion is confirmed, so get_all_users_by_company_id
+    // must not filter by deleted_at to work correctly
+    let all_users = db::get_all_users_by_company_id(&state.postgres, &company_id)
+        .await
+        .unwrap_or_default();
+
+    for user in &all_users {
+        state.user_cache.invalidate(&user.id).await;
     }
 
-    let company_email = company.name.clone();
+    let user_email = updated_company.deletion_requested_by_email.clone();
+    let company_name = updated_company.name.clone();
 
     tokio::spawn(async move {
-        if let Err(e) = crate::email::send_company_deleted_notification(&company_email).await {
+        if let Err(e) = crate::email::send_company_deleted_notification(&company_name).await {
             tracing::error!("Failed to send company deletion notification: {:?}", e);
+        }
+        if let Some(email) = user_email
+            && let Err(e) =
+                crate::email::send_user_company_deleted_notification(&email, &company_name).await
+        {
+            tracing::error!("Failed to send user company deletion notification: {:?}", e);
         }
     });
 

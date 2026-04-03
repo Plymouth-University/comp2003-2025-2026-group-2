@@ -180,15 +180,10 @@ test.describe('Complete Company Deletion Flow', () => {
 		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 
-		const token = await page.evaluate(() => {
-			const cookies = document.cookie.split(';');
-			for (const cookie of cookies) {
-				if (cookie.trim().startsWith('ls-token=')) {
-					return cookie.trim().substring('ls-token='.length);
-				}
-			}
-			return null;
-		});
+		const context = page.context();
+		const cookies = await context.cookies();
+		const token = cookies.find((c) => c.name === 'ls-token')?.value;
+		expect(token).toBeTruthy();
 
 		await page.getByRole('link', { name: 'Company Settings' }).click();
 		await page.waitForURL('**/company-settings');
@@ -230,14 +225,13 @@ test.describe('Complete Company Deletion Flow', () => {
 		await expect(confirmPage.locator('body')).toContainText('Success');
 
 		await confirmPage.close();
-
 		const apiResponse = await fetch('http://localhost:6767/auth/me', {
 			headers: {
 				Authorization: `Bearer ${token}`
 			}
 		});
 		const apiBody = await apiResponse.json();
-		expect(apiResponse.status).toBe(401);
+		expect(apiResponse.status).toBe(403);
 		expect(apiBody.error).toContain('deleted');
 
 		await page.close();
@@ -257,7 +251,7 @@ test.describe('Complete Company Deletion Flow', () => {
 
 		const client = await page.context().newCDPSession(page);
 		await client.send('WebAuthn.enable');
-		const result = await client.send('WebAuthn.addVirtualAuthenticator', {
+		await client.send('WebAuthn.addVirtualAuthenticator', {
 			options: {
 				protocol: 'ctap2',
 				transport: 'internal',
@@ -267,7 +261,6 @@ test.describe('Complete Company Deletion Flow', () => {
 				automaticPresenceSimulation: true
 			}
 		});
-		const authenticatorId = result.authenticatorId;
 
 		await page.goto('http://localhost:5173/login');
 		await page.getByRole('textbox', { name: 'Email' }).fill(creds.email);
@@ -281,9 +274,6 @@ test.describe('Complete Company Deletion Flow', () => {
 		await page.getByRole('textbox', { name: 'Passkey Name' }).fill('Test Passkey');
 		await page.getByRole('button', { name: 'Add Passkey' }).click();
 		await expect(page.locator('text=Changes saved successfully!')).toBeVisible({ timeout: 10000 });
-
-		await page.getByRole('button', { name: 'Logout' }).click();
-		await page.waitForURL('**/login');
 
 		await page.getByRole('link', { name: 'Company Settings' }).click();
 		await page.waitForURL('**/company-settings');
@@ -301,9 +291,9 @@ test.describe('Complete Company Deletion Flow', () => {
 		});
 
 		await deleteButton.click();
-		await page.waitForTimeout(2000);
+		await page.waitForTimeout(3000);
 
-		const tokenData = await getCompanyDeletionToken(creds.email);
+		const tokenData = await getCompanyDeletionToken(creds.email, 60);
 		expect(tokenData).toBeTruthy();
 
 		const { token: delToken, companyId } = JSON.parse(tokenData!);
@@ -326,41 +316,20 @@ test.describe('Complete Company Deletion Flow', () => {
 
 		await confirmPage.close();
 
-		const loginPage = await browser.newPage();
-		await loginPage.addInitScript(() => {
-			if (window.PublicKeyCredential) {
-				window.PublicKeyCredential.isConditionalMediationAvailable = async () => false;
-			}
-		});
+		await page.getByRole('button', { name: 'Logout' }).click();
+		await page.waitForURL('**/login');
 
-		const loginClient = await loginPage.context().newCDPSession(loginPage);
-		await loginClient.send('WebAuthn.enable');
-		await loginClient.send('WebAuthn.addVirtualAuthenticator', {
-			options: {
-				protocol: 'ctap2',
-				transport: 'internal',
-				hasResidentKey: true,
-				hasUserVerification: true,
-				isUserVerified: true,
-				automaticPresenceSimulation: true
-			}
-		});
+		await page.getByRole('textbox', { name: 'Email' }).fill(creds.email);
 
-		await loginPage.goto('http://localhost:5173/login');
-		await loginPage.getByRole('textbox', { name: 'Email' }).fill(creds.email);
-
-		const passkeyBtn = loginPage.getByRole('button', { name: 'Sign in with Passkey' });
+		const passkeyBtn = page.getByRole('button', { name: 'Sign in with Passkey' });
 		await passkeyBtn.waitFor({ state: 'visible' });
 		await passkeyBtn.click();
 
-		await loginPage.waitForTimeout(2000);
-		const currentUrl = loginPage.url();
+		await page.waitForTimeout(2000);
+		const currentUrl = page.url();
 		expect(currentUrl).not.toContain('dashboard');
 		expect(currentUrl).toContain('login');
 
-		await loginClient.send('WebAuthn.removeVirtualAuthenticator');
-		await loginClient.send('WebAuthn.disable');
-		await loginPage.close();
 		await page.close();
 	});
 
@@ -391,11 +360,11 @@ test.describe('Complete Company Deletion Flow', () => {
 			picture: 'https://example.com/avatar.jpg'
 		});
 		await page.fill('textarea', claimsJson);
-		await page.getByRole('button', { name: /sign-in/i }).first().click();
+		await page
+			.getByRole('button', { name: /sign-in/i })
+			.first()
+			.click();
 		await page.waitForURL('**/settings', { timeout: 10000 });
-
-		await page.getByRole('button', { name: /logout/i }).click();
-		await page.waitForURL('**/login');
 
 		await page.getByRole('link', { name: 'Company Settings' }).click();
 		await page.waitForURL('**/company-settings');
@@ -438,12 +407,15 @@ test.describe('Complete Company Deletion Flow', () => {
 
 		await confirmPage.close();
 
-		const loginPage = await browser.newPage();
-		await loginPage.goto('http://localhost:5173/login');
-		await loginPage.getByRole('button', { name: 'Sign in with Google' }).click();
-		await loginPage.waitForURL(/localhost:8080/, { timeout: 10000 });
+		await page.getByRole('button', { name: /logout/i }).click();
+		await page.waitForURL('**/login');
 
-		await loginPage.fill('input[name="subject"], input#subject, input[type="text"]', creds.email);
+		const googleBtn = page.getByRole('button', { name: 'Sign in with Google' });
+		await googleBtn.waitFor({ state: 'visible', timeout: 10000 });
+		await googleBtn.click();
+		await page.waitForURL(/localhost:8080/, { timeout: 10000 });
+
+		await page.fill('input[name="subject"], input#subject, input[type="text"]', creds.email);
 		const loginClaimsJson = JSON.stringify({
 			email: creds.email,
 			email_verified: true,
@@ -451,15 +423,17 @@ test.describe('Complete Company Deletion Flow', () => {
 			family_name: creds.lastName,
 			picture: 'https://example.com/avatar.jpg'
 		});
-		await loginPage.fill('textarea', loginClaimsJson);
-		await loginPage.getByRole('button', { name: /sign-in/i }).first().click();
+		await page.fill('textarea', loginClaimsJson);
+		await page
+			.getByRole('button', { name: /sign-in/i })
+			.first()
+			.click();
 
-		await loginPage.waitForTimeout(2000);
-		const currentUrl = loginPage.url();
+		await page.waitForTimeout(2000);
+		const currentUrl = page.url();
 		expect(currentUrl).not.toContain('dashboard');
 		expect(currentUrl).toContain('login');
 
-		await loginPage.close();
 		await page.close();
 	});
 });

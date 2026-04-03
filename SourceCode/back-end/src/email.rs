@@ -323,6 +323,8 @@ pub async fn send_company_deletion_request(
 /// # Errors
 /// Returns an error if the email fails to send.
 pub async fn send_company_deleted_notification(company_name: &str) -> Result<()> {
+    let support_email =
+        std::env::var("SUPPORT_EMAIL").unwrap_or_else(|_| "support@logsmart.app".to_string());
     let subject = "Company Deleted - LogSmart";
     let body = format!(
         "Hello,\n\n\
@@ -333,7 +335,30 @@ pub async fn send_company_deleted_notification(company_name: &str) -> Result<()>
         The LogSmart Team"
     );
 
-    send_email("support@logsmart.app", subject, &body).await?;
+    send_email(&support_email, subject, &body).await?;
     tracing::info!("Company deletion notification sent for {}", company_name);
+    Ok(())
+}
+
+/// Sends a company deletion notification to the user who confirmed the deletion.
+///
+/// # Errors
+/// Returns an error if the email fails to send.
+pub async fn send_user_company_deleted_notification(
+    user_email: &str,
+    company_name: &str,
+) -> Result<()> {
+    let subject = "Your Company Has Been Deleted - LogSmart";
+    let body = format!(
+        "Hello,\n\n\
+        Your company '{company_name}' has been successfully deleted.\n\n\
+        All data will be retained for 30 days before permanent deletion.\n\n\
+        If you did not request this deletion, please contact support immediately.\n\n\
+        Best regards,\n\
+        The LogSmart Team"
+    );
+
+    send_email(user_email, subject, &body).await?;
+    tracing::info!("Company deletion notification sent to user {}", user_email);
     Ok(())
 }
