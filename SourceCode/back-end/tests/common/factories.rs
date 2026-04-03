@@ -96,7 +96,7 @@ impl CompanyFactory {
             name: "Test Company".to_string(),
             address: "123 Test Street".to_string(),
             created_at: Utc::now(),
-            ..Default::default()
+            ..Company::new()
         }
     }
 
@@ -607,7 +607,7 @@ pub async fn create_test_company(pool: &sqlx::PgPool, name: &str, address: &str)
         name: row.get("name"),
         address: row.get("address"),
         created_at: row.get("created_at"),
-        ..Default::default()
+        ..Company::new()
     })
     .unwrap()
 }

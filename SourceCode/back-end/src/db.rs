@@ -611,7 +611,7 @@ where
         name,
         address,
         created_at: now,
-        ..Default::default()
+        ..Company::new()
     })
 }
 
