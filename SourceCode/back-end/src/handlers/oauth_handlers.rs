@@ -327,9 +327,7 @@ pub async fn google_callback(
                 })
                 .unwrap_or("authentication_failed");
 
-            let redirect_url = format!(
-                "{frontend_url}/login?oauth_error={error_code}"
-            );
+            let redirect_url = format!("{frontend_url}/login?oauth_error={error_code}");
             Ok(Redirect::to(&redirect_url).into_response())
         }
     }

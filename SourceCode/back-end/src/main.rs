@@ -1,6 +1,7 @@
 use anyhow::Context;
 use axum::routing::{delete, get, post, put};
 use axum::{Router, middleware};
+use back_end::exports_db;
 use back_end::logs_db;
 use back_end::{AppState, api_docs::ApiDoc, db, handlers, rate_limit};
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
@@ -80,6 +81,11 @@ async fn main() {
     db::init_db(&auth_db_postgres_pool)
         .await
         .expect("Failed to initialize database");
+
+    exports_db::init_exports_dir()
+        .await
+        .expect("Failed to initialize exports directory");
+    exports_db::spawn_cleanup_task();
 
     let rate_limit_state = rate_limit::RateLimitState::new();
     rate_limit_state.clone().spawn_cleanup_task();
@@ -265,6 +271,10 @@ async fn main() {
         .route(
             "/companies/{company_id}/export",
             post(handlers::export_company_data),
+        )
+        .route(
+            "/companies/{company_id}/export/download/{filename}",
+            get(handlers::download_export),
         )
         .route("/companies/{company_id}", delete(handlers::delete_company))
         .route(

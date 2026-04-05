@@ -3,6 +3,7 @@ pub mod auth;
 pub mod db;
 pub mod dto;
 pub mod email;
+pub mod exports_db;
 pub mod handlers;
 pub mod images_db;
 pub mod jwt_manager;

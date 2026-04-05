@@ -233,6 +233,36 @@ pub async fn send_branch_deleted_notification_email(
 ///
 /// # Errors
 /// Returns an error if the email fails to send.
+pub async fn send_export_ready_notification(
+    to_email: &str,
+    company_name: &str,
+    company_id: &str,
+    filename: &str,
+    frontend_url: &str,
+) -> Result<()> {
+    let subject = "Log Data Export Ready - LogSmart";
+
+    let download_url =
+        format!("{frontend_url}/api/companies/{company_id}/export/download/{filename}");
+
+    let body = format!(
+        "Hello,\n\n\
+        Your log data export for '{company_name}' is ready to download.\n\n\
+        The export contains:\n\
+        - All log templates\n\
+        - All submitted log entries\n\n\
+        Download link: {download_url}\n\n\
+        This link will be available for 7 days.\n\n\
+        If you did not request this export, please contact your system administrator immediately.\n\n\
+        Best regards,\n\
+        The LogSmart Team"
+    );
+
+    send_email(to_email, subject, &body).await?;
+    tracing::info!("Export ready notification sent to {}", to_email);
+    Ok(())
+}
+
 pub async fn send_company_data_export(
     to_email: &str,
     company_name: &str,

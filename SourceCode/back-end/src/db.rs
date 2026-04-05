@@ -147,6 +147,12 @@ pub struct Company {
     pub deletion_requested_by_email: Option<String>,
 }
 
+impl Default for Company {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Company {
     pub fn new() -> Self {
         Self {
