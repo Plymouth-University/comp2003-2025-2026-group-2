@@ -17,15 +17,18 @@ pub fn exports_dir() -> PathBuf {
 }
 
 fn safe_path(dir: &PathBuf, filename: &str) -> Result<PathBuf> {
+    if filename.contains("..") || filename.contains('/') || filename.contains('\\') || filename.contains('\0') {
+        anyhow::bail!("Invalid filename");
+    }
+
     let safe_name = Path::new(filename)
         .file_name()
         .and_then(|n| n.to_str())
         .ok_or_else(|| anyhow::anyhow!("Invalid filename"))?;
-    let path = dir.join(safe_name);
 
-    if path.is_absolute() || !path.starts_with(dir) {
-        anyhow::bail!("Invalid filename");
-    }
+    let canonical_dir = dir.canonicalize()
+        .with_context(|| format!("Exports directory does not exist: {}", dir.display()))?;
+    let path = canonical_dir.join(safe_name);
 
     Ok(path)
 }
@@ -129,4 +132,72 @@ pub fn spawn_cleanup_task() {
             }
         }
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_safe_path_accepts_valid_filename() {
+        let dir = PathBuf::from("/tmp/test_exports");
+        std::fs::create_dir_all(&dir).unwrap();
+        let result = safe_path(&dir, "abc_123.zip");
+        if result.is_err() {
+            println!("Error: {result:?}");
+        }
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), PathBuf::from("/tmp/test_exports/abc_123.zip"));
+    }
+
+    #[test]
+    fn test_safe_path_rejects_double_dot() {
+        let dir = PathBuf::from("/tmp/test_exports");
+        std::fs::create_dir_all(&dir).unwrap();
+        assert!(safe_path(&dir, "../etc/passwd").is_err());
+        assert!(safe_path(&dir, "foo/../bar.zip").is_err());
+        assert!(safe_path(&dir, "..").is_err());
+    }
+
+    #[test]
+    fn test_safe_path_rejects_forward_slash() {
+        let dir = PathBuf::from("/tmp/test_exports");
+        std::fs::create_dir_all(&dir).unwrap();
+        assert!(safe_path(&dir, "foo/bar.zip").is_err());
+        assert!(safe_path(&dir, "/etc/passwd").is_err());
+    }
+
+    #[test]
+    fn test_safe_path_rejects_backslash() {
+        let dir = PathBuf::from("/tmp/test_exports");
+        std::fs::create_dir_all(&dir).unwrap();
+        assert!(safe_path(&dir, "foo\\bar.zip").is_err());
+    }
+
+    #[test]
+    fn test_safe_path_rejects_null_byte() {
+        let dir = PathBuf::from("/tmp/test_exports");
+        std::fs::create_dir_all(&dir).unwrap();
+        assert!(safe_path(&dir, "foo\0bar.zip").is_err());
+    }
+
+    #[test]
+    fn test_safe_path_rejects_empty_filename() {
+        let dir = PathBuf::from("/tmp/test_exports");
+        std::fs::create_dir_all(&dir).unwrap();
+        assert!(safe_path(&dir, "").is_err());
+    }
+
+    #[test]
+    fn test_exports_dir_uses_env_override() {
+        unsafe { std::env::set_var("EXPORT_DIR", "/custom/exports") };
+        assert_eq!(exports_dir(), PathBuf::from("/custom/exports"));
+        unsafe { std::env::remove_var("EXPORT_DIR") };
+    }
+
+    #[test]
+    fn test_exports_dir_defaults_to_exports() {
+        unsafe { std::env::remove_var("EXPORT_DIR") };
+        assert_eq!(exports_dir(), PathBuf::from("exports"));
+    }
 }
