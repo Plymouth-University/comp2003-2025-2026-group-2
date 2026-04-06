@@ -1,7 +1,12 @@
-import type { PageServerLoad } from './$types';
+import type { PageServerLoad, PageServerLoadEvent } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, cookies }) => {
-	const token = cookies.get('ls-token');
+interface CompanyData {
+	user: Record<string, unknown> | null;
+	company: Record<string, unknown> | null;
+}
+
+export const load: PageServerLoad = async (event: PageServerLoadEvent): Promise<CompanyData> => {
+	const token = event.cookies.get('ls-token');
 
 	if (!token) {
 		return {
@@ -15,7 +20,7 @@ export const load: PageServerLoad = async ({ fetch, cookies }) => {
 			Authorization: `Bearer ${token}`
 		};
 
-		const userRes = await fetch('/api/auth/me', {
+		const userRes = await event.fetch('/api/auth/me', {
 			method: 'GET',
 			headers
 		});
@@ -36,7 +41,7 @@ export const load: PageServerLoad = async ({ fetch, cookies }) => {
 			};
 		}
 
-		const companyRes = await fetch(`/api/companies/${user.company_id}`, {
+		const companyRes = await event.fetch(`/api/companies/${user.company_id}`, {
 			method: 'GET',
 			headers
 		});
