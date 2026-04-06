@@ -719,3 +719,48 @@ impl From<db::CompanyClockEventRow> for CompanyClockEventResponse {
 pub struct CompanyClockEventsResponse {
     pub events: Vec<CompanyClockEventResponse>,
 }
+
+// Company DTOs
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct CompanyResponse {
+    pub id: String,
+    pub name: String,
+    pub address: String,
+    pub logo_id: Option<String>,
+    pub logo_url: Option<String>,
+    pub data_exported_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub deletion_requested_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+impl From<db::Company> for CompanyResponse {
+    fn from(company: db::Company) -> Self {
+        let logo_id = company.logo_id.clone();
+        let logo_url = logo_id
+            .clone()
+            .map(|_id| format!("/api/companies/{}/logo", company.id));
+        Self {
+            id: company.id,
+            name: company.name,
+            address: company.address,
+            logo_id,
+            logo_url,
+            data_exported_at: company.data_exported_at,
+            deleted_at: company.deleted_at,
+            deletion_requested_at: company.deletion_requested_at,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UpdateCompanyRequest {
+    pub name: String,
+    pub address: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ExportResponse {
+    pub message: String,
+    pub exported_at: chrono::DateTime<chrono::Utc>,
+}
