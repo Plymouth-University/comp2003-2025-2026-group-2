@@ -9,15 +9,18 @@ use url::Url;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-const VARS: [&str; 8] = [
+const VARS: [&str; 11] = [
     "JWT_SECRET",
     "SMTP_USERNAME",
     "SMTP_PASSWORD",
+    "SMTP_SERVER",
+    "SMTP_FROM_EMAIL",
     "GOOGLE_CLIENT_SECRET",
     "GOOGLE_CLIENT_ID",
     "POSTGRES_PASSWORD",
     "POSTGRES_USER",
     "MONGODB_URI",
+    "FRONTEND_URL",
 ];
 
 #[tokio::main]
