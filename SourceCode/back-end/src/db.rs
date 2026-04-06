@@ -378,23 +378,42 @@ pub async fn get_users_by_role(
     role: &str,
     branch_id: Option<String>,
 ) -> Result<Vec<UserRecord>> {
-    let users = sqlx::query_as::<_, UserRecord>(
-        r"
-        SELECT users.id, users.email, users.first_name, users.last_name, 
-               users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
-               companies.name as company_name, companies.deleted_at as company_deleted_at,
-               users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
-        FROM users
-        LEFT JOIN companies ON users.company_id = companies.id
-        WHERE NOT users.id = $1 AND users.company_id = $2 AND users.role = $3 AND users.branch_id = $4 AND users.deleted_at IS NULL
-        ",
-    )
-    .bind(id)
-    .bind(company_id)
-    .bind(role)
-    .bind(&branch_id)
-    .fetch_all(pool)
-    .await?;
+    let users = if branch_id.is_some() {
+        sqlx::query_as::<_, UserRecord>(
+            r"
+            SELECT users.id, users.email, users.first_name, users.last_name, 
+                   users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
+                   companies.name as company_name, companies.deleted_at as company_deleted_at,
+                   users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
+            FROM users
+            LEFT JOIN companies ON users.company_id = companies.id
+            WHERE NOT users.id = $1 AND users.company_id = $2 AND users.role = $3 AND users.branch_id = $4 AND users.deleted_at IS NULL
+            ",
+        )
+        .bind(id)
+        .bind(company_id)
+        .bind(role)
+        .bind(&branch_id)
+        .fetch_all(pool)
+        .await?
+    } else {
+        sqlx::query_as::<_, UserRecord>(
+            r"
+            SELECT users.id, users.email, users.first_name, users.last_name, 
+                   users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
+                   companies.name as company_name, companies.deleted_at as company_deleted_at,
+                   users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
+            FROM users
+            LEFT JOIN companies ON users.company_id = companies.id
+            WHERE NOT users.id = $1 AND users.company_id = $2 AND users.role = $3 AND users.branch_id IS NULL AND users.deleted_at IS NULL
+            ",
+        )
+        .bind(id)
+        .bind(company_id)
+        .bind(role)
+        .fetch_all(pool)
+        .await?
+    };
 
     Ok(users)
 }

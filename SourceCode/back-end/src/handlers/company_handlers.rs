@@ -326,7 +326,7 @@ pub async fn update_company(
     .await
     .map_err(|e| {
         tracing::error!("Failed to update company: {:?}", e);
-        err_internal(e.to_string().as_str())
+        err_internal("Database error")
     })?;
 
     // Invalidate cache for all users in the company, including soft-deleted ones
@@ -493,7 +493,7 @@ pub async fn download_export(
         ));
     }
 
-    if !filename.starts_with(&company_id) || !filename.ends_with(".zip") {
+    if !filename.ends_with(".zip") || !filename.starts_with(&format!("{company_id}_")) {
         return Err(err_bad_request("Invalid export filename"));
     }
 
@@ -570,17 +570,20 @@ pub async fn delete_company(
             .await
             .map_err(|e| {
                 tracing::error!("Failed to request company deletion: {:?}", e);
-                err_internal(e.to_string().as_str())
+                err_internal("Failed to request company deletion")
             })?;
 
     let deletion_token = updated_company.deletion_token.unwrap_or_default();
 
+    let frontend_url =
+        std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
     tokio::spawn(async move {
         if let Err(e) = crate::email::send_company_deletion_request(
             &company_email,
             &company_name,
             &company_id,
             &deletion_token,
+            &frontend_url,
         )
         .await
         {
