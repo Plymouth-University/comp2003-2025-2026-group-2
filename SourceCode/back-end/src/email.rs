@@ -52,10 +52,7 @@ impl SmtpConfig {
 /// # Panics
 /// Panics if SMTP configuration cannot be loaded.
 async fn send_email(to_email: &str, subject: &str, body: &str) -> Result<()> {
-    let Ok(config) = SmtpConfig::load() else {
-        tracing::error!("SMTP not configured! {}", to_email);
-        panic!("SMTP not configured");
-    };
+    let config = SmtpConfig::load().map_err(|e| anyhow!("SMTP configuration error: {e}"))?;
 
     let sender = config.sender_address();
 
