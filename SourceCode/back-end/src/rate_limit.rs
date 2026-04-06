@@ -83,10 +83,17 @@ impl RateLimitState {
         quota: Quota,
     ) -> Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>> {
         let now = Instant::now();
-        map.entry(ip)
-            .or_insert_with(|| (Arc::new(RateLimiter::direct(quota)), now))
-            .0
-            .clone()
+        match map.entry(ip) {
+            dashmap::mapref::entry::Entry::Occupied(mut entry) => {
+                entry.get_mut().1 = now;
+                entry.get().0.clone()
+            }
+            dashmap::mapref::entry::Entry::Vacant(entry) => {
+                let limiter = Arc::new(RateLimiter::direct(quota));
+                entry.insert((limiter.clone(), now));
+                limiter
+            }
+        }
     }
 
     fn get_or_create_string_limiter(
@@ -95,10 +102,17 @@ impl RateLimitState {
         quota: Quota,
     ) -> Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>> {
         let now = Instant::now();
-        map.entry(key)
-            .or_insert_with(|| (Arc::new(RateLimiter::direct(quota)), now))
-            .0
-            .clone()
+        match map.entry(key) {
+            dashmap::mapref::entry::Entry::Occupied(mut entry) => {
+                entry.get_mut().1 = now;
+                entry.get().0.clone()
+            }
+            dashmap::mapref::entry::Entry::Vacant(entry) => {
+                let limiter = Arc::new(RateLimiter::direct(quota));
+                entry.insert((limiter.clone(), now));
+                limiter
+            }
+        }
     }
 
     pub fn cleanup_expired_entries(&self, max_age: std::time::Duration) {
@@ -118,6 +132,10 @@ impl RateLimitState {
 
         self.email_register_limiter
             .retain(|_, (_, last_access)| now.duration_since(*last_access) < max_age);
+    }
+
+    pub fn cleanup_export_entries(&self, max_age: std::time::Duration) {
+        let now = Instant::now();
 
         self.export_limiter
             .retain(|_, (_, last_access)| now.duration_since(*last_access) < max_age);
@@ -129,6 +147,7 @@ impl RateLimitState {
             loop {
                 interval.tick().await;
                 self.cleanup_expired_entries(std::time::Duration::from_secs(3600));
+                self.cleanup_export_entries(std::time::Duration::from_secs(8 * 24 * 60 * 60));
                 tracing::debug!("Rate limiter cleanup completed");
             }
         });
