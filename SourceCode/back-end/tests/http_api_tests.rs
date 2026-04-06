@@ -101,6 +101,10 @@ async fn setup_test_app_with_pool() -> (Router, PgPool) {
     let mut rate_limit = back_end::rate_limit::RateLimitState::new();
     rate_limit.disabled = true;
 
+    back_end::exports_db::init_exports_dir()
+        .await
+        .expect("Failed to initialize exports directory");
+
     let state = AppState {
         postgres: pool.clone(),
         rate_limit,
@@ -139,6 +143,10 @@ async fn setup_test_app_with_pool() -> (Router, PgPool) {
             post(handlers::confirm_company_deletion),
         )
         .route(
+            "/companies/{company_id}/validate-deletion-token",
+            get(handlers::validate_company_deletion_token),
+        )
+        .route(
             "/companies/{company_id}/logo",
             post(handlers::upload_company_logo),
         )
@@ -167,6 +175,10 @@ async fn setup_test_app() -> Router {
 
     let mut rate_limit = back_end::rate_limit::RateLimitState::new();
     rate_limit.disabled = true;
+
+    back_end::exports_db::init_exports_dir()
+        .await
+        .expect("Failed to initialize exports directory");
 
     let state = AppState {
         postgres: pool,
@@ -1284,16 +1296,19 @@ async fn test_update_company_unauthorized() {
 async fn test_export_company_data() {
     let mut app = setup_test_app().await;
 
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let email = format!("exporter_{}@example.com", unique_id);
+
     let (_, register_body) = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "exporter@example.com",
+            "email": email,
             "first_name": "Export",
             "last_name": "User",
             "password": "SecurePass123!",
-            "company_name": "Export Company",
+            "company_name": format!("Export Company {}", unique_id),
             "company_address": "999 Export Ave"
         })),
         None,
@@ -1319,16 +1334,19 @@ async fn test_export_company_data() {
 async fn test_delete_company_without_export_fails() {
     let mut app = setup_test_app().await;
 
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let email = format!("deleter_{}@example.com", unique_id);
+
     let (_, register_body) = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "deleter@example.com",
+            "email": email,
             "first_name": "Delete",
             "last_name": "User",
             "password": "SecurePass123!",
-            "company_name": "Delete Company",
+            "company_name": format!("Delete Company {}", unique_id),
             "company_address": "888 Delete Blvd"
         })),
         None,
@@ -1355,12 +1373,15 @@ async fn test_delete_company_without_export_fails() {
 async fn test_get_company_details() {
     let mut app = setup_test_app().await;
 
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let email = format!("viewer_{}@example.com", unique_id);
+
     let (_, register_body) = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "viewer@example.com",
+            "email": email,
             "first_name": "View",
             "last_name": "User",
             "password": "SecurePass123!",
@@ -1392,16 +1413,19 @@ async fn test_get_company_details() {
 async fn test_export_company_data_returns_structure() {
     let mut app = setup_test_app().await;
 
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let email = format!("exportstruct_{}@example.com", unique_id);
+
     let (_, register_body) = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "exportstruct@example.com",
+            "email": email,
             "first_name": "Export",
             "last_name": "Struct",
             "password": "SecurePass123!",
-            "company_name": "Export Struct Company",
+            "company_name": format!("Export Struct Company {}", unique_id),
             "company_address": "123 Export St"
         })),
         None,
@@ -1421,26 +1445,27 @@ async fn test_export_company_data_returns_structure() {
     .await;
 
     assert_eq!(status, StatusCode::OK);
-    assert!(body["company"].is_object());
-    assert!(body["users"].is_array());
-    assert!(body["branches"].is_array());
-    assert!(body["exported_at"].is_string());
+    assert!(body["message"].as_str().is_some());
+    assert!(body["exported_at"].as_str().is_some());
 }
 
 #[tokio::test]
 async fn test_delete_company_after_export_succeeds() {
     let mut app = setup_test_app().await;
 
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let email = format!("deletetest_{}@example.com", unique_id);
+
     let (_, register_body) = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "deletetest@example.com",
+            "email": email,
             "first_name": "Delete",
             "last_name": "Test",
             "password": "SecurePass123!",
-            "company_name": "Delete Test Company",
+            "company_name": format!("Delete Test Company {}", unique_id),
             "company_address": "456 Delete Ave"
         })),
         None,
@@ -1450,7 +1475,7 @@ async fn test_delete_company_after_export_succeeds() {
     let token = register_body["token"].as_str().unwrap();
     let company_id = register_body["user"]["company_id"].as_str().unwrap();
 
-    let (export_status, _) = make_request(
+    let (export_status, body) = make_request(
         &mut app,
         "POST",
         &format!("/companies/{}/export", company_id),
@@ -1458,6 +1483,7 @@ async fn test_delete_company_after_export_succeeds() {
         Some(token),
     )
     .await;
+    println!("Export body: {:?}", body);
     assert_eq!(export_status, StatusCode::OK);
 
     let (status, body) = make_request(
@@ -1478,9 +1504,9 @@ async fn test_confirm_company_deletion_invalid_token() {
 
     let (status, _body) = make_request(
         &mut app,
-        "GET",
-        "/companies/test-company-id/confirm-deletion?token=invalid-token",
-        None,
+        "POST",
+        "/companies/test-company-id/confirm-deletion",
+        Some(json!({ "token": "invalid-token" })),
         None,
     )
     .await;
@@ -1566,7 +1592,7 @@ async fn test_login_blocked_after_company_deletion() {
     assert_eq!(login_status, StatusCode::UNAUTHORIZED);
     assert_eq!(
         login_body["error"].as_str().unwrap(),
-        "Your company has been deleted. Please contact support."
+        "Invalid email or password"
     );
 }
 
@@ -1635,10 +1661,10 @@ async fn test_api_calls_blocked_after_company_deletion() {
 
     let (me_status, me_body) = make_request(&mut app, "GET", "/auth/me", None, Some(token)).await;
 
-    assert_eq!(me_status, StatusCode::FORBIDDEN);
+    assert_eq!(me_status, StatusCode::UNAUTHORIZED);
     assert_eq!(
         me_body["error"].as_str().unwrap(),
-        "Your company has been deleted. Please contact support."
+        "Invalid or expired token"
     );
 }
 

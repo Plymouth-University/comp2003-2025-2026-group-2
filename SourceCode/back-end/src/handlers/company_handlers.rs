@@ -1,8 +1,8 @@
 use crate::{
     AppState, db,
-    dto::ErrorResponse,
+    dto::{CompanyResponse, ErrorResponse, ExportResponse, UpdateCompanyRequest},
     exports_db, images_db,
-    logs_db::{self, TemplateDocument},
+    logs_db,
     middleware::ManageCompanyUser,
     utils::{err_bad_request, err_forbidden, err_internal, err_not_found},
 };
@@ -12,59 +12,7 @@ use axum::{
     extract::State,
     http::{StatusCode, header},
 };
-use serde::{Deserialize, Serialize};
 use serde_json::json;
-use utoipa::ToSchema;
-
-#[derive(Debug, Serialize, ToSchema)]
-pub struct CompanyExportData {
-    pub log_templates: Vec<TemplateDocument>,
-    pub log_entries: Vec<logs_db::LogEntry>,
-    pub exported_at: chrono::DateTime<chrono::Utc>,
-}
-
-#[derive(Debug, Serialize, ToSchema)]
-pub struct ExportResponse {
-    pub message: String,
-    pub exported_at: chrono::DateTime<chrono::Utc>,
-}
-
-#[derive(Debug, Deserialize, Serialize, utoipa::ToSchema)]
-pub struct CompanyResponse {
-    pub id: String,
-    pub name: String,
-    pub address: String,
-    pub logo_id: Option<String>,
-    pub logo_url: Option<String>,
-    pub data_exported_at: Option<chrono::DateTime<chrono::Utc>>,
-    pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
-    pub deletion_requested_at: Option<chrono::DateTime<chrono::Utc>>,
-}
-
-impl From<db::Company> for CompanyResponse {
-    fn from(company: db::Company) -> Self {
-        let logo_id = company.logo_id.clone();
-        let logo_url = logo_id
-            .clone()
-            .map(|_id| format!("/api/companies/{}/logo", company.id));
-        Self {
-            id: company.id,
-            name: company.name,
-            address: company.address,
-            logo_id,
-            logo_url,
-            data_exported_at: company.data_exported_at,
-            deleted_at: company.deleted_at,
-            deletion_requested_at: company.deletion_requested_at,
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, utoipa::ToSchema)]
-pub struct UpdateCompanyRequest {
-    pub name: String,
-    pub address: String,
-}
 
 fn infer_content_type(data: &[u8]) -> String {
     if data.starts_with(&[0x89, 0x50, 0x4E, 0x47]) {
@@ -164,7 +112,7 @@ pub async fn upload_company_logo(
     tag = "Company"
 )]
 pub async fn get_company_logo(
-    ManageCompanyUser(_claims, _user): ManageCompanyUser,
+    ManageCompanyUser(_claims, user): ManageCompanyUser,
     State(state): State<AppState>,
     axum::extract::Path(company_id): axum::extract::Path<String>,
 ) -> Result<
@@ -175,6 +123,10 @@ pub async fn get_company_logo(
     ),
     (StatusCode, Json<serde_json::Value>),
 > {
+    if !user.is_logsmart_admin() && user.company_id.as_ref() != Some(&company_id) {
+        return Err(err_forbidden("You can only view your own company's logo"));
+    }
+
     let company = db::get_company_by_id(&state.postgres, &company_id)
         .await
         .map_err(|e| {
@@ -185,7 +137,7 @@ pub async fn get_company_logo(
 
     let logo_id = company
         .logo_id
-        .ok_or_else(|| err_not_found("Logo not found"))?;
+        .ok_or_else(|| err_not_found("No logo set for this company"))?;
 
     if let Some((content_type, data)) = images_db::get_company_logo(&state.mongodb, &logo_id)
         .await
@@ -202,7 +154,7 @@ pub async fn get_company_logo(
             data,
         ))
     } else {
-        Err(err_not_found("Logo not found"))
+        Err(err_not_found("Logo file not found in storage"))
     }
 }
 
@@ -556,7 +508,10 @@ pub async fn delete_company(
         ));
     }
 
-    if company.deletion_requested_at.is_some() {
+    if company.deletion_requested_at.is_some()
+        && company.deletion_requested_at.unwrap()
+            > chrono::Utc::now() - chrono::Duration::days(7)
+    {
         return Err(err_bad_request(
             "A deletion request is already pending. Please check your email to confirm.",
         ));
@@ -629,6 +584,14 @@ pub async fn validate_company_deletion_token(
         return Err(err_bad_request("Invalid or expired confirmation token"));
     }
 
+    if let Some(requested_at) = company.deletion_requested_at {
+        if requested_at < chrono::Utc::now() - chrono::Duration::days(7) {
+            return Err(err_bad_request(
+                "Confirmation token has expired. Please request a new deletion link.",
+            ));
+        }
+    }
+
     Ok(Json(json!({ "companyName": company.name })))
 }
 
@@ -666,11 +629,26 @@ pub async fn confirm_company_deletion(
         return Err(err_bad_request("Invalid or expired confirmation token"));
     }
 
+    if let Some(requested_at) = company.deletion_requested_at {
+        if requested_at < chrono::Utc::now() - chrono::Duration::days(7) {
+            return Err(err_bad_request(
+                "Confirmation token has expired. Please request a new deletion link.",
+            ));
+        }
+    }
+
     let updated_company = db::confirm_company_deletion(&state.postgres, &company_id, token)
         .await
         .map_err(|e| {
             tracing::error!("Failed to confirm company deletion: {:?}", e);
             err_internal("Failed to confirm deletion")
+        })?;
+
+    db::soft_delete_users_by_company_id(&state.postgres, &company_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to soft delete company users: {:?}", e);
+            err_internal("Failed to delete company users")
         })?;
 
     // Invalidate cache for all users in the company, including soft-deleted ones

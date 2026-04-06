@@ -607,6 +607,26 @@ pub async fn delete_user_by_email(pool: &PgPool, email: &str) -> Result<()> {
     Ok(())
 }
 
+/// Soft deletes all users belonging to a company.
+///
+/// # Errors
+/// Returns an error if database update fails.
+pub async fn soft_delete_users_by_company_id(pool: &PgPool, company_id: &str) -> Result<()> {
+    sqlx::query(
+        r"
+        UPDATE users
+        SET deleted_at = $1
+        WHERE company_id = $2 AND deleted_at IS NULL
+        ",
+    )
+    .bind(chrono::Utc::now())
+    .bind(company_id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
 /// Creates a new company in the database.
 ///
 /// # Errors
@@ -757,7 +777,7 @@ pub async fn request_company_deletion(
 /// Confirms company deletion with token.
 ///
 /// # Errors
-/// Returns an error if database query fails or token is invalid.
+/// Returns an error if database query fails or token is invalid/expired.
 pub async fn confirm_company_deletion(
     pool: &PgPool,
     company_id: &str,
@@ -766,8 +786,8 @@ pub async fn confirm_company_deletion(
     let company = sqlx::query_as(
         r"
         UPDATE companies
-        SET deleted_at = NOW(), deletion_token = NULL
-        WHERE id = $1 AND deletion_token = $2 AND deletion_requested_at IS NOT NULL
+        SET deleted_at = NOW(), deletion_token = NULL, deletion_requested_at = NULL
+        WHERE id = $1 AND deletion_token = $2 AND deletion_requested_at > NOW() - INTERVAL '7 days'
         RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token, deletion_requested_by_email
         ",
     )
