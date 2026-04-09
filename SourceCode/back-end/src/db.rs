@@ -154,6 +154,7 @@ impl Default for Company {
 }
 
 impl Company {
+    #[must_use] 
     pub fn new() -> Self {
         Self {
             id: Uuid::new_v4().to_string(),
@@ -174,6 +175,7 @@ impl Company {
         self.deleted_at.is_some()
     }
 
+    #[must_use] 
     pub fn with_name_and_address(mut self, name: &str, address: &str) -> Self {
         self.name = name.to_string();
         self.address = address.to_string();
@@ -681,7 +683,7 @@ pub async fn update_company_logo_id(
     .bind(company_id)
     .fetch_one(pool)
     .await
-    .map_err(|e| anyhow::anyhow!("Failed to update company logo: {}", e))
+    .map_err(|e| anyhow::anyhow!("Failed to update company logo: {e}"))
 }
 
 /// Retrieves a company by its ID.
@@ -726,7 +728,7 @@ pub async fn update_company(
     .bind(company_id)
     .fetch_one(pool)
     .await
-    .map_err(|e| anyhow::anyhow!("Failed to update company: {}", e))
+    .map_err(|e| anyhow::anyhow!("Failed to update company: {e}"))
 }
 
 /// Marks company data as exported.
@@ -745,7 +747,7 @@ pub async fn mark_company_data_exported(pool: &PgPool, company_id: &str) -> Resu
     .bind(company_id)
     .fetch_one(pool)
     .await
-    .map_err(|e| anyhow::anyhow!("Failed to mark company data as exported: {}", e))
+    .map_err(|e| anyhow::anyhow!("Failed to mark company data as exported: {e}"))
 }
 
 /// Requests company deletion with a confirmation token.
@@ -771,7 +773,7 @@ pub async fn request_company_deletion(
     .bind(company_id)
     .fetch_one(pool)
     .await
-    .map_err(|e| anyhow::anyhow!("Failed to request company deletion: {}", e))
+    .map_err(|e| anyhow::anyhow!("Failed to request company deletion: {e}"))
 }
 
 /// Confirms company deletion with token.
@@ -782,20 +784,20 @@ pub async fn confirm_company_deletion(
     pool: &PgPool,
     company_id: &str,
     token: &str,
-) -> Result<Company> {
+) -> Result<Option<Company>> {
     let company = sqlx::query_as(
         r"
         UPDATE companies
         SET deleted_at = NOW(), deletion_token = NULL, deletion_requested_at = NULL
-        WHERE id = $1 AND deletion_token = $2 AND deletion_requested_at > NOW() - INTERVAL '7 days'
+        WHERE id = $1 AND deletion_token = $2 AND deletion_requested_at >= NOW() - INTERVAL '6 hours'
         RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token, deletion_requested_by_email
         ",
     )
     .bind(company_id)
     .bind(token)
-    .fetch_one(pool)
+    .fetch_optional(pool)
     .await
-    .map_err(|e| anyhow::anyhow!("Failed to confirm company deletion: {}", e))?;
+    .map_err(|e| anyhow::anyhow!("Failed to confirm company deletion: {e}"))?;
 
     Ok(company)
 }

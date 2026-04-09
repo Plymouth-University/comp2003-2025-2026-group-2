@@ -1,5 +1,6 @@
-use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
+
+use anyhow::{Context, Result};
 use tokio::fs;
 
 const EXPORT_RETENTION_DAYS: i64 = 7;
@@ -11,13 +12,15 @@ pub struct ExportRecord {
 }
 
 pub fn exports_dir() -> PathBuf {
-    std::env::var("EXPORT_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| PathBuf::from("exports"))
+    std::env::var("EXPORT_DIR").map_or_else(|_| PathBuf::from("exports"), PathBuf::from)
 }
 
 fn safe_path(dir: &PathBuf, filename: &str) -> Result<PathBuf> {
-    if filename.contains("..") || filename.contains('/') || filename.contains('\\') || filename.contains('\0') {
+    if filename.contains("..")
+        || filename.contains('/')
+        || filename.contains('\\')
+        || filename.contains('\0')
+    {
         anyhow::bail!("Invalid filename");
     }
 
@@ -26,7 +29,8 @@ fn safe_path(dir: &PathBuf, filename: &str) -> Result<PathBuf> {
         .and_then(|n| n.to_str())
         .ok_or_else(|| anyhow::anyhow!("Invalid filename"))?;
 
-    let canonical_dir = dir.canonicalize()
+    let canonical_dir = dir
+        .canonicalize()
         .with_context(|| format!("Exports directory does not exist: {}", dir.display()))?;
     let path = canonical_dir.join(safe_name);
 
@@ -147,7 +151,10 @@ mod tests {
             println!("Error: {result:?}");
         }
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), PathBuf::from("/tmp/test_exports/abc_123.zip"));
+        assert_eq!(
+            result.unwrap(),
+            PathBuf::from("/tmp/test_exports/abc_123.zip")
+        );
     }
 
     #[test]

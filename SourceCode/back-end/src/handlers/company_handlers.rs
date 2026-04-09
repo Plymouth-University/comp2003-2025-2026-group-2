@@ -1,9 +1,9 @@
 use crate::{
     AppState, db,
     dto::{CompanyResponse, ErrorResponse, ExportResponse, UpdateCompanyRequest},
-    exports_db, images_db,
-    logs_db,
+    exports_db, images_db, logs_db,
     middleware::ManageCompanyUser,
+    services::company_service::{CompanyService, CompanyServiceError},
     utils::{err_bad_request, err_forbidden, err_internal, err_not_found},
 };
 use axum::{
@@ -13,18 +13,6 @@ use axum::{
     http::{StatusCode, header},
 };
 use serde_json::json;
-
-fn infer_content_type(data: &[u8]) -> String {
-    if data.starts_with(&[0x89, 0x50, 0x4E, 0x47]) {
-        "image/png".to_string()
-    } else if data.starts_with(&[0xFF, 0xD8, 0xFF]) {
-        "image/jpeg".to_string()
-    } else if data.starts_with(b"RIFF") && data.len() > 12 && &data[8..12] == b"WEBP" {
-        "image/webp".to_string()
-    } else {
-        "application/octet-stream".to_string()
-    }
-}
 
 #[utoipa::path(
     post,
@@ -50,50 +38,23 @@ pub async fn upload_company_logo(
         return Err(err_forbidden("You can only manage your own company's logo"));
     }
 
-    let company = db::get_company_by_id(&state.postgres, &company_id)
-        .await
-        .map_err(|e| {
-            tracing::error!("Database error fetching company: {:?}", e);
-            err_internal("Database error")
-        })?
-        .ok_or_else(|| err_not_found("Company not found"))?;
-
-    let data = body.to_vec();
-
-    if data.len() > 10 * 1024 * 1024 {
-        return Err(err_bad_request("File too large. Maximum size is 10MB"));
-    }
-
-    if data.is_empty() {
-        return Err(err_bad_request("No file provided"));
-    }
-
-    let content_type = infer_content_type(&data);
-    if !content_type.starts_with("image/") {
-        return Err(err_bad_request("File must be an image"));
-    }
-
-    let file_id = images_db::upload_company_logo(&state.mongodb, data, &company_id, &content_type)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to upload company logo: {:?}", e);
+    let file_id = CompanyService::upload_company_logo(
+        &state.postgres,
+        &state.mongodb,
+        &company_id,
+        body.to_vec(),
+    )
+    .await
+    .map_err(|e| match e {
+        CompanyServiceError::FileTooLarge
+        | CompanyServiceError::NoFileProvided
+        | CompanyServiceError::NotAnImage => err_bad_request(&e.to_string()),
+        CompanyServiceError::CompanyNotFound => err_not_found(&e.to_string()),
+        CompanyServiceError::Internal(msg) => {
+            tracing::error!("Failed to upload company logo: {msg}");
             err_internal("Failed to upload logo")
-        })?;
-
-    if let Err(err) = db::update_company_logo_id(&state.postgres, &company_id, Some(&file_id)).await
-    {
-        tracing::error!("Failed to update company logo: {:?}", err);
-        if let Err(delete_err) = images_db::delete_company_logo(&state.mongodb, &file_id).await {
-            tracing::error!("Failed to cleanup uploaded logo: {:?}", delete_err);
         }
-        return Err(err_internal("Failed to update logo reference"));
-    }
-
-    if let Some(old_logo_id) = &company.logo_id
-        && let Err(err) = images_db::delete_company_logo(&state.mongodb, old_logo_id).await
-    {
-        tracing::error!("Failed to delete old company logo: {:?}", err);
-    }
+    })?;
 
     Ok(Json(json!({
         "logo_id": file_id,
@@ -338,21 +299,19 @@ pub async fn export_company_data(
     let company_email = user.email.clone();
     let company_name = company.name.clone();
 
-    let log_templates = match logs_db::get_templates_by_company(&state.mongodb, &company_id).await {
-        Ok(templates) => templates,
-        Err(e) => {
-            tracing::warn!("Failed to fetch log templates for export: {:?}", e);
-            vec![]
-        }
-    };
+    let log_templates = logs_db::get_templates_by_company(&state.mongodb, &company_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to fetch log templates for export: {:?}", e);
+            err_internal("Failed to fetch log templates")
+        })?;
 
-    let log_entries = match logs_db::get_company_log_entries(&state.mongodb, &company_id).await {
-        Ok(entries) => entries,
-        Err(e) => {
-            tracing::warn!("Failed to fetch log entries for export: {:?}", e);
-            vec![]
-        }
-    };
+    let log_entries = logs_db::get_company_log_entries(&state.mongodb, &company_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to fetch log entries for export: {:?}", e);
+            err_internal("Failed to fetch log entries")
+        })?;
 
     let exported_at = chrono::Utc::now();
 
@@ -425,7 +384,11 @@ pub async fn export_company_data(
 
 #[utoipa::path(
     get,
-    path = "/companies/{company_id}/export/download",
+    path = "/companies/{company_id}/export/download/{filename}",
+    params(
+        ("company_id" = String, Path, description = "Company ID"),
+        ("filename" = String, Path, description = "Export filename"),
+    ),
     responses(
         (status = 200, description = "Export file", content_type = "application/zip"),
         (status = 403, description = "Forbidden", body = ErrorResponse),
@@ -502,15 +465,20 @@ pub async fn delete_company(
         })?
         .ok_or_else(|| err_not_found("Company not found"))?;
 
-    if company.data_exported_at.is_none() {
+    if let Some(exported_at) = company.data_exported_at {
+        if exported_at < chrono::Utc::now() - chrono::Duration::hours(6) {
+            return Err(err_bad_request(
+                "Data export has expired. Please export company data again before requesting deletion.",
+            ));
+        }
+    } else {
         return Err(err_bad_request(
             "You must export company data before requesting deletion",
         ));
     }
 
     if company.deletion_requested_at.is_some()
-        && company.deletion_requested_at.unwrap()
-            > chrono::Utc::now() - chrono::Duration::days(7)
+        && company.deletion_requested_at.unwrap() >= chrono::Utc::now() - chrono::Duration::hours(6)
     {
         return Err(err_bad_request(
             "A deletion request is already pending. Please check your email to confirm.",
@@ -584,13 +552,12 @@ pub async fn validate_company_deletion_token(
         return Err(err_bad_request("Invalid or expired confirmation token"));
     }
 
-    if let Some(requested_at) = company.deletion_requested_at {
-        if requested_at < chrono::Utc::now() - chrono::Duration::days(7) {
+    if let Some(requested_at) = company.deletion_requested_at
+        && requested_at < chrono::Utc::now() - chrono::Duration::hours(6) {
             return Err(err_bad_request(
                 "Confirmation token has expired. Please request a new deletion link.",
             ));
         }
-    }
 
     Ok(Json(json!({ "companyName": company.name })))
 }
@@ -629,20 +596,20 @@ pub async fn confirm_company_deletion(
         return Err(err_bad_request("Invalid or expired confirmation token"));
     }
 
-    if let Some(requested_at) = company.deletion_requested_at {
-        if requested_at < chrono::Utc::now() - chrono::Duration::days(7) {
+    if let Some(requested_at) = company.deletion_requested_at
+        && requested_at < chrono::Utc::now() - chrono::Duration::hours(6) {
             return Err(err_bad_request(
                 "Confirmation token has expired. Please request a new deletion link.",
             ));
         }
-    }
 
     let updated_company = db::confirm_company_deletion(&state.postgres, &company_id, token)
         .await
         .map_err(|e| {
             tracing::error!("Failed to confirm company deletion: {:?}", e);
             err_internal("Failed to confirm deletion")
-        })?;
+        })?
+        .ok_or_else(|| err_bad_request("Invalid or expired confirmation token"))?;
 
     db::soft_delete_users_by_company_id(&state.postgres, &company_id)
         .await

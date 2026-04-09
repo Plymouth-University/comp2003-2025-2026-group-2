@@ -1762,3 +1762,266 @@ async fn test_cannot_update_other_company() {
 
     assert_eq!(status, StatusCode::FORBIDDEN);
 }
+
+#[tokio::test]
+async fn test_delete_company_with_expired_export_fails() {
+    let mut app = setup_test_app().await;
+
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let email = format!("expiretest_{}@example.com", unique_id);
+
+    let (_, register_body) = make_request(
+        &mut app,
+        "POST",
+        "/auth/register",
+        Some(json!({
+            "email": email,
+            "first_name": "Expire",
+            "last_name": "Test",
+            "password": "SecurePass123!",
+            "company_name": format!("Expire Test Company {}", unique_id),
+            "company_address": "123 Expire Ave"
+        })),
+        None,
+    )
+    .await;
+
+    let token = register_body["token"].as_str().unwrap();
+    let company_id = register_body["user"]["company_id"].as_str().unwrap();
+
+    // Export data
+    let (export_status, _) = make_request(
+        &mut app,
+        "POST",
+        &format!("/companies/{}/export", company_id),
+        None,
+        Some(token),
+    )
+    .await;
+    assert_eq!(export_status, StatusCode::OK);
+
+    // Manually set data_exported_at to 7 hours ago
+    let pool = sqlx::postgres::PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&std::env::var("DATABASE_URL").expect("DATABASE_URL not set"))
+        .await
+        .expect("Failed to connect to database");
+
+    sqlx::query(
+        r#"
+        UPDATE companies
+        SET data_exported_at = NOW() - INTERVAL '7 hours'
+        WHERE id = $1
+        "#,
+    )
+    .bind(company_id)
+    .execute(&pool)
+    .await
+    .expect("Failed to update test data");
+
+    // Try to request deletion with expired export
+    let (status, body) = make_request(
+        &mut app,
+        "DELETE",
+        &format!("/companies/{}", company_id),
+        None,
+        Some(token),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert!(body["error"]
+        .as_str()
+        .unwrap()
+        .contains("expired"));
+}
+
+#[tokio::test]
+async fn test_deletion_confirmation_token_expires_after_6_hours() {
+    let mut app = setup_test_app().await;
+
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let email = format!("tokenexpire_{}@example.com", unique_id);
+
+    let (_, register_body) = make_request(
+        &mut app,
+        "POST",
+        "/auth/register",
+        Some(json!({
+            "email": email,
+            "first_name": "Token",
+            "last_name": "Expire",
+            "password": "SecurePass123!",
+            "company_name": format!("Token Expire Company {}", unique_id),
+            "company_address": "456 Token Ave"
+        })),
+        None,
+    )
+    .await;
+
+    let token = register_body["token"].as_str().unwrap();
+    let company_id = register_body["user"]["company_id"].as_str().unwrap();
+
+    // Export data
+    let (export_status, _) = make_request(
+        &mut app,
+        "POST",
+        &format!("/companies/{}/export", company_id),
+        None,
+        Some(token),
+    )
+    .await;
+    assert_eq!(export_status, StatusCode::OK);
+
+    // Request deletion
+    let (del_status, del_body) = make_request(
+        &mut app,
+        "DELETE",
+        &format!("/companies/{}", company_id),
+        None,
+        Some(token),
+    )
+    .await;
+    assert_eq!(del_status, StatusCode::OK);
+
+    let pool = sqlx::postgres::PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&std::env::var("DATABASE_URL").expect("DATABASE_URL not set"))
+        .await
+        .expect("Failed to connect to database");
+
+    // Get the deletion token
+    let company: (Option<String>,) = sqlx::query_as(
+        "SELECT deletion_token FROM companies WHERE id = $1",
+    )
+    .bind(company_id)
+    .fetch_one(&pool)
+    .await
+    .expect("Failed to fetch company");
+
+    let deletion_token = company.0.expect("No deletion token found");
+
+    // Manually set deletion_requested_at to 7 hours ago
+    sqlx::query(
+        r#"
+        UPDATE companies
+        SET deletion_requested_at = NOW() - INTERVAL '7 hours'
+        WHERE id = $1
+        "#,
+    )
+    .bind(company_id)
+    .execute(&pool)
+    .await
+    .expect("Failed to update test data");
+
+    // Try to confirm deletion with expired token
+    let (confirm_status, confirm_body) = make_request(
+        &mut app,
+        "POST",
+        &format!("/companies/{}/confirm-deletion", company_id),
+        Some(json!({ "token": deletion_token })),
+        None,
+    )
+    .await;
+
+    assert_eq!(confirm_status, StatusCode::BAD_REQUEST);
+    assert!(confirm_body["error"]
+        .as_str()
+        .unwrap()
+        .contains("expired"));
+}
+
+#[tokio::test]
+async fn test_validate_deletion_token_expires_after_6_hours() {
+    let mut app = setup_test_app().await;
+
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let email = format!("validatetoken_{}@example.com", unique_id);
+
+    let (_, register_body) = make_request(
+        &mut app,
+        "POST",
+        "/auth/register",
+        Some(json!({
+            "email": email,
+            "first_name": "Validate",
+            "last_name": "Token",
+            "password": "SecurePass123!",
+            "company_name": format!("Validate Token Company {}", unique_id),
+            "company_address": "789 Validate Ave"
+        })),
+        None,
+    )
+    .await;
+
+    let token = register_body["token"].as_str().unwrap();
+    let company_id = register_body["user"]["company_id"].as_str().unwrap();
+
+    // Export data
+    let (export_status, _) = make_request(
+        &mut app,
+        "POST",
+        &format!("/companies/{}/export", company_id),
+        None,
+        Some(token),
+    )
+    .await;
+    assert_eq!(export_status, StatusCode::OK);
+
+    // Request deletion
+    let (del_status, _) = make_request(
+        &mut app,
+        "DELETE",
+        &format!("/companies/{}", company_id),
+        None,
+        Some(token),
+    )
+    .await;
+    assert_eq!(del_status, StatusCode::OK);
+
+    let pool = sqlx::postgres::PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&std::env::var("DATABASE_URL").expect("DATABASE_URL not set"))
+        .await
+        .expect("Failed to connect to database");
+
+    // Get the deletion token
+    let company: (Option<String>,) = sqlx::query_as(
+        "SELECT deletion_token FROM companies WHERE id = $1",
+    )
+    .bind(company_id)
+    .fetch_one(&pool)
+    .await
+    .expect("Failed to fetch company");
+
+    let deletion_token = company.0.expect("No deletion token found");
+
+    // Manually set deletion_requested_at to 7 hours ago
+    sqlx::query(
+        r#"
+        UPDATE companies
+        SET deletion_requested_at = NOW() - INTERVAL '7 hours'
+        WHERE id = $1
+        "#,
+    )
+    .bind(company_id)
+    .execute(&pool)
+    .await
+    .expect("Failed to update test data");
+
+    // Try to validate token with expired request
+    let (validate_status, validate_body) = make_request(
+        &mut app,
+        "GET",
+        &format!("/companies/{}/validate-deletion-token?token={}", company_id, deletion_token),
+        None,
+        None,
+    )
+    .await;
+
+    assert_eq!(validate_status, StatusCode::BAD_REQUEST);
+    assert!(validate_body["error"]
+        .as_str()
+        .unwrap()
+        .contains("expired"));
+}

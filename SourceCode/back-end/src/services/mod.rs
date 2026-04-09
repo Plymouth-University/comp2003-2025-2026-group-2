@@ -1,5 +1,6 @@
 pub mod auth_service;
 pub mod clock_service;
+pub mod company_service;
 pub mod invitation_service;
 pub mod log_entry_service;
 pub mod oauth_service;
@@ -8,6 +9,7 @@ pub mod user_service;
 
 pub use auth_service::AuthService;
 pub use clock_service::ClockService;
+pub use company_service::CompanyService;
 pub use invitation_service::InvitationService;
 pub use log_entry_service::LogEntryService;
 pub use oauth_service::GoogleOAuthClient;

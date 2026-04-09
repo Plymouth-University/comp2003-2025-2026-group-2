@@ -144,7 +144,7 @@
 						>
 							Settings
 						</a>
-						{#if isAdmin}
+						{#if isCompanyManager || data?.user?.role === 'logsmart_admin'}
 							<a
 								href="/company-settings"
 								class="rounded px-4 py-2 hover:opacity-80"

@@ -273,21 +273,19 @@ pub async fn send_company_data_export(
     } else {
         match serde_json::from_str::<serde_json::Value>(export_data) {
             Ok(data) => {
-                let users_count = data["users"].as_array().map(|a| a.len()).unwrap_or(0);
-                let branches_count = data["branches"].as_array().map(|a| a.len()).unwrap_or(0);
+                let users_count = data["users"].as_array().map_or(0, std::vec::Vec::len);
+                let branches_count = data["branches"].as_array().map_or(0, std::vec::Vec::len);
                 let invitations_count =
-                    data["invitations"].as_array().map(|a| a.len()).unwrap_or(0);
+                    data["invitations"].as_array().map_or(0, std::vec::Vec::len);
                 let templates_count = data["log_templates"]
                     .as_array()
-                    .map(|a| a.len())
-                    .unwrap_or(0);
+                    .map_or(0, std::vec::Vec::len);
                 format!(
                     "\nExport Summary:\n\
-                    - Users: {}\n\
-                    - Branches: {}\n\
-                    - Pending Invitations: {}\n\
-                    - Log Templates: {}",
-                    users_count, branches_count, invitations_count, templates_count
+                    - Users: {users_count}\n\
+                    - Branches: {branches_count}\n\
+                    - Pending Invitations: {invitations_count}\n\
+                    - Log Templates: {templates_count}"
                 )
             }
             Err(_) => String::new(),
@@ -300,13 +298,12 @@ pub async fn send_company_data_export(
         Company Details:\n\
         - Name: {company_name}\n\
         - Address: {company_address}\n\
-        {}\n\n\
+        {data_summary}\n\n\
         The full export data is available via the API and was included in this notification.\n\
         Please note that this data will be retained on our servers for 30 days after the company deletion request.\n\n\
         If you did not request this export, please contact your system administrator immediately.\n\n\
         Best regards,\n\
-        The LogSmart Team",
-        data_summary
+        The LogSmart Team"
     );
 
     send_email(to_email, subject, &body).await?;
@@ -326,19 +323,17 @@ pub async fn send_company_deletion_request(
     frontend_url: &str,
 ) -> Result<()> {
     let confirm_link = format!(
-        "{frontend_url}/confirm-company-deletion?company_id={}&token={}",
-        company_id, token
+        "{frontend_url}/confirm-company-deletion?company_id={company_id}&token={token}"
     );
     let subject = "Confirm Company Deletion - LogSmart";
     let body = format!(
         "Hello,\n\n\
         A request to delete '{company_name}' has been made.\n\n\
-        To confirm deletion, click the link below:\n{}\n\n\
+        To confirm deletion, click the link below:\n{confirm_link}\n\n\
         This link will expire in 7 days.\n\n\
         If you did not request this deletion, please ignore this email.\n\n\
         Best regards,\n\
-        The LogSmart Team",
-        confirm_link
+        The LogSmart Team"
     );
 
     send_email(to_email, subject, &body).await?;
