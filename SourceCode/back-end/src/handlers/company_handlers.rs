@@ -10,9 +10,15 @@ use axum::{
     Json,
     body::Bytes,
     extract::State,
-    http::{StatusCode, header},
+    http::{HeaderValue, StatusCode, header},
 };
+use once_cell::sync::Lazy;
+use regex::Regex;
 use serde_json::json;
+
+// Regex to validate export filename: allow only alphanumeric, dots, underscores, and hyphens
+static VALID_FILENAME_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^[A-Za-z0-9._-]+$").expect("Invalid regex pattern"));
 
 #[utoipa::path(
     post,
@@ -408,7 +414,13 @@ pub async fn download_export(
         ));
     }
 
+    // Validate basic structure: must end with .zip and start with company_id_
     if !filename.ends_with(".zip") || !filename.starts_with(&format!("{company_id}_")) {
+        return Err(err_bad_request("Invalid export filename"));
+    }
+
+    // Validate filename against strict allow-list (alphanumeric, dots, underscores, hyphens)
+    if !VALID_FILENAME_REGEX.is_match(&filename) {
         return Err(err_bad_request("Invalid export filename"));
     }
 
@@ -422,16 +434,23 @@ pub async fn download_export(
 
     let content_length = data.len().to_string();
 
+    // Build Content-Disposition header safely
+    let disposition_value = format!("attachment; filename=\"{filename}\"");
+    let disposition_header = HeaderValue::from_str(&disposition_value).map_err(|_| {
+        tracing::error!("Invalid filename for header: {:?}", filename);
+        err_bad_request("Invalid export filename")
+    })?;
+
     let response = axum::response::Response::builder()
         .status(StatusCode::OK)
         .header(header::CONTENT_TYPE, "application/zip")
         .header(header::CONTENT_LENGTH, content_length)
-        .header(
-            header::CONTENT_DISPOSITION,
-            format!("attachment; filename=\"{filename}\""),
-        )
+        .header(header::CONTENT_DISPOSITION, disposition_header)
         .body(axum::body::Body::from(data))
-        .unwrap();
+        .map_err(|_| {
+            tracing::error!("Failed to build response");
+            err_internal("Failed to build response")
+        })?;
 
     Ok(response)
 }
