@@ -176,7 +176,7 @@
 	}
 </script>
 
-<svelte:window onclick={handleClickOutside} />
+<svelte:window on:click={handleClickOutside} />
 
 <svelte:head>
 	<title>Register Company - LogSmart</title>

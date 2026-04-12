@@ -1871,7 +1871,7 @@ async fn test_deletion_confirmation_token_expires_after_6_hours() {
     assert_eq!(export_status, StatusCode::OK);
 
     // Request deletion
-    let (del_status, del_body) = make_request(
+    let (del_status, _del_body) = make_request(
         &mut app,
         "DELETE",
         &format!("/companies/{}", company_id),
