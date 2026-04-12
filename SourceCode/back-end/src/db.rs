@@ -695,7 +695,7 @@ pub async fn get_company_by_id(pool: &PgPool, id: &str) -> Result<Option<Company
         r"
         SELECT id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token, deletion_requested_by_email
         FROM companies
-        WHERE id = $1
+        WHERE id = $1 AND deleted_at IS NULL
         ",
     )
     .bind(id)

@@ -214,6 +214,14 @@ async fn setup_test_app() -> Router {
         )
         .route("/companies/{company_id}", delete(handlers::delete_company))
         .route(
+            "/companies/{company_id}/validate-deletion-token",
+            get(handlers::validate_company_deletion_token),
+        )
+        .route(
+            "/companies/{company_id}/confirm-deletion",
+            post(handlers::confirm_company_deletion),
+        )
+        .route(
             "/companies/{company_id}/logo",
             post(handlers::upload_company_logo),
         )
