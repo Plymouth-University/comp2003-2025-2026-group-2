@@ -51,7 +51,6 @@
 	let isDragging = $state(false);
 	let snapEnabled = $state(true);
 	let canvasHeight = $state<number>(500);
-	let isResizingCanvas = $state(false);
 
 	function selectItem(id: string) {
 		selectedItemId = id;
@@ -65,7 +64,6 @@
 
 	function handleCanvasResizeStart(e: MouseEvent) {
 		e.preventDefault();
-		isResizingCanvas = true;
 		const startY = e.clientY;
 		const startHeight = canvasHeight;
 
@@ -75,7 +73,6 @@
 		};
 
 		const handleMouseUp = () => {
-			isResizingCanvas = false;
 			document.removeEventListener('mousemove', handleMouseMove);
 			document.removeEventListener('mouseup', handleMouseUp);
 		};
@@ -88,7 +85,16 @@
 <div class="flex-1 overflow-auto p-6">
 	<div class="mx-auto max-w-4xl">
 		<div class="mb-4 flex items-center justify-between">
-			<h2 class="text-3xl font-bold text-text-secondary">Canvas</h2>
+			<h2 class="text-3xl font-bold text-text-secondary">
+				Canvas
+				<div class="tooltip" tabindex="-1" aria-label="Canvas instructions" role="tooltip">
+					﹖
+					<span class="tooltip-text"
+						>Drag and drop log components onto the canvas to create a log template. Save your log
+						template to make it completable.</span
+					>
+				</div>
+			</h2>
 			<div class="flex gap-2">
 				<button
 					class="rounded px-4 py-2 font-medium"
@@ -287,7 +293,6 @@
 						{/if}
 					</div>
 					<!-- Canvas Height Resizer -->
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<div
 						class="mx-auto h-3 w-32 cursor-row-resize rounded-b border-2 border-t-0 transition-colors hover:bg-gray-300 active:bg-gray-400"
 						style="border-color: var(--border-primary); background-color: var(--bg-primary);"
@@ -393,5 +398,26 @@
 		.btn-history:hover {
 			background-color: #536d79;
 		}
+	}
+
+	.tooltip {
+		position: relative;
+		display: inline-block;
+		cursor: help;
+	}
+
+	.tooltip-text {
+		visibility: hidden;
+		background-color: #1f2937;
+		font-size: 1vw;
+		text-align: center;
+		position: absolute;
+		padding: 40%;
+		border-radius: 8%;
+		z-index: 1;
+	}
+
+	.tooltip:hover .tooltip-text {
+		visibility: visible;
 	}
 </style>

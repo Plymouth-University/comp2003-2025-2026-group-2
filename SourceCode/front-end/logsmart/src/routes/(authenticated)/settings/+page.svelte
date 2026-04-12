@@ -5,7 +5,7 @@
 	import { startRegistration } from '@simplewebauthn/browser';
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import ProfilePictureUploader from '$lib/components/ProfilePictureUploader.svelte';
+	import ProfilePictureUploader from '$lib/components/PictureUploader.svelte';
 
 	let { data, form } = $props<{ data: PageData; form: ActionData }>();
 
@@ -306,6 +306,7 @@
 						<!-- Profile Picture on the right side -->
 						<div class="flex flex-1 flex-col items-center justify-start pt-4 md:pt-0 md:pl-8">
 							<ProfilePictureUploader
+								type="pfp"
 								currentPictureUrl={effectivePictureUrl}
 								{firstName}
 								{lastName}
@@ -390,7 +391,7 @@
 										</div>
 										<button
 											onclick={() => deletePasskey(pk.id)}
-											class="text-red-500 hover:text-red-700"
+											class="cursor-pointer text-red-500 hover:text-red-700"
 											aria-label="Delete passkey"
 										>
 											Delete
@@ -455,7 +456,7 @@
 							</div>
 							<button
 								onclick={handleUnlinkGoogle}
-								class="border-2 px-8 py-2 font-medium hover:opacity-80"
+								class="cursor-pointer border-2 px-8 py-2 font-medium hover:opacity-80"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 							>
 								Unlink Google Account

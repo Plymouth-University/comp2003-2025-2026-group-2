@@ -527,6 +527,38 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/companies/{company_id}': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: operations['get_company'];
+		put: operations['update_company'];
+		post?: never;
+		delete: operations['delete_company'];
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/companies/{company_id}/logo': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: operations['get_company_logo'];
+		put?: never;
+		post: operations['upload_company_logo'];
+		delete: operations['delete_company_logo'];
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	'/health/database': {
 		parameters: {
 			query?: never;
@@ -947,6 +979,19 @@ export interface components {
 		CompanyClockEventsResponse: {
 			events: components['schemas']['CompanyClockEventResponse'][];
 		};
+		CompanyResponse: {
+			address: string;
+			/** Format: date-time */
+			data_exported_at?: string | null;
+			/** Format: date-time */
+			deleted_at?: string | null;
+			/** Format: date-time */
+			deletion_requested_at?: string | null;
+			id: string;
+			logo_id?: string | null;
+			logo_url?: string | null;
+			name: string;
+		};
 		ConfirmBranchDeletionRequest: {
 			/** @example deletion-token-here */
 			token: string;
@@ -1282,6 +1327,10 @@ export interface components {
 			/** @example 550e8400-e29b-41d4-a716-446655440000 */
 			branch_id: string;
 			/** @example London Office */
+			name: string;
+		};
+		UpdateCompanyRequest: {
+			address: string;
 			name: string;
 		};
 		UpdateLogEntryRequest: {
@@ -2612,6 +2661,290 @@ export interface operations {
 			};
 			/** @description Unauthorized */
 			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	get_company: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				company_id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Company details */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['CompanyResponse'];
+				};
+			};
+			/** @description Forbidden */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Company not found */
+			404: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	update_company: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				company_id: string;
+			};
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['UpdateCompanyRequest'];
+			};
+		};
+		responses: {
+			/** @description Company updated successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['CompanyResponse'];
+				};
+			};
+			/** @description Invalid request */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Company not found */
+			404: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	delete_company: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				company_id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Company deletion requested */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': unknown;
+				};
+			};
+			/** @description Data must be exported first */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Company not found */
+			404: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	get_company_logo: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				company_id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Company logo */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'image/webp': unknown;
+				};
+			};
+			/** @description Logo not found */
+			404: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	upload_company_logo: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				company_id: string;
+			};
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/octet-stream': number[];
+			};
+		};
+		responses: {
+			/** @description Logo uploaded successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': unknown;
+				};
+			};
+			/** @description Invalid request */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Company not found */
+			404: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	delete_company_logo: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				company_id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Logo deleted successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': unknown;
+				};
+			};
+			/** @description Forbidden */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Company not found */
+			404: {
 				headers: {
 					[name: string]: unknown;
 				};

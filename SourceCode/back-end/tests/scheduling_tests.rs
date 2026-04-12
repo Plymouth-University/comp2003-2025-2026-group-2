@@ -269,19 +269,35 @@ fn test_format_period_for_frequency_weekly_starts_sunday() {
     let month: u32 = parts[1].parse().expect("month should be a number");
     let year: i32 = parts[2].parse().expect("year should be a number");
 
-    if let Some(week_start) = chrono::NaiveDate::from_ymd_opt(year, month, start_day) {
+    // The format is "start_day-end_day/month/year" where month/year are from week_end
+    // When end_day < start_day, the period spans two months:
+    // - The END date is in the month given by parts[1]
+    // - The START date is in the previous month
+    let (start_month, start_year) = if end_day < start_day && month == 1 {
+        (12, year - 1)
+    } else if end_day < start_day {
+        (month - 1, year)
+    } else {
+        (month, year)
+    };
+
+    // end_month and end_year are simply parts[1] and parts[2] since the format uses week_end's month/year
+    let end_month = month;
+    let end_year = year;
+
+    if let Some(week_start) = chrono::NaiveDate::from_ymd_opt(start_year, start_month, start_day) {
         assert_eq!(
             week_start.weekday(),
             chrono::Weekday::Sun,
-            "Weekly period start day ({start_day}/{month}/{year}) should be Sunday, got {}",
+            "Weekly period start day ({start_day}/{start_month}/{start_year}) should be Sunday, got {}",
             week_start.weekday()
         );
 
-        if let Some(week_end) = chrono::NaiveDate::from_ymd_opt(year, month, end_day) {
+        if let Some(week_end) = chrono::NaiveDate::from_ymd_opt(end_year, end_month, end_day) {
             assert_eq!(
                 week_end.weekday(),
                 chrono::Weekday::Sat,
-                "Weekly period end day ({end_day}/{month}/{year}) should be Saturday, got {}",
+                "Weekly period end day ({end_day}/{end_month}/{end_year}) should be Saturday, got {}",
                 week_end.weekday()
             );
         }

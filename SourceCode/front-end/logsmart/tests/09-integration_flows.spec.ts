@@ -264,7 +264,7 @@ test.describe('Integration Flow: Template Lifecycle', () => {
 			await page.waitForTimeout(500);
 		}
 
-		const settingsButton = page.getByRole('button', { name: 'Settings' }).first();
+		const settingsButton = page.getByRole('button', { name: 'Settings', exact: true }).first();
 		if (await settingsButton.isVisible()) {
 			await settingsButton.click();
 			await page.waitForTimeout(500);
@@ -395,7 +395,7 @@ test.describe('Integration Flow: Settings and Profile Management', () => {
 		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
@@ -413,7 +413,7 @@ test.describe('Integration Flow: Settings and Profile Management', () => {
 		await page.waitForURL('**/users-admin');
 		await expect(page.locator('body')).toContainText('Updated Name');
 
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill('Test');

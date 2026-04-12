@@ -52,10 +52,7 @@ impl SmtpConfig {
 /// # Panics
 /// Panics if SMTP configuration cannot be loaded.
 async fn send_email(to_email: &str, subject: &str, body: &str) -> Result<()> {
-    let Ok(config) = SmtpConfig::load() else {
-        tracing::error!("SMTP not configured! {}", to_email);
-        panic!("SMTP not configured");
-    };
+    let config = SmtpConfig::load().map_err(|e| anyhow!("SMTP configuration error: {e}"))?;
 
     let sender = config.sender_address();
 
@@ -226,5 +223,164 @@ pub async fn send_branch_deleted_notification_email(
 
     send_email(to_email, subject, &body).await?;
     tracing::info!("Branch deleted notification email sent to {}", to_email);
+    Ok(())
+}
+
+/// Sends company data export email.
+///
+/// # Errors
+/// Returns an error if the email fails to send.
+pub async fn send_export_ready_notification(
+    to_email: &str,
+    company_name: &str,
+    company_id: &str,
+    filename: &str,
+    frontend_url: &str,
+) -> Result<()> {
+    let subject = "Log Data Export Ready - LogSmart";
+
+    let download_url =
+        format!("{frontend_url}/api/companies/{company_id}/export/download/{filename}");
+
+    let body = format!(
+        "Hello,\n\n\
+        Your log data export for '{company_name}' is ready to download.\n\n\
+        The export contains:\n\
+        - All log templates\n\
+        - All submitted log entries\n\n\
+        Download link: {download_url}\n\n\
+        This link will be available for 7 days.\n\n\
+        If you did not request this export, please contact your system administrator immediately.\n\n\
+        Best regards,\n\
+        The LogSmart Team"
+    );
+
+    send_email(to_email, subject, &body).await?;
+    tracing::info!("Export ready notification sent to {}", to_email);
+    Ok(())
+}
+
+pub async fn send_company_data_export(
+    to_email: &str,
+    company_name: &str,
+    company_address: &str,
+    export_data: &str,
+) -> Result<()> {
+    let subject = "Company Data Export - LogSmart";
+
+    let data_summary = if export_data.is_empty() {
+        String::new()
+    } else {
+        match serde_json::from_str::<serde_json::Value>(export_data) {
+            Ok(data) => {
+                let users_count = data["users"].as_array().map_or(0, std::vec::Vec::len);
+                let branches_count = data["branches"].as_array().map_or(0, std::vec::Vec::len);
+                let invitations_count =
+                    data["invitations"].as_array().map_or(0, std::vec::Vec::len);
+                let templates_count = data["log_templates"]
+                    .as_array()
+                    .map_or(0, std::vec::Vec::len);
+                format!(
+                    "\nExport Summary:\n\
+                    - Users: {users_count}\n\
+                    - Branches: {branches_count}\n\
+                    - Pending Invitations: {invitations_count}\n\
+                    - Log Templates: {templates_count}"
+                )
+            }
+            Err(_) => String::new(),
+        }
+    };
+
+    let body = format!(
+        "Hello,\n\n\
+        Your company data export for '{company_name}' is ready.\n\n\
+        Company Details:\n\
+        - Name: {company_name}\n\
+        - Address: {company_address}\n\
+        {data_summary}\n\n\
+        The full export data is available via the API and was included in this notification.\n\
+        Please note that this data will be retained on our servers for 30 days after the company deletion request.\n\n\
+        If you did not request this export, please contact your system administrator immediately.\n\n\
+        Best regards,\n\
+        The LogSmart Team"
+    );
+
+    send_email(to_email, subject, &body).await?;
+    tracing::info!("Company data export email sent to {}", to_email);
+    Ok(())
+}
+
+/// Sends company deletion request email with confirmation link.
+///
+/// # Errors
+/// Returns an error if the email fails to send.
+pub async fn send_company_deletion_request(
+    to_email: &str,
+    company_name: &str,
+    company_id: &str,
+    token: &str,
+    frontend_url: &str,
+) -> Result<()> {
+    let confirm_link =
+        format!("{frontend_url}/confirm-company-deletion?company_id={company_id}&token={token}");
+    let subject = "Confirm Company Deletion - LogSmart";
+    let body = format!(
+        "Hello,\n\n\
+        A request to delete '{company_name}' has been made.\n\n\
+        To confirm deletion, click the link below:\n{confirm_link}\n\n\
+        This link will expire in 7 days.\n\n\
+        If you did not request this deletion, please ignore this email.\n\n\
+        Best regards,\n\
+        The LogSmart Team"
+    );
+
+    send_email(to_email, subject, &body).await?;
+    tracing::info!("Company deletion request email sent to {}", to_email);
+    Ok(())
+}
+
+/// Sends company deletion notification after confirmation.
+///
+/// # Errors
+/// Returns an error if the email fails to send.
+pub async fn send_company_deleted_notification(company_name: &str) -> Result<()> {
+    let support_email =
+        std::env::var("SUPPORT_EMAIL").unwrap_or_else(|_| "support@logsmart.app".to_string());
+    let subject = "Company Deleted - LogSmart";
+    let body = format!(
+        "Hello,\n\n\
+        The company '{company_name}' has been deleted.\n\n\
+        All data will be retained for 30 days before permanent deletion.\n\n\
+        If you did not request this deletion, please contact support immediately.\n\n\
+        Best regards,\n\
+        The LogSmart Team"
+    );
+
+    send_email(&support_email, subject, &body).await?;
+    tracing::info!("Company deletion notification sent for {}", company_name);
+    Ok(())
+}
+
+/// Sends a company deletion notification to the user who confirmed the deletion.
+///
+/// # Errors
+/// Returns an error if the email fails to send.
+pub async fn send_user_company_deleted_notification(
+    user_email: &str,
+    company_name: &str,
+) -> Result<()> {
+    let subject = "Your Company Has Been Deleted - LogSmart";
+    let body = format!(
+        "Hello,\n\n\
+        Your company '{company_name}' has been successfully deleted.\n\n\
+        All data will be retained for 30 days before permanent deletion.\n\n\
+        If you did not request this deletion, please contact support immediately.\n\n\
+        Best regards,\n\
+        The LogSmart Team"
+    );
+
+    send_email(user_email, subject, &body).await?;
+    tracing::info!("Company deletion notification sent to user {}", user_email);
     Ok(())
 }

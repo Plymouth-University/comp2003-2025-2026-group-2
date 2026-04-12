@@ -27,6 +27,7 @@ impl UserFactory {
             company_id: Some(Uuid::new_v4().to_string()),
             branch_id: None,
             company_name: Some("Test Company".to_string()),
+            company_deleted_at: None,
             role: UserRole::Staff,
             created_at: Utc::now(),
             deleted_at: None,
@@ -95,6 +96,7 @@ impl CompanyFactory {
             name: "Test Company".to_string(),
             address: "123 Test Street".to_string(),
             created_at: Utc::now(),
+            ..Company::new()
         }
     }
 
@@ -523,6 +525,7 @@ pub async fn create_test_user(
         oauth_subject: row.get("oauth_subject"),
         oauth_picture: row.get("oauth_picture"),
         profile_picture_id: row.get("profile_picture_id"),
+        company_deleted_at: row.get("company_deleted_at"),
     })
     .unwrap()
 }
@@ -576,6 +579,7 @@ pub async fn create_test_user_with_role(
         oauth_subject: row.get("oauth_subject"),
         oauth_picture: row.get("oauth_picture"),
         profile_picture_id: row.get("profile_picture_id"),
+        company_deleted_at: row.get("company_deleted_at"),
     })
     .unwrap()
 }
@@ -595,6 +599,7 @@ pub async fn create_test_company(pool: &sqlx::PgPool, name: &str, address: &str)
     .bind(&company.id)
     .bind(&company.name)
     .bind(&company.address)
+    .bind(&company.logo_id)
     .fetch_one(pool)
     .await
     .map(|row| Company {
@@ -602,6 +607,7 @@ pub async fn create_test_company(pool: &sqlx::PgPool, name: &str, address: &str)
         name: row.get("name"),
         address: row.get("address"),
         created_at: row.get("created_at"),
+        ..Company::new()
     })
     .unwrap()
 }

@@ -29,6 +29,11 @@ async fn get_authenticated_user(
 ) -> Result<UserRecord, RoleError> {
     let user_id = &claims.user_id;
     if let Some(user) = state.user_cache.get(user_id).await {
+        if user.company_deleted_at.is_some() {
+            return Err(RoleError::CompanyDeleted(
+                "Your company has been deleted. Please contact support.".to_string(),
+            ));
+        }
         return Ok(user);
     }
 
@@ -36,6 +41,12 @@ async fn get_authenticated_user(
         .await
         .map_err(|_| RoleError::InvalidToken)?
         .ok_or(RoleError::InvalidToken)?;
+
+    if user.company_deleted_at.is_some() {
+        return Err(RoleError::CompanyDeleted(
+            "Your company has been deleted. Please contact support.".to_string(),
+        ));
+    }
 
     state.user_cache.insert(user_id.clone(), user.clone()).await;
     Ok(user)
@@ -91,6 +102,7 @@ pub enum RoleError {
     MissingToken,
     InvalidToken,
     InsufficientPermissions,
+    CompanyDeleted(String),
 }
 
 impl From<AuthError> for RoleError {
@@ -104,26 +116,24 @@ impl From<AuthError> for RoleError {
 
 impl IntoResponse for RoleError {
     fn into_response(self) -> Response {
-        let (status, error_message) = match self {
-            RoleError::MissingToken => (
-                axum::http::StatusCode::UNAUTHORIZED,
-                "Missing authorization token",
-            ),
-            RoleError::InvalidToken => (
-                axum::http::StatusCode::UNAUTHORIZED,
-                "Invalid or expired token",
-            ),
-            RoleError::InsufficientPermissions => (
-                axum::http::StatusCode::FORBIDDEN,
-                "Insufficient permissions for this operation",
-            ),
-        };
-
-        let body = Json(json!({
-            "error": error_message
-        }));
-
-        (status, body).into_response()
+        match self {
+            RoleError::MissingToken => {
+                let body = Json(json!({ "error": "Missing authorization token" }));
+                (axum::http::StatusCode::UNAUTHORIZED, body).into_response()
+            }
+            RoleError::InvalidToken => {
+                let body = Json(json!({ "error": "Invalid or expired token" }));
+                (axum::http::StatusCode::UNAUTHORIZED, body).into_response()
+            }
+            RoleError::InsufficientPermissions => {
+                let body = Json(json!({ "error": "Insufficient permissions for this operation" }));
+                (axum::http::StatusCode::FORBIDDEN, body).into_response()
+            }
+            RoleError::CompanyDeleted(msg) => {
+                let body = Json(json!({ "error": msg }));
+                (axum::http::StatusCode::FORBIDDEN, body).into_response()
+            }
+        }
     }
 }
 

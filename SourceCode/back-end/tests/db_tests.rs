@@ -66,6 +66,7 @@ fn test_user_get_role_company_manager() {
         oauth_subject: None,
         profile_picture_id: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert!(!user.is_readonly_hq());
 }
@@ -149,6 +150,7 @@ fn test_user_get_role_staff() {
         deleted_at: None,
         oauth_provider: None,
         profile_picture_id: None,
+        company_deleted_at: None,
         oauth_subject: None,
         oauth_picture: None,
     };
@@ -170,6 +172,7 @@ fn test_user_is_company_manager_true() {
         created_at: chrono::Utc::now(),
         deleted_at: None,
         oauth_provider: None,
+        company_deleted_at: None,
         oauth_subject: None,
         profile_picture_id: None,
         oauth_picture: None,
@@ -193,6 +196,7 @@ fn test_user_is_company_manager_false() {
         deleted_at: None,
         oauth_provider: None,
         oauth_subject: None,
+        company_deleted_at: None,
         profile_picture_id: None,
         oauth_picture: None,
     };
@@ -217,6 +221,7 @@ fn test_user_is_branch_manager_true() {
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert!(user.is_branch_manager());
 }
@@ -239,6 +244,7 @@ fn test_user_is_staff_true() {
         profile_picture_id: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert!(user.is_staff());
 }
@@ -261,6 +267,7 @@ fn test_user_creation() {
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert_eq!(user.id, "user2");
     assert_eq!(user.email, "user@example.com");
@@ -275,15 +282,13 @@ fn test_user_creation() {
 
 #[test]
 fn test_company_creation() {
-    let company = Company {
-        id: "company1".to_string(),
-        name: "Test Company".to_string(),
-        address: "123 Main St".to_string(),
-        created_at: chrono::Utc::now(),
-    };
-    assert_eq!(company.id, "company1");
+    let company = Company::new().with_name_and_address("Test Company", "123 Main St");
+
     assert_eq!(company.name, "Test Company");
     assert_eq!(company.address, "123 Main St");
+    assert_eq!(company.logo_id, None);
+    assert_eq!(company.data_exported_at, None);
+    assert_eq!(company.deleted_at, None);
 }
 
 #[test]
@@ -344,6 +349,7 @@ fn test_user_without_company() {
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert_eq!(user.company_id, None);
     assert_eq!(user.branch_id, None);
@@ -381,6 +387,7 @@ fn test_user_can_manage_company() {
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert!(company_manager.can_manage_company());
 
@@ -400,6 +407,7 @@ fn test_user_can_manage_company() {
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert!(logsmart_admin.can_manage_company());
 
@@ -419,6 +427,7 @@ fn test_user_can_manage_company() {
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert!(!staff.can_manage_company());
 }
@@ -441,6 +450,7 @@ fn test_user_can_manage_branch() {
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert!(company_manager.can_manage_branch());
 
@@ -460,6 +470,7 @@ fn test_user_can_manage_branch() {
         profile_picture_id: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert!(branch_manager.can_manage_branch());
 
@@ -479,6 +490,7 @@ fn test_user_can_manage_branch() {
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert!(!staff.can_manage_branch());
 }
@@ -501,6 +513,7 @@ fn test_user_is_readonly_hq_true() {
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert!(user.is_readonly_hq());
 }
@@ -523,6 +536,7 @@ fn test_user_is_readonly_hq_false_staff_with_branch() {
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert!(!user.is_readonly_hq());
 }
@@ -545,6 +559,7 @@ fn test_user_is_readonly_hq_false_company_manager() {
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert!(!user.is_readonly_hq());
 }
@@ -567,6 +582,7 @@ fn test_user_is_readonly_hq_false_branch_manager() {
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert!(!user.is_readonly_hq());
 }
@@ -589,6 +605,7 @@ fn test_user_is_readonly_hq_false_logsmart_admin() {
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert!(!user.is_readonly_hq());
 }
@@ -611,6 +628,7 @@ fn test_user_is_readonly_hq_false_no_company() {
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
     assert!(!user.is_readonly_hq());
 }

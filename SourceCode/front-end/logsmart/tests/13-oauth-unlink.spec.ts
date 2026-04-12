@@ -64,6 +64,8 @@ test.describe('Google OAuth Unlink', () => {
 		await page.waitForURL(/localhost:8080/, { timeout: 10000 });
 
 		await fillMockOAuthForm(page, adminCreds.email, adminCreds.firstName, adminCreds.lastName);
-		await expect(page.locator('body')).toContainText(/no account found|not linked|link.*account/i);
+		await expect(page.url()).toEqual(
+			'http://localhost:5173/login?oauth_error=authentication_failed'
+		);
 	});
 });

@@ -1,6 +1,7 @@
 pub mod auth_handlers;
 pub mod branch_handlers;
 pub mod clock_handlers;
+pub mod company_handlers;
 pub mod health_handlers;
 pub mod invitation_handlers;
 pub mod llm_handlers;
@@ -13,6 +14,7 @@ pub mod user_handlers;
 pub use auth_handlers::*;
 pub use branch_handlers::*;
 pub use clock_handlers::*;
+pub use company_handlers::*;
 pub use health_handlers::*;
 pub use invitation_handlers::*;
 pub use llm_handlers::*;

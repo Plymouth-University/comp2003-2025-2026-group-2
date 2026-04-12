@@ -31,13 +31,13 @@ test.describe('Settings - Profile Updates', () => {
 	});
 
 	test('access_settings_page', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		await expect(page).toHaveURL('/settings');
 	});
 
 	test('view_current_profile_information', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		await expect(page.getByRole('textbox', { name: 'First Name' })).toBeVisible();
 		await expect(page.getByRole('textbox', { name: 'Last Name' })).toBeVisible();
@@ -45,14 +45,14 @@ test.describe('Settings - Profile Updates', () => {
 	});
 
 	test('email_field_is_readonly', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		const emailField = page.getByRole('textbox', { name: 'Email' });
 		await expect(emailField).toBeDisabled();
 	});
 
 	test('update_first_name', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill('UpdatedFirst');
@@ -61,7 +61,7 @@ test.describe('Settings - Profile Updates', () => {
 	});
 
 	test('update_last_name', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
 		await page.getByRole('textbox', { name: 'Last Name' }).fill('UpdatedLast');
@@ -70,7 +70,7 @@ test.describe('Settings - Profile Updates', () => {
 	});
 
 	test('update_both_names', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill('Test');
@@ -81,7 +81,7 @@ test.describe('Settings - Profile Updates', () => {
 	});
 
 	test('empty_first_name_validation', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		const saveButton = page.getByRole('button', { name: 'Save Profile' });
@@ -89,7 +89,7 @@ test.describe('Settings - Profile Updates', () => {
 	});
 
 	test('empty_last_name_validation', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
 		const saveButton = page.getByRole('button', { name: 'Save Profile' });
@@ -97,7 +97,7 @@ test.describe('Settings - Profile Updates', () => {
 	});
 
 	test('very_long_first_name', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		const longName = 'A'.repeat(100);
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
@@ -107,7 +107,7 @@ test.describe('Settings - Profile Updates', () => {
 	});
 
 	test('special_characters_in_names', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 
 		const originalFirstName = await page.getByRole('textbox', { name: 'First Name' }).inputValue();
@@ -146,7 +146,7 @@ test.describe('Settings - Password Reset', () => {
 	});
 
 	test('request_password_reset_from_settings', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		const resetButton = page.getByRole('button', { name: 'Request Password Reset' });
 		if (await resetButton.isVisible()) {
@@ -156,7 +156,7 @@ test.describe('Settings - Password Reset', () => {
 	});
 
 	test('password_reset_success_message', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		const resetButton = page.getByRole('button', { name: 'Request Password Reset' });
 		if (await resetButton.isVisible()) {
@@ -182,7 +182,7 @@ test.describe('Settings - Dark Mode', () => {
 	});
 
 	test('toggle_dark_mode_on', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		const darkModeToggle = page
 			.locator('input[type="checkbox"]')
@@ -197,7 +197,7 @@ test.describe('Settings - Dark Mode', () => {
 	});
 
 	test('toggle_dark_mode_off', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		const darkModeToggle = page
 			.locator('input[type="checkbox"]')
@@ -210,7 +210,7 @@ test.describe('Settings - Dark Mode', () => {
 	});
 
 	test('dark_mode_persists_across_pages', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		const darkModeToggle = page
 			.locator('input[type="checkbox"]')
@@ -222,13 +222,13 @@ test.describe('Settings - Dark Mode', () => {
 			await page.getByRole('link', { name: 'Dashboard', exact: true }).click();
 			await page.waitForURL('**/dashboard');
 			await page.waitForTimeout(500);
-			await page.getByRole('link', { name: 'Settings' }).click();
+			await page.getByRole('link', { name: 'Settings', exact: true }).click();
 			await page.waitForURL('**/settings');
 		}
 	});
 
 	test('dark_mode_persists_across_sessions', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		const darkModeToggle = page
 			.locator('input[type="checkbox"]')
@@ -243,7 +243,7 @@ test.describe('Settings - Dark Mode', () => {
 			await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
 			await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 			await page.waitForURL('**/dashboard');
-			await page.getByRole('link', { name: 'Settings' }).click();
+			await page.getByRole('link', { name: 'Settings', exact: true }).click();
 			await page.waitForURL('**/settings');
 			await page.waitForTimeout(500);
 		}
@@ -294,13 +294,13 @@ test.describe('Settings - Member Access', () => {
 		await page.waitForURL('**/logs-list');
 	});
 	test('member_can_access_settings', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		await expect(page).toHaveURL('/settings');
 	});
 
 	test('member_can_update_profile', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill('Invited');
@@ -309,7 +309,7 @@ test.describe('Settings - Member Access', () => {
 	});
 
 	test('member_can_toggle_dark_mode', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 		const darkModeToggle = page
 			.locator('input[type="checkbox"]')

@@ -90,6 +90,11 @@ services:
       - mailhog
       - mockoidc
     secrets: []
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6767/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     
 volumes:
   cargo-cache:

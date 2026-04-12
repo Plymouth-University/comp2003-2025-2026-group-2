@@ -1191,8 +1191,8 @@ pub fn compute_due_date_for_period(schedule: &Schedule, period: &str) -> Option<
             let week_end = chrono::NaiveDate::from_ymd_opt(normalize_year(year)?, month, end_day)?;
             let week_start = week_end - chrono::Duration::days(6);
             let target_day = u32::from(schedule.day_of_week.unwrap_or(0));
-            let days_to_add = (target_day as i64)
-                .wrapping_sub(week_start.weekday().num_days_from_sunday() as i64);
+            let days_to_add = i64::from(target_day)
+                .wrapping_sub(i64::from(week_start.weekday().num_days_from_sunday()));
             let days_to_add = if days_to_add < 0 {
                 days_to_add + 7
             } else {
@@ -1574,8 +1574,8 @@ pub fn get_missed_periods(
 
             let start_date = if let Some(last) = last_period {
                 let day_after = last + chrono::Duration::days(1);
-                let days_to_target = (target_day as i64)
-                    .wrapping_sub(day_after.weekday().num_days_from_sunday() as i64);
+                let days_to_target = i64::from(target_day)
+                    .wrapping_sub(i64::from(day_after.weekday().num_days_from_sunday()));
                 let days_to_target = if days_to_target <= 0 {
                     days_to_target + 7
                 } else {
@@ -1583,8 +1583,8 @@ pub fn get_missed_periods(
                 };
                 day_after + chrono::Duration::days(days_to_target)
             } else if let Some(start) = start_from {
-                let days_to_target =
-                    (target_day as i64).wrapping_sub(start.weekday().num_days_from_sunday() as i64);
+                let days_to_target = i64::from(target_day)
+                    .wrapping_sub(i64::from(start.weekday().num_days_from_sunday()));
                 let days_to_target = if days_to_target < 0 {
                     days_to_target + 7
                 } else {
@@ -1592,8 +1592,8 @@ pub fn get_missed_periods(
                 };
                 start + chrono::Duration::days(days_to_target)
             } else {
-                let days_to_target =
-                    (target_day as i64).wrapping_sub(today.weekday().num_days_from_sunday() as i64);
+                let days_to_target = i64::from(target_day)
+                    .wrapping_sub(i64::from(today.weekday().num_days_from_sunday()));
                 let days_to_target = if days_to_target < 0 {
                     days_to_target + 7
                 } else {
@@ -1647,27 +1647,27 @@ pub fn get_missed_periods(
 
             while current <= today {
                 let days_in_month: u32 = if current_month == 12 {
-                    match chrono::NaiveDate::from_ymd_opt(current_year + 1, 1, 1) {
-                        Some(date) => date.pred_opt().map(|d| d.day()).unwrap_or(0),
-                        None => {
-                            tracing::warn!(
-                                "Invalid date calculated for monthly frequency: {}-12-31",
-                                current_year + 1
-                            );
-                            break;
-                        }
+                    if let Some(date) = chrono::NaiveDate::from_ymd_opt(current_year + 1, 1, 1) {
+                        date.pred_opt().map_or(0, |d| d.day())
+                    } else {
+                        tracing::warn!(
+                            "Invalid date calculated for monthly frequency: {}-12-31",
+                            current_year + 1
+                        );
+                        break;
                     }
                 } else {
-                    match chrono::NaiveDate::from_ymd_opt(current_year, current_month + 1, 1) {
-                        Some(date) => date.pred_opt().map(|d| d.day()).unwrap_or(0),
-                        None => {
-                            tracing::warn!(
-                                "Invalid date calculated for monthly frequency: {}-{}-01",
-                                current_year,
-                                current_month + 1
-                            );
-                            break;
-                        }
+                    if let Some(date) =
+                        chrono::NaiveDate::from_ymd_opt(current_year, current_month + 1, 1)
+                    {
+                        date.pred_opt().map_or(0, |d| d.day())
+                    } else {
+                        tracing::warn!(
+                            "Invalid date calculated for monthly frequency: {}-{}-01",
+                            current_year,
+                            current_month + 1
+                        );
+                        break;
                     }
                 };
 
@@ -1687,16 +1687,17 @@ pub fn get_missed_periods(
                 } else {
                     current_month += 1;
                 }
-                current = match chrono::NaiveDate::from_ymd_opt(current_year, current_month, 1) {
-                    Some(date) => date,
-                    None => {
-                        tracing::warn!(
-                            "Invalid date calculated for monthly frequency: {}-{}-01",
-                            current_year,
-                            current_month
-                        );
-                        break;
-                    }
+                current = if let Some(date) =
+                    chrono::NaiveDate::from_ymd_opt(current_year, current_month, 1)
+                {
+                    date
+                } else {
+                    tracing::warn!(
+                        "Invalid date calculated for monthly frequency: {}-{}-01",
+                        current_year,
+                        current_month
+                    );
+                    break;
                 };
             }
         }
@@ -1829,26 +1830,24 @@ pub fn format_period_for_frequency(frequency: &Frequency) -> String {
         Frequency::Daily => now.format("%d/%m/%Y").to_string(),
         Frequency::Weekly => {
             let days_since_monday = now.weekday().num_days_from_sunday();
-            let week_start = match (now.date_naive()
+            let week_start = if let Some(dt) = (now.date_naive()
                 - chrono::Duration::days(i64::from(days_since_monday)))
             .and_hms_opt(0, 0, 0)
             {
-                Some(dt) => dt.and_utc(),
-                None => {
-                    tracing::warn!("Error finding week start date: {now}");
-                    // Fall back to a simple date format
-                    return now.format("%d/%m/%Y").to_string();
-                }
+                dt.and_utc()
+            } else {
+                tracing::warn!("Error finding week start date: {now}");
+                // Fall back to a simple date format
+                return now.format("%d/%m/%Y").to_string();
             };
-            let week_end = match (week_start.date_naive() + chrono::Duration::days(6))
-                .and_hms_opt(23, 59, 59)
+            let week_end = if let Some(dt) =
+                (week_start.date_naive() + chrono::Duration::days(6)).and_hms_opt(23, 59, 59)
             {
-                Some(dt) => dt.and_utc(),
-                None => {
-                    tracing::warn!("Error finding week end date: {now}");
-                    // Fall back to a simple date format
-                    return now.format("%d/%m/%Y").to_string();
-                }
+                dt.and_utc()
+            } else {
+                tracing::warn!("Error finding week end date: {now}");
+                // Fall back to a simple date format
+                return now.format("%d/%m/%Y").to_string();
             };
 
             format!(
@@ -1907,75 +1906,4 @@ pub fn process_template_layout_with_period_string(
             processed_field
         })
         .collect()
-}
-
-const PROFILE_PICTURES_COLLECTION: &str = "profile_pictures";
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-struct ProfilePictureDoc {
-    _id: mongodb::bson::Uuid,
-    user_id: String,
-    data: Vec<u8>,
-    content_type: String,
-    created_at: chrono::DateTime<chrono::Utc>,
-}
-
-pub async fn upload_profile_picture(
-    client: &mongodb::Client,
-    data: Vec<u8>,
-    user_id: &str,
-    content_type: &str,
-) -> Result<String> {
-    let db = client.database("logs_db");
-    let collection: mongodb::Collection<ProfilePictureDoc> =
-        db.collection(PROFILE_PICTURES_COLLECTION);
-
-    let file_id = mongodb::bson::Uuid::new();
-
-    let doc = ProfilePictureDoc {
-        _id: file_id,
-        user_id: user_id.to_string(),
-        data,
-        content_type: content_type.to_string(),
-        created_at: chrono::Utc::now(),
-    };
-
-    collection.insert_one(doc).await?;
-
-    Ok(file_id.to_string())
-}
-
-pub async fn get_profile_picture(
-    client: &mongodb::Client,
-    file_id: &str,
-) -> Result<Option<(String, Vec<u8>)>> {
-    let db = client.database("logs_db");
-    let collection: mongodb::Collection<ProfilePictureDoc> =
-        db.collection(PROFILE_PICTURES_COLLECTION);
-
-    let oid = mongodb::bson::Uuid::parse_str(file_id)
-        .map_err(|e| anyhow::anyhow!("Invalid file ID: {e}"))?;
-
-    let filter = mongodb::bson::doc! { "_id": oid };
-
-    let doc = collection.find_one(filter).await?;
-
-    match doc {
-        Some(picture) => Ok(Some((picture.content_type, picture.data))),
-        None => Ok(None),
-    }
-}
-
-pub async fn delete_profile_picture(client: &mongodb::Client, file_id: &str) -> Result<()> {
-    let db = client.database("logs_db");
-    let collection: mongodb::Collection<ProfilePictureDoc> =
-        db.collection(PROFILE_PICTURES_COLLECTION);
-
-    let oid = mongodb::bson::Uuid::parse_str(file_id)
-        .map_err(|e| anyhow::anyhow!("Invalid file ID: {e}"))?;
-
-    let filter = mongodb::bson::doc! { "_id": oid };
-    collection.delete_one(filter).await?;
-
-    Ok(())
 }

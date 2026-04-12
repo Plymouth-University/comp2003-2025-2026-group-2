@@ -140,6 +140,31 @@ const getBranchDeletionToken = async (email: string, maxAttempts = 30): Promise<
 	return null;
 };
 
+const getCompanyDeletionToken = async (email: string, maxAttempts = 30): Promise<string | null> => {
+	for (let i = 0; i < maxAttempts; i++) {
+		const mailhogEmail = await getEmailByRecipient(email);
+
+		if (mailhogEmail) {
+			const body = decodeMailBody(mailhogEmail);
+
+			const tokenMatch = body.match(/token=([a-zA-Z0-9_-]+)/);
+			const companyIdMatch = body.match(/company_id=([a-zA-Z0-9_-]+)/);
+			const companyNameMatch = body.match(/delete '([^']+)'/);
+			if (tokenMatch && companyIdMatch) {
+				return JSON.stringify({
+					token: tokenMatch[1],
+					companyId: companyIdMatch[1],
+					companyName: companyNameMatch ? companyNameMatch[1] : null
+				});
+			}
+		}
+
+		await new Promise((resolve) => setTimeout(resolve, 500));
+	}
+
+	return null;
+};
+
 const clearMailhogEmails = async (): Promise<void> => {
 	try {
 		await fetch(`${MAILHOG_API_URL}/v1/messages`, { method: 'DELETE' });
@@ -176,23 +201,56 @@ const register = async (browser: Browser, close = true) => {
 	await page.goto('http://localhost:5173/');
 	await page.getByRole('link', { name: 'Register Company' }).click();
 	await page.waitForURL('**/register-company');
-	await page.getByRole('textbox', { name: 'Company Name' }).click();
-	await page.getByRole('textbox', { name: 'Company Name' }).fill(companyName);
-	await page.getByRole('textbox', { name: 'Company Name' }).press('Tab');
-	await page
-		.getByRole('textbox', { name: 'Company Address' })
-		.fill('TestAddress1, ABC\nSecond Line,\n2!');
+
+	await page.evaluate((companyName) => {
+		const companyNameInput = document.querySelector(
+			'input[placeholder="LogSmart Ltd"]'
+		) as HTMLInputElement;
+		if (companyNameInput) {
+			Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set.call(
+				companyNameInput,
+				companyName
+			);
+			companyNameInput.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true }));
+		}
+		const companyAddressInput = document.querySelector(
+			'input[placeholder="Search for address..."]'
+		) as HTMLInputElement;
+		if (companyAddressInput) {
+			Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set.call(
+				companyAddressInput,
+				'TestAddress1, ABC'
+			);
+			companyAddressInput.dispatchEvent(
+				new InputEvent('input', { bubbles: true, cancelable: true })
+			);
+		}
+	}, companyName);
+
+	await page.waitForTimeout(1000);
+	await expect(page.getByRole('button', { name: 'Next Step' })).toBeEnabled();
 	await page.getByRole('button', { name: 'Next Step' }).click();
 	await page.getByRole('textbox', { name: 'First Name' }).click();
 	await page.getByRole('textbox', { name: 'First Name' }).fill(firstName);
-	await page.getByRole('textbox', { name: 'First Name' }).press('Tab');
+	await page.getByRole('textbox', { name: 'First Name' }).dispatchEvent('blur');
+
+	await page.getByRole('textbox', { name: 'Last Name' }).click();
 	await page.getByRole('textbox', { name: 'Last Name' }).fill(lastName);
-	await page.getByRole('textbox', { name: 'Last Name' }).press('Tab');
+	await page.getByRole('textbox', { name: 'Last Name' }).dispatchEvent('blur');
+
+	await page.getByRole('textbox', { name: 'Email' }).click();
 	await page.getByRole('textbox', { name: 'Email' }).fill(email);
-	await page.getByRole('textbox', { name: 'Email' }).press('Tab');
-	await page.getByRole('textbox', { name: 'Password Show password', exact: true }).fill(password);
-	await page.getByRole('textbox', { name: 'Confirm Password Show password' }).click();
-	await page.getByRole('textbox', { name: 'Confirm Password Show password' }).fill(password);
+	await page.getByRole('textbox', { name: 'Email' }).dispatchEvent('blur');
+
+	await page.getByPlaceholder('Min 8 chars').click();
+	await page.getByPlaceholder('Min 8 chars').fill(password);
+	await page.getByPlaceholder('Min 8 chars').dispatchEvent('blur');
+
+	await page.getByPlaceholder('Re-enter password').click();
+	await page.getByPlaceholder('Re-enter password').fill(password);
+	await page.getByPlaceholder('Re-enter password').dispatchEvent('blur');
+
+	await page.waitForTimeout(500);
 	await page.getByRole('button', { name: 'Create Account' }).click();
 	if (
 		await page
@@ -373,6 +431,7 @@ export {
 	getEmailByRecipient,
 	getInvitationToken,
 	getBranchDeletionToken,
+	getCompanyDeletionToken,
 	getPasswordResetToken,
 	clearMailhogEmails,
 	requestPasswordResetToken,

@@ -39,6 +39,7 @@ pub struct RateLimitState {
     pub ip_general_limiter: Arc<IpLimiter>,
     pub email_login_limiter: Arc<StringLimiter>,
     pub email_register_limiter: Arc<StringLimiter>,
+    pub export_limiter: Arc<StringLimiter>,
     pub disabled: bool,
 }
 
@@ -58,6 +59,7 @@ impl RateLimitState {
             ip_general_limiter: Arc::new(DashMap::new()),
             email_login_limiter: Arc::new(DashMap::new()),
             email_register_limiter: Arc::new(DashMap::new()),
+            export_limiter: Arc::new(DashMap::new()),
             disabled,
         }
     }
@@ -70,6 +72,7 @@ impl RateLimitState {
             ip_general_limiter: Arc::new(DashMap::new()),
             email_login_limiter: Arc::new(DashMap::new()),
             email_register_limiter: Arc::new(DashMap::new()),
+            export_limiter: Arc::new(DashMap::new()),
             disabled: true,
         }
     }
@@ -80,10 +83,17 @@ impl RateLimitState {
         quota: Quota,
     ) -> Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>> {
         let now = Instant::now();
-        map.entry(ip)
-            .or_insert_with(|| (Arc::new(RateLimiter::direct(quota)), now))
-            .0
-            .clone()
+        match map.entry(ip) {
+            dashmap::mapref::entry::Entry::Occupied(mut entry) => {
+                entry.get_mut().1 = now;
+                entry.get().0.clone()
+            }
+            dashmap::mapref::entry::Entry::Vacant(entry) => {
+                let limiter = Arc::new(RateLimiter::direct(quota));
+                entry.insert((limiter.clone(), now));
+                limiter
+            }
+        }
     }
 
     fn get_or_create_string_limiter(
@@ -92,10 +102,17 @@ impl RateLimitState {
         quota: Quota,
     ) -> Arc<RateLimiter<NotKeyed, InMemoryState, DefaultClock>> {
         let now = Instant::now();
-        map.entry(key)
-            .or_insert_with(|| (Arc::new(RateLimiter::direct(quota)), now))
-            .0
-            .clone()
+        match map.entry(key) {
+            dashmap::mapref::entry::Entry::Occupied(mut entry) => {
+                entry.get_mut().1 = now;
+                entry.get().0.clone()
+            }
+            dashmap::mapref::entry::Entry::Vacant(entry) => {
+                let limiter = Arc::new(RateLimiter::direct(quota));
+                entry.insert((limiter.clone(), now));
+                limiter
+            }
+        }
     }
 
     pub fn cleanup_expired_entries(&self, max_age: std::time::Duration) {
@@ -117,12 +134,20 @@ impl RateLimitState {
             .retain(|_, (_, last_access)| now.duration_since(*last_access) < max_age);
     }
 
+    pub fn cleanup_export_entries(&self, max_age: std::time::Duration) {
+        let now = Instant::now();
+
+        self.export_limiter
+            .retain(|_, (_, last_access)| now.duration_since(*last_access) < max_age);
+    }
+
     pub fn spawn_cleanup_task(self) {
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(300));
             loop {
                 interval.tick().await;
                 self.cleanup_expired_entries(std::time::Duration::from_secs(3600));
+                self.cleanup_export_entries(std::time::Duration::from_secs(8 * 24 * 60 * 60));
                 tracing::debug!("Rate limiter cleanup completed");
             }
         });
@@ -219,6 +244,22 @@ impl RateLimitState {
         let limiter = Self::get_or_create_ip_limiter(&self.ip_general_limiter, ip, quota);
         limiter.check().is_ok()
     }
+
+    /// Checks if a company export request is allowed (once per week per company).
+    ///
+    /// # Panics
+    /// Panics if the quota period is invalid.
+    #[must_use]
+    pub fn check_export(&self, company_id: &str) -> bool {
+        if self.disabled {
+            return true;
+        }
+        let quota = Quota::with_period(std::time::Duration::from_secs(7 * 24 * 60 * 60))
+            .expect("Invalid export quota period");
+        let limiter =
+            Self::get_or_create_string_limiter(&self.export_limiter, company_id.to_string(), quota);
+        limiter.check().is_ok()
+    }
 }
 
 impl Default for RateLimitState {
@@ -270,6 +311,8 @@ pub async fn rate_limit_middleware(
         app_state.rate_limit.check_register(ip)
     } else if path.contains("/auth/google/") || path.contains("/auth/oauth/") {
         app_state.rate_limit.check_oauth(ip)
+    } else if path.contains("/export") {
+        app_state.rate_limit.check_general(ip)
     } else {
         app_state.rate_limit.check_general(ip)
     };

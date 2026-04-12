@@ -314,7 +314,7 @@ test.describe('Templates Dashboard - Admin Access', () => {
 	test('click_settings_opens_schedule_wizard', async ({ page }) => {
 		await page.getByRole('link', { name: 'Templates Dashboard' }).click();
 		await page.waitForURL('**/templates-dashboard');
-		const settingsButton = page.getByRole('button', { name: 'Settings' }).first();
+		const settingsButton = page.getByRole('button', { name: 'Settings', exact: true }).first();
 		if (await settingsButton.isVisible()) {
 			await settingsButton.click();
 			await page.waitForTimeout(500);
@@ -324,7 +324,7 @@ test.describe('Templates Dashboard - Admin Access', () => {
 	test('update_template_schedule', async ({ page }) => {
 		await page.getByRole('link', { name: 'Templates Dashboard' }).click();
 		await page.waitForURL('**/templates-dashboard');
-		const settingsButton = page.getByRole('button', { name: 'Settings' }).first();
+		const settingsButton = page.getByRole('button', { name: 'Settings', exact: true }).first();
 		if (await settingsButton.isVisible()) {
 			await settingsButton.click();
 			await page.waitForTimeout(500);
