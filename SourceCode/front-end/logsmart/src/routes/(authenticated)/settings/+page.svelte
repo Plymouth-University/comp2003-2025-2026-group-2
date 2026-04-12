@@ -144,24 +144,6 @@
 		}
 	}
 
-	async function deleteAccount() {
-		if (!confirm('Are you sure you want to delete your account?'))
-			try {
-				const resp = await fetch('/api/auth/profile');
-				if (resp.ok) {
-					showSuccessMessage = true;
-					setTimeout(() => {
-						showSuccessMessage = false;
-					}, 3000);
-				} else {
-					const err = await resp.json();
-					errorMessage = err.error || 'Failed to delete account.';
-				}
-			} catch {
-				errorMessage = 'Failed to delete account.';
-			}
-	}
-
 	$effect(() => {
 		firstName = data.user?.first_name || '';
 		lastName = data.user?.last_name || '';
@@ -543,30 +525,6 @@
 							</p>
 						</div>
 					</div>
-				</div>
-			</div>
-			<!-- Delete account -->
-			<div
-				class="border-2"
-				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-			>
-				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
-					<h2 class="text-xl font-bold" style="color:#ef4444;">Delete Account</h2>
-				</div>
-				<div class="px-6 py-6" style="background-color: var(--bg-primary);">
-					<div class="max-w-2xl">
-						<p class="mb-4" style="color: var(--text-secondary);">
-							Accounts are recoverable for 30 days after deletion.
-						</p>
-					</div>
-					<button
-						onclick={deleteAccount}
-						class="cursor-pointer border-2 border-solid px-8 py-2 text-red-500 hover:text-red-700"
-						style="2px solid var(--border-primary);"
-						aria-label="Delete account"
-					>
-						Delete Account
-					</button>
 				</div>
 			</div>
 		</div>
