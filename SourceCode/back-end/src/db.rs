@@ -154,7 +154,7 @@ impl Default for Company {
 }
 
 impl Company {
-    #[must_use] 
+    #[must_use]
     pub fn new() -> Self {
         Self {
             id: Uuid::new_v4().to_string(),
@@ -175,7 +175,7 @@ impl Company {
         self.deleted_at.is_some()
     }
 
-    #[must_use] 
+    #[must_use]
     pub fn with_name_and_address(mut self, name: &str, address: &str) -> Self {
         self.name = name.to_string();
         self.address = address.to_string();
@@ -789,7 +789,7 @@ pub async fn confirm_company_deletion(
         r"
         UPDATE companies
         SET deleted_at = NOW(), deletion_token = NULL, deletion_requested_at = NULL
-        WHERE id = $1 AND deletion_token = $2 AND deletion_requested_at >= NOW() - INTERVAL '6 hours'
+        WHERE id = $1 AND deletion_token = $2 AND deletion_requested_at IS NOT NULL AND deletion_requested_at > NOW() - INTERVAL '6 hours'
         RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token, deletion_requested_by_email
         ",
     )

@@ -316,15 +316,16 @@ pub async fn google_callback(
             Ok(response)
         }
         Err((_status, value)) => {
-            let error_code = value
-                .get("error")
-                .and_then(|e| e.as_str())
-                .map_or("authentication_failed", |e| match e {
-                    "user_not_found" => "user_not_found",
-                    "account_locked" => "account_locked",
-                    "invalid_credentials" => "invalid_credentials",
-                    _ => "authentication_failed",
-                });
+            let error_code =
+                value
+                    .get("error")
+                    .and_then(|e| e.as_str())
+                    .map_or("authentication_failed", |e| match e {
+                        "user_not_found" => "user_not_found",
+                        "account_locked" => "account_locked",
+                        "invalid_credentials" => "invalid_credentials",
+                        _ => "authentication_failed",
+                    });
 
             let redirect_url = format!("{frontend_url}/login?oauth_error={error_code}");
             Ok(Redirect::to(&redirect_url).into_response())

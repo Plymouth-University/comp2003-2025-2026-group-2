@@ -1830,10 +1830,7 @@ async fn test_delete_company_with_expired_export_fails() {
     .await;
 
     assert_eq!(status, StatusCode::BAD_REQUEST);
-    assert!(body["error"]
-        .as_str()
-        .unwrap()
-        .contains("expired"));
+    assert!(body["error"].as_str().unwrap().contains("expired"));
 }
 
 #[tokio::test]
@@ -1891,13 +1888,12 @@ async fn test_deletion_confirmation_token_expires_after_6_hours() {
         .expect("Failed to connect to database");
 
     // Get the deletion token
-    let company: (Option<String>,) = sqlx::query_as(
-        "SELECT deletion_token FROM companies WHERE id = $1",
-    )
-    .bind(company_id)
-    .fetch_one(&pool)
-    .await
-    .expect("Failed to fetch company");
+    let company: (Option<String>,) =
+        sqlx::query_as("SELECT deletion_token FROM companies WHERE id = $1")
+            .bind(company_id)
+            .fetch_one(&pool)
+            .await
+            .expect("Failed to fetch company");
 
     let deletion_token = company.0.expect("No deletion token found");
 
@@ -1925,10 +1921,7 @@ async fn test_deletion_confirmation_token_expires_after_6_hours() {
     .await;
 
     assert_eq!(confirm_status, StatusCode::BAD_REQUEST);
-    assert!(confirm_body["error"]
-        .as_str()
-        .unwrap()
-        .contains("expired"));
+    assert!(confirm_body["error"].as_str().unwrap().contains("expired"));
 }
 
 #[tokio::test]
@@ -1986,13 +1979,12 @@ async fn test_validate_deletion_token_expires_after_6_hours() {
         .expect("Failed to connect to database");
 
     // Get the deletion token
-    let company: (Option<String>,) = sqlx::query_as(
-        "SELECT deletion_token FROM companies WHERE id = $1",
-    )
-    .bind(company_id)
-    .fetch_one(&pool)
-    .await
-    .expect("Failed to fetch company");
+    let company: (Option<String>,) =
+        sqlx::query_as("SELECT deletion_token FROM companies WHERE id = $1")
+            .bind(company_id)
+            .fetch_one(&pool)
+            .await
+            .expect("Failed to fetch company");
 
     let deletion_token = company.0.expect("No deletion token found");
 
@@ -2013,15 +2005,15 @@ async fn test_validate_deletion_token_expires_after_6_hours() {
     let (validate_status, validate_body) = make_request(
         &mut app,
         "GET",
-        &format!("/companies/{}/validate-deletion-token?token={}", company_id, deletion_token),
+        &format!(
+            "/companies/{}/validate-deletion-token?token={}",
+            company_id, deletion_token
+        ),
         None,
         None,
     )
     .await;
 
     assert_eq!(validate_status, StatusCode::BAD_REQUEST);
-    assert!(validate_body["error"]
-        .as_str()
-        .unwrap()
-        .contains("expired"));
+    assert!(validate_body["error"].as_str().unwrap().contains("expired"));
 }

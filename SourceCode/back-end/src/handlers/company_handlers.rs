@@ -553,11 +553,12 @@ pub async fn validate_company_deletion_token(
     }
 
     if let Some(requested_at) = company.deletion_requested_at
-        && requested_at < chrono::Utc::now() - chrono::Duration::hours(6) {
-            return Err(err_bad_request(
-                "Confirmation token has expired. Please request a new deletion link.",
-            ));
-        }
+        && requested_at < chrono::Utc::now() - chrono::Duration::hours(6)
+    {
+        return Err(err_bad_request(
+            "Confirmation token has expired. Please request a new deletion link.",
+        ));
+    }
 
     Ok(Json(json!({ "companyName": company.name })))
 }
@@ -597,19 +598,22 @@ pub async fn confirm_company_deletion(
     }
 
     if let Some(requested_at) = company.deletion_requested_at
-        && requested_at < chrono::Utc::now() - chrono::Duration::hours(6) {
-            return Err(err_bad_request(
-                "Confirmation token has expired. Please request a new deletion link.",
-            ));
-        }
+        && requested_at < chrono::Utc::now() - chrono::Duration::hours(6)
+    {
+        return Err(err_bad_request(
+            "Confirmation token has expired. Please request a new deletion link.",
+        ));
+    }
 
-    let updated_company = db::confirm_company_deletion(&state.postgres, &company_id, token)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to confirm company deletion: {:?}", e);
-            err_internal("Failed to confirm deletion")
-        })?
-        .ok_or_else(|| err_bad_request("Invalid or expired confirmation token"))?;
+    let updated_company =
+        match db::confirm_company_deletion(&state.postgres, &company_id, token).await {
+            Ok(Some(company)) => company,
+            Ok(None) => return Err(err_bad_request("Invalid or expired confirmation token")),
+            Err(e) => {
+                tracing::error!("Failed to confirm company deletion: {:?}", e);
+                return Err(err_bad_request("Invalid or expired confirmation token"));
+            }
+        };
 
     db::soft_delete_users_by_company_id(&state.postgres, &company_id)
         .await

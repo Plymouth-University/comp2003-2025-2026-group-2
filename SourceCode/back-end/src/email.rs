@@ -322,9 +322,8 @@ pub async fn send_company_deletion_request(
     token: &str,
     frontend_url: &str,
 ) -> Result<()> {
-    let confirm_link = format!(
-        "{frontend_url}/confirm-company-deletion?company_id={company_id}&token={token}"
-    );
+    let confirm_link =
+        format!("{frontend_url}/confirm-company-deletion?company_id={company_id}&token={token}");
     let subject = "Confirm Company Deletion - LogSmart";
     let body = format!(
         "Hello,\n\n\

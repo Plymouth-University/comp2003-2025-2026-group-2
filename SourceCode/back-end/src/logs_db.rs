@@ -1517,8 +1517,8 @@ pub fn get_missed_periods(
                 };
                 day_after + chrono::Duration::days(days_to_target)
             } else if let Some(start) = start_from {
-                let days_to_target =
-                    i64::from(target_day).wrapping_sub(i64::from(start.weekday().num_days_from_sunday()));
+                let days_to_target = i64::from(target_day)
+                    .wrapping_sub(i64::from(start.weekday().num_days_from_sunday()));
                 let days_to_target = if days_to_target < 0 {
                     days_to_target + 7
                 } else {
@@ -1526,8 +1526,8 @@ pub fn get_missed_periods(
                 };
                 start + chrono::Duration::days(days_to_target)
             } else {
-                let days_to_target =
-                    i64::from(target_day).wrapping_sub(i64::from(today.weekday().num_days_from_sunday()));
+                let days_to_target = i64::from(target_day)
+                    .wrapping_sub(i64::from(today.weekday().num_days_from_sunday()));
                 let days_to_target = if days_to_target < 0 {
                     days_to_target + 7
                 } else {
@@ -1581,7 +1581,9 @@ pub fn get_missed_periods(
 
             while current <= today {
                 let days_in_month: u32 = if current_month == 12 {
-                    if let Some(date) = chrono::NaiveDate::from_ymd_opt(current_year + 1, 1, 1) { date.pred_opt().map_or(0, |d| d.day()) } else {
+                    if let Some(date) = chrono::NaiveDate::from_ymd_opt(current_year + 1, 1, 1) {
+                        date.pred_opt().map_or(0, |d| d.day())
+                    } else {
                         tracing::warn!(
                             "Invalid date calculated for monthly frequency: {}-12-31",
                             current_year + 1
@@ -1589,7 +1591,11 @@ pub fn get_missed_periods(
                         break;
                     }
                 } else {
-                    if let Some(date) = chrono::NaiveDate::from_ymd_opt(current_year, current_month + 1, 1) { date.pred_opt().map_or(0, |d| d.day()) } else {
+                    if let Some(date) =
+                        chrono::NaiveDate::from_ymd_opt(current_year, current_month + 1, 1)
+                    {
+                        date.pred_opt().map_or(0, |d| d.day())
+                    } else {
                         tracing::warn!(
                             "Invalid date calculated for monthly frequency: {}-{}-01",
                             current_year,
@@ -1615,7 +1621,11 @@ pub fn get_missed_periods(
                 } else {
                     current_month += 1;
                 }
-                current = if let Some(date) = chrono::NaiveDate::from_ymd_opt(current_year, current_month, 1) { date } else {
+                current = if let Some(date) =
+                    chrono::NaiveDate::from_ymd_opt(current_year, current_month, 1)
+                {
+                    date
+                } else {
                     tracing::warn!(
                         "Invalid date calculated for monthly frequency: {}-{}-01",
                         current_year,
@@ -1756,13 +1766,19 @@ pub fn format_period_for_frequency(frequency: &Frequency) -> String {
             let days_since_monday = now.weekday().num_days_from_sunday();
             let week_start = if let Some(dt) = (now.date_naive()
                 - chrono::Duration::days(i64::from(days_since_monday)))
-            .and_hms_opt(0, 0, 0) { dt.and_utc() } else {
+            .and_hms_opt(0, 0, 0)
+            {
+                dt.and_utc()
+            } else {
                 tracing::warn!("Error finding week start date: {now}");
                 // Fall back to a simple date format
                 return now.format("%d/%m/%Y").to_string();
             };
-            let week_end = if let Some(dt) = (week_start.date_naive() + chrono::Duration::days(6))
-                .and_hms_opt(23, 59, 59) { dt.and_utc() } else {
+            let week_end = if let Some(dt) =
+                (week_start.date_naive() + chrono::Duration::days(6)).and_hms_opt(23, 59, 59)
+            {
+                dt.and_utc()
+            } else {
                 tracing::warn!("Error finding week end date: {now}");
                 // Fall back to a simple date format
                 return now.format("%d/%m/%Y").to_string();

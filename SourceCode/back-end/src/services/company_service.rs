@@ -70,7 +70,9 @@ impl CompanyService {
             if let Err(delete_err) = images_db::delete_company_logo(mongodb, &file_id).await {
                 tracing::error!("Failed to cleanup uploaded logo: {:?}", delete_err);
             }
-            return Err(CompanyServiceError::Internal("Failed to update logo reference".to_string()));
+            return Err(CompanyServiceError::Internal(
+                "Failed to update logo reference".to_string(),
+            ));
         }
 
         if let Some(old_logo_id) = &company.logo_id
