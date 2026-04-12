@@ -10,15 +10,6 @@
 	let logoUrl = $derived(data.company?.logo_url || null);
 	let dataExportedAt = $derived(data.company?.data_exported_at || null);
 
-	$effect(() => {
-		if (data.company?.name) {
-			companyName = data.company.name;
-		}
-		if (data.company?.address) {
-			companyAddress = data.company.address;
-		}
-	});
-
 	let effectivePictureUrl = $derived(logoUrl);
 
 	let isSubmitting = $state(false);
@@ -195,7 +186,7 @@
 	}
 </script>
 
-<svelte:window onclick={handleClickOutside} />
+<svelte:window on:click={handleClickOutside} />
 
 <svelte:head>
 	<title>Company Settings</title>
@@ -395,7 +386,6 @@
 						onclick={deleteCompany}
 						disabled={!dataExportedAt || isSubmitting}
 						class="cursor-pointer border-2 border-solid px-8 py-2 text-red-500 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-						style="2px solid var(--border-primary);"
 						aria-label="Delete company"
 						title={!dataExportedAt ? 'You must export company data before requesting deletion' : ''}
 					>

@@ -1,11 +1,15 @@
 import type { PageServerLoad, PageServerLoadEvent } from './$types';
+import type { components } from '$lib/api-types';
 
-interface CompanyData {
-	user: Record<string, unknown> | null;
-	company: Record<string, unknown> | null;
+type UserResponse = components['schemas']['UserResponse'];
+type CompanyResponse = components['schemas']['CompanyResponse'];
+
+interface PageData {
+	user: UserResponse | null;
+	company: CompanyResponse | null;
 }
 
-export const load: PageServerLoad = async (event: PageServerLoadEvent): Promise<CompanyData> => {
+export const load: PageServerLoad = async (event: PageServerLoadEvent): Promise<PageData> => {
 	const token = event.cookies.get('ls-token');
 
 	if (!token) {
@@ -32,7 +36,7 @@ export const load: PageServerLoad = async (event: PageServerLoadEvent): Promise<
 			};
 		}
 
-		const user = await userRes.json();
+		const user = (await userRes.json()) as UserResponse;
 
 		if (!user.company_id) {
 			return {
@@ -53,7 +57,7 @@ export const load: PageServerLoad = async (event: PageServerLoadEvent): Promise<
 			};
 		}
 
-		const company = await companyRes.json();
+		const company = (await companyRes.json()) as CompanyResponse;
 
 		return {
 			user,
