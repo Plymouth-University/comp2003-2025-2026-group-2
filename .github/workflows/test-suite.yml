@@ -82,12 +82,12 @@ jobs:
       - name: Install Playwright Browsers
         working-directory: SourceCode/front-end/logsmart
         run: |
-          if [ ! -d ~/.cache/ms-playwright/chromium-* ]; then
-            echo "Chromium not found, installing..."
-            bun x playwright install --with-deps chromium
-          else
-            echo "Chromium already installed, skipping"
-          fi
+          bun x playwright install --with-deps chromium
+          # if [ ! -d ~/.cache/ms-playwright/chromium-* ]; then
+          #   echo "Chromium not found, installing..."
+          # else
+          #   echo "Chromium already installed, skipping"
+          # fi
 
       - name: Cache Bun Dependencies
         uses: actions/cache@v5
