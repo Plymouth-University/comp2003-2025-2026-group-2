@@ -87,7 +87,7 @@
 		<div class="mb-4 flex items-center justify-between">
 			<h2 class="text-3xl font-bold text-text-secondary">
 				Canvas
-				<div class="tooltip" tabindex=-1 aria-label="Canvas instructions" role="tooltip">
+				<div class="tooltip" tabindex="-1" aria-label="Canvas instructions" role="tooltip">
 					﹖
 					<span class="tooltip-text"
 						>Drag and drop log components onto the canvas to create a log template. Save your log
