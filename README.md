@@ -7,11 +7,11 @@
 Introducing LogSmart, the template-based digital logging system initially designed for the food service industry. Replace your paper logs with an instant, secure, and eco-friendly solution that optimizes your daily operations. Featuring a custom WYSIWYG template designer, AI-assisted template generation, scheduled logs, built-in report generation and simple user administration tools.
 
 
-| Contributor | Commits | Lines (Rounded) |
-| :--- | :--- | :--- |
-| **NullString1** | 188 | ~52500 |
-| **Lilla-Rad** | 21 | ~500 |
-| **BenD2006** | 24 | ~2500 |
+| Contributor | Commits | Additions (AST, Rounded) | Deletions (AST, Rounded) |
+| :--- | :--- | :--- | :--- |
+| **NullString1** | 271 | ~67000 | ~26000 |
+| **BenD2006** | 37 | ~16000 | ~5000 |
+| **Lilla-Rad** | 32 | ~4000 | ~1400 |
 
 ![](https://github.com/Plymouth-University/comp2003-2025-2026-group-2/blob/main/Design%20Documents/template_designer.png)
 ## 🔗 Links

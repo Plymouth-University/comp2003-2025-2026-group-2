@@ -32,8 +32,7 @@
 				`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`,
 				{
 					headers: {
-						'Accept-Language': 'en',
-						'User-Agent': 'LogSmart/1.0'
+						'Accept-Language': 'en'
 					}
 				}
 			);
@@ -149,8 +148,7 @@
 				`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`,
 				{
 					headers: {
-						'Accept-Language': 'en',
-						'User-Agent': 'LogSmart/1.0'
+						'Accept-Language': 'en'
 					}
 				}
 			);

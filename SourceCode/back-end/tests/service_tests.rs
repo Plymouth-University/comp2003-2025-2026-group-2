@@ -24,6 +24,7 @@ fn test_user_creation() {
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     };
 
     assert_eq!(user.email, "test@example.com");
@@ -34,15 +35,10 @@ fn test_user_creation() {
 
 #[test]
 fn test_company_creation() {
-    let company = Company {
-        id: Uuid::new().to_string(),
-        name: "Test Company".to_string(),
-        address: "123 Test St".to_string(),
-        created_at: Utc::now(),
-    };
+    let company = Company::new().with_name_and_address("Test Company", "123 Main St");
 
     assert_eq!(company.name, "Test Company");
-    assert_eq!(company.address, "123 Test St");
+    assert_eq!(company.address, "123 Main St");
 }
 
 #[test]

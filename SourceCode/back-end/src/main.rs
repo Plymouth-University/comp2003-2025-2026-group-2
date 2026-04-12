@@ -1,6 +1,7 @@
 use anyhow::Context;
 use axum::routing::{delete, get, post, put};
 use axum::{Router, middleware};
+use back_end::exports_db;
 use back_end::logs_db;
 use back_end::{AppState, api_docs::ApiDoc, db, handlers, rate_limit};
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
@@ -8,15 +9,18 @@ use url::Url;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-const VARS: [&str; 8] = [
+const VARS: [&str; 11] = [
     "JWT_SECRET",
     "SMTP_USERNAME",
     "SMTP_PASSWORD",
+    "SMTP_SERVER",
+    "SMTP_FROM_EMAIL",
     "GOOGLE_CLIENT_SECRET",
     "GOOGLE_CLIENT_ID",
     "POSTGRES_PASSWORD",
     "POSTGRES_USER",
     "MONGODB_URI",
+    "FRONTEND_URL",
 ];
 
 #[tokio::main]
@@ -80,6 +84,11 @@ async fn main() {
     db::init_db(&auth_db_postgres_pool)
         .await
         .expect("Failed to initialize database");
+
+    exports_db::init_exports_dir()
+        .await
+        .expect("Failed to initialize exports directory");
+    exports_db::spawn_cleanup_task();
 
     let rate_limit_state = rate_limit::RateLimitState::new();
     rate_limit_state.clone().spawn_cleanup_task();
@@ -247,6 +256,37 @@ async fn main() {
         .route(
             "/auth/profile-picture/{user_id}",
             get(handlers::get_profile_picture),
+        )
+        .route(
+            "/companies/{company_id}/logo",
+            post(handlers::upload_company_logo),
+        )
+        .route(
+            "/companies/{company_id}/logo",
+            get(handlers::get_company_logo),
+        )
+        .route(
+            "/companies/{company_id}/logo",
+            delete(handlers::delete_company_logo),
+        )
+        .route("/companies/{company_id}", get(handlers::get_company))
+        .route("/companies/{company_id}", put(handlers::update_company))
+        .route(
+            "/companies/{company_id}/export",
+            post(handlers::export_company_data),
+        )
+        .route(
+            "/companies/{company_id}/export/download/{filename}",
+            get(handlers::download_export),
+        )
+        .route("/companies/{company_id}", delete(handlers::delete_company))
+        .route(
+            "/companies/{company_id}/validate-deletion-token",
+            get(handlers::validate_company_deletion_token),
+        )
+        .route(
+            "/companies/{company_id}/confirm-deletion",
+            post(handlers::confirm_company_deletion),
         )
         .route("/logs/templates", post(handlers::add_template))
         .route("/logs/templates", get(handlers::get_template))

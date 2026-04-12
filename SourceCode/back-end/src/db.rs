@@ -67,6 +67,7 @@ pub struct UserRecord {
     pub company_id: Option<String>,
     pub branch_id: Option<String>,
     pub company_name: Option<String>,
+    pub company_deleted_at: Option<chrono::DateTime<chrono::Utc>>,
     pub role: UserRole,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -138,6 +139,48 @@ pub struct Company {
     pub name: String,
     pub address: String,
     pub created_at: chrono::DateTime<chrono::Utc>,
+    pub logo_id: Option<String>,
+    pub data_exported_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub deletion_requested_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub deletion_token: Option<String>,
+    pub deletion_requested_by_email: Option<String>,
+}
+
+impl Default for Company {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Company {
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            id: Uuid::new_v4().to_string(),
+            name: String::new(),
+            address: String::new(),
+            created_at: chrono::Utc::now(),
+            logo_id: None,
+            data_exported_at: None,
+            deleted_at: None,
+            deletion_requested_at: None,
+            deletion_token: None,
+            deletion_requested_by_email: None,
+        }
+    }
+
+    #[must_use]
+    pub fn is_deleted(&self) -> bool {
+        self.deleted_at.is_some()
+    }
+
+    #[must_use]
+    pub fn with_name_and_address(mut self, name: &str, address: &str) -> Self {
+        self.name = name.to_string();
+        self.address = address.to_string();
+        self
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -275,6 +318,7 @@ where
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     })
 }
 
@@ -311,7 +355,8 @@ pub async fn get_user_by_email(pool: &PgPool, email: &str) -> Result<Option<User
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
                users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
-               companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
+               companies.name as company_name, companies.deleted_at as company_deleted_at,
+               users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.email = $1 AND users.deleted_at IS NULL
@@ -324,6 +369,57 @@ pub async fn get_user_by_email(pool: &PgPool, email: &str) -> Result<Option<User
     Ok(user)
 }
 
+/// Retrieves a user by their role.
+///
+/// # Errors
+/// Returns an error if database query fails.
+pub async fn get_users_by_role(
+    pool: &PgPool,
+    id: &str,
+    company_id: &str,
+    role: &str,
+    branch_id: Option<String>,
+) -> Result<Vec<UserRecord>> {
+    let users = if branch_id.is_some() {
+        sqlx::query_as::<_, UserRecord>(
+            r"
+            SELECT users.id, users.email, users.first_name, users.last_name, 
+                   users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
+                   companies.name as company_name, companies.deleted_at as company_deleted_at,
+                   users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
+            FROM users
+            LEFT JOIN companies ON users.company_id = companies.id
+            WHERE NOT users.id = $1 AND users.company_id = $2 AND users.role = $3 AND users.branch_id = $4 AND users.deleted_at IS NULL
+            ",
+        )
+        .bind(id)
+        .bind(company_id)
+        .bind(role)
+        .bind(&branch_id)
+        .fetch_all(pool)
+        .await?
+    } else {
+        sqlx::query_as::<_, UserRecord>(
+            r"
+            SELECT users.id, users.email, users.first_name, users.last_name, 
+                   users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
+                   companies.name as company_name, companies.deleted_at as company_deleted_at,
+                   users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
+            FROM users
+            LEFT JOIN companies ON users.company_id = companies.id
+            WHERE NOT users.id = $1 AND users.company_id = $2 AND users.role = $3 AND users.branch_id IS NULL AND users.deleted_at IS NULL
+            ",
+        )
+        .bind(id)
+        .bind(company_id)
+        .bind(role)
+        .fetch_all(pool)
+        .await?
+    };
+
+    Ok(users)
+}
+
 /// Retrieves a user by their ID.
 ///
 /// # Errors
@@ -333,7 +429,8 @@ pub async fn get_user_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRecord
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
             users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
-            companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
+            companies.name as company_name, companies.deleted_at as company_deleted_at,
+            users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.id = $1 AND users.deleted_at IS NULL
@@ -344,14 +441,14 @@ pub async fn get_user_by_id(pool: &PgPool, id: &str) -> Result<Option<UserRecord
     .await?;
 
     if let Some(u) = &user {
-        tracing::info!(
+        tracing::debug!(
             "DB: Found user {} with company_id: {:?}, branch_id: {:?}",
             u.email,
             u.company_id,
             u.branch_id
         );
     } else {
-        tracing::info!("DB: User {} not found", id);
+        tracing::debug!("DB: User {} not found", id);
     }
 
     Ok(user)
@@ -370,7 +467,8 @@ pub async fn get_user_by_oauth(
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
             users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
-            companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
+            companies.name as company_name, companies.deleted_at as company_deleted_at,
+            users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.oauth_provider = $1 AND users.oauth_subject = $2 AND users.deleted_at IS NULL
@@ -440,6 +538,7 @@ where
         oauth_provider: Some(oauth_provider),
         oauth_subject: Some(oauth_subject),
         oauth_picture,
+        company_deleted_at: None,
     })
 }
 
@@ -510,6 +609,26 @@ pub async fn delete_user_by_email(pool: &PgPool, email: &str) -> Result<()> {
     Ok(())
 }
 
+/// Soft deletes all users belonging to a company.
+///
+/// # Errors
+/// Returns an error if database update fails.
+pub async fn soft_delete_users_by_company_id(pool: &PgPool, company_id: &str) -> Result<()> {
+    sqlx::query(
+        r"
+        UPDATE users
+        SET deleted_at = $1
+        WHERE company_id = $2 AND deleted_at IS NULL
+        ",
+    )
+    .bind(chrono::Utc::now())
+    .bind(company_id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
 /// Creates a new company in the database.
 ///
 /// # Errors
@@ -539,7 +658,32 @@ where
         name,
         address,
         created_at: now,
+        ..Company::new()
     })
+}
+
+/// Updates a given company's logo
+///
+/// # Errors
+/// Returns an error if database query fails
+pub async fn update_company_logo_id(
+    pool: &PgPool,
+    company_id: &str,
+    company_logo_id: Option<&str>,
+) -> Result<Company> {
+    sqlx::query_as(
+        r"
+        UPDATE companies
+        SET logo_id = $1
+        WHERE id = $2
+        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token, deletion_requested_by_email
+        ",
+    )
+    .bind(company_logo_id)
+    .bind(company_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| anyhow::anyhow!("Failed to update company logo: {e}"))
 }
 
 /// Retrieves a company by its ID.
@@ -549,14 +693,111 @@ where
 pub async fn get_company_by_id(pool: &PgPool, id: &str) -> Result<Option<Company>> {
     let company = sqlx::query_as::<_, Company>(
         r"
-        SELECT id, name, address, created_at
+        SELECT id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token, deletion_requested_by_email
         FROM companies
-        WHERE id = $1
+        WHERE id = $1 AND deleted_at IS NULL
         ",
     )
     .bind(id)
     .fetch_optional(pool)
     .await?;
+
+    Ok(company)
+}
+
+/// Updates a company's name and address.
+///
+/// # Errors
+/// Returns an error if database query fails.
+pub async fn update_company(
+    pool: &PgPool,
+    company_id: &str,
+    name: &str,
+    address: &str,
+) -> Result<Company> {
+    sqlx::query_as(
+        r"
+        UPDATE companies
+        SET name = $1, address = $2
+        WHERE id = $3
+        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token, deletion_requested_by_email
+        ",
+    )
+    .bind(name)
+    .bind(address)
+    .bind(company_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| anyhow::anyhow!("Failed to update company: {e}"))
+}
+
+/// Marks company data as exported.
+///
+/// # Errors
+/// Returns an error if database query fails.
+pub async fn mark_company_data_exported(pool: &PgPool, company_id: &str) -> Result<Company> {
+    sqlx::query_as(
+        r"
+        UPDATE companies
+        SET data_exported_at = NOW()
+        WHERE id = $1
+        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token, deletion_requested_by_email
+        ",
+    )
+    .bind(company_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| anyhow::anyhow!("Failed to mark company data as exported: {e}"))
+}
+
+/// Requests company deletion with a confirmation token.
+///
+/// # Errors
+/// Returns an error if database query fails.
+pub async fn request_company_deletion(
+    pool: &PgPool,
+    company_id: &str,
+    requester_email: &str,
+) -> Result<Company> {
+    let token = Uuid::new_v4().to_string();
+    sqlx::query_as(
+        r"
+        UPDATE companies
+        SET deletion_requested_at = NOW(), deletion_token = $1, deletion_requested_by_email = $2
+        WHERE id = $3
+        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token, deletion_requested_by_email
+        ",
+    )
+    .bind(&token)
+    .bind(requester_email)
+    .bind(company_id)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| anyhow::anyhow!("Failed to request company deletion: {e}"))
+}
+
+/// Confirms company deletion with token.
+///
+/// # Errors
+/// Returns an error if database query fails or token is invalid/expired.
+pub async fn confirm_company_deletion(
+    pool: &PgPool,
+    company_id: &str,
+    token: &str,
+) -> Result<Option<Company>> {
+    let company = sqlx::query_as(
+        r"
+        UPDATE companies
+        SET deleted_at = NOW(), deletion_token = NULL, deletion_requested_at = NULL
+        WHERE id = $1 AND deletion_token = $2 AND deletion_requested_at IS NOT NULL AND deletion_requested_at > NOW() - INTERVAL '6 hours'
+        RETURNING id, name, address, created_at, logo_id, data_exported_at, deleted_at, deletion_requested_at, deletion_token, deletion_requested_by_email
+        ",
+    )
+    .bind(company_id)
+    .bind(token)
+    .fetch_optional(pool)
+    .await
+    .map_err(|e| anyhow::anyhow!("Failed to confirm company deletion: {e}"))?;
 
     Ok(company)
 }
@@ -1128,10 +1369,37 @@ pub async fn get_users_by_company_id(pool: &PgPool, company_id: &str) -> Result<
         r"
         SELECT users.id, users.email, users.first_name, users.last_name, 
                users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
-               companies.name as company_name, users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
+               companies.name as company_name, companies.deleted_at as company_deleted_at,
+               users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
         FROM users
         LEFT JOIN companies ON users.company_id = companies.id
         WHERE users.company_id = $1 AND users.deleted_at IS NULL
+        "
+    )
+    .bind(company_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(users)
+}
+
+/// Retrieves all users belonging to a specific company, including soft-deleted ones.
+///
+/// # Errors
+/// Returns an error if database query fails.
+pub async fn get_all_users_by_company_id(
+    pool: &PgPool,
+    company_id: &str,
+) -> Result<Vec<UserRecord>> {
+    let users = sqlx::query_as::<_, UserRecord>(
+        r"
+        SELECT users.id, users.email, users.first_name, users.last_name, 
+               users.password_hash, users.company_id, users.branch_id, users.role, users.created_at, users.deleted_at, 
+               companies.name as company_name, companies.deleted_at as company_deleted_at,
+               users.oauth_provider, users.oauth_subject, users.oauth_picture, users.profile_picture_id
+        FROM users
+        LEFT JOIN companies ON users.company_id = companies.id
+        WHERE users.company_id = $1
         "
     )
     .bind(company_id)
@@ -1509,6 +1777,7 @@ pub async fn accept_invitation_with_user_creation(
         oauth_provider: None,
         oauth_subject: None,
         oauth_picture: None,
+        company_deleted_at: None,
     })
 }
 
@@ -1854,7 +2123,8 @@ pub async fn get_company_members_for_user(pool: &PgPool, user_id: &str) -> Resul
         r"
         SELECT target_user.id, target_user.email, target_user.first_name, target_user.last_name, 
                target_user.password_hash, target_user.company_id, target_user.branch_id, target_user.role, target_user.created_at, target_user.deleted_at, 
-               companies.name as company_name, target_user.oauth_provider, target_user.oauth_subject, target_user.oauth_picture, target_user.profile_picture_id
+               companies.name as company_name, companies.deleted_at as company_deleted_at,
+               target_user.oauth_provider, target_user.oauth_subject, target_user.oauth_picture, target_user.profile_picture_id
         FROM users as request_user
         JOIN users as target_user ON request_user.company_id = target_user.company_id
         LEFT JOIN companies ON target_user.company_id = companies.id

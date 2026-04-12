@@ -69,6 +69,12 @@ pub async fn verify_token(
         user
     };
 
+    if user.company_deleted_at.is_some() {
+        return Err(err_unauthorized(
+            "Your company has been deleted. Please contact support.",
+        ));
+    }
+
     Ok(Json(JwtVerifyResponse { email: user.email }))
 }
 

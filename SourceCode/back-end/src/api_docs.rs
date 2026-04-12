@@ -54,6 +54,12 @@ use utoipa::OpenApi;
         handlers::clock_out,
         handlers::get_clock_status,
         handlers::get_company_clock_events,
+        handlers::get_company,
+        handlers::update_company,
+        handlers::delete_company,
+        handlers::upload_company_logo,
+        handlers::get_company_logo,
+        handlers::delete_company_logo,
     ),
     components(
         schemas(
@@ -135,6 +141,7 @@ use utoipa::OpenApi;
             dto::ClockStatusResponse,
             dto::CompanyClockEventResponse,
             dto::CompanyClockEventsResponse,
+            dto::CompanyResponse,
         )
     ),
     tags(

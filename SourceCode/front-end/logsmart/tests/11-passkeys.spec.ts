@@ -40,7 +40,7 @@ test.describe('Passkey Management', () => {
 		await page.waitForURL('**/dashboard');
 
 		// Go to Settings
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 
 		// Register Passkey
@@ -103,7 +103,7 @@ test.describe('Passkey Management', () => {
 		await page.waitForURL('**/dashboard');
 
 		// Settings
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 
 		// Register
@@ -112,7 +112,7 @@ test.describe('Passkey Management', () => {
 		await expect(page.locator('text=Key To Delete')).toBeVisible();
 
 		// Delete
-		await page.getByRole('button', { name: 'Delete' }).click();
+		await page.getByRole('button', { name: 'Delete passkey' }).click();
 
 		// Verify gone
 		await expect(page.locator('text=Key To Delete')).not.toBeVisible();
@@ -143,7 +143,7 @@ test.describe('Passkey Management', () => {
 		await page.waitForURL('**/dashboard');
 
 		// Settings
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 
 		// Register Key 1 - Create first authenticator (internal)
@@ -248,7 +248,7 @@ test.describe('Passkey Management', () => {
 		await page.waitForURL('**/dashboard');
 
 		// Go to Settings
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 
 		// Register Passkey

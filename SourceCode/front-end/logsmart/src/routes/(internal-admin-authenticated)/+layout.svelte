@@ -8,6 +8,7 @@
 
 	const currentPath = $derived(page.url.pathname);
 	const isAdmin = $derived(data?.user?.role !== 'member');
+	const isCompanyManager = $derived(data?.user?.role === 'company_manager');
 
 	async function handleLogout() {
 		await fetch('/api/logout', { method: 'POST' });
@@ -127,6 +128,15 @@
 						>
 							Settings
 						</a>
+						{#if isCompanyManager || data?.user?.role === 'logsmart_admin'}
+							<a
+								href="/company-settings"
+								class="rounded px-4 py-2 hover:opacity-80"
+								style="background-color: var(--bg-secondary); color: var(--text-primary);"
+							>
+								Company Settings
+							</a>
+						{/if}
 						<button
 							onclick={handleLogout}
 							class="rounded px-4 py-2 hover:opacity-80"
@@ -248,6 +258,16 @@
 						>
 							Settings
 						</a>
+						{#if isCompanyManager || data?.user?.role === 'logsmart_admin'}
+							<a
+								href="/company-settings"
+								class="mb-2 block rounded px-4 py-2 hover:opacity-80"
+								style="background-color: var(--bg-secondary); color: var(--text-primary);"
+								onclick={closeMobileMenu}
+							>
+								Company Settings
+							</a>
+						{/if}
 						<button
 							onclick={handleLogout}
 							class="block w-full rounded px-4 py-2 text-left hover:opacity-80"

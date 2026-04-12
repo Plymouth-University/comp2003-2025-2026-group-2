@@ -23,7 +23,7 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('Profile Picture', () => {
 	test('upload_and_persist_profile_picture', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings' }).click();
+		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
 
 		const fileInput = page.locator('.file-input');
@@ -40,10 +40,10 @@ test.describe('Profile Picture', () => {
 		await page.getByRole('button', { name: 'Save', exact: true }).click();
 		await uploadResponse;
 
-		await expect(page.locator('img.profile-preview')).toBeVisible();
+		await expect(page.locator('img.picture-preview')).toBeVisible();
 
 		await page.reload();
 		await page.waitForURL('**/settings');
-		await expect(page.locator('img.profile-preview')).toBeVisible();
+		await expect(page.locator('img.picture-preview')).toBeVisible();
 	});
 });

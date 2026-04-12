@@ -4,7 +4,7 @@ use crate::{
         AdminProfilePictureQuery, AdminUpdateMemberRequest, ErrorResponse,
         GetCompanyMembersResponse, RemoveMemberRequest,
     },
-    logs_db,
+    images_db,
     middleware::{AnyAuthUser, BranchManagerUser, ReadBranchUser},
     services::user_service::UserService,
     utils::{AuditLogger, err_bad_request, err_forbidden, err_internal, err_not_found},
@@ -233,7 +233,7 @@ pub async fn upload_profile_picture(
     };
 
     let file_id =
-        logs_db::upload_profile_picture(&state.mongodb, data, &target_user_id, &content_type)
+        images_db::upload_profile_picture(&state.mongodb, data, &target_user_id, &content_type)
             .await
             .map_err(|e| {
                 tracing::error!("Failed to upload profile picture: {:?}", e);
@@ -244,7 +244,7 @@ pub async fn upload_profile_picture(
         db::update_user_profile_picture_id(&state.postgres, &target_user_id, Some(&file_id)).await
     {
         tracing::error!("Failed to update user profile picture: {:?}", err);
-        if let Err(delete_err) = logs_db::delete_profile_picture(&state.mongodb, &file_id).await {
+        if let Err(delete_err) = images_db::delete_profile_picture(&state.mongodb, &file_id).await {
             tracing::error!(
                 "Failed to cleanup uploaded profile picture: {:?}",
                 delete_err
@@ -254,7 +254,7 @@ pub async fn upload_profile_picture(
     }
 
     if let Some(old_picture_id) = &target_picture_id
-        && let Err(err) = logs_db::delete_profile_picture(&state.mongodb, old_picture_id).await
+        && let Err(err) = images_db::delete_profile_picture(&state.mongodb, old_picture_id).await
     {
         tracing::error!("Failed to delete old profile picture: {:?}", err);
     }
@@ -300,7 +300,7 @@ pub async fn get_profile_picture(
     ),
     (StatusCode, Json<serde_json::Value>),
 > {
-    if let Some((content_type, data)) = logs_db::get_profile_picture(&state.mongodb, &file_id)
+    if let Some((content_type, data)) = images_db::get_profile_picture(&state.mongodb, &file_id)
         .await
         .map_err(|e| err_internal(&e.to_string()))?
     {
@@ -366,7 +366,7 @@ pub async fn delete_profile_picture_handler(
     }
 
     if let Some(picture_id) = &target_picture_id
-        && let Err(err) = logs_db::delete_profile_picture(&state.mongodb, picture_id).await
+        && let Err(err) = images_db::delete_profile_picture(&state.mongodb, picture_id).await
     {
         tracing::error!("Failed to delete profile picture from Mongo: {:?}", err);
         if let Err(rollback_err) =

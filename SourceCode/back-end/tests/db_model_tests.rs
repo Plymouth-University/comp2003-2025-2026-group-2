@@ -20,6 +20,7 @@ fn create_test_user_record() -> UserRecord {
         oauth_subject: None,
         oauth_picture: None,
         profile_picture_id: None,
+        company_deleted_at: None,
     }
 }
 
@@ -169,6 +170,7 @@ fn test_user_record_role_methods() {
         oauth_subject: None,
         oauth_picture: None,
         profile_picture_id: None,
+        company_deleted_at: None,
     };
 
     assert!(!user.is_branch_manager());
@@ -261,18 +263,13 @@ fn test_user_record_no_company_info() {
 
 #[test]
 fn test_company_creation() {
-    let now = Utc::now();
-    let company = Company {
-        id: "company1".to_string(),
-        name: "Test Company".to_string(),
-        address: "123 Test St".to_string(),
-        created_at: now,
-    };
+    let company = Company::new().with_name_and_address("Test Company", "123 Test St");
 
-    assert_eq!(company.id, "company1");
     assert_eq!(company.name, "Test Company");
     assert_eq!(company.address, "123 Test St");
-    assert_eq!(company.created_at, now);
+    assert_eq!(company.logo_id, None);
+    assert_eq!(company.data_exported_at, None);
+    assert_eq!(company.deleted_at, None);
 }
 
 #[test]

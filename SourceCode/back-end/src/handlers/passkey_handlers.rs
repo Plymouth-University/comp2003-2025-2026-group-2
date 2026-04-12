@@ -526,11 +526,6 @@ pub async fn finish_passkey_login(
         .await
         .unwrap_or(None);
 
-    if let Some(pk) = passkey_record {
-        let _ = db::update_passkey_usage(&state.postgres, &pk.id, i64::from(auth_result.counter()))
-            .await;
-    }
-
     let user = db::get_user_by_id(&state.postgres, &user_id)
         .await
         .map_err(|e| {
@@ -544,6 +539,18 @@ pub async fn finish_passkey_login(
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({ "error": "User associated with passkey not found" })),
         ))?;
+
+    if user.company_deleted_at.is_some() {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "Your company has been deleted. Please contact support." })),
+        ));
+    }
+
+    if let Some(pk) = passkey_record {
+        let _ = db::update_passkey_usage(&state.postgres, &pk.id, i64::from(auth_result.counter()))
+            .await;
+    }
 
     let ip_address = extract_ip_from_headers_and_addr(&headers, &addr);
     let user_agent = extract_user_agent(&headers);
@@ -745,6 +752,13 @@ pub async fn finish_discoverable_passkey_login(
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({ "error": "User associated with passkey not found" })),
         ))?;
+
+    if user.company_deleted_at.is_some() {
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({ "error": "Your company has been deleted. Please contact support." })),
+        ));
+    }
 
     let ip_address = extract_ip_from_headers_and_addr(&headers, &addr);
     let user_agent = extract_user_agent(&headers);

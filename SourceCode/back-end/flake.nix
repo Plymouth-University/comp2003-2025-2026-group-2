@@ -244,6 +244,8 @@
             clang
             cachix
             deployAarch64Alias
+            difftastic
+            python3
           ];
 
           # Replicate the environment variables for cross-compilation support in shell

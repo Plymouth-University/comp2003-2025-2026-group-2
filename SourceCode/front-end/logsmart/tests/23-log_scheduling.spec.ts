@@ -88,7 +88,7 @@ test.describe('Log Scheduling - Template Settings', () => {
 			await page.waitForURL('**/templates-dashboard');
 			await page.waitForLoadState('networkidle');
 
-			await page.getByRole('button', { name: 'Settings' }).click();
+			await page.getByRole('button', { name: 'Settings' }).first().click();
 			await page.waitForTimeout(500);
 
 			const frequencySelect = page.locator('#frequency-select');
@@ -101,7 +101,7 @@ test.describe('Log Scheduling - Template Settings', () => {
 			await page.getByRole('button', { name: 'Save' }).click();
 			await page.waitForTimeout(1000);
 
-			await page.getByRole('button', { name: 'Settings' }).click();
+			await page.getByRole('button', { name: 'Settings' }).first().click();
 			await page.waitForTimeout(500);
 
 			await expect(page.locator('#available-from')).toHaveValue('09:00');

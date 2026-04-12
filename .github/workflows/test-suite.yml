@@ -37,14 +37,14 @@ jobs:
             download-buffer-size = 512000000
 
       - name: Use Cachix Cache 📦
-        uses: cachix/cachix-action@v16
+        uses: cachix/cachix-action@v17
         with:
           name: logsmart-cache
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nixpkgs, nix-community, rust
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -69,26 +69,7 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-
-      - name: Cache Playwright Browsers
-        uses: actions/cache@v5
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('SourceCode/front-end/logsmart/bun.lockb') }}-chromium-only
-          restore-keys: |
-            ${{ runner.os }}-playwright-
-
-      - name: Install Playwright Browsers
-        working-directory: SourceCode/front-end/logsmart
-        run: |
-          if [ ! -d ~/.cache/ms-playwright/chromium-* ]; then
-            echo "Chromium not found, installing..."
-            bun x playwright install --with-deps chromium
-          else
-            echo "Chromium already installed, skipping"
-          fi
-
+          
       - name: Cache Bun Dependencies
         uses: actions/cache@v5
         with:
@@ -104,7 +85,26 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
         run: bun install
-        
+
+      - name: Cache Playwright Browsers
+        uses: actions/cache@v5
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('SourceCode/front-end/logsmart/bun.lockb') }}-chromium-only
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright Browsers
+        working-directory: SourceCode/front-end/logsmart
+        run: |
+          bun x playwright install --with-deps chromium
+          # if [ ! -d ~/.cache/ms-playwright/chromium-* ]; then
+          #   echo "Chromium not found, installing..."
+          # else
+          #   echo "Chromium already installed, skipping"
+          # fi
+
       - name: Run Playwright Tests
         working-directory: SourceCode/front-end/logsmart
         env:

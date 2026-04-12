@@ -2,10 +2,10 @@
 
 ## Quick Info
 
-- **Stack**: Rust/Axum backend (port 6767), SvelteKit frontend (port 5173), PostgreSQL + MongoDB
-- **Backend**: `SourceCode/back-end/`
-- **Frontend**: `SourceCode/front-end/logsmart/`
-- **Full docs**: See `SourceCode/docs/PROJECT.md`
+- **Stack**: Rust 2024/Axum backend (port 6767), SvelteKit 5 frontend (port 5173), PostgreSQL + MongoDB
+- **Backend**: `SourceCode/back-end/` | **Frontend**: `SourceCode/front-end/logsmart/`
+- **Full docs**: `SourceCode/docs/PROJECT.md`
+- **Nix**: Run `direnv exec . <command>` in `back-end/` for Rust toolchain + required env vars
 
 ---
 
@@ -19,22 +19,22 @@ cd SourceCode/back-end
 # Run all tests
 cargo test
 
-# Run single test (by name)
+# Run single test by name
 cargo test test_name_here
 
-# Run tests in specific file
+# Run single test file
 cargo test --test auth_tests
 
-# Format code
-cargo fmt
+# Run specific test module in tests/services/
+cargo test --test service_tests log_entry_service
+
+# Format + lint
+cargo fmt && cargo clippy
 
 # Lint with auto-fix
 cargo clippy --fix --allow-dirty --allow-staged
 
-# Lint only
-cargo clippy
-
-# Run server (requires docker)
+# Start databases (docker)
 docker compose up -d
 ```
 
@@ -43,26 +43,14 @@ docker compose up -d
 ```bash
 cd SourceCode/front-end/logsmart
 
-# Dev server
-bun run dev
+bun run dev          # Dev server (port 5173)
+bun run build        # Production build
+bun run format       # Prettier (tabs, single quotes, 100 char width)
+bun run lint         # Prettier check + ESLint
+bun run check        # TypeScript + Svelte type check
 
-# Build
-bun run build
-
-# Format
-bun run format
-
-# Lint
-bun run lint
-
-# Type check
-bun run check
-
-# Run Playwright tests
-bun x playwright test
-
-# Run single test file
-bun x playwright test tests/01-register_company.spec.ts
+bun x playwright test                    # All e2e tests
+bun x playwright test tests/01-register_company.spec.ts  # Single test file
 ```
 
 ### API Spec Generation
@@ -70,9 +58,7 @@ bun x playwright test tests/01-register_company.spec.ts
 ```bash
 cd SourceCode/back-end
 cargo run --bin gen_spec > ../front-end/logsmart/openapi.json
-
-cd SourceCode/front-end/logsmart
-bun run gen:api
+cd ../front-end/logsmart && bun run gen:api
 ```
 
 ---
@@ -81,47 +67,26 @@ bun run gen:api
 
 ### Rust
 
-- **Formatting**: Use `cargo fmt` (Rust's standard formatter)
-- **Linting**: Run `cargo clippy` before committing
-- **Error handling**: Use `anyhow` crate for application errors
-- **Async**: Use `async/await` with Tokio runtime
-- **Naming**: snake_case for variables/functions, PascalCase for types
-- **Imports**: Group: std → external (crates.io) → internal (project modules)
-
-```rust
-use std::collections::HashMap;
-
-use anyhow::{Context, Result};
-use axum::{extract::State, Json};
-use serde::{Deserialize, Serialize};
-
-use crate::db::UserRecord;
-```
+- **Formatter**: `cargo fmt` | **Linter**: `cargo clippy` before every commit
+- **Error handling**: `anyhow` crate (`Result<T>` alias, `.context()` for wrapping)
+- **Async**: `async/await` with Tokio; `#[async_trait]` for trait methods
+- **Naming**: `snake_case` functions/vars, `PascalCase` types, `SCREAMING_SNAKE_CASE` constants
+- **Imports**: Group with blank lines — std → external crates → `crate::` modules
+- **DTOs**: Derive `Serialize, Deserialize` + utoipa `ToSchema` for OpenAPI
 
 ### Svelte/TypeScript
 
-- **Formatting**: Use `bun run format` (Prettier)
-- **Linting**: Use `bun run lint` (ESLint + Prettier)
-- **TypeScript**: Always use explicit types for function params/returns
-- **Svelte 5**: Use runes (`$state`, `$derived`, `$effect`) instead of stores where possible
-
-```typescript
-import type { SvelteComponent } from 'svelte';
-import { derived } from 'svelte/store';
-
-// Use runes for new components
-let count = $state(0);
-let doubled = $derived(count * 2);
-```
+- **Formatter**: Prettier — tabs, single quotes, no trailing commas, 100 char print width
+- **Linting**: ESLint + `eslint-plugin-svelte` + `typescript-eslint`
+- **TypeScript**: Always explicit types for function params and return types
+- **Svelte 5**: Use runes (`$state`, `$derived`, `$effect`) over stores for new code
+- **CSS**: Tailwind v4 (see `src/app.css`)
 
 ### General
 
-- **Naming**:
-  - Rust: `snake_case` functions, `PascalCase` types
-  - TS/JS: `camelCase` variables, `PascalCase` components/types
-- **Imports**: Order: built-in → external → relative
-- **Errors**: Return meaningful error messages; never expose internals
-- **Commits**: Prefix with `Back-End:`, `Front-End:`, `Fix:`, `Docs:`, etc.
+- **Imports order**: built-in → external → relative paths
+- **Errors**: Return meaningful messages; never expose internals to clients
+- **Commits**: Prefix with `Back-End:`, `Front-End:`, `Fix:`, `Docs:`, `Chore:`
 
 ---
 
@@ -131,23 +96,25 @@ let doubled = $derived(count * 2);
 SourceCode/
 ├── back-end/
 │   ├── src/
-│   │   ├── main.rs           # Entry point, router setup
+│   │   ├── main.rs           # Entry point, Axum router
 │   │   ├── lib.rs            # Module exports
-│   │   ├── db.rs             # PostgreSQL models/queries
+│   │   ├── db.rs             # PostgreSQL (SQLx) models/queries
 │   │   ├── logs_db.rs        # MongoDB models/queries
 │   │   ├── dto.rs            # Request/Response DTOs
 │   │   ├── handlers/         # HTTP handlers
 │   │   └── services/         # Business logic
+│   ├── tests/
+│   │   ├── common/           # Test helpers (factories, mocks, config)
+│   │   ├── services/         # Per-service test files
+│   │   └── *.rs              # Integration test files
 │   ├── migrations/           # SQLx migrations
-│   └── tests/                # Integration tests
+│   └── .sqlx/                # Offline query cache (SQLX_OFFLINE=true)
 └── front-end/logsmart/
-    ├── src/
-    │   ├── routes/           # SvelteKit pages
-    │   ├── lib/
-    │   │   ├── api.ts        # API client
-    │   │   ├── components/  # Reusable components
-    │   │   └── stores/       # Svelte stores
-    │   └── app.css
+    ├── src/routes/           # SvelteKit pages
+    ├── src/lib/
+    │   ├── api.ts            # Generated API client (openapi-fetch)
+    │   ├── api-types.d.ts    # Generated types
+    │   └── components/       # Reusable Svelte components
     └── tests/                # Playwright e2e tests
 ```
 
@@ -156,34 +123,37 @@ SourceCode/
 ## Key Patterns
 
 ### Adding API Endpoint
-
-1. Define DTO in `back-end/src/dto.rs`
-2. Add handler in `back-end/src/handlers/*.rs`
-3. Add service in `back-end/src/services/*.rs`
-4. Add DB query in `back-end/src/db.rs`
-5. Register route in `back-end/src/main.rs`
-6. Regenerate API: `cargo run --bin gen_spec > ...`
-7. Regenerate types: `bun run gen:api`
+1. DTO in `back-end/src/dto.rs` → handler in `handlers/` → service in `services/` → DB in `db.rs`
+2. Register route in `main.rs`
+3. Regenerate spec: `cargo run --bin gen_spec > .../openapi.json` then `bun run gen:api`
 
 ### Adding Template Field
-
-1. Backend: Add to `TemplateField` in `logs_db.rs`
+1. Backend: Add to `TemplateField` in `logs_db.rs` (no MongoDB migration needed)
 2. Frontend: Add component in `template-designer/`
-3. No migration needed (MongoDB)
 
 ---
 
 ## Git Conventions
 
 - **Branches**: `feature/`, `fix/`, `refactor/`, `test/`, `chore/`
-- **Commits**: `<Area>: <Subject>` (imperative mood)
-  - Example: `Front-End: Add user invitation modal`
-- **Never commit secrets** (env vars, credentials)
+- **Commits**: `<Area>: <Subject>` in imperative mood. E.g. `Back-End: Add rate limiting middleware`
+- **Never commit secrets**
 
 ---
 
 ## Testing
 
-- Backend unit tests: Inline in `src/` with `#[cfg(test)]`
-- Backend integration tests: `back-end/tests/`
-- Frontend e2e: `front-end/logsmart/tests/` (Playwright)
+- **Backend unit tests**: Inline with `#[cfg(test)]` modules in `src/`
+- **Backend integration tests**: `back-end/tests/` — use helpers in `tests/common/` (factories, mocks)
+- **Property tests**: Use `proptest` crate (see `tests/property_tests.rs`)
+- **Frontend e2e**: `front-end/logsmart/tests/` (Playwright)
+- **SQLx offline mode**: Set `SQLX_OFFLINE=true` when running tests/builds without a live DB
+
+## Database
+
+- Always use `TIMESTAMPTZ` over `TIMESTAMP`
+- SQLx uses compile-time checked queries (`.sqlx/` cache for offline mode)
+
+## Code Review
+
+- When given a code review result, fix the issue and create a git commit
