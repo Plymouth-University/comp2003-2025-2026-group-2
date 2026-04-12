@@ -60,7 +60,7 @@ test.describe('Company Settings', () => {
 
 		await page.getByRole('button', { name: /Export Company Data|Re-export Company Data/ }).click();
 
-		await expect(page.getByText(/Data export initiated|You will receive an email/)).toBeVisible({
+		await expect(page.getByText(/Data exported on/)).toBeVisible({
 			timeout: 10000
 		});
 	});

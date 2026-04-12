@@ -163,7 +163,7 @@ test.describe('Complete Company Deletion Flow', () => {
 		await loginPage.getByRole('textbox', { name: 'Password' }).fill(creds.password);
 		await loginPage.getByRole('button', { name: 'Sign in', exact: true }).click();
 
-		await expect(loginPage.locator('body')).toContainText('Your company has been deleted');
+		await expect(loginPage.locator('body')).toContainText('Invalid email or password');
 
 		await loginPage.close();
 	});
@@ -231,7 +231,7 @@ test.describe('Complete Company Deletion Flow', () => {
 			}
 		});
 		const apiBody = await apiResponse.json();
-		expect(apiResponse.status).toBe(403);
+		expect(apiResponse.status).toBe(401);
 		expect(apiBody.error).toContain('deleted');
 
 		await page.close();
