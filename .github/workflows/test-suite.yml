@@ -69,6 +69,22 @@ jobs:
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+          
+      - name: Cache Bun Dependencies
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.bun/install/cache
+            SourceCode/front-end/logsmart/node_modules
+          key: ${{ runner.os }}-bun-${{ hashFiles('SourceCode/front-end/logsmart/bun.lockb') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install Frontend Dependencies
+        working-directory: SourceCode/front-end/logsmart
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: bun install
 
       - name: Cache Playwright Browsers
         uses: actions/cache@v5
@@ -89,22 +105,6 @@ jobs:
           #   echo "Chromium already installed, skipping"
           # fi
 
-      - name: Cache Bun Dependencies
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.bun/install/cache
-            SourceCode/front-end/logsmart/node_modules
-          key: ${{ runner.os }}-bun-${{ hashFiles('SourceCode/front-end/logsmart/bun.lockb') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
-
-      - name: Install Frontend Dependencies
-        working-directory: SourceCode/front-end/logsmart
-        env:
-          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-        run: bun install
-        
       - name: Run Playwright Tests
         working-directory: SourceCode/front-end/logsmart
         env:
