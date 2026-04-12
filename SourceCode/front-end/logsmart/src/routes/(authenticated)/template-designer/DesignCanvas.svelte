@@ -52,6 +52,8 @@
 	let snapLines = $state<{ x: number[]; y: number[] }>({ x: [], y: [] });
 	let isDragging = $state(false);
 	let snapEnabled = $state(true);
+	let canvasHeight = $state<number>(500);
+
 	function selectItem(id: string) {
 		selectedItemId = id;
 	}
