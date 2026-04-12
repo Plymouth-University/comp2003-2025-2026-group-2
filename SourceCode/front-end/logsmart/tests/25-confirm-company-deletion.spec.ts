@@ -232,7 +232,7 @@ test.describe('Complete Company Deletion Flow', () => {
 		});
 		const apiBody = await apiResponse.json();
 		expect(apiResponse.status).toBe(401);
-		expect(apiBody.error).toContain('deleted');
+		expect(apiBody.error).toContain('Invalid or expired token');
 
 		await page.close();
 	});
