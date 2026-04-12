@@ -396,4 +396,25 @@
 	.tooltip:hover .tooltip-text {
 		visibility: visible;
 	}
+
+	.tooltip {
+		position: relative;
+		display: inline-block;
+		cursor: help;
+	}
+
+	.tooltip-text {
+		visibility: hidden;
+		background-color: #1f2937;
+		font-size: 1vw;
+		text-align: center;
+		position: absolute;
+		padding: 40%;
+		border-radius: 8%;
+		z-index: 1;
+	}
+
+	.tooltip:hover .tooltip-text {
+		visibility: visible;
+	}
 </style>
