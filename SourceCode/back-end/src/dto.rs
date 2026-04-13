@@ -214,7 +214,7 @@ pub struct GetPendingInvitationsResponse {
     pub invitations: Vec<InvitationResponse>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct SecurityLogDto {
     pub id: String,
     pub event_type: String,
@@ -234,6 +234,38 @@ derive_from!(
         id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
     ]
 );
+
+#[derive(Debug, Clone, Deserialize, IntoParams, ToSchema)]
+pub struct SecurityLogsQuery {
+    #[schema(example = 15)]
+    pub limit: Option<i64>,
+    #[schema(example = "MjAyNi0wNC0xM1QxMjozNDo1Nlo=fGFiYy0xMjM")]
+    pub cursor: Option<String>,
+    #[schema(example = "login")]
+    pub event_type: Option<String>,
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
+    pub user_id: Option<String>,
+    #[schema(example = "user@example.com")]
+    pub email: Option<String>,
+    #[schema(example = "203.0.113.42")]
+    pub ip_address: Option<String>,
+    #[schema(example = "Mozilla/5.0")]
+    pub user_agent: Option<String>,
+    #[schema(example = "Passkey verification failed")]
+    pub details: Option<String>,
+    #[schema(example = true)]
+    pub success: Option<bool>,
+    #[schema(example = "2026-04-01T00:00:00Z")]
+    pub created_from: Option<String>,
+    #[schema(example = "2026-04-13T23:59:59Z")]
+    pub created_to: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SecurityLogsResponse {
+    pub logs: Vec<SecurityLogDto>,
+    pub next_cursor: Option<String>,
+}
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct RegisterRequest {
