@@ -271,18 +271,6 @@ pub struct SecurityLogsQuery {
     pub ip_address: Option<String>,
     #[schema(example = "Mozilla/5.0")]
     pub user_agent: Option<String>,
-    #[schema(example = "company_manager")]
-    pub actor_role: Option<String>,
-    #[schema(example = "550e8400-e29b-41d4-a716-446655440001")]
-    pub company_id: Option<String>,
-    #[schema(example = "550e8400-e29b-41d4-a716-446655440002")]
-    pub target_user_id: Option<String>,
-    #[schema(example = "target@example.com")]
-    pub target_email: Option<String>,
-    #[schema(example = "/companies/123")]
-    pub request_path: Option<String>,
-    #[schema(example = "PUT")]
-    pub request_method: Option<String>,
     #[schema(example = "Passkey verification failed")]
     pub details: Option<String>,
     #[schema(example = true)]
