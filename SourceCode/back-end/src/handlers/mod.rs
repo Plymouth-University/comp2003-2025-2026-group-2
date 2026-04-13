@@ -8,6 +8,7 @@ pub mod llm_handlers;
 pub mod log_entry_handlers;
 pub mod oauth_handlers;
 pub mod passkey_handlers;
+pub mod security_handlers;
 pub mod template_handlers;
 pub mod user_handlers;
 
@@ -21,5 +22,6 @@ pub use llm_handlers::*;
 pub use log_entry_handlers::*;
 pub use oauth_handlers::*;
 pub use passkey_handlers::*;
+pub use security_handlers::*;
 pub use template_handlers::*;
 pub use user_handlers::*;
