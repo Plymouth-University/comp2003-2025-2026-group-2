@@ -222,3 +222,29 @@ fn csv_escape(value: &str) -> String {
     let escaped = value.replace('"', "\"\"");
     format!("\"{escaped}\"")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_optional_utc_datetime_valid() {
+        let parsed = parse_optional_utc_datetime(Some("2026-04-13T12:00:00Z"))
+            .expect("datetime should parse")
+            .expect("value should be present");
+
+        assert_eq!(parsed.to_rfc3339(), "2026-04-13T12:00:00+00:00");
+    }
+
+    #[test]
+    fn test_parse_optional_utc_datetime_invalid() {
+        let parsed = parse_optional_utc_datetime(Some("not-a-date"));
+        assert!(parsed.is_err(), "invalid datetime must fail");
+    }
+
+    #[test]
+    fn test_csv_escape_quotes_and_commas() {
+        let escaped = csv_escape("hello, \"world\"");
+        assert_eq!(escaped, "\"hello, \"\"world\"\"\"");
+    }
+}

@@ -2720,4 +2720,22 @@ mod tests {
             "CompanyClockEventRow with clock_out=None should be clocked in even if clock_in is in the future"
         );
     }
+
+    #[test]
+    fn test_security_logs_cursor_round_trip() {
+        let created_at = chrono::Utc::now();
+        let id = "security-log-id-123";
+
+        let cursor = format_security_logs_cursor(created_at, id);
+        let parsed = parse_security_logs_cursor(&cursor).expect("cursor should parse");
+
+        assert_eq!(parsed.1, id);
+        assert_eq!(parsed.0.timestamp_millis(), created_at.timestamp_millis());
+    }
+
+    #[test]
+    fn test_security_logs_cursor_invalid_value() {
+        let result = parse_security_logs_cursor("not-a-valid-cursor");
+        assert!(result.is_err(), "invalid cursor must return error");
+    }
 }
