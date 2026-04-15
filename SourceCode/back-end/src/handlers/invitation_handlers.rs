@@ -1,5 +1,7 @@
 use crate::dto::GetPendingInvitationsResponse;
-use crate::middleware::{BranchManagerUser, ManageCompanyUser, ReadBranchUser};
+use crate::middleware::{
+    AuditRequestContext, BranchManagerUser, ManageCompanyUser, ReadBranchUser,
+};
 use crate::utils::{extract_ip_from_headers_and_addr, extract_user_agent};
 use crate::{
     AppState,
@@ -244,6 +246,13 @@ pub async fn accept_invitation(
     })?;
 
     let user_id = created_user.id.clone();
+    let accept_audit_ctx = crate::utils::AuditContext {
+        ip_address: Some(ip_address),
+        user_agent,
+        request_path: Some("/auth/invitations/accept".to_string()),
+        request_method: Some("POST".to_string()),
+        ..crate::utils::AuditContext::default()
+    };
 
     let jwt_config = JwtManager::get_config();
     let token = jwt_config
@@ -264,8 +273,11 @@ pub async fn accept_invitation(
         user_id.clone(),
         invitation.email.clone(),
         invitation.company_id.clone(),
-        Some(ip_address),
-        user_agent,
+        crate::audit_ctx!(
+            &accept_audit_ctx,
+            actor: &created_user,
+            company_id: Some(invitation.company_id.clone())
+        ),
     )
     .await;
 
@@ -441,11 +453,17 @@ pub async fn get_pending_invitations(
 pub async fn cancel_invitation(
     ManageCompanyUser(_claims, user): ManageCompanyUser,
     State(state): State<AppState>,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     Json(payload): Json<crate::dto::CancelInvitationRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
-    services::InvitationService::cancel_invitation(&state.postgres, &user, &payload.invitation_id)
-        .await
-        .map_err(|(status, err)| (status, Json(err)))?;
+    services::InvitationService::cancel_invitation(
+        &state.postgres,
+        &user,
+        &payload.invitation_id,
+        crate::audit_ctx!(&audit_ctx),
+    )
+    .await
+    .map_err(|(status, err)| (status, Json(err)))?;
 
     Ok(Json(
         json!({ "message": "Invitation cancelled successfully" }),

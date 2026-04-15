@@ -8,7 +8,8 @@ use crate::{
         RequestBranchDeletionResponse, UpdateBranchRequest,
     },
     email,
-    middleware::{ManageCompanyUser, ReadCompanyUser},
+    middleware::{AuditRequestContext, ManageCompanyUser, ReadCompanyUser},
+    utils::AuditLogger,
 };
 use axum::{Json, extract::State, http::StatusCode};
 use serde_json::json;
@@ -29,23 +30,45 @@ use serde_json::json;
 /// Creates a new branch for the user's company.
 pub async fn create_branch(
     ManageCompanyUser(_claims, user): ManageCompanyUser,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
     Json(payload): Json<CreateBranchRequest>,
 ) -> Result<(StatusCode, Json<BranchDto>), (StatusCode, Json<serde_json::Value>)> {
-    let company_id = user.company_id.ok_or((
+    let company_id = user.company_id.clone().ok_or((
         StatusCode::FORBIDDEN,
         Json(json!({ "error": "User is not associated with a company" })),
     ))?;
 
-    let branch = db::create_branch(&state.postgres, company_id, payload.name, payload.address)
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to create branch: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Failed to create branch" })),
-            )
-        })?;
+    let branch = db::create_branch(
+        &state.postgres,
+        company_id.clone(),
+        payload.name,
+        payload.address,
+    )
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to create branch: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to create branch" })),
+        )
+    })?;
+
+    AuditLogger::log(
+        &state.postgres,
+        "branch_created",
+        Some(user.id.clone()),
+        Some(user.email.clone()),
+        crate::audit_ctx!(
+            &audit_ctx,
+            actor: &user,
+            company_id: Some(company_id),
+            target_user_id: Some(branch.id.clone())
+        ),
+        Some(format!("Created branch: {}", branch.name)),
+        true,
+    )
+    .await;
 
     Ok((StatusCode::CREATED, Json(branch.into())))
 }
@@ -66,7 +89,7 @@ pub async fn list_branches(
     ReadCompanyUser(_claims, user): ReadCompanyUser,
     State(state): State<AppState>,
 ) -> Result<Json<ListBranchesResponse>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = user.company_id.ok_or((
+    let company_id = user.company_id.clone().ok_or((
         StatusCode::FORBIDDEN,
         Json(json!({ "error": "User is not associated with a company" })),
     ))?;
@@ -103,10 +126,11 @@ pub async fn list_branches(
 /// Updates an existing branch for the user's company.
 pub async fn update_branch(
     ManageCompanyUser(_claims, user): ManageCompanyUser,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
     Json(payload): Json<UpdateBranchRequest>,
 ) -> Result<Json<BranchDto>, (StatusCode, Json<serde_json::Value>)> {
-    let company_id = user.company_id.ok_or((
+    let company_id = user.company_id.clone().ok_or((
         StatusCode::FORBIDDEN,
         Json(json!({ "error": "User is not associated with a company" })),
     ))?;
@@ -148,6 +172,22 @@ pub async fn update_branch(
         )
     })?;
 
+    AuditLogger::log(
+        &state.postgres,
+        "branch_updated",
+        Some(user.id.clone()),
+        Some(user.email.clone()),
+        crate::audit_ctx!(
+            &audit_ctx,
+            actor: &user,
+            company_id: Some(company_id),
+            target_user_id: Some(updated_branch.id.clone())
+        ),
+        Some(format!("Updated branch: {}", updated_branch.name)),
+        true,
+    )
+    .await;
+
     Ok(Json(updated_branch.into()))
 }
 
@@ -168,6 +208,7 @@ pub async fn update_branch(
 /// Requests branch deletion by sending a confirmation email.
 pub async fn request_branch_deletion(
     ManageCompanyUser(_claims, user): ManageCompanyUser,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
     Json(payload): Json<RequestBranchDeletionRequest>,
 ) -> Result<Json<RequestBranchDeletionResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -231,6 +272,22 @@ pub async fn request_branch_deletion(
             )
         })?;
 
+    AuditLogger::log(
+        &state.postgres,
+        "branch_deletion_requested",
+        Some(user.id.clone()),
+        Some(user.email.clone()),
+        crate::audit_ctx!(
+            &audit_ctx,
+            actor: &user,
+            company_id: user.company_id.clone(),
+            target_user_id: Some(branch.id)
+        ),
+        Some(format!("Requested deletion for branch: {}", branch.name)),
+        true,
+    )
+    .await;
+
     Ok(Json(RequestBranchDeletionResponse {
         message: "A confirmation email has been sent to your email address. Please check your inbox to complete the branch deletion.".to_string(),
     }))
@@ -250,6 +307,7 @@ pub async fn request_branch_deletion(
 )]
 /// Confirms and executes branch deletion using a token.
 pub async fn confirm_branch_deletion(
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
     Json(payload): Json<ConfirmBranchDeletionRequest>,
 ) -> Result<Json<ConfirmBranchDeletionResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -309,6 +367,22 @@ pub async fn confirm_branch_deletion(
         .flatten();
 
     if let Some(user) = user {
+        AuditLogger::log(
+            &state.postgres,
+            "branch_deletion_confirmed",
+            Some(user.id.clone()),
+            Some(user.email.clone()),
+            crate::audit_ctx!(
+                &audit_ctx,
+                actor: &user,
+                company_id: user.company_id.clone(),
+                target_user_id: Some(branch_id.clone())
+            ),
+            Some(format!("Confirmed deletion for branch: {}", branch_name)),
+            true,
+        )
+        .await;
+
         let _ = email::send_branch_deleted_notification_email(&user.email, &branch_name).await;
     }
 

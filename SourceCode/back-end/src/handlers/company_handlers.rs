@@ -2,9 +2,9 @@ use crate::{
     AppState, db,
     dto::{CompanyResponse, ErrorResponse, ExportResponse, UpdateCompanyRequest},
     exports_db, images_db, logs_db,
-    middleware::ManageCompanyUser,
+    middleware::{AuditRequestContext, ManageCompanyUser},
     services::company_service::{CompanyService, CompanyServiceError},
-    utils::{err_bad_request, err_forbidden, err_internal, err_not_found},
+    utils::{AuditLogger, err_bad_request, err_forbidden, err_internal, err_not_found},
 };
 use axum::{
     Json,
@@ -36,6 +36,7 @@ static VALID_FILENAME_REGEX: Lazy<Regex> =
 )]
 pub async fn upload_company_logo(
     ManageCompanyUser(_claims, user): ManageCompanyUser,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
     axum::extract::Path(company_id): axum::extract::Path<String>,
     body: Bytes,
@@ -61,6 +62,14 @@ pub async fn upload_company_logo(
             err_internal("Failed to upload logo")
         }
     })?;
+
+    AuditLogger::log_admin_action(
+        &state.postgres,
+        user.id.clone(),
+        format!("Uploaded company logo for company {}", company_id),
+        crate::audit_ctx!(&audit_ctx, actor: &user),
+    )
+    .await;
 
     Ok(Json(json!({
         "logo_id": file_id,
@@ -139,6 +148,7 @@ pub async fn get_company_logo(
 )]
 pub async fn delete_company_logo(
     ManageCompanyUser(_claims, user): ManageCompanyUser,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
     axum::extract::Path(company_id): axum::extract::Path<String>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
@@ -170,6 +180,14 @@ pub async fn delete_company_logo(
         let _ = db::update_company_logo_id(&state.postgres, &company_id, Some(&logo_id)).await;
         return Err(err_internal("Failed to delete logo"));
     }
+
+    AuditLogger::log_admin_action(
+        &state.postgres,
+        user.id.clone(),
+        format!("Deleted company logo for company {}", company_id),
+        crate::audit_ctx!(&audit_ctx, actor: &user),
+    )
+    .await;
 
     Ok(Json(json!({ "message": "Logo deleted successfully" })))
 }
@@ -220,6 +238,7 @@ pub async fn get_company(
 )]
 pub async fn update_company(
     ManageCompanyUser(_claims, user): ManageCompanyUser,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
     axum::extract::Path(company_id): axum::extract::Path<String>,
     Json(payload): Json<UpdateCompanyRequest>,
@@ -261,6 +280,14 @@ pub async fn update_company(
         state.user_cache.invalidate(&user.id).await;
     }
 
+    AuditLogger::log_admin_action(
+        &state.postgres,
+        user.id.clone(),
+        format!("Updated company profile for company {}", company_id),
+        crate::audit_ctx!(&audit_ctx, actor: &user),
+    )
+    .await;
+
     Ok(Json(CompanyResponse::from(company)))
 }
 
@@ -278,6 +305,7 @@ pub async fn update_company(
 )]
 pub async fn export_company_data(
     ManageCompanyUser(_claims, user): ManageCompanyUser,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
     axum::extract::Path(company_id): axum::extract::Path<String>,
 ) -> Result<Json<ExportResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -368,11 +396,12 @@ pub async fn export_company_data(
 
     let frontend_url =
         std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
+    let export_company_id = company_id.clone();
     tokio::spawn(async move {
         if let Err(e) = crate::email::send_export_ready_notification(
             &company_email,
             &company_name,
-            &company_id,
+            &export_company_id,
             &filename,
             &frontend_url,
         )
@@ -381,6 +410,14 @@ pub async fn export_company_data(
             tracing::error!("Failed to send export notification email: {:?}", e);
         }
     });
+
+    AuditLogger::log_admin_action(
+        &state.postgres,
+        user.id.clone(),
+        format!("Requested company export for company {}", company_id),
+        crate::audit_ctx!(&audit_ctx, actor: &user),
+    )
+    .await;
 
     Ok(Json(ExportResponse {
         message: "Export complete. A download link has been sent to your email.".to_string(),
@@ -405,7 +442,8 @@ pub async fn export_company_data(
 )]
 pub async fn download_export(
     ManageCompanyUser(_claims, user): ManageCompanyUser,
-    State(_state): State<AppState>,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
+    State(state): State<AppState>,
     axum::extract::Path((company_id, filename)): axum::extract::Path<(String, String)>,
 ) -> Result<axum::response::Response, (StatusCode, Json<serde_json::Value>)> {
     if user.company_id.as_ref() != Some(&company_id) {
@@ -452,6 +490,14 @@ pub async fn download_export(
             err_internal("Failed to build response")
         })?;
 
+    let _ = AuditLogger::log_admin_action(
+        &state.postgres,
+        user.id.clone(),
+        format!("Downloaded export {} for company {}", filename, company_id),
+        crate::audit_ctx!(&audit_ctx, actor: &user),
+    )
+    .await;
+
     Ok(response)
 }
 
@@ -469,6 +515,7 @@ pub async fn download_export(
 )]
 pub async fn delete_company(
     ManageCompanyUser(_claims, user): ManageCompanyUser,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
     axum::extract::Path(company_id): axum::extract::Path<String>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
@@ -519,11 +566,12 @@ pub async fn delete_company(
 
     let frontend_url =
         std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:5173".to_string());
+    let delete_company_id = company_id.clone();
     tokio::spawn(async move {
         if let Err(e) = crate::email::send_company_deletion_request(
             &company_email,
             &company_name,
-            &company_id,
+            &delete_company_id,
             &deletion_token,
             &frontend_url,
         )
@@ -532,6 +580,14 @@ pub async fn delete_company(
             tracing::error!("Failed to send company deletion request email: {:?}", e);
         }
     });
+
+    AuditLogger::log_admin_action(
+        &state.postgres,
+        user.id.clone(),
+        format!("Requested company deletion for company {}", company_id),
+        crate::audit_ctx!(&audit_ctx, actor: &user),
+    )
+    .await;
 
     Ok(Json(
         json!({ "message": "Deletion requested. Please check your email to confirm." }),
@@ -549,6 +605,7 @@ pub async fn delete_company(
     tag = "Company"
 )]
 pub async fn validate_company_deletion_token(
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
     axum::extract::Path(company_id): axum::extract::Path<String>,
     axum::extract::Query(token): axum::extract::Query<serde_json::Value>,
@@ -568,16 +625,47 @@ pub async fn validate_company_deletion_token(
         .ok_or_else(|| err_not_found("Company not found"))?;
 
     if company.deletion_token.as_deref() != Some(token) {
+        AuditLogger::log(
+            &state.postgres,
+            "company_deletion_token_invalid",
+            None,
+            None,
+            crate::audit_ctx!(&audit_ctx, company_id: Some(company_id.clone())),
+            Some("Invalid or expired confirmation token".to_string()),
+            false,
+        )
+        .await;
         return Err(err_bad_request("Invalid or expired confirmation token"));
     }
 
     if let Some(requested_at) = company.deletion_requested_at
         && requested_at < chrono::Utc::now() - chrono::Duration::hours(6)
     {
+        AuditLogger::log(
+            &state.postgres,
+            "company_deletion_token_invalid",
+            None,
+            None,
+            crate::audit_ctx!(&audit_ctx, company_id: Some(company_id.clone())),
+            Some("Confirmation token expired".to_string()),
+            false,
+        )
+        .await;
         return Err(err_bad_request(
             "Confirmation token has expired. Please request a new deletion link.",
         ));
     }
+
+    AuditLogger::log(
+        &state.postgres,
+        "company_deletion_token_validated",
+        None,
+        None,
+        crate::audit_ctx!(&audit_ctx, company_id: Some(company_id.clone())),
+        Some("Company deletion token validated".to_string()),
+        true,
+    )
+    .await;
 
     Ok(Json(json!({ "companyName": company.name })))
 }
@@ -594,6 +682,7 @@ pub async fn validate_company_deletion_token(
     tag = "Company"
 )]
 pub async fn confirm_company_deletion(
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
     axum::extract::Path(company_id): axum::extract::Path<String>,
     Json(payload): Json<serde_json::Value>,
@@ -666,6 +755,17 @@ pub async fn confirm_company_deletion(
             tracing::error!("Failed to send user company deletion notification: {:?}", e);
         }
     });
+
+    AuditLogger::log(
+        &state.postgres,
+        "company_deletion_confirmed",
+        None,
+        updated_company.deletion_requested_by_email.clone(),
+        crate::audit_ctx!(&audit_ctx, company_id: Some(company_id.clone())),
+        Some(format!("Confirmed deletion for company {}", company_id)),
+        true,
+    )
+    .await;
 
     Ok(Json(
         json!({ "message": "Company has been deleted. Data will be retained for 30 days." }),

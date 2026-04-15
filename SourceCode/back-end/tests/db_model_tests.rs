@@ -50,6 +50,12 @@ fn create_test_security_log() -> SecurityLog {
         details: Some("Test details".to_string()),
         success: true,
         created_at: Utc::now(),
+        actor_role: Some("logsmart_admin".to_string()),
+        company_id: Some("company1-uuid".to_string()),
+        request_method: None,
+        request_path: None,
+        target_email: None,
+        target_user_id: None,
     }
 }
 
@@ -351,6 +357,12 @@ fn test_security_log_creation() {
         details: Some("Successful login".to_string()),
         success: true,
         created_at: now,
+        actor_role: Some("logsmart_admin".to_string()),
+        company_id: Some("company1-uuid".to_string()),
+        request_method: None,
+        request_path: None,
+        target_email: None,
+        target_user_id: None,
     };
 
     assert_eq!(log.id, "log1");
@@ -387,6 +399,12 @@ fn test_security_log_minimal_data() {
         details: None,
         success: true,
         created_at: Utc::now(),
+        actor_role: None,
+        company_id: None,
+        request_method: None,
+        request_path: None,
+        target_email: None,
+        target_user_id: None,
     };
 
     assert!(log.user_id.is_none());

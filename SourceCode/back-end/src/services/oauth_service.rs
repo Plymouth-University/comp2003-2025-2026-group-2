@@ -1,4 +1,8 @@
-use crate::{db, jwt_manager::JwtManager, utils::AuditLogger};
+use crate::{
+    db,
+    jwt_manager::JwtManager,
+    utils::{AuditContext, AuditLogger},
+};
 use anyhow::Result;
 use axum::http::StatusCode;
 
@@ -230,8 +234,14 @@ impl GoogleOAuthClient {
                 user_info.email.clone(),
                 "google".to_string(),
                 true,
-                ip_address,
-                user_agent,
+                crate::audit_ctx!(
+                    &AuditContext {
+                        ip_address,
+                        user_agent,
+                        ..AuditContext::default()
+                    },
+                    actor: &existing_user
+                ),
             )
             .await;
 
@@ -305,8 +315,14 @@ impl GoogleOAuthClient {
             user_info.email.clone(),
             "google".to_string(),
             true,
-            ip_address,
-            user_agent,
+            crate::audit_ctx!(
+                &AuditContext {
+                    ip_address,
+                    user_agent,
+                    ..AuditContext::default()
+                },
+                actor: &new_user
+            ),
         )
         .await;
 

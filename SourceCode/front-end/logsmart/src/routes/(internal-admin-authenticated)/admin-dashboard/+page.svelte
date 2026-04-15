@@ -10,6 +10,12 @@
 		email: string | null;
 		ip_address: string | null;
 		user_agent: string | null;
+		actor_role: string | null;
+		company_id: string | null;
+		target_user_id: string | null;
+		target_email: string | null;
+		request_path: string | null;
+		request_method: string | null;
 		details: string | null;
 		success: boolean;
 		created_at: string;
@@ -38,6 +44,12 @@
 	let filterEmail = $state('');
 	let filterIpAddress = $state('');
 	let filterUserAgent = $state('');
+	let filterActorRole = $state('');
+	let filterCompanyId = $state('');
+	let filterTargetUserId = $state('');
+	let filterTargetEmail = $state('');
+	let filterRequestPath = $state('');
+	let filterRequestMethod = $state('');
 	let filterDetails = $state('');
 	let filterSuccess = $state('');
 	let filterCreatedFrom = $state('');
@@ -104,6 +116,12 @@
 		appendFilter(params, 'email', filterEmail);
 		appendFilter(params, 'ip_address', filterIpAddress);
 		appendFilter(params, 'user_agent', filterUserAgent);
+		appendFilter(params, 'actor_role', filterActorRole);
+		appendFilter(params, 'company_id', filterCompanyId);
+		appendFilter(params, 'target_user_id', filterTargetUserId);
+		appendFilter(params, 'target_email', filterTargetEmail);
+		appendFilter(params, 'request_path', filterRequestPath);
+		appendFilter(params, 'request_method', filterRequestMethod);
 		appendFilter(params, 'details', filterDetails);
 		if (filterSuccess === 'true' || filterSuccess === 'false') {
 			params.set('success', filterSuccess);
@@ -186,6 +204,12 @@
 				'email',
 				'ip_address',
 				'user_agent',
+				'actor_role',
+				'company_id',
+				'target_user_id',
+				'target_email',
+				'request_path',
+				'request_method',
 				'details',
 				'success',
 				'created_at'
@@ -198,6 +222,12 @@
 					row.email ?? '',
 					row.ip_address ?? '',
 					row.user_agent ?? '',
+					row.actor_role ?? '',
+					row.company_id ?? '',
+					row.target_user_id ?? '',
+					row.target_email ?? '',
+					row.request_path ?? '',
+					row.request_method ?? '',
 					row.details ?? '',
 					row.success ? 'true' : 'false',
 					row.created_at
@@ -717,6 +747,84 @@
 					</div>
 					<div>
 						<label
+							for="security-filter-actor-role"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Actor Role</label
+						>
+						<input
+							id="security-filter-actor-role"
+							bind:value={filterActorRole}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-company-id"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Company ID</label
+						>
+						<input
+							id="security-filter-company-id"
+							bind:value={filterCompanyId}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-target-user-id"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Target User ID</label
+						>
+						<input
+							id="security-filter-target-user-id"
+							bind:value={filterTargetUserId}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-target-email"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Target Email</label
+						>
+						<input
+							id="security-filter-target-email"
+							bind:value={filterTargetEmail}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-request-path"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Request Path</label
+						>
+						<input
+							id="security-filter-request-path"
+							bind:value={filterRequestPath}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-request-method"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Request Method</label
+						>
+						<input
+							id="security-filter-request-method"
+							bind:value={filterRequestMethod}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
 							for="security-filter-details"
 							class="mb-1 block text-sm font-medium"
 							style="color: var(--text-secondary);">Details</label
@@ -840,6 +948,22 @@
 								>
 								<th
 									class="px-4 py-3 text-left text-sm font-semibold"
+									style="color: var(--text-primary);">User Agent</th
+								>
+								<th
+									class="px-4 py-3 text-left text-sm font-semibold"
+									style="color: var(--text-primary);">Actor Role</th
+								>
+								<th
+									class="px-4 py-3 text-left text-sm font-semibold"
+									style="color: var(--text-primary);">Target Email</th
+								>
+								<th
+									class="px-4 py-3 text-left text-sm font-semibold"
+									style="color: var(--text-primary);">Request</th
+								>
+								<th
+									class="px-4 py-3 text-left text-sm font-semibold"
 									style="color: var(--text-primary);">Success</th
 								>
 								<th
@@ -852,7 +976,7 @@
 							{#if securityLoading}
 								<tr class="border-t" style="border-color: var(--border-primary);">
 									<td
-										colspan="7"
+										colspan="11"
 										class="px-4 py-6 text-center text-sm"
 										style="color: var(--text-secondary);">Loading security events...</td
 									>
@@ -860,7 +984,7 @@
 							{:else if securityLogs.length === 0}
 								<tr class="border-t" style="border-color: var(--border-primary);">
 									<td
-										colspan="7"
+										colspan="11"
 										class="px-4 py-6 text-center text-sm"
 										style="color: var(--text-secondary);">No security events found.</td
 									>
@@ -883,6 +1007,26 @@
 										<td class="px-4 py-3 text-sm" style="color: var(--text-secondary);"
 											>{log.ip_address || '-'}</td
 										>
+										<td class="max-w-sm px-4 py-3 text-sm" style="color: var(--text-secondary);">
+											<div class="truncate" title={log.user_agent || ''}>
+												{log.user_agent || '-'}
+											</div>
+										</td>
+										<td class="px-4 py-3 text-sm" style="color: var(--text-secondary);"
+											>{log.actor_role || '-'}</td
+										>
+										<td class="px-4 py-3 text-sm" style="color: var(--text-secondary);"
+											>{log.target_email || '-'}</td
+										>
+										<td class="max-w-sm px-4 py-3 text-sm" style="color: var(--text-secondary);">
+											<div
+												class="truncate"
+												title={`${log.request_method || ''} ${log.request_path || ''}`}
+											>
+												{log.request_method || '-'}
+												{log.request_path || ''}
+											</div>
+										</td>
 										<td
 											class="px-4 py-3 text-sm font-semibold"
 											style={`color: ${log.success ? '#5cb85c' : '#d9534f'};`}

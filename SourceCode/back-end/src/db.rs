@@ -205,9 +205,25 @@ pub struct SecurityLog {
     pub email: Option<String>,
     pub ip_address: Option<String>,
     pub user_agent: Option<String>,
+    pub actor_role: Option<String>,
+    pub company_id: Option<String>,
+    pub target_user_id: Option<String>,
+    pub target_email: Option<String>,
+    pub request_path: Option<String>,
+    pub request_method: Option<String>,
     pub details: Option<String>,
     pub success: bool,
     pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct SecurityLogMeta {
+    pub actor_role: Option<String>,
+    pub company_id: Option<String>,
+    pub target_user_id: Option<String>,
+    pub target_email: Option<String>,
+    pub request_path: Option<String>,
+    pub request_method: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -217,6 +233,12 @@ pub struct SecurityLogFilters {
     pub email: Option<String>,
     pub ip_address: Option<String>,
     pub user_agent: Option<String>,
+    pub actor_role: Option<String>,
+    pub company_id: Option<String>,
+    pub target_user_id: Option<String>,
+    pub target_email: Option<String>,
+    pub request_path: Option<String>,
+    pub request_method: Option<String>,
     pub details: Option<String>,
     pub success: Option<bool>,
     pub created_from: Option<chrono::DateTime<chrono::Utc>>,
@@ -965,6 +987,7 @@ pub async fn log_security_event(
     email: Option<String>,
     ip_address: Option<String>,
     user_agent: Option<String>,
+    meta: SecurityLogMeta,
     details: Option<String>,
     success: bool,
 ) -> Result<SecurityLog> {
@@ -973,9 +996,13 @@ pub async fn log_security_event(
 
     sqlx::query(
         r"
-        INSERT INTO security_logs (id, event_type, user_id, email, ip_address, user_agent, details, success, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        "
+        INSERT INTO security_logs (
+            id, event_type, user_id, email, ip_address, user_agent,
+            actor_role, company_id, target_user_id, target_email, request_path, request_method,
+            details, success, created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        ",
     )
     .bind(&id)
     .bind(&event_type)
@@ -983,6 +1010,12 @@ pub async fn log_security_event(
     .bind(&email)
     .bind(&ip_address)
     .bind(&user_agent)
+    .bind(&meta.actor_role)
+    .bind(&meta.company_id)
+    .bind(&meta.target_user_id)
+    .bind(&meta.target_email)
+    .bind(&meta.request_path)
+    .bind(&meta.request_method)
     .bind(&details)
     .bind(success)
     .bind(now)
@@ -996,6 +1029,12 @@ pub async fn log_security_event(
         email,
         ip_address,
         user_agent,
+        actor_role: meta.actor_role,
+        company_id: meta.company_id,
+        target_user_id: meta.target_user_id,
+        target_email: meta.target_email,
+        request_path: meta.request_path,
+        request_method: meta.request_method,
         details,
         success,
         created_at: now,
@@ -1013,7 +1052,7 @@ pub async fn get_security_logs_by_user(
 ) -> Result<Vec<SecurityLog>> {
     let logs = sqlx::query_as::<_, SecurityLog>(
         r"
-        SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
+        SELECT id, event_type, user_id, email, ip_address, user_agent, actor_role, company_id, target_user_id, target_email, request_path, request_method, details, success, created_at
         FROM security_logs
         WHERE user_id = $1
         ORDER BY created_at DESC
@@ -1040,7 +1079,7 @@ pub async fn get_recent_security_logs(
     let logs = if let Some(evt) = event_type {
         sqlx::query_as::<_, SecurityLog>(
             r"
-            SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
+            SELECT id, event_type, user_id, email, ip_address, user_agent, actor_role, company_id, target_user_id, target_email, request_path, request_method, details, success, created_at
             FROM security_logs
             WHERE event_type = $1
             ORDER BY created_at DESC
@@ -1054,7 +1093,7 @@ pub async fn get_recent_security_logs(
     } else {
         sqlx::query_as::<_, SecurityLog>(
             r"
-            SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
+            SELECT id, event_type, user_id, email, ip_address, user_agent, actor_role, company_id, target_user_id, target_email, request_path, request_method, details, success, created_at
             FROM security_logs
             ORDER BY created_at DESC
             LIMIT $1
@@ -1086,7 +1125,7 @@ pub async fn get_security_logs_page(
 
     let mut query_str = String::from(
         r"
-        SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
+        SELECT id, event_type, user_id, email, ip_address, user_agent, actor_role, company_id, target_user_id, target_email, request_path, request_method, details, success, created_at
         FROM security_logs
         WHERE 1=1
         ",
@@ -1113,6 +1152,30 @@ pub async fn get_security_logs_page(
     if filters.user_agent.is_some() {
         bind_count += 1;
         writeln!(query_str, "  AND user_agent ILIKE ${bind_count}")?;
+    }
+    if filters.actor_role.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND actor_role ILIKE ${bind_count}")?;
+    }
+    if filters.company_id.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND company_id = ${bind_count}")?;
+    }
+    if filters.target_user_id.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND target_user_id ILIKE ${bind_count}")?;
+    }
+    if filters.target_email.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND target_email ILIKE ${bind_count}")?;
+    }
+    if filters.request_path.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND request_path ILIKE ${bind_count}")?;
+    }
+    if filters.request_method.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND request_method ILIKE ${bind_count}")?;
     }
     if filters.details.is_some() {
         bind_count += 1;
@@ -1165,6 +1228,24 @@ pub async fn get_security_logs_page(
     if let Some(value) = filters.user_agent.as_ref() {
         query = query.bind(format!("%{}%", value.trim()));
     }
+    if let Some(value) = filters.actor_role.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.company_id.as_ref() {
+        query = query.bind(value.trim());
+    }
+    if let Some(value) = filters.target_user_id.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.target_email.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.request_path.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.request_method.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
     if let Some(value) = filters.details.as_ref() {
         query = query.bind(format!("%{}%", value.trim()));
     }
@@ -1215,7 +1296,7 @@ pub async fn get_security_logs_for_export(
 
     let mut query_str = String::from(
         r"
-        SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
+        SELECT id, event_type, user_id, email, ip_address, user_agent, actor_role, company_id, target_user_id, target_email, request_path, request_method, details, success, created_at
         FROM security_logs
         WHERE 1=1
         ",
@@ -1242,6 +1323,30 @@ pub async fn get_security_logs_for_export(
     if filters.user_agent.is_some() {
         bind_count += 1;
         writeln!(query_str, "  AND user_agent ILIKE ${bind_count}")?;
+    }
+    if filters.actor_role.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND actor_role ILIKE ${bind_count}")?;
+    }
+    if filters.company_id.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND company_id = ${bind_count}")?;
+    }
+    if filters.target_user_id.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND target_user_id ILIKE ${bind_count}")?;
+    }
+    if filters.target_email.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND target_email ILIKE ${bind_count}")?;
+    }
+    if filters.request_path.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND request_path ILIKE ${bind_count}")?;
+    }
+    if filters.request_method.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND request_method ILIKE ${bind_count}")?;
     }
     if filters.details.is_some() {
         bind_count += 1;
@@ -1281,6 +1386,24 @@ pub async fn get_security_logs_for_export(
         query = query.bind(format!("%{}%", value.trim()));
     }
     if let Some(value) = filters.user_agent.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.actor_role.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.company_id.as_ref() {
+        query = query.bind(value.trim());
+    }
+    if let Some(value) = filters.target_user_id.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.target_email.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.request_path.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.request_method.as_ref() {
         query = query.bind(format!("%{}%", value.trim()));
     }
     if let Some(value) = filters.details.as_ref() {

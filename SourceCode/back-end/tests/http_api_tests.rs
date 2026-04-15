@@ -1959,7 +1959,7 @@ async fn test_validate_deletion_token_expires_after_6_hours() {
     let company_id = register_body["user"]["company_id"].as_str().unwrap();
 
     // Export data
-    let (export_status, _) = make_request(
+    let (export_status, body) = make_request(
         &mut app,
         "POST",
         &format!("/companies/{}/export", company_id),
@@ -1967,6 +1967,7 @@ async fn test_validate_deletion_token_expires_after_6_hours() {
         Some(token),
     )
     .await;
+    println!("{}", body);
     assert_eq!(export_status, StatusCode::OK);
 
     // Request deletion
