@@ -16,10 +16,27 @@
 	const combinedTemplates = DEFAULT_TEMPLATE_BLUEPRINTS.filter(
 		(template) => template.category === 'combined'
 	);
+	import { DEFAULT_TEMPLATE_BLUEPRINTS } from './defaultTemplates';
+
+	let selectedDefaultTemplateId = $state<string>(DEFAULT_TEMPLATE_BLUEPRINTS[0]?.id ?? '');
+	let selectedDefaultTemplate = $derived(
+		DEFAULT_TEMPLATE_BLUEPRINTS.find((t) => t.id === selectedDefaultTemplateId)
+	);
+
+	const checklistTemplates = DEFAULT_TEMPLATE_BLUEPRINTS.filter(
+		(template) => template.category === 'checklist'
+	);
+	const temperatureTemplates = DEFAULT_TEMPLATE_BLUEPRINTS.filter(
+		(template) => template.category === 'temperature'
+	);
+	const combinedTemplates = DEFAULT_TEMPLATE_BLUEPRINTS.filter(
+		(template) => template.category === 'combined'
+	);
 
 	let {
 		templates,
 		onCreateNew,
+		onUseDefaultTemplate,
 		onUseDefaultTemplate,
 		onSelectTemplate,
 		currentTemplateName = '',
@@ -28,10 +45,16 @@
 		templates: Template[];
 		onCreateNew: () => void;
 		onUseDefaultTemplate: (templateId: string) => void;
+		onUseDefaultTemplate: (templateId: string) => void;
 		onSelectTemplate: (templateName: string) => void;
 		currentTemplateName?: string;
 		isNewTemplate?: boolean;
 	} = $props();
+
+	function handleUseSelectedDefaultTemplate() {
+		if (!selectedDefaultTemplateId) return;
+		onUseDefaultTemplate(selectedDefaultTemplateId);
+	}
 
 	function handleUseSelectedDefaultTemplate() {
 		if (!selectedDefaultTemplateId) return;
@@ -94,17 +117,13 @@
 
 			<button
 				type="button"
-				class="btn-default w-full transform rounded border-2 px-4 py-2 text-sm font-semibold text-white transition-all duration-200"
+				class="btn-default w-full rounded px-4 py-2 text-sm font-semibold text-white"
 				onclick={handleUseSelectedDefaultTemplate}
 				disabled={!selectedDefaultTemplateId}
 			>
 				Use Template
 			</button>
 		</div>
-
-		<h3 class="mb-2 text-sm font-semibold uppercase" style="color: var(--text-secondary);">
-			User-Defined Templates
-		</h3>
 
 		<div class="border-2" style="border-color: var(--border-primary);">
 			<ul class="divide-y" style="border-color: var(--border-secondary);">
@@ -187,34 +206,27 @@
 	}
 	.btn-default {
 		background-color: #3d7a82;
-		border-color: #3d7a82;
-		cursor: pointer;
+		transition: background-color 0.15s ease;
 	}
 	.btn-create:hover {
 		background-color: #449d44;
 	}
 	.btn-default:hover:enabled {
 		background-color: #2f6066;
-		border-color: #2f6066;
-		transform: scale(1.05);
-		box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
-		opacity: 0.95;
 	}
 	.btn-create:active {
 		background-color: #398439;
 	}
-	.btn-default:active:enabled {
-		transform: scale(1.02);
-	}
 	.btn-default:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
-		transform: none;
-		box-shadow: none;
 	}
 	@media (prefers-color-scheme: dark) {
 		.btn-create:hover {
 			background-color: #439c43;
+		}
+		.btn-default:hover:enabled {
+			background-color: #3b747c;
 		}
 		.btn-default:hover:enabled {
 			background-color: #3b747c;
