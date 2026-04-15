@@ -212,7 +212,7 @@
 	<title>Templates Dashboard</title>
 </svelte:head>
 
-<div class="min-h-screen" style="background-color: var(--bg-secondary);">
+<div class="templates-dashboard-page min-h-screen" style="background-color: var(--bg-secondary);">
 	<div class="mx-auto max-w-5xl px-6 py-8">
 		<div class="mb-8 flex items-center justify-between">
 			<h1 class="text-3xl font-bold" style="color: var(--text-primary);">Templates Dashboard</h1>
@@ -304,7 +304,7 @@
 
 {#if deleteConfirmOpen && templateToDelete}
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+		class="templates-dashboard-modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
 		onclick={(e) => e.target === e.currentTarget && cancelDelete()}
 		onkeydown={(e) => e.key === 'Escape' && cancelDelete()}
 		role="dialog"
@@ -393,5 +393,24 @@
 
 	.btn-retry:active {
 		background-color: #204d74;
+	}
+
+	.templates-dashboard-page button:not(:disabled),
+	.templates-dashboard-modal button:not(:disabled) {
+		cursor: pointer;
+		transition:
+			transform 0.12s ease,
+			filter 0.12s ease;
+	}
+
+	.templates-dashboard-page button:not(:disabled):hover,
+	.templates-dashboard-modal button:not(:disabled):hover {
+		transform: translateY(-1px) scale(1.02);
+		filter: brightness(0.96);
+	}
+
+	.templates-dashboard-page button:disabled,
+	.templates-dashboard-modal button:disabled {
+		cursor: not-allowed;
 	}
 </style>

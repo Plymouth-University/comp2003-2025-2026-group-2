@@ -3,9 +3,10 @@ use std::collections::HashMap;
 use crate::{
     AppState,
     dto::{
-        CreateLogEntryRequest, CreateLogEntryResponse, DueFormInfo, DueFormsResponse,
-        ErrorResponse, ListLogEntriesResponse, LogEntryResponse, SubmitLogEntryResponse,
-        UpdateLogEntryRequest,
+        CreateLogEntryRequest, CreateLogEntryResponse, CreateReportRunRequest,
+        CreateReportRunResponse, DeleteReportRunResponse, DueFormInfo, DueFormsResponse,
+        ErrorResponse, ListLogEntriesResponse, ListReportRunsResponse, LogEntryResponse,
+        ReportRunResponse, SubmitLogEntryResponse, UpdateLogEntryRequest, UseReportRunResponse,
     },
     logs_db::{self, LogStatus},
     middleware::{AnyAuthUser, BranchManagerUser, ReadBranchUser},
@@ -13,10 +14,11 @@ use crate::{
 };
 use axum::{
     Json,
-    extract::{Query, State},
+    extract::{Path, Query, State},
     http::StatusCode,
 };
 use serde_json::json;
+use uuid::Uuid;
 
 #[utoipa::path(
     get,
@@ -674,5 +676,276 @@ pub async fn list_user_log_entries(
 
     Ok(Json(ListLogEntriesResponse {
         entries: response_entries,
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/reports/runs",
+    request_body = CreateReportRunRequest,
+    responses(
+        (status = 201, description = "Saved report run created", body = CreateReportRunResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Log Entries"
+)]
+/// Saves report-generation parameters for later reuse.
+pub async fn create_report_run(
+    ReadBranchUser(_claims, user): ReadBranchUser,
+    State(state): State<AppState>,
+    Json(mut payload): Json<CreateReportRunRequest>,
+) -> Result<(StatusCode, Json<CreateReportRunResponse>), (StatusCode, Json<serde_json::Value>)> {
+    let company_id = user.company_id.ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
+
+    if payload.params.date_from_iso.is_empty() || payload.params.date_to_iso.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "date_from_iso and date_to_iso are required" })),
+        ));
+    }
+
+    payload.params = logs_db::normalize_report_params(&payload.params);
+
+    let now = chrono::Utc::now();
+    let report_id = Uuid::new_v4().to_string();
+    let doc = logs_db::ReportRunDocument {
+        report_id: report_id.clone(),
+        user_id: user.id,
+        company_id,
+        name: payload.name,
+        params: payload.params,
+        params_key: String::new(),
+        created_at: now,
+        last_used_at: now,
+        use_count: 1,
+    };
+
+    let saved = logs_db::create_report_run(&state.mongodb, &doc)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to save report run: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to save report run" })),
+            )
+        })?;
+
+    Ok((
+        StatusCode::CREATED,
+        Json(CreateReportRunResponse {
+            report_run: ReportRunResponse {
+                id: saved.report_id,
+                name: saved.name,
+                params: saved.params,
+                created_at: saved.created_at.to_rfc3339(),
+                last_used_at: saved.last_used_at.to_rfc3339(),
+                use_count: saved.use_count,
+            },
+        }),
+    ))
+}
+
+#[utoipa::path(
+    get,
+    path = "/reports/runs",
+    params(("limit" = u32, Query, description = "Optional limit for report run list, default 20, max 100")),
+    responses(
+        (status = 200, description = "Saved report runs retrieved", body = ListReportRunsResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Log Entries"
+)]
+/// Lists saved report-generation parameter sets for the current user.
+pub async fn list_report_runs(
+    ReadBranchUser(_claims, user): ReadBranchUser,
+    State(state): State<AppState>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Result<Json<ListReportRunsResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let company_id = user.company_id.ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
+
+    let limit = params
+        .get("limit")
+        .and_then(|v| v.parse::<i64>().ok())
+        .unwrap_or(20)
+        .clamp(1, 100);
+
+    let runs = logs_db::list_report_runs(&state.mongodb, &user.id, &company_id, limit)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to list report runs: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to list report runs" })),
+            )
+        })?;
+
+    let mut seen = std::collections::HashSet::new();
+    let mut deduped = Vec::new();
+    for run in runs {
+        let key = if run.params_key.is_empty() {
+            logs_db::report_params_key(&run.params).map_err(|e| {
+                tracing::error!("Failed to compute report run key: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Failed to list report runs" })),
+                )
+            })?
+        } else {
+            run.params_key.clone()
+        };
+
+        if seen.insert(key) {
+            deduped.push(run);
+        }
+    }
+
+    Ok(Json(ListReportRunsResponse {
+        report_runs: deduped
+            .into_iter()
+            .map(|run| ReportRunResponse {
+                id: run.report_id,
+                name: run.name,
+                params: run.params,
+                created_at: run.created_at.to_rfc3339(),
+                last_used_at: run.last_used_at.to_rfc3339(),
+                use_count: run.use_count,
+            })
+            .collect(),
+    }))
+}
+
+#[utoipa::path(
+    post,
+    path = "/reports/runs/{report_id}/use",
+    params(("report_id" = String, Path, description = "Saved report run ID")),
+    responses(
+        (status = 200, description = "Saved report run usage tracked", body = UseReportRunResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "Report run not found", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Log Entries"
+)]
+/// Marks a saved report run as used.
+pub async fn use_report_run(
+    ReadBranchUser(_claims, user): ReadBranchUser,
+    State(state): State<AppState>,
+    Path(report_id): Path<String>,
+) -> Result<Json<UseReportRunResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let company_id = user.company_id.ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
+
+    let touched = logs_db::touch_report_run(&state.mongodb, &report_id, &user.id, &company_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to update report run usage: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to update report run usage" })),
+            )
+        })?;
+
+    if !touched {
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Report run not found" })),
+        ));
+    }
+
+    Ok(Json(UseReportRunResponse {
+        message: "Report run marked as used".to_string(),
+    }))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/reports/runs/{report_id}",
+    params(("report_id" = String, Path, description = "Saved report run ID")),
+    responses(
+        (status = 200, description = "Saved report run deleted", body = DeleteReportRunResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 404, description = "Report run not found", body = ErrorResponse),
+        (status = 500, description = "Server error", body = ErrorResponse),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Log Entries"
+)]
+/// Deletes a saved report run.
+pub async fn delete_report_run(
+    ReadBranchUser(_claims, user): ReadBranchUser,
+    State(state): State<AppState>,
+    Path(report_id): Path<String>,
+) -> Result<Json<DeleteReportRunResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let company_id = user.company_id.ok_or((
+        StatusCode::FORBIDDEN,
+        Json(json!({ "error": "User is not associated with a company" })),
+    ))?;
+
+    tracing::info!(
+        target: "report_runs",
+        "delete requested: report_id={}, user_id={}, company_id={}",
+        report_id,
+        user.id,
+        company_id
+    );
+
+    let deleted = logs_db::delete_report_run(&state.mongodb, &report_id, &user.id, &company_id)
+        .await
+        .map_err(|e| {
+            tracing::error!(
+                target: "report_runs",
+                "delete failed: report_id={}, user_id={}, company_id={}, err={:?}",
+                report_id,
+                user.id,
+                company_id,
+                e
+            );
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "error": "Failed to delete report run" })),
+            )
+        })?;
+
+    if !deleted {
+        tracing::warn!(
+            target: "report_runs",
+            "delete not found: report_id={}, user_id={}, company_id={}",
+            report_id,
+            user.id,
+            company_id
+        );
+        return Err((
+            StatusCode::NOT_FOUND,
+            Json(json!({ "error": "Report run not found" })),
+        ));
+    }
+
+    tracing::info!(
+        target: "report_runs",
+        "delete succeeded: report_id={}, user_id={}, company_id={}",
+        report_id,
+        user.id,
+        company_id
+    );
+
+    Ok(Json(DeleteReportRunResponse {
+        message: "Report run deleted".to_string(),
     }))
 }

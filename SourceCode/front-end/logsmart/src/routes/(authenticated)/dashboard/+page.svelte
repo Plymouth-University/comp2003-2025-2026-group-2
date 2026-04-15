@@ -288,14 +288,14 @@
 								<div class="flex flex-col gap-3">
 									<button
 										onclick={handleCreateNewTemplate}
-										class="cursor-pointer border-2 px-6 py-2 font-medium transition-opacity hover:opacity-80"
+										class="transform cursor-pointer border-2 px-6 py-2 font-medium transition-all duration-150 hover:scale-105 hover:opacity-80"
 										style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 									>
 										+ Create New Template
 									</button>
 									<button
 										onclick={handleViewReports}
-										class="cursor-pointer border-2 px-6 py-2 font-medium transition-opacity hover:opacity-80"
+										class="transform cursor-pointer border-2 px-6 py-2 font-medium transition-all duration-150 hover:scale-105 hover:opacity-80"
 										style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 									>
 										View Reports

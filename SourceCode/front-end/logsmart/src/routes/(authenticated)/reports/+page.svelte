@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api } from '$lib/api';
 	import type { components } from '$lib/api-types';
+	import { onMount } from 'svelte';
 	import { SvelteDate, SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import { PDF_STYLES } from '$lib/utils/pdf-templates';
 
@@ -14,6 +15,25 @@
 		fieldData: string;
 		fieldIndex: number;
 		componentId: string;
+	};
+
+	type SavedReportParams = {
+		date_from_iso: string;
+		date_to_iso: string;
+		selected_branch_ids: string[];
+		selected_log_type_ids: string[];
+		arrange_by: 'date' | 'logType';
+		include_temperature_graphs: boolean;
+		params_version: number;
+	};
+
+	type ReportRun = {
+		id: string;
+		name?: string | null;
+		params: SavedReportParams;
+		created_at: string;
+		last_used_at: string;
+		use_count: number;
 	};
 
 	// Get user data from parent layout
@@ -74,10 +94,10 @@
 
 	let logTypes = $state([
 		{ id: 'all', label: 'All', checked: true },
-		{ id: 'type1', label: 'Text Logs', checked: true },
-		{ id: 'type2', label: 'Checkbox Logs', checked: true },
-		{ id: 'type3', label: 'Temperature Logs', checked: true },
-		{ id: 'type4', label: 'Dropdown Logs', checked: true }
+		{ id: 'type1', label: 'Text', checked: true },
+		{ id: 'type2', label: 'Checkbox', checked: true },
+		{ id: 'type3', label: 'Temperature', checked: true },
+		{ id: 'type4', label: 'Dropdown', checked: true }
 	]);
 
 	const today = new Date();
@@ -86,6 +106,7 @@
 	const yyyy = today.getFullYear();
 	const currentDateFormatted = `${dd}/${mm}/${yyyy}`;
 	const currentDateISO = `${yyyy}-${mm}-${dd}`;
+	const todayDate = new Date(yyyy, today.getMonth(), today.getDate());
 
 	let dateFrom = $state(currentDateFormatted);
 	let dateTo = $state(currentDateFormatted);
@@ -100,6 +121,8 @@
 	// svelte-ignore non_reactive_update
 	let calendarDate = new SvelteDate();
 	let activePickerIsFrom = $state(true);
+	let dateFromPickerContainer: HTMLDivElement | null = null;
+	let dateToPickerContainer: HTMLDivElement | null = null;
 
 	let reportGenerated = $state(false);
 	let arrangeBy = $state<'date' | 'logType'>('date');
@@ -108,6 +131,10 @@
 	let logEntries = $state<LogEntry[]>([]);
 	let filteredEntries = $state<LogEntry[]>([]);
 	let includeTemperatureGraphs = $state(false);
+	let reportRuns = $state<ReportRun[]>([]);
+	let isReportRunsLoading = $state(false);
+	let reportRunsError = $state<string | null>(null);
+	let deletingReportId = $state<string | null>(null);
 
 	// Temperature graph data types
 	type TemperatureDataPoint = {
@@ -531,14 +558,14 @@
 		// Check which log types are NOT selected
 		logTypes.forEach((type) => {
 			if (type.id !== 'all' && !type.checked) {
-				// Map log type labels to field types
-				if (type.label === 'Temperature Logs') {
+				// Map log type ids to field types
+				if (type.id === 'type3') {
 					excludedTypes.push('temperature');
-				} else if (type.label === 'Checkbox Logs') {
+				} else if (type.id === 'type2') {
 					excludedTypes.push('checkbox');
-				} else if (type.label === 'Dropdown Logs') {
+				} else if (type.id === 'type4') {
 					excludedTypes.push('dropdown');
-				} else if (type.label === 'Text Logs') {
+				} else if (type.id === 'type1') {
 					// Text logs include fields with no field_type or undefined/null field_type
 					excludedTypes.push('text');
 				}
@@ -551,44 +578,15 @@
 	// Function to check if an entry has any remaining fields after filtering
 	function hasRemainingFields(
 		templateLayout: TemplateField[],
-		excludeFieldTypes: string[],
-		entryData: unknown = null
+		excludeFieldTypes: string[]
 	): boolean {
 		if (!templateLayout || templateLayout.length === 0) return true;
 
-		// Check if at least one field is not excluded AND has actual data
-		const result = templateLayout.some((field, index) => {
+		// Entry should remain visible if at least one field remains after log-type exclusions.
+		return templateLayout.some((field) => {
 			const fieldType = normalizeFieldType(field.field_type);
-
-			// Skip excluded field types
-			if (excludeFieldTypes.includes(fieldType)) {
-				return false;
-			}
-
-			// If no entry data provided, just check field type existence
-			if (!entryData) {
-				return true;
-			}
-
-			// Check if this field actually has data
-			const fieldData = parseFieldData(entryData, field, index);
-			if (!fieldData) {
-				return false;
-			}
-
-			// Convert to string and check if it's meaningful content
-			const dataStr = String(fieldData);
-			const hasValidData =
-				dataStr !== 'No data entered' &&
-				dataStr !== 'No data available' &&
-				dataStr.trim() !== '' &&
-				dataStr !== 'undefined' &&
-				dataStr !== 'null';
-
-			return hasValidData;
+			return !excludeFieldTypes.includes(fieldType);
 		});
-
-		return result;
 	}
 
 	// Convert DD/MM/YYYY to YYYY-MM-DD
@@ -608,19 +606,48 @@
 			if (isFrom) {
 				dateFromISO = iso;
 			} else {
-				dateToISO = iso;
+				if (iso <= currentDateISO) {
+					dateToISO = iso;
+				}
 			}
 		}
+	}
+
+	function clampDateToTodayOnBlur() {
+		const iso = formatToISO(dateTo);
+		if (iso && iso > currentDateISO) {
+			dateTo = currentDateFormatted;
+			dateToISO = currentDateISO;
+		}
+	}
+
+	function isFutureCalendarDay(day: number): boolean {
+		const selectedDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day);
+		return selectedDate.getTime() > todayDate.getTime();
+	}
+
+	function resetPickerStateToToday() {
+		pickerView = 'day';
+		slideDirection = 'left';
+		calendarDate = new SvelteDate(today.getFullYear(), today.getMonth(), today.getDate());
 	}
 
 	// Toggle date picker
 	function toggleDatePicker(isFrom: boolean) {
 		if (isFrom) {
-			showDateFromPicker = !showDateFromPicker;
+			const willOpen = !showDateFromPicker;
+			showDateFromPicker = willOpen;
 			showDateToPicker = false;
+			if (willOpen) {
+				resetPickerStateToToday();
+			}
 		} else {
-			showDateToPicker = !showDateToPicker;
+			const willOpen = !showDateToPicker;
+			showDateToPicker = willOpen;
 			showDateFromPicker = false;
+			if (willOpen) {
+				resetPickerStateToToday();
+			}
 		}
 		activePickerIsFrom = isFrom;
 	}
@@ -713,6 +740,9 @@
 			dateFromISO = iso;
 			showDateFromPicker = false;
 		} else {
+			if (iso > currentDateISO) {
+				return;
+			}
 			dateTo = formatted;
 			dateToISO = iso;
 			showDateToPicker = false;
@@ -824,11 +854,7 @@
 			const isInDateRange = entryDate >= fromDate && entryDate <= toDate;
 
 			// Check if entry has any remaining fields after filtering
-			const hasFields = hasRemainingFields(
-				entry.template_layout,
-				excludedFieldTypes,
-				entry.entry_data
-			);
+			const hasFields = hasRemainingFields(entry.template_layout, excludedFieldTypes);
 
 			return isInDateRange && hasFields;
 		});
@@ -853,6 +879,149 @@
 			temperatureGraphs = extractTemperatureGraphData(filteredEntries);
 		}
 	}
+
+	function getSelectedLogTypeIds(): string[] {
+		return logTypes.filter((type) => type.id !== 'all' && type.checked).map((type) => type.id);
+	}
+
+	function applySelectedLogTypeIds(selectedIds: string[]) {
+		const selectedSet = new SvelteSet(selectedIds);
+		logTypes = logTypes.map((type) => {
+			if (type.id === 'all') {
+				return { ...type, checked: false };
+			}
+			return { ...type, checked: selectedSet.has(type.id) };
+		});
+		handleIndividualCheckboxChange();
+	}
+
+	function buildCurrentReportParams(): SavedReportParams {
+		const selectedBranchIds = [...selectedBranches].sort();
+		const selectedLogTypeIds = getSelectedLogTypeIds().sort();
+		return {
+			date_from_iso: dateFromISO,
+			date_to_iso: dateToISO,
+			selected_branch_ids: selectedBranchIds,
+			selected_log_type_ids: selectedLogTypeIds,
+			arrange_by: arrangeBy,
+			include_temperature_graphs: includeTemperatureGraphs,
+			params_version: 1
+		};
+	}
+
+	function applyReportParams(params: SavedReportParams) {
+		dateFromISO = params.date_from_iso;
+		dateToISO = params.date_to_iso > currentDateISO ? currentDateISO : params.date_to_iso;
+		dateFrom = formatFromISO(params.date_from_iso) || dateFrom;
+		dateTo = formatFromISO(dateToISO) || dateTo;
+		selectedBranches = [...params.selected_branch_ids];
+		arrangeBy = params.arrange_by;
+		includeTemperatureGraphs = params.include_temperature_graphs;
+		applySelectedLogTypeIds(params.selected_log_type_ids);
+	}
+
+	function formatFromISO(iso: string): string {
+		const parts = iso.split('-');
+		if (parts.length !== 3) return '';
+		const [year, month, day] = parts;
+		return `${day}/${month}/${year}`;
+	}
+
+	async function loadReportRuns() {
+		isReportRunsLoading = true;
+		reportRunsError = null;
+		try {
+			const res = await fetch('/api/reports/runs?limit=20');
+			if (!res.ok) {
+				throw new Error('Failed to load saved reports');
+			}
+			const data = (await res.json()) as { report_runs?: ReportRun[] };
+			reportRuns = data.report_runs ?? [];
+		} catch (err) {
+			reportRunsError = err instanceof Error ? err.message : 'Failed to load saved reports';
+		} finally {
+			isReportRunsLoading = false;
+		}
+	}
+
+	async function saveReportRun() {
+		const payload = {
+			params: buildCurrentReportParams()
+		};
+
+		const res = await fetch('/api/reports/runs', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify(payload)
+		});
+
+		if (!res.ok) {
+			throw new Error('Failed to save report settings');
+		}
+	}
+
+	async function runSavedReport(run: ReportRun) {
+		applyReportParams(run.params);
+
+		await generateReport();
+		await loadReportRuns();
+	}
+
+	async function deleteReportRun(reportId: string) {
+		deletingReportId = reportId;
+		reportRunsError = null;
+		try {
+			const res = await fetch(`/api/reports/runs/${reportId}`, {
+				method: 'DELETE'
+			});
+			if (!res.ok) {
+				let errorMessage = 'Failed to delete saved report';
+				try {
+					const data = (await res.json()) as { error?: string };
+					if (data.error) {
+						errorMessage = `${errorMessage} (${res.status}): ${data.error}`;
+					} else {
+						errorMessage = `${errorMessage} (${res.status})`;
+					}
+				} catch {
+					errorMessage = `${errorMessage} (${res.status})`;
+				}
+
+				console.error('Delete report failed', { reportId, status: res.status });
+				throw new Error(errorMessage);
+			}
+			await loadReportRuns();
+		} catch (err) {
+			console.error('Delete report exception', { reportId, err });
+			reportRunsError = err instanceof Error ? err.message : 'Failed to delete saved report';
+		} finally {
+			deletingReportId = null;
+		}
+	}
+
+	onMount(async () => {
+		await loadReportRuns();
+	});
+
+	onMount(() => {
+		const handleDocumentPointerDown = (event: PointerEvent) => {
+			const target = event.target as Node | null;
+			if (!target) return;
+
+			const clickedInsideFrom = dateFromPickerContainer?.contains(target) ?? false;
+			const clickedInsideTo = dateToPickerContainer?.contains(target) ?? false;
+
+			if (!clickedInsideFrom && !clickedInsideTo) {
+				showDateFromPicker = false;
+				showDateToPicker = false;
+			}
+		};
+
+		document.addEventListener('pointerdown', handleDocumentPointerDown);
+		return () => {
+			document.removeEventListener('pointerdown', handleDocumentPointerDown);
+		};
+	});
 
 	async function generateReport() {
 		isLoading = true;
@@ -913,11 +1082,7 @@
 				const isInDateRange = entryDate >= fromDate && entryDate <= toDate;
 
 				// Check if entry has any remaining fields after filtering
-				const hasFields = hasRemainingFields(
-					entry.template_layout,
-					excludedFieldTypes,
-					entry.entry_data
-				);
+				const hasFields = hasRemainingFields(entry.template_layout, excludedFieldTypes);
 
 				return isInDateRange && hasFields;
 			});
@@ -942,6 +1107,13 @@
 				temperatureGraphs = extractTemperatureGraphData(filteredEntries);
 			} else {
 				temperatureGraphs = [];
+			}
+
+			try {
+				await saveReportRun();
+				await loadReportRuns();
+			} catch {
+				// Saving report run should never block report generation success.
 			}
 
 			reportGenerated = true;
@@ -1291,24 +1463,27 @@ ${reportContent}
 <svelte:head>
 	<title>Generate Report</title>
 </svelte:head>
-<div class="min-h-full" style="background-color: var(--bg-secondary);">
+<div class="reports-page min-h-full" style="background-color: var(--bg-secondary);">
 	<!-- Main Content -->
-	<div class="mx-auto max-w-7xl px-6 py-8">
-		<h1 class="mb-8 text-center text-3xl font-bold md:text-4xl" style="color: var(--text-primary);">
+	<div class="mx-auto max-w-7xl px-6 py-6 lg:py-4">
+		<h1
+			class="mb-8 text-center text-3xl font-bold md:text-4xl lg:mb-5"
+			style="color: var(--text-primary);"
+		>
 			Generate Report
 		</h1>
 
-		<div class="flex flex-col gap-8 lg:flex-row lg:gap-8">
+		<div class="flex flex-col gap-8 lg:flex-row lg:gap-6">
 			<!-- Left Side - Form -->
 			<div class="w-full lg:w-96">
 				<!-- Date From -->
-				<div class="mb-8">
+				<div class="mb-8 lg:mb-5">
 					<label
 						for="date-from"
 						class="mb-3 block text-lg font-bold"
 						style="color: var(--text-primary);">Date From:</label
 					>
-					<div class="relative">
+					<div class="relative" bind:this={dateFromPickerContainer}>
 						<div class="flex items-center gap-2">
 							<input
 								id="date-from"
@@ -1323,7 +1498,7 @@ ${reportContent}
 								type="button"
 								onclick={() => toggleDatePicker(true)}
 								aria-label="Open calendar for start date"
-								class="border-2 p-2"
+								class="transform border-2 p-2 transition-all duration-150 hover:scale-105"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 							>
 								<svg
@@ -1345,226 +1520,232 @@ ${reportContent}
 						<!-- Modern Date Picker -->
 						{#if showDateFromPicker}
 							<div
-								class="absolute top-full left-0 z-50 mt-2 rounded-lg border-2 p-4 shadow-lg"
+								class="date-picker absolute top-full left-0 z-50 mt-2 rounded-lg border-2 p-4 shadow-lg"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); min-width: 280px; sm:min-width: 320px; overflow: hidden; right: auto;"
 							>
 								<!-- Day View -->
 								{#if pickerView === 'day'}
-									<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
-										<!-- Month/Year Header -->
-										<div class="mb-4 flex items-center justify-between">
-											<button
-												type="button"
-												onclick={previousMonth}
-												aria-label="Previous month"
-												class="rounded p-2 hover:bg-gray-100"
-												style="color: #000100;"
-											>
-												<svg
-													width="20"
-													height="20"
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
+									{#key `from-day-${calendarDate.getFullYear()}-${calendarDate.getMonth()}-${slideDirection}`}
+										<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
+											<!-- Month/Year Header -->
+											<div class="mb-4 flex items-center justify-between">
+												<button
+													type="button"
+													onclick={previousMonth}
+													aria-label="Previous month"
+													class="rounded p-2 hover:bg-gray-100"
+													style="color: #000100;"
 												>
-													<polyline points="12 4 6 10 12 16"></polyline>
-												</svg>
-											</button>
-											<button
-												type="button"
-												onclick={switchToMonthView}
-												class="rounded px-3 py-1 font-bold transition-colors hover:bg-gray-100"
-												style="color: #000100;"
-											>
-												{monthNames[calendarDate.getMonth()]}
-												{calendarDate.getFullYear()}
-											</button>
-											<button
-												type="button"
-												onclick={nextMonth}
-												aria-label="Next month"
-												class="rounded p-2 hover:bg-gray-100"
-												style="color: #000100;"
-											>
-												<svg
-													width="20"
-													height="20"
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-												>
-													<polyline points="8 4 14 10 8 16"></polyline>
-												</svg>
-											</button>
-										</div>
-
-										<!-- Day Labels -->
-										<div class="mb-2 grid grid-cols-7 gap-1">
-											{#each ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as day (day)}
-												<div class="py-2 text-center text-sm font-medium" style="color: #A1A6B4;">
-													{day}
-												</div>
-											{/each}
-										</div>
-
-										<!-- Calendar Days -->
-										<div class="grid grid-cols-7 gap-1">
-											{#each getCalendarDays(calendarDate) as day (day ?? 'empty')}
-												{#if day === null}
-													<div class="aspect-square"></div>
-												{:else}
-													<button
-														type="button"
-														onclick={() => selectDay(day)}
-														class="flex aspect-square items-center justify-center rounded transition-colors hover:opacity-80"
-														class:font-bold={isSelectedDay(day)}
-														style={isSelectedDay(day)
-															? 'background-color: #3D7A82; color: white;'
-															: 'color: var(--text-primary);'}
+													<svg
+														width="20"
+														height="20"
+														viewBox="0 0 20 20"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
 													>
+														<polyline points="12 4 6 10 12 16"></polyline>
+													</svg>
+												</button>
+												<button
+													type="button"
+													onclick={switchToMonthView}
+													class="rounded px-3 py-1 font-bold transition-colors hover:bg-gray-100"
+													style="color: #000100;"
+												>
+													{monthNames[calendarDate.getMonth()]}
+													{calendarDate.getFullYear()}
+												</button>
+												<button
+													type="button"
+													onclick={nextMonth}
+													aria-label="Next month"
+													class="rounded p-2 hover:bg-gray-100"
+													style="color: #000100;"
+												>
+													<svg
+														width="20"
+														height="20"
+														viewBox="0 0 20 20"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+													>
+														<polyline points="8 4 14 10 8 16"></polyline>
+													</svg>
+												</button>
+											</div>
+
+											<!-- Day Labels -->
+											<div class="mb-2 grid grid-cols-7 gap-1">
+												{#each ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as day (day)}
+													<div class="py-2 text-center text-sm font-medium" style="color: #A1A6B4;">
 														{day}
-													</button>
-												{/if}
-											{/each}
+													</div>
+												{/each}
+											</div>
+
+											<!-- Calendar Days -->
+											<div class="grid grid-cols-7 gap-1">
+												{#each getCalendarDays(calendarDate) as day, index (`from-${calendarDate.getFullYear()}-${calendarDate.getMonth()}-${index}`)}
+													{#if day === null}
+														<div class="aspect-square"></div>
+													{:else}
+														<button
+															type="button"
+															onclick={() => selectDay(day)}
+															class="flex aspect-square items-center justify-center rounded transition-colors hover:opacity-80"
+															class:font-bold={isSelectedDay(day)}
+															style={isSelectedDay(day)
+																? 'background-color: #3D7A82; color: white;'
+																: 'color: var(--text-primary);'}
+														>
+															{day}
+														</button>
+													{/if}
+												{/each}
+											</div>
 										</div>
-									</div>
+									{/key}
 								{/if}
 
 								<!-- Month View -->
 								{#if pickerView === 'month'}
-									<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
-										<!-- Year Header -->
-										<div class="mb-4 flex items-center justify-between">
-											<button
-												type="button"
-												onclick={previousYear}
-												aria-label="Previous year"
-												class="rounded p-2"
-												style="color: var(--text-primary); background-color: transparent;"
-											>
-												<svg
-													width="20"
-													height="20"
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-												>
-													<polyline points="12 4 6 10 12 16"></polyline>
-												</svg>
-											</button>
-											<button
-												type="button"
-												onclick={switchToYearView}
-												class="rounded px-3 py-1 font-bold transition-colors"
-												style="color: var(--text-primary); background-color: transparent;"
-											>
-												{calendarDate.getFullYear()}
-											</button>
-											<button
-												type="button"
-												onclick={nextYear}
-												aria-label="Next year"
-												class="rounded p-2"
-												style="color: var(--text-primary); background-color: transparent;"
-											>
-												<svg
-													width="20"
-													height="20"
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-												>
-													<polyline points="8 4 14 10 8 16"></polyline>
-												</svg>
-											</button>
-										</div>
-
-										<!-- Month Grid -->
-										<div class="grid grid-cols-3 gap-2">
-											{#each monthNamesShort as month, index (index)}
+									{#key `from-month-${calendarDate.getFullYear()}-${slideDirection}`}
+										<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
+											<!-- Year Header -->
+											<div class="mb-4 flex items-center justify-between">
 												<button
 													type="button"
-													onclick={() => selectMonth(index)}
-													class="rounded px-4 py-3 font-medium transition-colors"
-													class:font-bold={calendarDate.getMonth() === index}
-													style={calendarDate.getMonth() === index
-														? 'background-color: #3D7A82; color: white;'
-														: 'color: var(--text-primary); background-color: transparent;'}
+													onclick={previousYear}
+													aria-label="Previous year"
+													class="rounded p-2"
+													style="color: var(--text-primary); background-color: transparent;"
 												>
-													{month}
+													<svg
+														width="20"
+														height="20"
+														viewBox="0 0 20 20"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+													>
+														<polyline points="12 4 6 10 12 16"></polyline>
+													</svg>
 												</button>
-											{/each}
+												<button
+													type="button"
+													onclick={switchToYearView}
+													class="rounded px-3 py-1 font-bold transition-colors"
+													style="color: var(--text-primary); background-color: transparent;"
+												>
+													{calendarDate.getFullYear()}
+												</button>
+												<button
+													type="button"
+													onclick={nextYear}
+													aria-label="Next year"
+													class="rounded p-2"
+													style="color: var(--text-primary); background-color: transparent;"
+												>
+													<svg
+														width="20"
+														height="20"
+														viewBox="0 0 20 20"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+													>
+														<polyline points="8 4 14 10 8 16"></polyline>
+													</svg>
+												</button>
+											</div>
+
+											<!-- Month Grid -->
+											<div class="grid grid-cols-3 gap-2">
+												{#each monthNamesShort as month, index (index)}
+													<button
+														type="button"
+														onclick={() => selectMonth(index)}
+														class="rounded px-4 py-3 font-medium transition-colors"
+														class:font-bold={calendarDate.getMonth() === index}
+														style={calendarDate.getMonth() === index
+															? 'background-color: #3D7A82; color: white;'
+															: 'color: var(--text-primary); background-color: transparent;'}
+													>
+														{month}
+													</button>
+												{/each}
+											</div>
 										</div>
-									</div>
+									{/key}
 								{/if}
 
 								<!-- Year View -->
 								{#if pickerView === 'year'}
-									<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
-										<!-- Year Range Header -->
-										<div class="mb-4 flex items-center justify-between">
-											<button
-												type="button"
-												onclick={previousYearRange}
-												aria-label="Previous years"
-												class="rounded p-2"
-												style="color: var(--text-primary); background-color: transparent;"
-											>
-												<svg
-													width="20"
-													height="20"
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-												>
-													<polyline points="12 4 6 10 12 16"></polyline>
-												</svg>
-											</button>
-											<div class="font-bold" style="color: var(--text-primary);">
-												{getYearRange()[0]} - {getYearRange()[11]}
-											</div>
-											<button
-												type="button"
-												onclick={nextYearRange}
-												aria-label="Next years"
-												class="rounded p-2"
-												style="color: var(--text-primary); background-color: transparent;"
-											>
-												<svg
-													width="20"
-													height="20"
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-												>
-													<polyline points="8 4 14 10 8 16"></polyline>
-												</svg>
-											</button>
-										</div>
-
-										<!-- Year Grid -->
-										<div class="grid grid-cols-3 gap-2">
-											{#each getYearRange() as year (year)}
+									{#key `from-year-${Math.floor(calendarDate.getFullYear() / 12)}-${slideDirection}`}
+										<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
+											<!-- Year Range Header -->
+											<div class="mb-4 flex items-center justify-between">
 												<button
 													type="button"
-													onclick={() => selectYear(year)}
-													class="rounded px-4 py-3 font-medium transition-colors"
-													class:font-bold={calendarDate.getFullYear() === year}
-													style={calendarDate.getFullYear() === year
-														? 'background-color: #3D7A82; color: white;'
-														: 'color: var(--text-primary); background-color: transparent;'}
+													onclick={previousYearRange}
+													aria-label="Previous years"
+													class="rounded p-2"
+													style="color: var(--text-primary); background-color: transparent;"
 												>
-													{year}
+													<svg
+														width="20"
+														height="20"
+														viewBox="0 0 20 20"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+													>
+														<polyline points="12 4 6 10 12 16"></polyline>
+													</svg>
 												</button>
-											{/each}
+												<div class="font-bold" style="color: var(--text-primary);">
+													{getYearRange()[0]} - {getYearRange()[11]}
+												</div>
+												<button
+													type="button"
+													onclick={nextYearRange}
+													aria-label="Next years"
+													class="rounded p-2"
+													style="color: var(--text-primary); background-color: transparent;"
+												>
+													<svg
+														width="20"
+														height="20"
+														viewBox="0 0 20 20"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+													>
+														<polyline points="8 4 14 10 8 16"></polyline>
+													</svg>
+												</button>
+											</div>
+
+											<!-- Year Grid -->
+											<div class="grid grid-cols-3 gap-2">
+												{#each getYearRange() as year (year)}
+													<button
+														type="button"
+														onclick={() => selectYear(year)}
+														class="rounded px-4 py-3 font-medium transition-colors"
+														class:font-bold={calendarDate.getFullYear() === year}
+														style={calendarDate.getFullYear() === year
+															? 'background-color: #3D7A82; color: white;'
+															: 'color: var(--text-primary); background-color: transparent;'}
+													>
+														{year}
+													</button>
+												{/each}
+											</div>
 										</div>
-									</div>
+									{/key}
 								{/if}
 							</div>
 						{/if}
@@ -1572,19 +1753,20 @@ ${reportContent}
 				</div>
 
 				<!-- Date To -->
-				<div class="mb-8">
+				<div class="mb-8 lg:mb-5">
 					<label
 						for="date-to"
 						class="mb-3 block text-lg font-bold"
 						style="color: var(--text-primary);">Date To:</label
 					>
-					<div class="relative">
+					<div class="relative" bind:this={dateToPickerContainer}>
 						<div class="flex items-center gap-2">
 							<input
 								id="date-to"
 								type="text"
 								bind:value={dateTo}
 								oninput={(e) => updateDateFromText(e.currentTarget.value, false)}
+								onblur={clampDateToTodayOnBlur}
 								placeholder="DD/MM/YYYY"
 								class="flex-1 border-2 px-4 py-2"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
@@ -1593,7 +1775,7 @@ ${reportContent}
 								type="button"
 								onclick={() => toggleDatePicker(false)}
 								aria-label="Open calendar for end date"
-								class="border-2 p-2"
+								class="transform border-2 p-2 transition-all duration-150 hover:scale-105"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 							>
 								<svg
@@ -1615,228 +1797,235 @@ ${reportContent}
 						<!-- Modern Date Picker -->
 						{#if showDateToPicker}
 							<div
-								class="absolute top-full left-0 z-50 mt-2 rounded-lg border-2 p-4 shadow-lg"
+								class="date-picker absolute top-full left-0 z-50 mt-2 rounded-lg border-2 p-4 shadow-lg"
 								style="border-color: var(--border-primary); background-color: var(--bg-primary); min-width: 280px; sm:min-width: 320px; overflow: hidden; right: auto;"
 							>
 								<!-- Day View -->
 								{#if pickerView === 'day'}
-									<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
-										<!-- Month/Year Header -->
-										<div class="mb-4 flex items-center justify-between">
-											<button
-												type="button"
-												onclick={previousMonth}
-												aria-label="Previous month"
-												class="rounded p-2"
-												style="color: var(--text-primary); background-color: transparent;"
-											>
-												<svg
-													width="20"
-													height="20"
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
+									{#key `to-day-${calendarDate.getFullYear()}-${calendarDate.getMonth()}-${slideDirection}`}
+										<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
+											<!-- Month/Year Header -->
+											<div class="mb-4 flex items-center justify-between">
+												<button
+													type="button"
+													onclick={previousMonth}
+													aria-label="Previous month"
+													class="rounded p-2"
+													style="color: var(--text-primary); background-color: transparent;"
 												>
-													<polyline points="12 4 6 10 12 16"></polyline>
-												</svg>
-											</button>
-											<button
-												type="button"
-												onclick={switchToMonthView}
-												class="rounded px-3 py-1 font-bold transition-colors"
-												style="color: var(--text-primary); background-color: transparent;"
-											>
-												{monthNames[calendarDate.getMonth()]}
-												{calendarDate.getFullYear()}
-											</button>
-											<button
-												type="button"
-												onclick={nextMonth}
-												aria-label="Next month"
-												class="rounded p-2"
-												style="color: var(--text-primary); background-color: transparent;"
-											>
-												<svg
-													width="20"
-													height="20"
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
+													<svg
+														width="20"
+														height="20"
+														viewBox="0 0 20 20"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+													>
+														<polyline points="12 4 6 10 12 16"></polyline>
+													</svg>
+												</button>
+												<button
+													type="button"
+													onclick={switchToMonthView}
+													class="rounded px-3 py-1 font-bold transition-colors"
+													style="color: var(--text-primary); background-color: transparent;"
 												>
-													<polyline points="8 4 14 10 8 16"></polyline>
-												</svg>
-											</button>
-										</div>
-										<!-- Day Labels -->
-										<div class="mb-2 grid grid-cols-7 gap-1">
-											{#each ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as day (day)}
-												<div
-													class="py-2 text-center text-sm font-medium"
-													style="color: var(--text-secondary);"
+													{monthNames[calendarDate.getMonth()]}
+													{calendarDate.getFullYear()}
+												</button>
+												<button
+													type="button"
+													onclick={nextMonth}
+													aria-label="Next month"
+													class="rounded p-2"
+													style="color: var(--text-primary); background-color: transparent;"
 												>
-													{day}
-												</div>
-											{/each}
-										</div>
-
-										<!-- Calendar Days -->
-										<div class="grid grid-cols-7 gap-1">
-											{#each getCalendarDays(calendarDate) as day (day ?? 'empty')}
-												{#if day === null}
-													<div class="aspect-square"></div>
-												{:else}
-													<button
-														type="button"
-														onclick={() => selectDay(day)}
-														class="flex aspect-square items-center justify-center rounded transition-colors"
-														class:font-bold={isSelectedDay(day)}
-														style={isSelectedDay(day)
-															? 'background-color: #3D7A82; color: white;'
-															: 'color: var(--text-primary); background-color: transparent;'}
+													<svg
+														width="20"
+														height="20"
+														viewBox="0 0 20 20"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+													>
+														<polyline points="8 4 14 10 8 16"></polyline>
+													</svg>
+												</button>
+											</div>
+											<!-- Day Labels -->
+											<div class="mb-2 grid grid-cols-7 gap-1">
+												{#each ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as day (day)}
+													<div
+														class="py-2 text-center text-sm font-medium"
+														style="color: var(--text-secondary);"
 													>
 														{day}
-													</button>
-												{/if}
-											{/each}
+													</div>
+												{/each}
+											</div>
+
+											<!-- Calendar Days -->
+											<div class="grid grid-cols-7 gap-1">
+												{#each getCalendarDays(calendarDate) as day, index (`to-${calendarDate.getFullYear()}-${calendarDate.getMonth()}-${index}`)}
+													{#if day === null}
+														<div class="aspect-square"></div>
+													{:else}
+														<button
+															type="button"
+															onclick={() => selectDay(day)}
+															disabled={isFutureCalendarDay(day)}
+															class="flex aspect-square items-center justify-center rounded transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+															class:font-bold={isSelectedDay(day)}
+															style={isSelectedDay(day)
+																? 'background-color: #3D7A82; color: white;'
+																: 'color: var(--text-primary); background-color: transparent;'}
+														>
+															{day}
+														</button>
+													{/if}
+												{/each}
+											</div>
 										</div>
-									</div>
+									{/key}
 								{/if}
 
 								<!-- Month View -->
 								{#if pickerView === 'month'}
-									<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
-										<!-- Year Header -->
-										<div class="mb-4 flex items-center justify-between">
-											<button
-												type="button"
-												onclick={previousYear}
-												aria-label="Previous year"
-												class="rounded p-2 hover:bg-gray-100"
-												style="color: #000100;"
-											>
-												<svg
-													width="20"
-													height="20"
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-												>
-													<polyline points="12 4 6 10 12 16"></polyline>
-												</svg>
-											</button>
-											<button
-												type="button"
-												onclick={switchToYearView}
-												class="rounded px-3 py-1 font-bold transition-colors hover:bg-gray-100"
-												style="color: #000100;"
-											>
-												{calendarDate.getFullYear()}
-											</button>
-											<button
-												type="button"
-												onclick={nextYear}
-												aria-label="Next year"
-												class="rounded p-2 hover:bg-gray-100"
-												style="color: #000100;"
-											>
-												<svg
-													width="20"
-													height="20"
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-												>
-													<polyline points="8 4 14 10 8 16"></polyline>
-												</svg>
-											</button>
-										</div>
-
-										<!-- Month Grid -->
-										<div class="grid grid-cols-3 gap-2">
-											{#each monthNamesShort as month, index (index)}
+									{#key `to-month-${calendarDate.getFullYear()}-${slideDirection}`}
+										<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
+											<!-- Year Header -->
+											<div class="mb-4 flex items-center justify-between">
 												<button
 													type="button"
-													onclick={() => selectMonth(index)}
-													class="rounded px-4 py-3 font-medium transition-colors hover:bg-gray-100"
-													class:font-bold={calendarDate.getMonth() === index}
-													style={calendarDate.getMonth() === index
-														? 'background-color: #3D7A82; color: white;'
-														: 'color: #000100;'}
+													onclick={previousYear}
+													aria-label="Previous year"
+													class="rounded p-2 hover:bg-gray-100"
+													style="color: #000100;"
 												>
-													{month}
+													<svg
+														width="20"
+														height="20"
+														viewBox="0 0 20 20"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+													>
+														<polyline points="12 4 6 10 12 16"></polyline>
+													</svg>
 												</button>
-											{/each}
+												<button
+													type="button"
+													onclick={switchToYearView}
+													class="rounded px-3 py-1 font-bold transition-colors hover:bg-gray-100"
+													style="color: #000100;"
+												>
+													{calendarDate.getFullYear()}
+												</button>
+												<button
+													type="button"
+													onclick={nextYear}
+													aria-label="Next year"
+													class="rounded p-2 hover:bg-gray-100"
+													style="color: #000100;"
+												>
+													<svg
+														width="20"
+														height="20"
+														viewBox="0 0 20 20"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+													>
+														<polyline points="8 4 14 10 8 16"></polyline>
+													</svg>
+												</button>
+											</div>
+
+											<!-- Month Grid -->
+											<div class="grid grid-cols-3 gap-2">
+												{#each monthNamesShort as month, index (index)}
+													<button
+														type="button"
+														onclick={() => selectMonth(index)}
+														class="rounded px-4 py-3 font-medium transition-colors hover:bg-gray-100"
+														class:font-bold={calendarDate.getMonth() === index}
+														style={calendarDate.getMonth() === index
+															? 'background-color: #3D7A82; color: white;'
+															: 'color: #000100;'}
+													>
+														{month}
+													</button>
+												{/each}
+											</div>
 										</div>
-									</div>
+									{/key}
 								{/if}
 
 								<!-- Year View -->
 								{#if pickerView === 'year'}
-									<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
-										<!-- Year Range Header -->
-										<div class="mb-4 flex items-center justify-between">
-											<button
-												type="button"
-												onclick={previousYearRange}
-												aria-label="Previous years"
-												class="rounded p-2 hover:bg-gray-100"
-												style="color: #000100;"
-											>
-												<svg
-													width="20"
-													height="20"
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-												>
-													<polyline points="12 4 6 10 12 16"></polyline>
-												</svg>
-											</button>
-											<div class="font-bold" style="color: #000100;">
-												{getYearRange()[0]} - {getYearRange()[11]}
-											</div>
-											<button
-												type="button"
-												onclick={nextYearRange}
-												aria-label="Next years"
-												class="rounded p-2 hover:bg-gray-100"
-												style="color: #000100;"
-											>
-												<svg
-													width="20"
-													height="20"
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2"
-												>
-													<polyline points="8 4 14 10 8 16"></polyline>
-												</svg>
-											</button>
-										</div>
-
-										<!-- Year Grid -->
-										<div class="grid grid-cols-3 gap-2">
-											{#each getYearRange() as year (year)}
+									{#key `to-year-${Math.floor(calendarDate.getFullYear() / 12)}-${slideDirection}`}
+										<div class={slideDirection === 'left' ? 'slide-left' : 'slide-right'}>
+											<!-- Year Range Header -->
+											<div class="mb-4 flex items-center justify-between">
 												<button
 													type="button"
-													onclick={() => selectYear(year)}
-													class="rounded px-4 py-3 font-medium transition-colors hover:bg-gray-100"
-													class:font-bold={calendarDate.getFullYear() === year}
-													style={calendarDate.getFullYear() === year
-														? 'background-color: #3D7A82; color: white;'
-														: 'color: #000100;'}
+													onclick={previousYearRange}
+													aria-label="Previous years"
+													class="rounded p-2 hover:bg-gray-100"
+													style="color: #000100;"
 												>
-													{year}
+													<svg
+														width="20"
+														height="20"
+														viewBox="0 0 20 20"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+													>
+														<polyline points="12 4 6 10 12 16"></polyline>
+													</svg>
 												</button>
-											{/each}
+												<div class="font-bold" style="color: #000100;">
+													{getYearRange()[0]} - {getYearRange()[11]}
+												</div>
+												<button
+													type="button"
+													onclick={nextYearRange}
+													aria-label="Next years"
+													class="rounded p-2 hover:bg-gray-100"
+													style="color: #000100;"
+												>
+													<svg
+														width="20"
+														height="20"
+														viewBox="0 0 20 20"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2"
+													>
+														<polyline points="8 4 14 10 8 16"></polyline>
+													</svg>
+												</button>
+											</div>
+
+											<!-- Year Grid -->
+											<div class="grid grid-cols-3 gap-2">
+												{#each getYearRange() as year (year)}
+													<button
+														type="button"
+														onclick={() => selectYear(year)}
+														class="rounded px-4 py-3 font-medium transition-colors hover:bg-gray-100"
+														class:font-bold={calendarDate.getFullYear() === year}
+														style={calendarDate.getFullYear() === year
+															? 'background-color: #3D7A82; color: white;'
+															: 'color: #000100;'}
+													>
+														{year}
+													</button>
+												{/each}
+											</div>
 										</div>
-									</div>
+									{/key}
 								{/if}
 							</div>
 						{/if}
@@ -1844,34 +2033,59 @@ ${reportContent}
 				</div>
 
 				<!-- Log Types -->
-				<div class="mb-8">
+				<div class="mb-8 lg:mb-5">
 					<fieldset>
 						<legend class="mb-3 block text-lg font-bold" style="color: var(--text-primary);"
 							>Log Types:</legend
 						>
 						<div class="space-y-2">
-							{#each logTypes as logType (logType.id)}
-								<label class="flex cursor-pointer items-center gap-3">
-									<input
-										type="checkbox"
-										bind:checked={logType.checked}
-										onchange={(e) =>
-											logType.id === 'all'
-												? handleAllCheckboxChange(e.currentTarget.checked)
-												: handleIndividualCheckboxChange()}
-										class="h-5 w-5 cursor-pointer border-2"
-										style="border-color: var(--border-primary);"
-									/>
-									<span style="color: var(--text-primary);">{logType.label}</span>
-								</label>
+							{#each logTypes.filter((logType) => logType.id === 'all') as logType (logType.id)}
+								<button
+									type="button"
+									aria-pressed={logType.checked}
+									onclick={() => {
+										if (logType.id === 'all') {
+											const nextChecked = !logType.checked;
+											logType.checked = nextChecked;
+											handleAllCheckboxChange(nextChecked);
+										} else {
+											logType.checked = !logType.checked;
+											handleIndividualCheckboxChange();
+										}
+									}}
+									class="w-full border-2 px-4 py-1.5 text-center text-xs font-semibold transition-all duration-150 hover:-translate-y-0.5"
+									style={logType.checked
+										? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 6px rgba(61, 122, 130, 0.25);'
+										: 'border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);'}
+								>
+									{logType.label}
+								</button>
 							{/each}
+							<div class="grid grid-cols-4 gap-2">
+								{#each logTypes.filter((logType) => logType.id !== 'all') as logType (logType.id)}
+									<button
+										type="button"
+										aria-pressed={logType.checked}
+										onclick={() => {
+											logType.checked = !logType.checked;
+											handleIndividualCheckboxChange();
+										}}
+										class="w-full border-2 px-1.5 py-2 text-center text-[11px] leading-tight font-medium whitespace-nowrap transition-all duration-150 hover:-translate-y-0.5"
+										style={logType.checked
+											? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 6px rgba(61, 122, 130, 0.25);'
+											: 'border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);'}
+									>
+										{logType.label}
+									</button>
+								{/each}
+							</div>
 						</div>
 					</fieldset>
 				</div>
 
 				<!-- Branch Filter (for company managers and HQ, when branches exist) -->
 				{#if canSeeBranchFilter}
-					<div class="branch-filter-container mb-8" style="position: relative;">
+					<div class="branch-filter-container mb-8 lg:mb-5" style="position: relative;">
 						<legend class="mb-3 block text-lg font-bold" style="color: var(--text-primary);"
 							>Branches:</legend
 						>
@@ -1948,7 +2162,7 @@ ${reportContent}
 				{/if}
 
 				<!-- Arrange By Options -->
-				<div class="mb-8">
+				<div class="mb-8 lg:mb-5">
 					<legend class="mb-3 block text-lg font-bold" style="color: var(--text-primary);"
 						>Arrange By:</legend
 					>
@@ -1956,59 +2170,71 @@ ${reportContent}
 						<button
 							type="button"
 							onclick={() => (arrangeBy = 'date')}
-							class="flex-1 border-2 px-4 py-2 font-bold transition-all"
+							class="flex-1 transform border-2 px-4 py-1.5 text-sm font-semibold transition-all duration-200 hover:scale-105 hover:shadow-md"
 							style={arrangeBy === 'date'
 								? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
 								: 'border-color: var(--border-primary); background-color: transparent; color: var(--text-secondary);'}
 						>
-							Arrange By Date
+							Date
 						</button>
 						<button
 							type="button"
 							onclick={() => (arrangeBy = 'logType')}
-							class="flex-1 border-2 px-4 py-2 font-bold transition-all"
+							class="flex-1 transform border-2 px-4 py-1.5 text-sm font-semibold transition-all duration-200 hover:scale-105 hover:shadow-md"
 							style={arrangeBy === 'logType'
 								? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
 								: 'border-color: var(--border-primary); background-color: transparent; color: var(--text-secondary);'}
 						>
-							Arrange By Log Type
+							Log Type
 						</button>
 					</div>
 				</div>
 
 				<!-- Temperature Graphs Toggle -->
-				<div class="mb-8">
-					<label class="flex cursor-pointer items-center gap-3">
-						<input
-							type="checkbox"
-							bind:checked={includeTemperatureGraphs}
-							onchange={() => {
-								if (reportGenerated) {
-									// Re-extract graphs if report is already generated
-									if (includeTemperatureGraphs) {
-										temperatureGraphs = extractTemperatureGraphData(filteredEntries);
-									} else {
-										temperatureGraphs = [];
-									}
-								}
-							}}
-							class="h-5 w-5 cursor-pointer"
-							style="accent-color: #3D7A82;"
-						/>
-						<span class="text-base font-medium" style="color: var(--text-primary);">
-							Include Temperature Graphs
+				<button
+					type="button"
+					aria-pressed={includeTemperatureGraphs}
+					onclick={() => {
+						includeTemperatureGraphs = !includeTemperatureGraphs;
+						if (reportGenerated) {
+							if (includeTemperatureGraphs) {
+								temperatureGraphs = extractTemperatureGraphData(filteredEntries);
+							} else {
+								temperatureGraphs = [];
+							}
+						}
+					}}
+					class="mb-8 w-full border-2 px-4 py-3 text-left transition-all duration-150 hover:-translate-y-0.5 lg:mb-5"
+					style={includeTemperatureGraphs
+						? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
+						: 'border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);'}
+				>
+					<div class="flex min-w-0 items-start justify-between gap-3 sm:items-center">
+						<div class="min-w-0">
+							<p class="text-base font-semibold">Temperature Graphs</p>
+							<p
+								class="mt-1 text-[11px] wrap-break-word sm:whitespace-nowrap"
+								style={includeTemperatureGraphs
+									? 'color: rgba(255, 255, 255, 0.9);'
+									: 'color: var(--text-secondary);'}
+							>
+								Line graphs for temperature fields (requires 2+ entries)
+							</p>
+						</div>
+						<span
+							class="min-w-11 shrink-0 text-right text-xs font-semibold tracking-wide"
+							style={includeTemperatureGraphs ? 'color: white;' : 'color: var(--text-secondary);'}
+						>
+							{includeTemperatureGraphs ? 'ON' : 'OFF'}
 						</span>
-					</label>
-					<p class="mt-1 ml-8 text-xs" style="color: var(--text-secondary);">
-						Generates line graphs for temperature fields (requires 2+ entries)
-					</p>
-				</div>
+					</div>
+				</button>
 
 				<!-- Generate Button -->
 				<div class="flex justify-center">
 					<button
 						onclick={generateReport}
-						class="flex items-center gap-2 border-2 px-8 py-2 font-medium hover:opacity-80"
+						class="flex transform items-center gap-2 border-2 px-8 py-2 font-medium transition-all duration-200 hover:scale-105 hover:opacity-90 hover:shadow-md"
 						style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
 					>
 						Generate
@@ -2024,6 +2250,60 @@ ${reportContent}
 						</svg>
 					</button>
 				</div>
+
+				<!-- Saved Report Runs -->
+				<div class="mt-8 lg:mt-5">
+					<h3 class="mb-3 text-lg font-bold" style="color: var(--text-primary);">Recent Reports</h3>
+					{#if reportRunsError}
+						<p class="mb-2 text-sm text-red-500">{reportRunsError}</p>
+					{/if}
+					{#if isReportRunsLoading}
+						<p class="text-sm" style="color: var(--text-secondary);">Loading saved reports...</p>
+					{:else if reportRuns.length === 0}
+						<p class="text-sm" style="color: var(--text-secondary);">No saved reports yet.</p>
+					{:else}
+						<div class="space-y-2 lg:max-h-58 lg:overflow-y-auto lg:pr-1">
+							{#each reportRuns as run (run.id)}
+								<div
+									class="w-full cursor-pointer rounded border-2 px-3 py-1.5 transition-all duration-150 hover:opacity-95 hover:shadow-md"
+									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+									role="button"
+									tabindex="0"
+									onclick={() => runSavedReport(run)}
+									onkeydown={(e) => {
+										if (e.key === 'Enter' || e.key === ' ') {
+											e.preventDefault();
+											runSavedReport(run);
+										}
+									}}
+								>
+									<div class="flex items-center justify-between gap-2">
+										<div class="text-sm font-semibold">
+											{formatFromISO(run.params.date_from_iso)} - {formatFromISO(
+												run.params.date_to_iso
+											)}
+										</div>
+										<button
+											type="button"
+											disabled={deletingReportId === run.id}
+											onclick={(e) => {
+												e.stopPropagation();
+												deleteReportRun(run.id);
+											}}
+											class="cursor-pointer rounded border px-2 py-0.5 text-xs transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+											style="border-color: #dc2626; color: #dc2626;"
+										>
+											{deletingReportId === run.id ? 'Deleting...' : 'Delete'}
+										</button>
+									</div>
+									<div class="text-xs" style="color: var(--text-secondary);">
+										Used {run.use_count} time(s) • {new Date(run.last_used_at).toLocaleString()}
+									</div>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</div>
 			</div>
 
 			<!-- Right Side - Report Preview -->
@@ -2036,7 +2316,7 @@ ${reportContent}
 						class="transform border-2 px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
-						📄 Download PDF
+						Download PDF
 					</button>
 					<button
 						onclick={() => exportToWord('docx')}
@@ -2044,7 +2324,7 @@ ${reportContent}
 						class="transform border-2 px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 hover:border-green-400 hover:bg-green-50 hover:text-green-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
-						📊 Download DOCX
+						Download DOCX
 					</button>
 					<button
 						onclick={() => exportToWord('rtf')}
@@ -2052,13 +2332,13 @@ ${reportContent}
 						class="transform border-2 px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					>
-						📝 Download RTF
+						Download RTF
 					</button>
 				</div>
 
 				<!-- Report Preview Area -->
 				<div
-					class="min-h-100 border-2 p-4 sm:min-h-150 sm:p-8"
+					class="min-h-104 border-2 p-4 sm:min-h-120 sm:p-6 lg:min-h-108 lg:p-5"
 					style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 				>
 					{#if isLoading}
@@ -2403,8 +2683,7 @@ ${reportContent}
 									{@const excludedFieldTypes = getExcludedFieldTypes()}
 									{@const shouldShowEntry = hasRemainingFields(
 										entry.template_layout,
-										excludedFieldTypes,
-										entry.entry_data
+										excludedFieldTypes
 									)}
 									{#if shouldShowEntry}
 										<div
@@ -2509,6 +2788,22 @@ ${reportContent}
 
 	.slide-right {
 		animation: slideInFromRight 0.3s ease-out;
+	}
+
+	.reports-page button:not(:disabled) {
+		cursor: pointer;
+	}
+
+	.date-picker button:not(:disabled) {
+		cursor: pointer;
+		transition:
+			transform 0.12s ease,
+			filter 0.12s ease;
+	}
+
+	.date-picker button:not(:disabled):hover {
+		transform: translateY(-1px) scale(1.02);
+		filter: brightness(0.96);
 	}
 
 	/* Temperature graph chart styles */

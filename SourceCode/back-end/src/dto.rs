@@ -629,6 +629,53 @@ pub struct SubmitLogEntryResponse {
     pub message: String,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]
+pub struct ReportRunParams {
+    pub date_from_iso: String,
+    pub date_to_iso: String,
+    pub selected_branch_ids: Vec<String>,
+    pub selected_log_type_ids: Vec<String>,
+    pub arrange_by: String,
+    pub include_temperature_graphs: bool,
+    pub params_version: u16,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct CreateReportRunRequest {
+    pub name: Option<String>,
+    pub params: ReportRunParams,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ReportRunResponse {
+    pub id: String,
+    pub name: Option<String>,
+    pub params: ReportRunParams,
+    pub created_at: String,
+    pub last_used_at: String,
+    pub use_count: u32,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct CreateReportRunResponse {
+    pub report_run: ReportRunResponse,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct ListReportRunsResponse {
+    pub report_runs: Vec<ReportRunResponse>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct UseReportRunResponse {
+    pub message: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct DeleteReportRunResponse {
+    pub message: String,
+}
+
 #[derive(Deserialize, ToSchema)]
 pub struct RenameTemplateRequest {
     pub old_template_name: String,
