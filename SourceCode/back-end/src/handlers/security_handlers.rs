@@ -288,6 +288,9 @@ mod tests {
     #[test]
     fn test_csv_escape_sanitizes_formula_injection() {
         let escaped = csv_escape("=HYPERLINK(\"http://evil\",\"click\")");
-        assert_eq!(escaped, "\"'=HYPERLINK(\"\"http://evil\"\",\"\"click\"\")\"");
+        assert_eq!(
+            escaped,
+            "\"'=HYPERLINK(\"\"http://evil\"\",\"\"click\"\")\""
+        );
     }
 }

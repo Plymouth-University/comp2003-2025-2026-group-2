@@ -317,8 +317,14 @@ async fn main() {
         )
         .route("/reports/runs", post(handlers::create_report_run))
         .route("/reports/runs", get(handlers::list_report_runs))
-        .route("/reports/runs/{report_id}/use", post(handlers::use_report_run))
-        .route("/reports/runs/{report_id}", delete(handlers::delete_report_run))
+        .route(
+            "/reports/runs/{report_id}/use",
+            post(handlers::use_report_run),
+        )
+        .route(
+            "/reports/runs/{report_id}",
+            delete(handlers::delete_report_run),
+        )
         .route(
             "/logs/entries/{entry_id}/submit",
             post(handlers::submit_log_entry),
