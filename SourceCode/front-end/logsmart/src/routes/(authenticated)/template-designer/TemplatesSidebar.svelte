@@ -102,6 +102,10 @@
 			</button>
 		</div>
 
+		<h3 class="mb-2 text-sm font-semibold uppercase" style="color: var(--text-secondary);">
+			User-Defined Templates
+		</h3>
+
 		<div class="border-2" style="border-color: var(--border-primary);">
 			<ul class="divide-y" style="border-color: var(--border-secondary);">
 				{#if isNewTemplate}
