@@ -620,6 +620,15 @@ pub async fn create_report_run(
     };
 
     if let Some(existing) = existing {
+        let mut set_doc = mongodb::bson::Document::new();
+        set_doc.insert("last_used_at", mongodb::bson::to_bson(&chrono::Utc::now())?);
+        set_doc.insert("params_key", mongodb::bson::to_bson(&params_key)?);
+        set_doc.insert("params", mongodb::bson::to_bson(&normalized_params)?);
+
+        if let Some(name) = &report_run.name {
+            set_doc.insert("name", mongodb::bson::to_bson(name)?);
+        }
+
         let updated = collection
             .find_one_and_update(
                 mongodb::bson::doc! {
@@ -628,12 +637,7 @@ pub async fn create_report_run(
                     "company_id": &existing.company_id,
                 },
                 mongodb::bson::doc! {
-                    "$set": {
-                        "last_used_at": mongodb::bson::to_bson(&chrono::Utc::now())?,
-                        "name": mongodb::bson::to_bson(&report_run.name)?,
-                        "params_key": &params_key,
-                        "params": mongodb::bson::to_bson(&normalized_params)?,
-                    },
+                    "$set": set_doc,
                     "$inc": {
                         "use_count": 1,
                     }
