@@ -2,7 +2,7 @@ use crate::{
     auth::{generate_uuid6_token, hash_password, validate_password_policy, verify_password},
     db::{self, UserRole},
     jwt_manager::JwtManager,
-    utils::AuditLogger,
+    utils::{AuditContext, AuditLogger},
 };
 use axum::http::StatusCode;
 use chrono::Duration;
@@ -113,8 +113,14 @@ impl AuthService {
             user.id.clone(),
             email.to_string(),
             company_name.to_string(),
-            ip_address,
-            user_agent,
+            crate::audit_ctx!(
+                &AuditContext {
+                    ip_address,
+                    user_agent,
+                    ..AuditContext::default()
+                },
+                actor: &user
+            ),
         )
         .await;
 
@@ -185,8 +191,14 @@ impl AuthService {
                 db_pool,
                 Some(user.id.clone()),
                 email.to_string(),
-                ip_address,
-                user_agent,
+                crate::audit_ctx!(
+                    &AuditContext {
+                        ip_address,
+                        user_agent,
+                        ..AuditContext::default()
+                    },
+                    actor: &user
+                ),
                 "Invalid password",
             )
             .await;
@@ -214,8 +226,14 @@ impl AuthService {
             db_pool,
             user.id.clone(),
             email.to_string(),
-            ip_address,
-            user_agent,
+            crate::audit_ctx!(
+                &AuditContext {
+                    ip_address,
+                    user_agent,
+                    ..AuditContext::default()
+                },
+                actor: &user
+            ),
         )
         .await;
 
@@ -290,8 +308,14 @@ impl AuthService {
                 Some(user_record.id),
                 email.to_string(),
                 None,
-                ip_address,
-                user_agent,
+                crate::audit_ctx!(
+                    &AuditContext {
+                        ip_address,
+                        user_agent,
+                        ..AuditContext::default()
+                    },
+                    target_email: Some(email.to_string())
+                ),
             )
             .await;
         } else {
@@ -300,8 +324,14 @@ impl AuthService {
                 None,
                 email.to_string(),
                 Some("User not found"),
-                ip_address,
-                user_agent,
+                crate::audit_ctx!(
+                    &AuditContext {
+                        ip_address,
+                        user_agent,
+                        ..AuditContext::default()
+                    },
+                    target_email: Some(email.to_string())
+                ),
             )
             .await;
         }
@@ -406,7 +436,15 @@ impl AuthService {
                 )
             })?;
 
-        AuditLogger::log_password_reset_completed(db_pool, user_id.clone()).await;
+        AuditLogger::log_password_reset_completed(
+            db_pool,
+            user_id.clone(),
+            AuditContext {
+                target_user_id: Some(user_id.clone()),
+                ..AuditContext::default()
+            },
+        )
+        .await;
 
         Ok(user_id)
     }
@@ -477,7 +515,13 @@ impl AuthService {
                 )
             })?;
 
-        AuditLogger::log_password_changed(db_pool, user_id.to_string(), user.email).await;
+        AuditLogger::log_password_changed(
+            db_pool,
+            user_id.to_string(),
+            user.email.clone(),
+            crate::audit_ctx!(&AuditContext::default(), actor: &user),
+        )
+        .await;
 
         Ok(())
     }
@@ -510,8 +554,14 @@ impl AuthService {
                 db_pool,
                 None,
                 email.to_string(),
-                ip_address.clone(),
-                user_agent.clone(),
+                crate::audit_ctx!(
+                    &AuditContext {
+                        ip_address: ip_address.clone(),
+                        user_agent: user_agent.clone(),
+                        ..AuditContext::default()
+                    },
+                    target_email: Some(email.to_string())
+                ),
                 "User not found",
             )
             .await;
@@ -551,8 +601,14 @@ impl AuthService {
                     db_pool,
                     Some(user.id.clone()),
                     email.to_string(),
-                    ip_address,
-                    user_agent,
+                    crate::audit_ctx!(
+                        &AuditContext {
+                            ip_address,
+                            user_agent,
+                            ..AuditContext::default()
+                        },
+                        actor: &user
+                    ),
                     "Invalid password",
                 )
                 .await;
@@ -576,8 +632,14 @@ impl AuthService {
                 db_pool,
                 user.id.clone(),
                 email.to_string(),
-                ip_address,
-                user_agent,
+                crate::audit_ctx!(
+                    &AuditContext {
+                        ip_address,
+                        user_agent,
+                        ..AuditContext::default()
+                    },
+                    actor: &user
+                ),
             )
             .await;
 
@@ -587,8 +649,14 @@ impl AuthService {
                 db_pool,
                 Some(user.id.clone()),
                 email.to_string(),
-                ip_address,
-                user_agent,
+                crate::audit_ctx!(
+                    &AuditContext {
+                        ip_address,
+                        user_agent,
+                        ..AuditContext::default()
+                    },
+                    actor: &user
+                ),
                 "OAuth-only account - password login not available",
             )
             .await;

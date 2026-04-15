@@ -1,13 +1,14 @@
-use crate::{AppState, auth::Claims, db::UserRecord, jwt_manager::JwtManager};
+use crate::{AppState, auth::Claims, db::UserRecord, jwt_manager::JwtManager, utils::AuditContext};
 use axum::{
     Json,
-    extract::FromRequestParts,
+    extract::{ConnectInfo, FromRequestParts},
     http::request::Parts,
     response::{IntoResponse, Response},
 };
 use axum_extra::TypedHeader;
 use axum_extra::headers::{Authorization, authorization::Bearer};
 use serde_json::json;
+use std::convert::Infallible;
 
 async fn extract_claims(parts: &mut Parts) -> Result<Claims, AuthError> {
     let jwt_config = JwtManager::get_config();
@@ -53,6 +54,37 @@ async fn get_authenticated_user(
 }
 
 pub struct AuthToken(pub Claims);
+
+pub struct AuditRequestContext(pub AuditContext);
+
+impl FromRequestParts<crate::AppState> for AuditRequestContext {
+    type Rejection = Infallible;
+
+    fn from_request_parts(
+        parts: &mut Parts,
+        _state: &crate::AppState,
+    ) -> impl std::future::Future<Output = Result<Self, Self::Rejection>> + Send {
+        Box::pin(async move {
+            let addr = parts
+                .extensions
+                .get::<ConnectInfo<std::net::SocketAddr>>()
+                .map(|c| &c.0);
+
+            let ctx = AuditContext {
+                ip_address: crate::utils::extract_optional_ip_from_headers_and_addr(
+                    &parts.headers,
+                    addr,
+                ),
+                user_agent: crate::utils::extract_user_agent(&parts.headers),
+                request_path: Some(parts.uri.path().to_string()),
+                request_method: Some(parts.method.to_string()),
+                ..AuditContext::default()
+            };
+
+            Ok(AuditRequestContext(ctx))
+        })
+    }
+}
 
 impl FromRequestParts<crate::AppState> for AuthToken {
     type Rejection = AuthError;

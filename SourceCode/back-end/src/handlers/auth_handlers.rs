@@ -1,4 +1,4 @@
-use crate::middleware::AnyAuthUser;
+use crate::middleware::{AnyAuthUser, AuditRequestContext};
 use crate::services::UserService;
 use crate::utils::{
     err_bad_request, err_conflict, err_internal, err_not_found, err_unauthorized,
@@ -41,13 +41,27 @@ use axum::{
 /// Returns an error if the token is invalid, expired, or if there's a database error.
 pub async fn verify_token(
     State(state): State<AppState>,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     Json(payload): Json<VerifyTokenRequest>,
 ) -> Result<Json<JwtVerifyResponse>, (StatusCode, Json<serde_json::Value>)> {
     let jwt_config = JwtManager::get_config();
-    let claims = jwt_config.validate_token(&payload.token).map_err(|e| {
-        tracing::error!("Token verification failed: {:?}", e);
-        err_unauthorized("Invalid or expired token")
-    })?;
+    let claims = match jwt_config.validate_token(&payload.token) {
+        Ok(claims) => claims,
+        Err(e) => {
+            tracing::error!("Token verification failed: {:?}", e);
+            AuditLogger::log(
+                &state.postgres,
+                "token_verify_failed",
+                None,
+                None,
+                crate::audit_ctx!(&audit_ctx),
+                Some("Invalid or expired token".to_string()),
+                false,
+            )
+            .await;
+            return Err(err_unauthorized("Invalid or expired token"));
+        }
+    };
 
     let user = if let Some(user) = state.user_cache.get(&claims.user_id).await {
         user
@@ -70,10 +84,31 @@ pub async fn verify_token(
     };
 
     if user.company_deleted_at.is_some() {
+        AuditLogger::log(
+            &state.postgres,
+            "token_verify_failed",
+            Some(user.id.clone()),
+            Some(user.email.clone()),
+            crate::audit_ctx!(&audit_ctx, actor: &user),
+            Some("Company deleted".to_string()),
+            false,
+        )
+        .await;
         return Err(err_unauthorized(
             "Your company has been deleted. Please contact support.",
         ));
     }
+
+    AuditLogger::log(
+        &state.postgres,
+        "token_verify_success",
+        Some(user.id.clone()),
+        Some(user.email.clone()),
+        crate::audit_ctx!(&audit_ctx, actor: &user),
+        None,
+        true,
+    )
+    .await;
 
     Ok(Json(JwtVerifyResponse { email: user.email }))
 }
@@ -314,6 +349,7 @@ pub async fn get_current_user(
 /// Returns an error if validation fails or the update operation fails.
 pub async fn update_profile(
     AnyAuthUser(claims, _user): AnyAuthUser,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
     Json(payload): Json<UpdateProfileRequest>,
 ) -> Result<Json<UserResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -335,7 +371,13 @@ pub async fn update_profile(
     // Invalidate cache
     state.user_cache.invalidate(&claims.user_id).await;
 
-    AuditLogger::log_profile_updated(&state.postgres, claims.user_id, user.email.clone()).await;
+    AuditLogger::log_profile_updated(
+        &state.postgres,
+        claims.user_id,
+        user.email.clone(),
+        crate::audit_ctx!(&audit_ctx, actor: &user),
+    )
+    .await;
 
     Ok(Json(user.into()))
 }

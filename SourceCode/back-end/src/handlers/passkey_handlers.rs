@@ -7,8 +7,8 @@ use crate::{
         PasskeyRegistrationStartRequest, PasskeyRegistrationStartResponse,
     },
     jwt_manager::JwtManager,
-    middleware::AnyAuthUser,
-    utils::{extract_ip_from_headers_and_addr, extract_user_agent},
+    middleware::{AnyAuthUser, AuditRequestContext},
+    utils::{AuditLogger, extract_ip_from_headers_and_addr, extract_user_agent},
 };
 use axum::{
     Json,
@@ -39,6 +39,7 @@ use webauthn_rs::prelude::*;
 /// Returns an error if the user is not found, or if WebAuthn/database operations fail.
 pub async fn start_passkey_registration(
     AnyAuthUser(_claims, user): AnyAuthUser,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
     Json(payload): Json<PasskeyRegistrationStartRequest>,
 ) -> Result<Json<PasskeyRegistrationStartResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -140,6 +141,17 @@ pub async fn start_passkey_registration(
             Json(json!({ "error": "Failed to store registration session" })),
         )
     })?;
+
+    AuditLogger::log(
+        &state.postgres,
+        "passkey_registration_started",
+        Some(user.id.clone()),
+        Some(user.email.clone()),
+        crate::audit_ctx!(&audit_ctx, actor: &user),
+        Some("Passkey registration challenge created".to_string()),
+        true,
+    )
+    .await;
 
     Ok(Json(PasskeyRegistrationStartResponse { options, auth_id }))
 }
@@ -261,6 +273,25 @@ pub async fn finish_passkey_registration(
         )
     })?;
 
+    let _ = db::log_security_event(
+        &state.postgres,
+        "passkey_registration_completed".to_string(),
+        Some(user.id.clone()),
+        Some(user.email.clone()),
+        None,
+        None,
+        db::SecurityLogMeta {
+            actor_role: Some(user.role.to_string()),
+            company_id: user.company_id.clone(),
+            request_path: Some("/auth/passkey/register/finish".to_string()),
+            request_method: Some("POST".to_string()),
+            ..db::SecurityLogMeta::default()
+        },
+        Some("Passkey registration completed".to_string()),
+        true,
+    )
+    .await;
+
     Ok(Json(
         json!({ "message": "Passkey registered successfully" }),
     ))
@@ -282,6 +313,7 @@ pub async fn finish_passkey_registration(
 /// # Errors
 /// Returns an error if the user/passkeys are not found, or if WebAuthn/database operations fail.
 pub async fn start_passkey_login(
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
     Json(payload): Json<PasskeyAuthenticationStartRequest>,
 ) -> Result<Json<PasskeyAuthenticationStartResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -299,10 +331,29 @@ pub async fn start_passkey_login(
                 Json(json!({ "error": "Database error" })),
             )
         })?
-        .ok_or((
+        .ok_or_else(|| {
+            (
+                StatusCode::NOT_FOUND,
+                Json(json!({ "error": "User not found" })),
+            )
+        })?;
+
+    if user.deleted_at.is_some() || user.company_deleted_at.is_some() {
+        AuditLogger::log(
+            &state.postgres,
+            "passkey_login_started",
+            Some(user.id.clone()),
+            Some(user.email.clone()),
+            crate::audit_ctx!(&audit_ctx, actor: &user),
+            Some("User account is deactivated".to_string()),
+            false,
+        )
+        .await;
+        return Err((
             StatusCode::NOT_FOUND,
             Json(json!({ "error": "User not found" })),
-        ))?;
+        ));
+    }
 
     let passkeys = db::get_passkeys_by_user(&state.postgres, &user.id)
         .await
@@ -315,6 +366,16 @@ pub async fn start_passkey_login(
         })?;
 
     if passkeys.is_empty() {
+        AuditLogger::log(
+            &state.postgres,
+            "passkey_login_started",
+            Some(user.id.clone()),
+            Some(user.email.clone()),
+            crate::audit_ctx!(&audit_ctx, actor: &user),
+            Some("No passkeys found for user".to_string()),
+            false,
+        )
+        .await;
         return Err((
             StatusCode::NOT_FOUND,
             Json(json!({ "error": "No passkeys found for this user" })),
@@ -363,6 +424,17 @@ pub async fn start_passkey_login(
         )
     })?;
 
+    AuditLogger::log(
+        &state.postgres,
+        "passkey_login_started",
+        Some(user.id.clone()),
+        Some(user.email.clone()),
+        crate::audit_ctx!(&audit_ctx, actor: &user),
+        Some("Passkey login challenge created".to_string()),
+        true,
+    )
+    .await;
+
     Ok(Json(PasskeyAuthenticationStartResponse {
         options: serde_json::to_value(&rcr.public_key).map_err(|e| {
             tracing::error!("Failed to serialize public key: {:?}", e);
@@ -389,6 +461,7 @@ pub async fn start_passkey_login(
 /// # Errors
 /// Returns an error if `WebAuthn` or database operations fail.
 pub async fn start_discoverable_passkey_login(
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
 ) -> Result<Json<PasskeyAuthenticationStartResponse>, (StatusCode, Json<serde_json::Value>)> {
     let (rcr, auth_state) = state
@@ -428,6 +501,17 @@ pub async fn start_discoverable_passkey_login(
             Json(json!({ "error": "Failed to store discoverable authentication session" })),
         )
     })?;
+
+    AuditLogger::log(
+        &state.postgres,
+        "passkey_login_discoverable_started",
+        None,
+        None,
+        crate::audit_ctx!(&audit_ctx),
+        Some("Discoverable passkey challenge created".to_string()),
+        true,
+    )
+    .await;
 
     Ok(Json(PasskeyAuthenticationStartResponse {
         options: serde_json::to_value(&rcr.public_key).map_err(|e| {
@@ -603,6 +687,13 @@ pub async fn finish_passkey_login(
         Some(user.email.clone()),
         Some(ip_address),
         user_agent,
+        db::SecurityLogMeta {
+            actor_role: Some(user.role.to_string()),
+            company_id: user.company_id.clone(),
+            request_path: Some("/auth/passkey/login/finish".to_string()),
+            request_method: Some("POST".to_string()),
+            ..db::SecurityLogMeta::default()
+        },
         Some("Passkey login successful".to_string()),
         true,
     )
@@ -811,6 +902,13 @@ pub async fn finish_discoverable_passkey_login(
         Some(user.email.clone()),
         Some(ip_address),
         user_agent,
+        db::SecurityLogMeta {
+            actor_role: Some(user.role.to_string()),
+            company_id: user.company_id.clone(),
+            request_path: Some("/auth/passkey/login/discoverable/finish".to_string()),
+            request_method: Some("POST".to_string()),
+            ..db::SecurityLogMeta::default()
+        },
         Some("Discoverable passkey login successful".to_string()),
         true,
     )
@@ -885,6 +983,26 @@ pub async fn delete_passkey(
                 Json(json!({ "error": "Database error" })),
             )
         })?;
+
+    let _ = db::log_security_event(
+        &state.postgres,
+        "passkey_deleted".to_string(),
+        Some(user.id.clone()),
+        Some(user.email.clone()),
+        None,
+        None,
+        db::SecurityLogMeta {
+            actor_role: Some(user.role.to_string()),
+            company_id: user.company_id.clone(),
+            target_user_id: Some(user.id.clone()),
+            request_path: Some(format!("/auth/passkeys/{passkey_id}")),
+            request_method: Some("DELETE".to_string()),
+            ..db::SecurityLogMeta::default()
+        },
+        Some(format!("Passkey {} deleted", passkey_id)),
+        true,
+    )
+    .await;
 
     Ok(Json(json!({ "message": "Passkey deleted successfully" })))
 }

@@ -73,6 +73,12 @@ pub async fn get_security_logs(
         email: params.email,
         ip_address: params.ip_address,
         user_agent: params.user_agent,
+        actor_role: params.actor_role,
+        company_id: params.company_id,
+        target_user_id: params.target_user_id,
+        target_email: params.target_email,
+        request_path: params.request_path,
+        request_method: params.request_method,
         details: params.details,
         success: params.success,
         created_from,
@@ -135,6 +141,12 @@ pub async fn export_security_logs_csv(
         email: params.email,
         ip_address: params.ip_address,
         user_agent: params.user_agent,
+        actor_role: params.actor_role,
+        company_id: params.company_id,
+        target_user_id: params.target_user_id,
+        target_email: params.target_email,
+        request_path: params.request_path,
+        request_method: params.request_method,
         details: params.details,
         success: params.success,
         created_from,
@@ -159,17 +171,23 @@ pub async fn export_security_logs_csv(
     };
 
     let mut csv = String::from(
-        "id,event_type,user_id,email,ip_address,user_agent,details,success,created_at\n",
+        "id,event_type,user_id,email,ip_address,user_agent,actor_role,company_id,target_user_id,target_email,request_path,request_method,details,success,created_at\n",
     );
     for row in rows {
         let line = format!(
-            "{},{},{},{},{},{},{},{},{}\n",
+            "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n",
             csv_escape(&row.id),
             csv_escape(&row.event_type),
             csv_escape(row.user_id.as_deref().unwrap_or("")),
             csv_escape(row.email.as_deref().unwrap_or("")),
             csv_escape(row.ip_address.as_deref().unwrap_or("")),
             csv_escape(row.user_agent.as_deref().unwrap_or("")),
+            csv_escape(row.actor_role.as_deref().unwrap_or("")),
+            csv_escape(row.company_id.as_deref().unwrap_or("")),
+            csv_escape(row.target_user_id.as_deref().unwrap_or("")),
+            csv_escape(row.target_email.as_deref().unwrap_or("")),
+            csv_escape(row.request_path.as_deref().unwrap_or("")),
+            csv_escape(row.request_method.as_deref().unwrap_or("")),
             csv_escape(row.details.as_deref().unwrap_or("")),
             if row.success { "true" } else { "false" },
             csv_escape(&row.created_at.to_rfc3339()),
@@ -221,6 +239,11 @@ fn parse_optional_utc_datetime(
 fn csv_escape(value: &str) -> String {
     let escaped = value.replace('"', "\"\"");
     format!("\"{escaped}\"")
+}
+
+#[must_use]
+pub fn role_label(role: &crate::db::UserRole) -> String {
+    role.to_string()
 }
 
 #[cfg(test)]

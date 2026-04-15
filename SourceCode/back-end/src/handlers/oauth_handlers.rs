@@ -1,7 +1,7 @@
 use crate::{
     AppState,
     dto::{ErrorResponse, OAuthCallbackRequest, OAuthInitiateResponse},
-    middleware::AnyAuthUser,
+    middleware::{AnyAuthUser, AuditRequestContext},
     services::oauth_service::OAuthUserInfo,
     utils::{AuditLogger, extract_ip_from_headers_and_addr, extract_user_agent},
 };
@@ -357,6 +357,7 @@ pub struct OAuthLinkConfirmRequest {
 /// Returns an error if the link token is invalid/expired or if the linking operation fails.
 pub async fn confirm_google_link(
     State(state): State<AppState>,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     AnyAuthUser(_claims, user): AnyAuthUser,
     Json(payload): Json<OAuthLinkConfirmRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
@@ -407,6 +408,7 @@ pub async fn confirm_google_link(
         user.id.clone(),
         user.email.clone(),
         "google".to_string(),
+        crate::audit_ctx!(&audit_ctx, actor: &user),
     )
     .await;
 
@@ -434,6 +436,7 @@ pub async fn confirm_google_link(
 /// Returns an error if the state is invalid, code exchange fails, or linking fails.
 pub async fn link_google_account(
     State(state): State<AppState>,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     AnyAuthUser(_claims, user): AnyAuthUser,
     Json(payload): Json<OAuthCallbackRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
@@ -489,6 +492,7 @@ pub async fn link_google_account(
         user.id.clone(),
         user.email.clone(),
         "google".to_string(),
+        crate::audit_ctx!(&audit_ctx, actor: &user),
     )
     .await;
 
@@ -514,6 +518,7 @@ pub async fn link_google_account(
 /// Returns an error if the user has no password set (cannot unlink last auth method) or if unlinking fails.
 pub async fn unlink_google_account(
     State(state): State<AppState>,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     AnyAuthUser(_claims, user): AnyAuthUser,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
     if user.password_hash.is_none() {
@@ -542,8 +547,7 @@ pub async fn unlink_google_account(
         "oauth_unlink".to_string(),
         Some(user.id.clone()),
         Some(user.email.clone()),
-        None,
-        None,
+        crate::audit_ctx!(&audit_ctx, actor: &user),
         Some("Unlinked Google account".to_string()),
         true,
     )
