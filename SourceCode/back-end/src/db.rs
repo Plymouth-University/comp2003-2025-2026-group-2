@@ -1159,7 +1159,7 @@ pub async fn get_security_logs_page(
     }
     if filters.company_id.is_some() {
         bind_count += 1;
-        writeln!(query_str, "  AND company_id ILIKE ${bind_count}")?;
+        writeln!(query_str, "  AND company_id = ${bind_count}")?;
     }
     if filters.target_user_id.is_some() {
         bind_count += 1;
@@ -1232,7 +1232,7 @@ pub async fn get_security_logs_page(
         query = query.bind(format!("%{}%", value.trim()));
     }
     if let Some(value) = filters.company_id.as_ref() {
-        query = query.bind(format!("%{}%", value.trim()));
+        query = query.bind(value.trim());
     }
     if let Some(value) = filters.target_user_id.as_ref() {
         query = query.bind(format!("%{}%", value.trim()));
@@ -1330,7 +1330,7 @@ pub async fn get_security_logs_for_export(
     }
     if filters.company_id.is_some() {
         bind_count += 1;
-        writeln!(query_str, "  AND company_id ILIKE ${bind_count}")?;
+        writeln!(query_str, "  AND company_id = ${bind_count}")?;
     }
     if filters.target_user_id.is_some() {
         bind_count += 1;
@@ -1392,7 +1392,7 @@ pub async fn get_security_logs_for_export(
         query = query.bind(format!("%{}%", value.trim()));
     }
     if let Some(value) = filters.company_id.as_ref() {
-        query = query.bind(format!("%{}%", value.trim()));
+        query = query.bind(value.trim());
     }
     if let Some(value) = filters.target_user_id.as_ref() {
         query = query.bind(format!("%{}%", value.trim()));

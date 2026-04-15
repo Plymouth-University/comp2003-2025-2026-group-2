@@ -976,7 +976,7 @@
 							{#if securityLoading}
 								<tr class="border-t" style="border-color: var(--border-primary);">
 									<td
-										colspan="12"
+										colspan="11"
 										class="px-4 py-6 text-center text-sm"
 										style="color: var(--text-secondary);">Loading security events...</td
 									>
@@ -984,7 +984,7 @@
 							{:else if securityLogs.length === 0}
 								<tr class="border-t" style="border-color: var(--border-primary);">
 									<td
-										colspan="12"
+										colspan="11"
 										class="px-4 py-6 text-center text-sm"
 										style="color: var(--text-secondary);">No security events found.</td
 									>
