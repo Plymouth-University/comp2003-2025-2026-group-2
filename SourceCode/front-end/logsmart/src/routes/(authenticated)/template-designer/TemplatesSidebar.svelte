@@ -1,19 +1,42 @@
 <script lang="ts">
 	import type { Template } from './types';
+	import { DEFAULT_TEMPLATE_BLUEPRINTS } from './defaultTemplates';
+
+	let selectedDefaultTemplateId = $state<string>(DEFAULT_TEMPLATE_BLUEPRINTS[0]?.id ?? '');
+	let selectedDefaultTemplate = $derived(
+		DEFAULT_TEMPLATE_BLUEPRINTS.find((t) => t.id === selectedDefaultTemplateId)
+	);
+
+	const checklistTemplates = DEFAULT_TEMPLATE_BLUEPRINTS.filter(
+		(template) => template.category === 'checklist'
+	);
+	const temperatureTemplates = DEFAULT_TEMPLATE_BLUEPRINTS.filter(
+		(template) => template.category === 'temperature'
+	);
+	const combinedTemplates = DEFAULT_TEMPLATE_BLUEPRINTS.filter(
+		(template) => template.category === 'combined'
+	);
 
 	let {
 		templates,
 		onCreateNew,
+		onUseDefaultTemplate,
 		onSelectTemplate,
 		currentTemplateName = '',
 		isNewTemplate = false
 	}: {
 		templates: Template[];
 		onCreateNew: () => void;
+		onUseDefaultTemplate: (templateId: string) => void;
 		onSelectTemplate: (templateName: string) => void;
 		currentTemplateName?: string;
 		isNewTemplate?: boolean;
 	} = $props();
+
+	function handleUseSelectedDefaultTemplate() {
+		if (!selectedDefaultTemplateId) return;
+		onUseDefaultTemplate(selectedDefaultTemplateId);
+	}
 </script>
 
 <div
@@ -29,6 +52,55 @@
 		>
 			+ Create New
 		</button>
+
+		<div class="mb-6 border-2 px-4 py-4" style="border-color: var(--border-primary);">
+			<h3 class="mb-2 text-sm font-semibold uppercase" style="color: var(--text-secondary);">
+				Start From Default
+			</h3>
+
+			<select
+				class="mb-3 h-9 w-full max-w-60 rounded border-2 px-2 py-1 text-xs"
+				style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+				bind:value={selectedDefaultTemplateId}
+			>
+				{#if checklistTemplates.length > 0}
+					<optgroup label="Checklists">
+						{#each checklistTemplates as template (template.id)}
+							<option value={template.id}>{template.name}</option>
+						{/each}
+					</optgroup>
+				{/if}
+				{#if temperatureTemplates.length > 0}
+					<optgroup label="Temperature Logs">
+						{#each temperatureTemplates as template (template.id)}
+							<option value={template.id}>{template.name}</option>
+						{/each}
+					</optgroup>
+				{/if}
+				{#if combinedTemplates.length > 0}
+					<optgroup label="Combined">
+						{#each combinedTemplates as template (template.id)}
+							<option value={template.id}>{template.name}</option>
+						{/each}
+					</optgroup>
+				{/if}
+			</select>
+
+			{#if selectedDefaultTemplate}
+				<p class="mb-3 text-xs" style="color: var(--text-secondary);">
+					{selectedDefaultTemplate.description}
+				</p>
+			{/if}
+
+			<button
+				type="button"
+				class="btn-default w-full rounded px-4 py-2 text-sm font-semibold text-white"
+				onclick={handleUseSelectedDefaultTemplate}
+				disabled={!selectedDefaultTemplateId}
+			>
+				Use Template
+			</button>
+		</div>
 
 		<div class="border-2" style="border-color: var(--border-primary);">
 			<ul class="divide-y" style="border-color: var(--border-secondary);">
@@ -109,15 +181,29 @@
 		background-color: #5cb85c;
 		transition: background-color 0.15s ease;
 	}
+	.btn-default {
+		background-color: #3d7a82;
+		transition: background-color 0.15s ease;
+	}
 	.btn-create:hover {
 		background-color: #449d44;
+	}
+	.btn-default:hover:enabled {
+		background-color: #2f6066;
 	}
 	.btn-create:active {
 		background-color: #398439;
 	}
+	.btn-default:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
 	@media (prefers-color-scheme: dark) {
 		.btn-create:hover {
 			background-color: #439c43;
+		}
+		.btn-default:hover:enabled {
+			background-color: #3b747c;
 		}
 	}
 </style>
