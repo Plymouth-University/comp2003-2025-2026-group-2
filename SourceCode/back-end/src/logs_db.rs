@@ -138,9 +138,77 @@ pub struct TemplateVersionDocument {
 /// Panics if `MONGODB_URI` environment variable is not set.
 pub async fn init_mongodb() -> Result<mongodb::Client> {
     let mongo_uri = std::env::var("MONGODB_URI").expect("MONGODB_URI not set in environment");
-    mongodb::Client::with_uri_str(&mongo_uri)
+    let client = mongodb::Client::with_uri_str(&mongo_uri)
         .await
-        .map_err(Into::into)
+        .map_err(anyhow::Error::from)?;
+
+    ensure_report_run_indexes(&client).await?;
+
+    Ok(client)
+}
+
+async fn ensure_report_run_indexes(client: &mongodb::Client) -> Result<()> {
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<ReportRunDocument> = db.collection("report_runs");
+
+    let index = mongodb::IndexModel::builder()
+        .keys(mongodb::bson::doc! {
+            "user_id": 1,
+            "company_id": 1,
+            "params_key": 1,
+        })
+        .options(
+            mongodb::options::IndexOptions::builder()
+                .name(Some("report_runs_user_company_params_key_idx".to_string()))
+                .build(),
+        )
+        .build();
+
+    collection.create_index(index).await?;
+
+    Ok(())
+}
+
+async fn backfill_missing_report_params_keys(
+    collection: &mongodb::Collection<ReportRunDocument>,
+    user_id: &str,
+    company_id: &str,
+) -> Result<()> {
+    let mut cursor = collection
+        .find(mongodb::bson::doc! {
+            "user_id": user_id,
+            "company_id": company_id,
+            "$or": [
+                { "params_key": { "$exists": false } },
+                { "params_key": "" }
+            ]
+        })
+        .await?;
+
+    while let Some(candidate) = cursor.try_next().await? {
+        let computed_key = report_params_key(&candidate.params)?;
+
+        collection
+            .update_one(
+                mongodb::bson::doc! {
+                    "report_id": &candidate.report_id,
+                    "user_id": user_id,
+                    "company_id": company_id,
+                    "$or": [
+                        { "params_key": { "$exists": false } },
+                        { "params_key": "" }
+                    ]
+                },
+                mongodb::bson::doc! {
+                    "$set": {
+                        "params_key": computed_key,
+                    }
+                },
+            )
+            .await?;
+    }
+
+    Ok(())
 }
 
 /// Adds a new log template to the database.
@@ -571,53 +639,16 @@ pub async fn create_report_run(
     let normalized_params = normalize_report_params(&report_run.params);
     let params_key = report_params_key(&normalized_params)?;
 
-    let params_bson = mongodb::bson::to_bson(&normalized_params)?;
+    backfill_missing_report_params_keys(&collection, &report_run.user_id, &report_run.company_id)
+        .await?;
+
     let filter = mongodb::bson::doc! {
         "user_id": &report_run.user_id,
         "company_id": &report_run.company_id,
         "params_key": &params_key,
     };
 
-    let existing = if let Some(existing) = collection.find_one(filter.clone()).await? {
-        Some(existing)
-    } else {
-        let direct = collection
-            .find_one(mongodb::bson::doc! {
-                "user_id": &report_run.user_id,
-                "company_id": &report_run.company_id,
-                "params": params_bson,
-            })
-            .await?;
-
-        if direct.is_some() {
-            direct
-        } else {
-            // Backward-compat: old rows may have equivalent params but different array ordering.
-            let mut cursor = collection
-                .find(mongodb::bson::doc! {
-                    "user_id": &report_run.user_id,
-                    "company_id": &report_run.company_id,
-                })
-                .limit(200)
-                .await?;
-
-            let mut matched: Option<ReportRunDocument> = None;
-            while let Some(candidate) = cursor.try_next().await? {
-                let candidate_key = if candidate.params_key.is_empty() {
-                    report_params_key(&candidate.params)?
-                } else {
-                    candidate.params_key.clone()
-                };
-
-                if candidate_key == params_key {
-                    matched = Some(candidate);
-                    break;
-                }
-            }
-
-            matched
-        }
-    };
+    let existing = collection.find_one(filter).await?;
 
     if let Some(existing) = existing {
         let mut set_doc = mongodb::bson::Document::new();
@@ -761,6 +792,8 @@ pub async fn delete_report_run(
         target.params_key
     };
 
+    backfill_missing_report_params_keys(&collection, user_id, company_id).await?;
+
     tracing::info!(
         target: "report_runs",
         "mongo delete: resolved params_key for report_id={} key_len={}",
@@ -768,48 +801,11 @@ pub async fn delete_report_run(
         params_key.len()
     );
 
-    let mut cursor = collection
-        .find(mongodb::bson::doc! {
-            "user_id": user_id,
-            "company_id": company_id,
-        })
-        .limit(500)
-        .await?;
-
-    let mut report_ids_to_delete = Vec::new();
-    let mut scanned_count: usize = 0;
-    while let Some(candidate) = cursor.try_next().await? {
-        scanned_count += 1;
-        let candidate_key = if candidate.params_key.is_empty() {
-            report_params_key(&candidate.params)?
-        } else {
-            candidate.params_key.clone()
-        };
-
-        if candidate_key == params_key {
-            report_ids_to_delete.push(candidate.report_id);
-        }
-    }
-
-    if report_ids_to_delete.is_empty() {
-        report_ids_to_delete.push(report_id.to_string());
-    }
-
-    tracing::info!(
-        target: "report_runs",
-        "mongo delete: scanned={} matched_ids={} for report_id={} user_id={} company_id={}",
-        scanned_count,
-        report_ids_to_delete.len(),
-        report_id,
-        user_id,
-        company_id
-    );
-
     let result = collection
         .delete_many(mongodb::bson::doc! {
             "user_id": user_id,
             "company_id": company_id,
-            "report_id": { "$in": report_ids_to_delete },
+            "params_key": &params_key,
         })
         .await?;
 
