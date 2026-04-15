@@ -854,10 +854,7 @@
 			const isInDateRange = entryDate >= fromDate && entryDate <= toDate;
 
 			// Check if entry has any remaining fields after filtering
-			const hasFields = hasRemainingFields(
-				entry.template_layout,
-				excludedFieldTypes
-			);
+			const hasFields = hasRemainingFields(entry.template_layout, excludedFieldTypes);
 
 			return isInDateRange && hasFields;
 		});
@@ -1085,10 +1082,7 @@
 				const isInDateRange = entryDate >= fromDate && entryDate <= toDate;
 
 				// Check if entry has any remaining fields after filtering
-				const hasFields = hasRemainingFields(
-					entry.template_layout,
-					excludedFieldTypes
-				);
+				const hasFields = hasRemainingFields(entry.template_layout, excludedFieldTypes);
 
 				return isInDateRange && hasFields;
 			});
