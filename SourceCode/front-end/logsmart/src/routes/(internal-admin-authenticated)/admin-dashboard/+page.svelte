@@ -188,7 +188,17 @@
 	}
 
 	function csvEscape(value: string): string {
-		return `"${value.replaceAll('"', '""')}"`;
+		const sanitized = csvSanitizeCell(value);
+		return `"${sanitized.replaceAll('"', '""')}"`;
+	}
+
+	function csvSanitizeCell(value: string): string {
+		const firstNonWhitespace = [...value].find((char) => !/\s/u.test(char));
+		if (firstNonWhitespace && ['=', '+', '-', '@'].includes(firstNonWhitespace)) {
+			return `'${value}`;
+		}
+
+		return value;
 	}
 
 	function exportVisibleCsv() {
