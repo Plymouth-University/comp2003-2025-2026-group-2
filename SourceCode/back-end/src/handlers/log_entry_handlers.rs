@@ -694,7 +694,7 @@ pub async fn list_user_log_entries(
 )]
 /// Saves report-generation parameters for later reuse.
 pub async fn create_report_run(
-    AnyAuthUser(_claims, user): AnyAuthUser,
+    ReadBranchUser(_claims, user): ReadBranchUser,
     State(state): State<AppState>,
     Json(mut payload): Json<CreateReportRunRequest>,
 ) -> Result<(StatusCode, Json<CreateReportRunResponse>), (StatusCode, Json<serde_json::Value>)> {
@@ -766,7 +766,7 @@ pub async fn create_report_run(
 )]
 /// Lists saved report-generation parameter sets for the current user.
 pub async fn list_report_runs(
-    AnyAuthUser(_claims, user): AnyAuthUser,
+    ReadBranchUser(_claims, user): ReadBranchUser,
     State(state): State<AppState>,
     Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Result<Json<ListReportRunsResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -842,7 +842,7 @@ pub async fn list_report_runs(
 )]
 /// Marks a saved report run as used.
 pub async fn use_report_run(
-    AnyAuthUser(_claims, user): AnyAuthUser,
+    ReadBranchUser(_claims, user): ReadBranchUser,
     State(state): State<AppState>,
     Path(report_id): Path<String>,
 ) -> Result<Json<UseReportRunResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -889,7 +889,7 @@ pub async fn use_report_run(
 )]
 /// Deletes a saved report run.
 pub async fn delete_report_run(
-    AnyAuthUser(_claims, user): AnyAuthUser,
+    ReadBranchUser(_claims, user): ReadBranchUser,
     State(state): State<AppState>,
     Path(report_id): Path<String>,
 ) -> Result<Json<DeleteReportRunResponse>, (StatusCode, Json<serde_json::Value>)> {
