@@ -5,7 +5,7 @@ use crate::{
         GetCompanyMembersResponse, RemoveMemberRequest,
     },
     images_db,
-    middleware::{AnyAuthUser, BranchManagerUser, ReadBranchUser},
+    middleware::{AnyAuthUser, AuditRequestContext, BranchManagerUser, ReadBranchUser},
     services::user_service::UserService,
     utils::{AuditLogger, err_bad_request, err_forbidden, err_internal, err_not_found},
 };
@@ -84,6 +84,7 @@ pub async fn get_company_members(
 /// Returns an error if the user is not an admin, the request is invalid, or the update fails.
 pub async fn admin_update_member_profile(
     BranchManagerUser(_claims, user): BranchManagerUser,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
     Json(payload): Json<AdminUpdateMemberRequest>,
 ) -> Result<Json<GetCompanyMembersResponse>, (StatusCode, Json<serde_json::Value>)> {
@@ -120,8 +121,14 @@ pub async fn admin_update_member_profile(
 
     AuditLogger::log_admin_action(
         &state.postgres,
-        user.id,
+        user.id.clone(),
         format!("Updated member profile: {}", updated_user.email),
+        crate::audit_ctx!(
+            &audit_ctx,
+            actor: &user,
+            target_user_id: Some(updated_user.id.clone()),
+            target_email: Some(updated_user.email.clone())
+        ),
     )
     .await;
 
@@ -148,6 +155,7 @@ pub async fn admin_update_member_profile(
 /// Returns an error if the user is not an admin or if the deletion fails.
 pub async fn admin_delete_member(
     BranchManagerUser(_claims, user): BranchManagerUser,
+    AuditRequestContext(audit_ctx): AuditRequestContext,
     State(state): State<AppState>,
     Json(payload): Json<RemoveMemberRequest>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
@@ -160,8 +168,14 @@ pub async fn admin_delete_member(
 
     AuditLogger::log_admin_action(
         &state.postgres,
-        user.id,
+        user.id.clone(),
         format!("Deleted member: {}", payload.email),
+        crate::audit_ctx!(
+            &audit_ctx,
+            actor: &user,
+            target_user_id: Some(deleted_user_id),
+            target_email: Some(payload.email)
+        ),
     )
     .await;
 

@@ -1,4 +1,8 @@
-use crate::{auth::generate_uuid6_token, db, email, utils::AuditLogger};
+use crate::{
+    auth::generate_uuid6_token,
+    db, email,
+    utils::{AuditContext, AuditLogger},
+};
 use axum::http::StatusCode;
 use chrono::Duration;
 use serde_json::json;
@@ -116,8 +120,14 @@ impl InvitationService {
             admin.id.clone(),
             admin.email.clone(),
             recipient_email,
-            ip_address,
-            user_agent,
+            crate::audit_ctx!(
+                &AuditContext {
+                    ip_address,
+                    user_agent,
+                    ..AuditContext::default()
+                },
+                actor: admin
+            ),
         )
         .await;
 
@@ -259,6 +269,7 @@ impl InvitationService {
         db_pool: &PgPool,
         calling_user: &db::UserRecord,
         invitation_id: &str,
+        context: AuditContext,
     ) -> Result<(), (StatusCode, serde_json::Value)> {
         let invitation = db::get_invitation_by_id(db_pool, invitation_id)
             .await
@@ -316,6 +327,11 @@ impl InvitationService {
             db_pool,
             calling_user.id.clone(),
             format!("Cancelled invitation for: {}", cancelled_invitation.email),
+            crate::audit_ctx!(
+                &context,
+                actor: calling_user,
+                target_email: Some(cancelled_invitation.email)
+            ),
         )
         .await;
 

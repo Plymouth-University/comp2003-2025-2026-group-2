@@ -214,7 +214,7 @@ pub struct GetPendingInvitationsResponse {
     pub invitations: Vec<InvitationResponse>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct SecurityLogDto {
     pub id: String,
     pub event_type: String,
@@ -222,6 +222,12 @@ pub struct SecurityLogDto {
     pub email: Option<String>,
     pub ip_address: Option<String>,
     pub user_agent: Option<String>,
+    pub actor_role: Option<String>,
+    pub company_id: Option<String>,
+    pub target_user_id: Option<String>,
+    pub target_email: Option<String>,
+    pub request_path: Option<String>,
+    pub request_method: Option<String>,
     pub details: Option<String>,
     pub success: bool,
     pub created_at: chrono::DateTime<chrono::Utc>,
@@ -231,9 +237,67 @@ derive_from!(
     crate::db::SecurityLog,
     SecurityLogDto,
     [
-        id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
+        id,
+        event_type,
+        user_id,
+        email,
+        ip_address,
+        user_agent,
+        actor_role,
+        company_id,
+        target_user_id,
+        target_email,
+        request_path,
+        request_method,
+        details,
+        success,
+        created_at
     ]
 );
+
+#[derive(Debug, Clone, Deserialize, IntoParams, ToSchema)]
+pub struct SecurityLogsQuery {
+    #[schema(example = 15)]
+    pub limit: Option<i64>,
+    #[schema(example = "MjAyNi0wNC0xM1QxMjozNDo1Nlo=fGFiYy0xMjM")]
+    pub cursor: Option<String>,
+    #[schema(example = "login")]
+    pub event_type: Option<String>,
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
+    pub user_id: Option<String>,
+    #[schema(example = "user@example.com")]
+    pub email: Option<String>,
+    #[schema(example = "203.0.113.42")]
+    pub ip_address: Option<String>,
+    #[schema(example = "Mozilla/5.0")]
+    pub user_agent: Option<String>,
+    #[schema(example = "company_manager")]
+    pub actor_role: Option<String>,
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440001")]
+    pub company_id: Option<String>,
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440002")]
+    pub target_user_id: Option<String>,
+    #[schema(example = "target@example.com")]
+    pub target_email: Option<String>,
+    #[schema(example = "/companies/123")]
+    pub request_path: Option<String>,
+    #[schema(example = "PUT")]
+    pub request_method: Option<String>,
+    #[schema(example = "Passkey verification failed")]
+    pub details: Option<String>,
+    #[schema(example = true)]
+    pub success: Option<bool>,
+    #[schema(example = "2026-04-01T00:00:00Z")]
+    pub created_from: Option<String>,
+    #[schema(example = "2026-04-13T23:59:59Z")]
+    pub created_to: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct SecurityLogsResponse {
+    pub logs: Vec<SecurityLogDto>,
+    pub next_cursor: Option<String>,
+}
 
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct RegisterRequest {

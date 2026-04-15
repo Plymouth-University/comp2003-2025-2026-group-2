@@ -205,9 +205,50 @@ pub struct SecurityLog {
     pub email: Option<String>,
     pub ip_address: Option<String>,
     pub user_agent: Option<String>,
+    pub actor_role: Option<String>,
+    pub company_id: Option<String>,
+    pub target_user_id: Option<String>,
+    pub target_email: Option<String>,
+    pub request_path: Option<String>,
+    pub request_method: Option<String>,
     pub details: Option<String>,
     pub success: bool,
     pub created_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct SecurityLogMeta {
+    pub actor_role: Option<String>,
+    pub company_id: Option<String>,
+    pub target_user_id: Option<String>,
+    pub target_email: Option<String>,
+    pub request_path: Option<String>,
+    pub request_method: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SecurityLogFilters {
+    pub event_type: Option<String>,
+    pub user_id: Option<String>,
+    pub email: Option<String>,
+    pub ip_address: Option<String>,
+    pub user_agent: Option<String>,
+    pub actor_role: Option<String>,
+    pub company_id: Option<String>,
+    pub target_user_id: Option<String>,
+    pub target_email: Option<String>,
+    pub request_path: Option<String>,
+    pub request_method: Option<String>,
+    pub details: Option<String>,
+    pub success: Option<bool>,
+    pub created_from: Option<chrono::DateTime<chrono::Utc>>,
+    pub created_to: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SecurityLogsPage {
+    pub logs: Vec<SecurityLog>,
+    pub next_cursor: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -946,6 +987,7 @@ pub async fn log_security_event(
     email: Option<String>,
     ip_address: Option<String>,
     user_agent: Option<String>,
+    meta: SecurityLogMeta,
     details: Option<String>,
     success: bool,
 ) -> Result<SecurityLog> {
@@ -954,9 +996,13 @@ pub async fn log_security_event(
 
     sqlx::query(
         r"
-        INSERT INTO security_logs (id, event_type, user_id, email, ip_address, user_agent, details, success, created_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        "
+        INSERT INTO security_logs (
+            id, event_type, user_id, email, ip_address, user_agent,
+            actor_role, company_id, target_user_id, target_email, request_path, request_method,
+            details, success, created_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        ",
     )
     .bind(&id)
     .bind(&event_type)
@@ -964,6 +1010,12 @@ pub async fn log_security_event(
     .bind(&email)
     .bind(&ip_address)
     .bind(&user_agent)
+    .bind(&meta.actor_role)
+    .bind(&meta.company_id)
+    .bind(&meta.target_user_id)
+    .bind(&meta.target_email)
+    .bind(&meta.request_path)
+    .bind(&meta.request_method)
     .bind(&details)
     .bind(success)
     .bind(now)
@@ -977,6 +1029,12 @@ pub async fn log_security_event(
         email,
         ip_address,
         user_agent,
+        actor_role: meta.actor_role,
+        company_id: meta.company_id,
+        target_user_id: meta.target_user_id,
+        target_email: meta.target_email,
+        request_path: meta.request_path,
+        request_method: meta.request_method,
         details,
         success,
         created_at: now,
@@ -994,7 +1052,7 @@ pub async fn get_security_logs_by_user(
 ) -> Result<Vec<SecurityLog>> {
     let logs = sqlx::query_as::<_, SecurityLog>(
         r"
-        SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
+        SELECT id, event_type, user_id, email, ip_address, user_agent, actor_role, company_id, target_user_id, target_email, request_path, request_method, details, success, created_at
         FROM security_logs
         WHERE user_id = $1
         ORDER BY created_at DESC
@@ -1021,7 +1079,7 @@ pub async fn get_recent_security_logs(
     let logs = if let Some(evt) = event_type {
         sqlx::query_as::<_, SecurityLog>(
             r"
-            SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
+            SELECT id, event_type, user_id, email, ip_address, user_agent, actor_role, company_id, target_user_id, target_email, request_path, request_method, details, success, created_at
             FROM security_logs
             WHERE event_type = $1
             ORDER BY created_at DESC
@@ -1035,7 +1093,7 @@ pub async fn get_recent_security_logs(
     } else {
         sqlx::query_as::<_, SecurityLog>(
             r"
-            SELECT id, event_type, user_id, email, ip_address, user_agent, details, success, created_at
+            SELECT id, event_type, user_id, email, ip_address, user_agent, actor_role, company_id, target_user_id, target_email, request_path, request_method, details, success, created_at
             FROM security_logs
             ORDER BY created_at DESC
             LIMIT $1
@@ -1047,6 +1105,353 @@ pub async fn get_recent_security_logs(
     };
 
     Ok(logs)
+}
+
+/// Retrieves paginated security logs with optional filters using keyset pagination.
+///
+/// Cursor format: base64("<created_at_rfc3339>|<id>")
+///
+/// # Errors
+/// Returns an error if database query fails.
+#[allow(clippy::too_many_lines)]
+pub async fn get_security_logs_page(
+    pool: &PgPool,
+    filters: &SecurityLogFilters,
+    limit: i64,
+    cursor: Option<(chrono::DateTime<chrono::Utc>, String)>,
+) -> Result<SecurityLogsPage> {
+    let safe_limit = limit.clamp(1, 100);
+    let fetch_limit = safe_limit + 1;
+
+    let mut query_str = String::from(
+        r"
+        SELECT id, event_type, user_id, email, ip_address, user_agent, actor_role, company_id, target_user_id, target_email, request_path, request_method, details, success, created_at
+        FROM security_logs
+        WHERE 1=1
+        ",
+    );
+
+    let mut bind_count = 0;
+
+    if filters.event_type.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND event_type ILIKE ${bind_count}")?;
+    }
+    if filters.user_id.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND user_id ILIKE ${bind_count}")?;
+    }
+    if filters.email.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND email ILIKE ${bind_count}")?;
+    }
+    if filters.ip_address.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND ip_address ILIKE ${bind_count}")?;
+    }
+    if filters.user_agent.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND user_agent ILIKE ${bind_count}")?;
+    }
+    if filters.actor_role.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND actor_role ILIKE ${bind_count}")?;
+    }
+    if filters.company_id.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND company_id = ${bind_count}")?;
+    }
+    if filters.target_user_id.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND target_user_id ILIKE ${bind_count}")?;
+    }
+    if filters.target_email.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND target_email ILIKE ${bind_count}")?;
+    }
+    if filters.request_path.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND request_path ILIKE ${bind_count}")?;
+    }
+    if filters.request_method.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND request_method ILIKE ${bind_count}")?;
+    }
+    if filters.details.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND details ILIKE ${bind_count}")?;
+    }
+    if filters.success.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND success = ${bind_count}")?;
+    }
+    if filters.created_from.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND created_at >= ${bind_count}")?;
+    }
+    if filters.created_to.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND created_at <= ${bind_count}")?;
+    }
+
+    if cursor.is_some() {
+        bind_count += 1;
+        let cursor_created_at_bind = bind_count;
+        bind_count += 1;
+        let cursor_id_bind = bind_count;
+        writeln!(
+            query_str,
+            "  AND (created_at < ${cursor_created_at_bind} OR (created_at = ${cursor_created_at_bind} AND id < ${cursor_id_bind}))"
+        )?;
+    }
+
+    bind_count += 1;
+    writeln!(
+        query_str,
+        "ORDER BY created_at DESC, id DESC\nLIMIT ${bind_count}"
+    )?;
+
+    let mut query = sqlx::query_as::<_, SecurityLog>(&query_str);
+
+    if let Some(value) = filters.event_type.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.user_id.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.email.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.ip_address.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.user_agent.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.actor_role.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.company_id.as_ref() {
+        query = query.bind(value.trim());
+    }
+    if let Some(value) = filters.target_user_id.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.target_email.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.request_path.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.request_method.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.details.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.success {
+        query = query.bind(value);
+    }
+    if let Some(value) = filters.created_from {
+        query = query.bind(value);
+    }
+    if let Some(value) = filters.created_to {
+        query = query.bind(value);
+    }
+    if let Some((cursor_created_at, cursor_id)) = cursor {
+        query = query.bind(cursor_created_at).bind(cursor_id);
+    }
+
+    query = query.bind(fetch_limit);
+
+    let mut rows = query.fetch_all(pool).await?;
+    let has_more = rows.len() > safe_limit as usize;
+    if has_more {
+        rows.truncate(safe_limit as usize);
+    }
+
+    let next_cursor = if has_more {
+        rows.last()
+            .map(|row| format_security_logs_cursor(row.created_at, &row.id))
+    } else {
+        None
+    };
+
+    Ok(SecurityLogsPage {
+        logs: rows,
+        next_cursor,
+    })
+}
+
+/// Retrieves security logs for CSV export with optional filters.
+///
+/// # Errors
+/// Returns an error if database query fails.
+pub async fn get_security_logs_for_export(
+    pool: &PgPool,
+    filters: &SecurityLogFilters,
+    limit: i64,
+) -> Result<Vec<SecurityLog>> {
+    let safe_limit = limit.clamp(1, 10_000);
+
+    let mut query_str = String::from(
+        r"
+        SELECT id, event_type, user_id, email, ip_address, user_agent, actor_role, company_id, target_user_id, target_email, request_path, request_method, details, success, created_at
+        FROM security_logs
+        WHERE 1=1
+        ",
+    );
+
+    let mut bind_count = 0;
+
+    if filters.event_type.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND event_type ILIKE ${bind_count}")?;
+    }
+    if filters.user_id.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND user_id ILIKE ${bind_count}")?;
+    }
+    if filters.email.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND email ILIKE ${bind_count}")?;
+    }
+    if filters.ip_address.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND ip_address ILIKE ${bind_count}")?;
+    }
+    if filters.user_agent.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND user_agent ILIKE ${bind_count}")?;
+    }
+    if filters.actor_role.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND actor_role ILIKE ${bind_count}")?;
+    }
+    if filters.company_id.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND company_id = ${bind_count}")?;
+    }
+    if filters.target_user_id.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND target_user_id ILIKE ${bind_count}")?;
+    }
+    if filters.target_email.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND target_email ILIKE ${bind_count}")?;
+    }
+    if filters.request_path.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND request_path ILIKE ${bind_count}")?;
+    }
+    if filters.request_method.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND request_method ILIKE ${bind_count}")?;
+    }
+    if filters.details.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND details ILIKE ${bind_count}")?;
+    }
+    if filters.success.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND success = ${bind_count}")?;
+    }
+    if filters.created_from.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND created_at >= ${bind_count}")?;
+    }
+    if filters.created_to.is_some() {
+        bind_count += 1;
+        writeln!(query_str, "  AND created_at <= ${bind_count}")?;
+    }
+
+    bind_count += 1;
+    writeln!(
+        query_str,
+        "ORDER BY created_at DESC, id DESC\nLIMIT ${bind_count}"
+    )?;
+
+    let mut query = sqlx::query_as::<_, SecurityLog>(&query_str);
+
+    if let Some(value) = filters.event_type.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.user_id.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.email.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.ip_address.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.user_agent.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.actor_role.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.company_id.as_ref() {
+        query = query.bind(value.trim());
+    }
+    if let Some(value) = filters.target_user_id.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.target_email.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.request_path.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.request_method.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.details.as_ref() {
+        query = query.bind(format!("%{}%", value.trim()));
+    }
+    if let Some(value) = filters.success {
+        query = query.bind(value);
+    }
+    if let Some(value) = filters.created_from {
+        query = query.bind(value);
+    }
+    if let Some(value) = filters.created_to {
+        query = query.bind(value);
+    }
+
+    query = query.bind(safe_limit);
+
+    let rows = query.fetch_all(pool).await?;
+    Ok(rows)
+}
+
+#[must_use]
+pub fn format_security_logs_cursor(created_at: chrono::DateTime<chrono::Utc>, id: &str) -> String {
+    use base64::Engine as _;
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(format!(
+        "{}|{}",
+        created_at.to_rfc3339(),
+        id
+    ))
+}
+
+pub fn parse_security_logs_cursor(cursor: &str) -> Result<(chrono::DateTime<chrono::Utc>, String)> {
+    use base64::Engine as _;
+
+    let decoded = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(cursor)
+        .map_err(|_| anyhow::anyhow!("Invalid cursor encoding"))?;
+
+    let decoded = String::from_utf8(decoded).map_err(|_| anyhow::anyhow!("Invalid cursor"))?;
+    let (created_at_str, id) = decoded
+        .split_once('|')
+        .ok_or_else(|| anyhow::anyhow!("Invalid cursor format"))?;
+
+    let created_at = chrono::DateTime::parse_from_rfc3339(created_at_str)
+        .map_err(|_| anyhow::anyhow!("Invalid cursor timestamp"))?
+        .with_timezone(&chrono::Utc);
+
+    Ok((created_at, id.to_string()))
 }
 
 /// Updates a user's profile information (name only).
@@ -2437,5 +2842,23 @@ mod tests {
             row.is_clocked_in(),
             "CompanyClockEventRow with clock_out=None should be clocked in even if clock_in is in the future"
         );
+    }
+
+    #[test]
+    fn test_security_logs_cursor_round_trip() {
+        let created_at = chrono::Utc::now();
+        let id = "security-log-id-123";
+
+        let cursor = format_security_logs_cursor(created_at, id);
+        let parsed = parse_security_logs_cursor(&cursor).expect("cursor should parse");
+
+        assert_eq!(parsed.1, id);
+        assert_eq!(parsed.0.timestamp_millis(), created_at.timestamp_millis());
+    }
+
+    #[test]
+    fn test_security_logs_cursor_invalid_value() {
+        let result = parse_security_logs_cursor("not-a-valid-cursor");
+        assert!(result.is_err(), "invalid cursor must return error");
     }
 }

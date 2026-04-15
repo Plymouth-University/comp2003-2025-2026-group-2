@@ -2,13 +2,68 @@
 	import type { PageData } from './$types';
 
 	let { data } = $props<{ data: PageData }>();
-	let activeTab = $state<'database'>('database');
+	type AdminTab = 'database' | 'security';
+	type SecurityLogRow = {
+		id: string;
+		event_type: string;
+		user_id: string | null;
+		email: string | null;
+		ip_address: string | null;
+		user_agent: string | null;
+		actor_role: string | null;
+		company_id: string | null;
+		target_user_id: string | null;
+		target_email: string | null;
+		request_path: string | null;
+		request_method: string | null;
+		details: string | null;
+		success: boolean;
+		created_at: string;
+	};
+
+	let activeTab = $state<AdminTab>('database');
 
 	// Database health monitoring data
 	const dbHealth = $derived(data?.dbHealth ?? null);
 	const tableSizes = $derived(data?.tableSizes ?? null);
 	const slowQueries = $derived(data?.slowQueries ?? null);
 	const indexUsage = $derived(data?.indexUsage ?? null);
+
+	let securityLogs = $state<SecurityLogRow[]>([]);
+	let securityNextCursor = $state<string | null>(null);
+	let securityCurrentCursor = $state<string | null>(null);
+	let securityCursorHistory = $state<string[]>([]);
+	let securityLoading = $state(false);
+	let securityLoaded = $state(false);
+	let securityError = $state<string | null>(null);
+	let exportingVisible = $state(false);
+	let exportingAll = $state(false);
+
+	let filterEventType = $state('');
+	let filterUserId = $state('');
+	let filterEmail = $state('');
+	let filterIpAddress = $state('');
+	let filterUserAgent = $state('');
+	let filterActorRole = $state('');
+	let filterCompanyId = $state('');
+	let filterTargetUserId = $state('');
+	let filterTargetEmail = $state('');
+	let filterRequestPath = $state('');
+	let filterRequestMethod = $state('');
+	let filterDetails = $state('');
+	let filterSuccess = $state('');
+	let filterCreatedFrom = $state('');
+	let filterCreatedTo = $state('');
+
+	function appendDateFilter(params: URLSearchParams, key: string, value: string) {
+		if (!value) {
+			return;
+		}
+		const parsed = new Date(value);
+		if (!Number.isNaN(parsed.getTime())) {
+			params.set(key, parsed.toISOString());
+		}
+	}
 
 	// Get user data from server load
 	const user = $derived(() => {
@@ -35,6 +90,197 @@
 			initials: initials || '?'
 		};
 	});
+
+	$effect(() => {
+		if (activeTab === 'security' && !securityLoaded && !securityLoading) {
+			void fetchSecurityLogs({ reset: true });
+		}
+	});
+
+	function appendFilter(params: URLSearchParams, key: string, value: string) {
+		const trimmed = value.trim();
+		if (trimmed) {
+			params.set(key, trimmed);
+		}
+	}
+
+	function createSecurityLogsSearchParams(cursor: string | null): URLSearchParams {
+		const params = new URLSearchParams();
+		params.set('limit', '15');
+		if (cursor) {
+			params.set('cursor', cursor);
+		}
+
+		appendFilter(params, 'event_type', filterEventType);
+		appendFilter(params, 'user_id', filterUserId);
+		appendFilter(params, 'email', filterEmail);
+		appendFilter(params, 'ip_address', filterIpAddress);
+		appendFilter(params, 'user_agent', filterUserAgent);
+		appendFilter(params, 'actor_role', filterActorRole);
+		appendFilter(params, 'company_id', filterCompanyId);
+		appendFilter(params, 'target_user_id', filterTargetUserId);
+		appendFilter(params, 'target_email', filterTargetEmail);
+		appendFilter(params, 'request_path', filterRequestPath);
+		appendFilter(params, 'request_method', filterRequestMethod);
+		appendFilter(params, 'details', filterDetails);
+		if (filterSuccess === 'true' || filterSuccess === 'false') {
+			params.set('success', filterSuccess);
+		}
+		appendDateFilter(params, 'created_from', filterCreatedFrom);
+		appendDateFilter(params, 'created_to', filterCreatedTo);
+
+		return params;
+	}
+
+	async function fetchSecurityLogs({
+		reset = false,
+		cursor = null
+	}: { reset?: boolean; cursor?: string | null } = {}) {
+		securityLoading = true;
+		securityError = null;
+
+		if (reset) {
+			securityCursorHistory = [];
+			securityCurrentCursor = null;
+		}
+
+		const useCursor = reset ? null : cursor;
+		const params = createSecurityLogsSearchParams(useCursor ?? null);
+
+		try {
+			const response = await fetch(`/api/security/logs?${params.toString()}`);
+			if (!response.ok) {
+				const errorBody = await response.json().catch(() => ({}));
+				throw new Error(errorBody.error || 'Failed to fetch security logs');
+			}
+
+			const payload = await response.json();
+			securityLogs = payload.logs ?? [];
+			securityNextCursor = payload.next_cursor ?? null;
+			securityCurrentCursor = useCursor ?? null;
+			securityLoaded = true;
+		} catch (error) {
+			securityError = error instanceof Error ? error.message : 'Failed to fetch security logs';
+		} finally {
+			securityLoading = false;
+		}
+	}
+
+	async function goToNextPage() {
+		if (!securityNextCursor || securityLoading) {
+			return;
+		}
+		securityCursorHistory = [...securityCursorHistory, securityCurrentCursor ?? ''];
+		await fetchSecurityLogs({ cursor: securityNextCursor });
+	}
+
+	async function goToPreviousPage() {
+		if (securityLoading || securityCursorHistory.length === 0) {
+			return;
+		}
+		const previousCursor = securityCursorHistory[securityCursorHistory.length - 1] || null;
+		securityCursorHistory = securityCursorHistory.slice(0, -1);
+		await fetchSecurityLogs({ cursor: previousCursor });
+	}
+
+	async function applySecurityFilters() {
+		await fetchSecurityLogs({ reset: true });
+	}
+
+	function csvEscape(value: string): string {
+		const sanitized = csvSanitizeCell(value);
+		return `"${sanitized.replaceAll('"', '""')}"`;
+	}
+
+	function csvSanitizeCell(value: string): string {
+		const firstNonWhitespace = [...value].find((char) => !/\s/u.test(char));
+		if (firstNonWhitespace && ['=', '+', '-', '@'].includes(firstNonWhitespace)) {
+			return `'${value}`;
+		}
+
+		return value;
+	}
+
+	function exportVisibleCsv() {
+		if (securityLogs.length === 0 || exportingVisible) {
+			return;
+		}
+		exportingVisible = true;
+		try {
+			const header = [
+				'id',
+				'event_type',
+				'user_id',
+				'email',
+				'ip_address',
+				'user_agent',
+				'actor_role',
+				'company_id',
+				'target_user_id',
+				'target_email',
+				'request_path',
+				'request_method',
+				'details',
+				'success',
+				'created_at'
+			];
+			const rows = securityLogs.map((row) =>
+				[
+					row.id,
+					row.event_type,
+					row.user_id ?? '',
+					row.email ?? '',
+					row.ip_address ?? '',
+					row.user_agent ?? '',
+					row.actor_role ?? '',
+					row.company_id ?? '',
+					row.target_user_id ?? '',
+					row.target_email ?? '',
+					row.request_path ?? '',
+					row.request_method ?? '',
+					row.details ?? '',
+					row.success ? 'true' : 'false',
+					row.created_at
+				]
+					.map((cell) => csvEscape(String(cell)))
+					.join(',')
+			);
+			const csv = `${header.join(',')}\n${rows.join('\n')}`;
+
+			const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+			const url = URL.createObjectURL(blob);
+			const anchor = document.createElement('a');
+			anchor.href = url;
+			anchor.download = `security-logs-visible-${new Date().toISOString().replaceAll(':', '-')}.csv`;
+			document.body.appendChild(anchor);
+			anchor.click();
+			anchor.remove();
+			URL.revokeObjectURL(url);
+		} finally {
+			exportingVisible = false;
+		}
+	}
+
+	function exportAllCsv() {
+		if (exportingAll) {
+			return;
+		}
+		exportingAll = true;
+		try {
+			const params = createSecurityLogsSearchParams(null);
+			params.delete('limit');
+			const anchor = document.createElement('a');
+			anchor.href = `/api/security/logs/export?${params.toString()}`;
+			anchor.rel = 'noopener';
+			document.body.appendChild(anchor);
+			anchor.click();
+			anchor.remove();
+		} finally {
+			setTimeout(() => {
+				exportingAll = false;
+			}, 400);
+		}
+	}
 </script>
 
 <svelte:head>
@@ -59,6 +305,15 @@
 							: 'background-color: var(--bg-primary); color: var(--text-secondary); border: 2px solid var(--border-primary);'}
 					>
 						Database Health
+					</button>
+					<button
+						onclick={() => (activeTab = 'security')}
+						class="rounded-t-lg px-6 py-3 font-semibold transition-colors"
+						style={activeTab === 'security'
+							? 'background-color: #3D7A82; color: white;'
+							: 'background-color: var(--bg-primary); color: var(--text-secondary); border: 2px solid var(--border-primary);'}
+					>
+						Security Log
 					</button>
 				</div>
 			</div>
@@ -429,6 +684,392 @@
 					{/if}
 				</div>
 			{/if}
+		{:else if activeTab === 'security'}
+			<div
+				class="mb-6 border-2 p-4"
+				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+			>
+				<div class="mb-4 flex flex-wrap items-end gap-3">
+					<div>
+						<label
+							for="security-filter-event-type"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Event Type</label
+						>
+						<input
+							id="security-filter-event-type"
+							bind:value={filterEventType}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-user-id"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">User ID</label
+						>
+						<input
+							id="security-filter-user-id"
+							bind:value={filterUserId}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-email"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Email</label
+						>
+						<input
+							id="security-filter-email"
+							bind:value={filterEmail}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-ip-address"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">IP Address</label
+						>
+						<input
+							id="security-filter-ip-address"
+							bind:value={filterIpAddress}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-user-agent"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">User Agent</label
+						>
+						<input
+							id="security-filter-user-agent"
+							bind:value={filterUserAgent}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-actor-role"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Actor Role</label
+						>
+						<input
+							id="security-filter-actor-role"
+							bind:value={filterActorRole}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-company-id"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Company ID</label
+						>
+						<input
+							id="security-filter-company-id"
+							bind:value={filterCompanyId}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-target-user-id"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Target User ID</label
+						>
+						<input
+							id="security-filter-target-user-id"
+							bind:value={filterTargetUserId}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-target-email"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Target Email</label
+						>
+						<input
+							id="security-filter-target-email"
+							bind:value={filterTargetEmail}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-request-path"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Request Path</label
+						>
+						<input
+							id="security-filter-request-path"
+							bind:value={filterRequestPath}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-request-method"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Request Method</label
+						>
+						<input
+							id="security-filter-request-method"
+							bind:value={filterRequestMethod}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-details"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Details</label
+						>
+						<input
+							id="security-filter-details"
+							bind:value={filterDetails}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-success"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Success</label
+						>
+						<select
+							id="security-filter-success"
+							bind:value={filterSuccess}
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						>
+							<option value="">Any</option>
+							<option value="true">True</option>
+							<option value="false">False</option>
+						</select>
+					</div>
+					<div>
+						<label
+							for="security-filter-created-from"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Created From</label
+						>
+						<input
+							id="security-filter-created-from"
+							bind:value={filterCreatedFrom}
+							type="datetime-local"
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+					<div>
+						<label
+							for="security-filter-created-to"
+							class="mb-1 block text-sm font-medium"
+							style="color: var(--text-secondary);">Created To</label
+						>
+						<input
+							id="security-filter-created-to"
+							bind:value={filterCreatedTo}
+							type="datetime-local"
+							class="border-2 px-3 py-2 text-sm"
+							style="border-color: var(--border-primary); color: var(--text-primary);"
+						/>
+					</div>
+				</div>
+				<div class="flex flex-wrap gap-3">
+					<button
+						onclick={applySecurityFilters}
+						class="border-2 px-4 py-2 font-semibold"
+						style="border-color: var(--border-primary); color: var(--text-primary);"
+						disabled={securityLoading}>Apply Filters</button
+					>
+					<button
+						onclick={() => void fetchSecurityLogs({ reset: true })}
+						class="border-2 px-4 py-2 font-semibold"
+						style="border-color: var(--border-primary); color: var(--text-primary);"
+						disabled={securityLoading}>Refresh</button
+					>
+					<button
+						onclick={exportVisibleCsv}
+						class="border-2 px-4 py-2 font-semibold"
+						style="border-color: var(--border-primary); color: var(--text-primary);"
+						disabled={securityLoading || securityLogs.length === 0 || exportingVisible}
+						>{exportingVisible ? 'Exporting...' : 'Export Visible CSV'}</button
+					>
+					<button
+						onclick={exportAllCsv}
+						class="border-2 px-4 py-2 font-semibold"
+						style="border-color: var(--border-primary); color: var(--text-primary);"
+						disabled={securityLoading || exportingAll}
+						>{exportingAll ? 'Exporting...' : 'Export All CSV'}</button
+					>
+				</div>
+			</div>
+
+			{#if securityError}
+				<div
+					class="mb-4 rounded border-2 p-4"
+					style="background-color: #fee; border-color: #fcc; color: #c00;"
+				>
+					{securityError}
+				</div>
+			{/if}
+
+			<div class="overflow-hidden rounded border-2" style="border-color: var(--border-primary);">
+				<div class="overflow-x-auto">
+					<table class="w-full" style="background-color: var(--bg-primary);">
+						<thead>
+							<tr style="background-color: var(--bg-secondary);">
+								<th
+									class="px-4 py-3 text-left text-sm font-semibold"
+									style="color: var(--text-primary);">Created At</th
+								>
+								<th
+									class="px-4 py-3 text-left text-sm font-semibold"
+									style="color: var(--text-primary);">Event Type</th
+								>
+								<th
+									class="px-4 py-3 text-left text-sm font-semibold"
+									style="color: var(--text-primary);">User ID</th
+								>
+								<th
+									class="px-4 py-3 text-left text-sm font-semibold"
+									style="color: var(--text-primary);">Email</th
+								>
+								<th
+									class="px-4 py-3 text-left text-sm font-semibold"
+									style="color: var(--text-primary);">IP Address</th
+								>
+								<th
+									class="px-4 py-3 text-left text-sm font-semibold"
+									style="color: var(--text-primary);">User Agent</th
+								>
+								<th
+									class="px-4 py-3 text-left text-sm font-semibold"
+									style="color: var(--text-primary);">Actor Role</th
+								>
+								<th
+									class="px-4 py-3 text-left text-sm font-semibold"
+									style="color: var(--text-primary);">Target Email</th
+								>
+								<th
+									class="px-4 py-3 text-left text-sm font-semibold"
+									style="color: var(--text-primary);">Request</th
+								>
+								<th
+									class="px-4 py-3 text-left text-sm font-semibold"
+									style="color: var(--text-primary);">Success</th
+								>
+								<th
+									class="px-4 py-3 text-left text-sm font-semibold"
+									style="color: var(--text-primary);">Details</th
+								>
+							</tr>
+						</thead>
+						<tbody>
+							{#if securityLoading}
+								<tr class="border-t" style="border-color: var(--border-primary);">
+									<td
+										colspan="11"
+										class="px-4 py-6 text-center text-sm"
+										style="color: var(--text-secondary);">Loading security events...</td
+									>
+								</tr>
+							{:else if securityLogs.length === 0}
+								<tr class="border-t" style="border-color: var(--border-primary);">
+									<td
+										colspan="11"
+										class="px-4 py-6 text-center text-sm"
+										style="color: var(--text-secondary);">No security events found.</td
+									>
+								</tr>
+							{:else}
+								{#each securityLogs as log (log.id)}
+									<tr class="border-t" style="border-color: var(--border-primary);">
+										<td class="px-4 py-3 text-sm" style="color: var(--text-secondary);"
+											>{new Date(log.created_at).toLocaleString()}</td
+										>
+										<td class="px-4 py-3 text-sm font-medium" style="color: var(--text-primary);"
+											>{log.event_type}</td
+										>
+										<td class="px-4 py-3 font-mono text-xs" style="color: var(--text-secondary);"
+											>{log.user_id || '-'}</td
+										>
+										<td class="px-4 py-3 text-sm" style="color: var(--text-secondary);"
+											>{log.email || '-'}</td
+										>
+										<td class="px-4 py-3 text-sm" style="color: var(--text-secondary);"
+											>{log.ip_address || '-'}</td
+										>
+										<td class="max-w-sm px-4 py-3 text-sm" style="color: var(--text-secondary);">
+											<div class="truncate" title={log.user_agent || ''}>
+												{log.user_agent || '-'}
+											</div>
+										</td>
+										<td class="px-4 py-3 text-sm" style="color: var(--text-secondary);"
+											>{log.actor_role || '-'}</td
+										>
+										<td class="px-4 py-3 text-sm" style="color: var(--text-secondary);"
+											>{log.target_email || '-'}</td
+										>
+										<td class="max-w-sm px-4 py-3 text-sm" style="color: var(--text-secondary);">
+											<div
+												class="truncate"
+												title={`${log.request_method || ''} ${log.request_path || ''}`}
+											>
+												{log.request_method || '-'}
+												{log.request_path || ''}
+											</div>
+										</td>
+										<td
+											class="px-4 py-3 text-sm font-semibold"
+											style={`color: ${log.success ? '#5cb85c' : '#d9534f'};`}
+											>{log.success ? 'true' : 'false'}</td
+										>
+										<td class="max-w-md px-4 py-3 text-sm" style="color: var(--text-secondary);">
+											<div class="truncate" title={log.details || ''}>{log.details || '-'}</div>
+										</td>
+									</tr>
+								{/each}
+							{/if}
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<div class="mt-4 flex items-center gap-3">
+				<button
+					onclick={() => void goToPreviousPage()}
+					class="border-2 px-4 py-2 text-sm font-semibold"
+					style="border-color: var(--border-primary); color: var(--text-primary);"
+					disabled={securityLoading || securityCursorHistory.length === 0}>Previous</button
+				>
+				<button
+					onclick={() => void goToNextPage()}
+					class="border-2 px-4 py-2 text-sm font-semibold"
+					style="border-color: var(--border-primary); color: var(--text-primary);"
+					disabled={securityLoading || !securityNextCursor}>Next</button
+				>
+				<span class="text-sm" style="color: var(--text-secondary);"
+					>Showing up to 15 events per page</span
+				>
+			</div>
 		{/if}
 	</div>
 </div>

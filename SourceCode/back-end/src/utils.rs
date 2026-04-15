@@ -14,14 +14,101 @@ macro_rules! try_db {
 
 pub struct AuditLogger;
 
+#[derive(Debug, Clone, Default)]
+pub struct AuditContext {
+    pub ip_address: Option<String>,
+    pub user_agent: Option<String>,
+    pub actor_role: Option<String>,
+    pub company_id: Option<String>,
+    pub target_user_id: Option<String>,
+    pub target_email: Option<String>,
+    pub request_path: Option<String>,
+    pub request_method: Option<String>,
+}
+
+impl AuditContext {
+    #[must_use]
+    pub fn from_request(
+        headers: &HeaderMap,
+        addr: &std::net::SocketAddr,
+        request_path: Option<String>,
+        request_method: Option<String>,
+    ) -> Self {
+        Self {
+            ip_address: Some(extract_ip_from_headers_and_addr(headers, addr)),
+            user_agent: extract_user_agent(headers),
+            request_path,
+            request_method,
+            ..Self::default()
+        }
+    }
+
+    #[must_use]
+    pub fn with_actor(mut self, user: &db::UserRecord) -> Self {
+        self.actor_role = Some(user.role.to_string());
+        self.company_id = user.company_id.clone();
+        self
+    }
+
+    #[must_use]
+    pub fn with_company_id(mut self, company_id: Option<String>) -> Self {
+        self.company_id = company_id;
+        self
+    }
+
+    #[must_use]
+    pub fn with_target_user_id(mut self, target_user_id: Option<String>) -> Self {
+        self.target_user_id = target_user_id;
+        self
+    }
+
+    #[must_use]
+    pub fn with_target_email(mut self, target_email: Option<String>) -> Self {
+        self.target_email = target_email;
+        self
+    }
+
+    #[must_use]
+    pub fn with_actor_role(mut self, actor_role: Option<String>) -> Self {
+        self.actor_role = actor_role;
+        self
+    }
+}
+
+#[macro_export]
+macro_rules! audit_ctx {
+    ($base:expr $(,)?) => {
+        $base.clone()
+    };
+    ($base:expr, actor: $actor:expr $(, $($rest:tt)*)?) => {{
+        let ctx = $crate::audit_ctx!($base $(, $($rest)*)?);
+        ctx.with_actor($actor)
+    }};
+    ($base:expr, actor_role: $actor_role:expr $(, $($rest:tt)*)?) => {{
+        let ctx = $crate::audit_ctx!($base $(, $($rest)*)?);
+        ctx.with_actor_role($actor_role)
+    }};
+    ($base:expr, company_id: $company_id:expr $(, $($rest:tt)*)?) => {{
+        let ctx = $crate::audit_ctx!($base $(, $($rest)*)?);
+        ctx.with_company_id($company_id)
+    }};
+    ($base:expr, target_user_id: $target_user_id:expr $(, $($rest:tt)*)?) => {{
+        let ctx = $crate::audit_ctx!($base $(, $($rest)*)?);
+        ctx.with_target_user_id($target_user_id)
+    }};
+    ($base:expr, target_email: $target_email:expr $(, $($rest:tt)*)?) => {{
+        let ctx = $crate::audit_ctx!($base $(, $($rest)*)?);
+        ctx.with_target_email($target_email)
+    }};
+}
+
 impl AuditLogger {
     pub async fn log(
         db: &PgPool,
         event_type: &str,
         user_id: Option<String>,
         email: Option<String>,
-        ip_address: Option<String>,
-        user_agent: Option<String>,
+        context: AuditContext,
         details: Option<String>,
         success: bool,
     ) {
@@ -30,8 +117,16 @@ impl AuditLogger {
             event_type.to_string(),
             user_id,
             email,
-            ip_address,
-            user_agent,
+            context.ip_address,
+            context.user_agent,
+            db::SecurityLogMeta {
+                actor_role: context.actor_role,
+                company_id: context.company_id,
+                target_user_id: context.target_user_id,
+                target_email: context.target_email,
+                request_path: context.request_path,
+                request_method: context.request_method,
+            },
             details,
             success,
         )
@@ -46,16 +141,14 @@ impl AuditLogger {
         user_id: String,
         email: String,
         company_name: String,
-        ip_address: Option<String>,
-        user_agent: Option<String>,
+        context: AuditContext,
     ) {
         Self::log(
             db,
             "registration",
             Some(user_id),
             Some(email),
-            ip_address,
-            user_agent,
+            context,
             Some(format!("Company admin registered: {company_name}")),
             true,
         )
@@ -66,16 +159,14 @@ impl AuditLogger {
         db: &PgPool,
         user_id: String,
         email: String,
-        ip_address: Option<String>,
-        user_agent: Option<String>,
+        context: AuditContext,
     ) {
         Self::log(
             db,
             "login_success",
             Some(user_id),
             Some(email),
-            ip_address,
-            user_agent,
+            context,
             None,
             true,
         )
@@ -86,8 +177,7 @@ impl AuditLogger {
         db: &PgPool,
         user_id: Option<String>,
         email: String,
-        ip_address: Option<String>,
-        user_agent: Option<String>,
+        context: AuditContext,
         reason: &str,
     ) {
         Self::log(
@@ -95,8 +185,7 @@ impl AuditLogger {
             "login_failed",
             user_id,
             Some(email),
-            ip_address,
-            user_agent,
+            context,
             Some(reason.to_string()),
             false,
         )
@@ -108,16 +197,15 @@ impl AuditLogger {
         admin_id: String,
         admin_email: String,
         recipient_email: String,
-        ip_address: Option<String>,
-        user_agent: Option<String>,
+        mut context: AuditContext,
     ) {
+        context.target_email = Some(recipient_email.clone());
         Self::log(
             db,
             "invitation_sent",
             Some(admin_id),
             Some(recipient_email),
-            ip_address,
-            user_agent,
+            context,
             Some(format!("Invitation sent by {admin_email}")),
             true,
         )
@@ -129,44 +217,51 @@ impl AuditLogger {
         user_id: String,
         email: String,
         company_id: String,
-        ip_address: Option<String>,
-        user_agent: Option<String>,
+        mut context: AuditContext,
     ) {
+        context.company_id = Some(company_id.clone());
         Self::log(
             db,
             "invitation_accepted",
             Some(user_id),
             Some(email),
-            ip_address,
-            user_agent,
+            context,
             Some(format!("Member joined company {company_id}")),
             true,
         )
         .await;
     }
 
-    pub async fn log_profile_updated(db: &PgPool, user_id: String, email: String) {
+    pub async fn log_profile_updated(
+        db: &PgPool,
+        user_id: String,
+        email: String,
+        context: AuditContext,
+    ) {
         Self::log(
             db,
             "profile_updated",
             Some(user_id),
             Some(email),
-            None,
-            None,
+            context,
             None,
             true,
         )
         .await;
     }
 
-    pub async fn log_admin_action(db: &PgPool, admin_user_id: String, action_description: String) {
+    pub async fn log_admin_action(
+        db: &PgPool,
+        admin_user_id: String,
+        action_description: String,
+        context: AuditContext,
+    ) {
         Self::log(
             db,
             "admin_action",
             Some(admin_user_id),
             None,
-            None,
-            None,
+            context,
             Some(action_description),
             true,
         )
@@ -178,8 +273,7 @@ impl AuditLogger {
         user_id: Option<String>,
         email: String,
         reason: Option<&str>,
-        ip_address: Option<String>,
-        user_agent: Option<String>,
+        context: AuditContext,
     ) {
         let is_success = user_id.is_some();
         Self::log(
@@ -187,36 +281,38 @@ impl AuditLogger {
             "password_reset_requested",
             user_id,
             Some(email),
-            ip_address,
-            user_agent,
+            context,
             reason.map(std::string::ToString::to_string),
             is_success,
         )
         .await;
     }
 
-    pub async fn log_password_reset_completed(db: &PgPool, user_id: String) {
+    pub async fn log_password_reset_completed(db: &PgPool, user_id: String, context: AuditContext) {
         Self::log(
             db,
             "password_reset_completed",
             Some(user_id),
             None,
-            None,
-            None,
+            context,
             None,
             true,
         )
         .await;
     }
 
-    pub async fn log_password_changed(db: &PgPool, user_id: String, email: String) {
+    pub async fn log_password_changed(
+        db: &PgPool,
+        user_id: String,
+        email: String,
+        context: AuditContext,
+    ) {
         Self::log(
             db,
             "password_changed",
             Some(user_id),
             Some(email),
-            None,
-            None,
+            context,
             Some("User changed their password".to_string()),
             true,
         )
@@ -229,16 +325,14 @@ impl AuditLogger {
         email: String,
         provider: String,
         success: bool,
-        ip_address: Option<String>,
-        user_agent: Option<String>,
+        context: AuditContext,
     ) {
         Self::log(
             db,
             "oauth_login",
             Some(user_id),
             Some(email),
-            ip_address,
-            user_agent,
+            context,
             Some(format!("OAuth login via {provider}")),
             success,
         )
@@ -250,14 +344,14 @@ impl AuditLogger {
         user_id: String,
         email: String,
         provider: String,
+        context: AuditContext,
     ) {
         Self::log(
             db,
             "oauth_account_linked",
             Some(user_id),
             Some(email),
-            None,
-            None,
+            context,
             Some(format!("Linked {provider} account")),
             true,
         )
@@ -269,22 +363,11 @@ impl AuditLogger {
         event_type: String,
         user_id: Option<String>,
         email: Option<String>,
-        ip_address: Option<String>,
-        user_agent: Option<String>,
+        context: AuditContext,
         details: Option<String>,
         success: bool,
     ) {
-        Self::log(
-            db,
-            &event_type,
-            user_id,
-            email,
-            ip_address,
-            user_agent,
-            details,
-            success,
-        )
-        .await;
+        Self::log(db, &event_type, user_id, email, context, details, success).await;
     }
 }
 
@@ -293,11 +376,8 @@ pub fn extract_ip_from_headers_and_addr(
     headers: &HeaderMap,
     addr: &std::net::SocketAddr,
 ) -> String {
-    headers
-        .get("x-forwarded-for")
-        .and_then(|h| h.to_str().ok())
-        .and_then(|s| s.split(',').next())
-        .map_or_else(|| addr.ip().to_string(), |s| s.trim().to_string())
+    extract_optional_ip_from_headers_and_addr(headers, Some(addr))
+        .unwrap_or_else(|| addr.ip().to_string())
 }
 
 pub fn extract_user_agent(headers: &HeaderMap) -> Option<String> {
@@ -305,6 +385,45 @@ pub fn extract_user_agent(headers: &HeaderMap) -> Option<String> {
         .get("user-agent")
         .and_then(|h| h.to_str().ok())
         .map(std::string::ToString::to_string)
+}
+
+fn first_ip_from_header(headers: &HeaderMap, name: &str) -> Option<String> {
+    headers
+        .get(name)
+        .and_then(|h| h.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .map(std::string::ToString::to_string)
+}
+
+fn is_production_env() -> bool {
+    let env = std::env::var("APP_ENV")
+        .or_else(|_| std::env::var("ENVIRONMENT"))
+        .or_else(|_| std::env::var("RUST_ENV"))
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    env == "production" || env == "prod"
+}
+
+#[must_use]
+pub fn extract_optional_ip_from_headers_and_addr(
+    headers: &HeaderMap,
+    addr: Option<&std::net::SocketAddr>,
+) -> Option<String> {
+    let direct_ip = addr.map(|a| a.ip().to_string());
+
+    if is_production_env() {
+        first_ip_from_header(headers, "cf-connecting-ip")
+            .or_else(|| first_ip_from_header(headers, "true-client-ip"))
+            .or_else(|| first_ip_from_header(headers, "x-forwarded-for"))
+            .or_else(|| first_ip_from_header(headers, "x-real-ip"))
+            .or(direct_ip)
+    } else {
+        direct_ip
+            .or_else(|| first_ip_from_header(headers, "x-real-ip"))
+            .or_else(|| first_ip_from_header(headers, "cf-connecting-ip"))
+    }
 }
 
 pub type HandlerError = (axum::http::StatusCode, axum::Json<serde_json::Value>);
