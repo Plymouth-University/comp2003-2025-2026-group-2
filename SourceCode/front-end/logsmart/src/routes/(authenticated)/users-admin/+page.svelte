@@ -16,8 +16,8 @@
 	type MemberRole = Member['role'];
 
 	let { data } = $props<{ data: PageData }>();
-	let members = $state<Member[]>([]);
-	let invitations = $state<Invitation[]>([]);
+	let members = $derived(data.members || []) as Member[];
+	let invitations = $derived(data.invitations || []) as Invitation[];
 	const user = $derived(data.user);
 	const branches = $derived(data.branches || []);
 
@@ -40,10 +40,6 @@
 		selectedUser = null;
 	};
 
-	$effect(() => {
-		members = [...(data.members || [])];
-		invitations = [...(data.invitations || [])];
-	});
 	const setShowingCreateModel = (show: boolean) => {
 		showingCreateModel = show;
 	};

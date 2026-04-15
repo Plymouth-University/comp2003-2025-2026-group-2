@@ -7,7 +7,6 @@
 
 	type LogEntry = components['schemas']['LogEntryResponse'];
 	type TemplateField = components['schemas']['TemplateField'];
-	type TemplateFieldProps = components['schemas']['TemplateFieldProps'];
 
 	type LogComponent = {
 		entry: LogEntry;
@@ -559,14 +558,14 @@
 		// Check which log types are NOT selected
 		logTypes.forEach((type) => {
 			if (type.id !== 'all' && !type.checked) {
-				// Map log type labels to field types
-				if (type.label === 'Temperature Logs') {
+				// Map log type ids to field types
+				if (type.id === 'type3') {
 					excludedTypes.push('temperature');
-				} else if (type.label === 'Checkbox Logs') {
+				} else if (type.id === 'type2') {
 					excludedTypes.push('checkbox');
-				} else if (type.label === 'Dropdown Logs') {
+				} else if (type.id === 'type4') {
 					excludedTypes.push('dropdown');
-				} else if (type.label === 'Text Logs') {
+				} else if (type.id === 'type1') {
 					// Text logs include fields with no field_type or undefined/null field_type
 					excludedTypes.push('text');
 				}
@@ -579,44 +578,15 @@
 	// Function to check if an entry has any remaining fields after filtering
 	function hasRemainingFields(
 		templateLayout: TemplateField[],
-		excludeFieldTypes: string[],
-		entryData: unknown = null
+		excludeFieldTypes: string[]
 	): boolean {
 		if (!templateLayout || templateLayout.length === 0) return true;
 
-		// Check if at least one field is not excluded AND has actual data
-		const result = templateLayout.some((field, index) => {
+		// Entry should remain visible if at least one field remains after log-type exclusions.
+		return templateLayout.some((field) => {
 			const fieldType = normalizeFieldType(field.field_type);
-
-			// Skip excluded field types
-			if (excludeFieldTypes.includes(fieldType)) {
-				return false;
-			}
-
-			// If no entry data provided, just check field type existence
-			if (!entryData) {
-				return true;
-			}
-
-			// Check if this field actually has data
-			const fieldData = parseFieldData(entryData, field, index);
-			if (!fieldData) {
-				return false;
-			}
-
-			// Convert to string and check if it's meaningful content
-			const dataStr = String(fieldData);
-			const hasValidData =
-				dataStr !== 'No data entered' &&
-				dataStr !== 'No data available' &&
-				dataStr.trim() !== '' &&
-				dataStr !== 'undefined' &&
-				dataStr !== 'null';
-
-			return hasValidData;
+			return !excludeFieldTypes.includes(fieldType);
 		});
-
-		return result;
 	}
 
 	// Convert DD/MM/YYYY to YYYY-MM-DD
@@ -886,8 +856,7 @@
 			// Check if entry has any remaining fields after filtering
 			const hasFields = hasRemainingFields(
 				entry.template_layout,
-				excludedFieldTypes,
-				entry.entry_data
+				excludedFieldTypes
 			);
 
 			return isInDateRange && hasFields;
@@ -1118,8 +1087,7 @@
 				// Check if entry has any remaining fields after filtering
 				const hasFields = hasRemainingFields(
 					entry.template_layout,
-					excludedFieldTypes,
-					entry.entry_data
+					excludedFieldTypes
 				);
 
 				return isInDateRange && hasFields;
@@ -2721,8 +2689,7 @@ ${reportContent}
 									{@const excludedFieldTypes = getExcludedFieldTypes()}
 									{@const shouldShowEntry = hasRemainingFields(
 										entry.template_layout,
-										excludedFieldTypes,
-										entry.entry_data
+										excludedFieldTypes
 									)}
 									{#if shouldShowEntry}
 										<div

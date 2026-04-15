@@ -488,64 +488,74 @@
 						saveStatus = 'idle';
 						saveMessage = '';
 						showUpdatePopup = false;
-					const response = await api.PUT('/auth/admin/update-member', {
-						body: {
-							email: selectedUser?.email as string,
-							first_name: firstName,
-							last_name: lastName,
-							role: role,
-							branch_id: branchId || undefined
-						}
-					});
+						try {
+							const response = await api.PUT('/auth/admin/update-member', {
+								body: {
+									email: selectedUser?.email as string,
+									first_name: firstName,
+									last_name: lastName,
+									role: role,
+									branch_id: branchId || undefined
+								}
+							});
 
-					if (!response.error && selectedUser) {
-						updateMember(selectedUser.email, {
-							first_name: firstName,
-							last_name: lastName,
-							role: role,
-							branch_id: branchId
-						});
+							if (!response.error && selectedUser) {
+								updateMember(selectedUser.email, {
+									first_name: firstName,
+									last_name: lastName,
+									role: role,
+									branch_id: branchId
+								});
 
-						const changes: string[] = [];
-						if (previousFirstName !== firstName || previousLastName !== lastName) {
-							changes.push(
-								`Name: ${previousFirstName} ${previousLastName} -> ${firstName} ${lastName}`
-							);
-						}
-						if (previousRole !== role) {
-							changes.push(`Role: ${getRoleLabel(previousRole)} -> ${getRoleLabel(role)}`);
-						}
-						if (previousBranchId !== branchId) {
-							changes.push(
-								`Branch: ${getBranchLabel(previousBranchId)} -> ${getBranchLabel(branchId)}`
-							);
-						}
+								const changes: string[] = [];
+								if (previousFirstName !== firstName || previousLastName !== lastName) {
+									changes.push(
+										`Name: ${previousFirstName} ${previousLastName} -> ${firstName} ${lastName}`
+									);
+								}
+								if (previousRole !== role) {
+									changes.push(`Role: ${getRoleLabel(previousRole)} -> ${getRoleLabel(role)}`);
+								}
+								if (previousBranchId !== branchId) {
+									changes.push(
+										`Branch: ${getBranchLabel(previousBranchId)} -> ${getBranchLabel(branchId)}`
+									);
+								}
 
-						saveStatus = 'success';
-						saveMessage = 'Member updated successfully.';
-						updatePopupType = 'success';
-						updatePopupTitle = 'Profile updated successfully';
-						updatePopupDetails = changes.length > 0 ? changes : ['No field values changed.'];
-						showTimedToast();
-					} else if (response.error) {
-						saveStatus = 'error';
-						saveMessage = `Failed to update member: ${response.error.error}`;
-						updatePopupType = 'error';
-						updatePopupTitle = 'Unable to update profile';
-						updatePopupDetails = [response.error.error || 'Unknown error'];
-						showTimedToast();
-					}
-					isSaving = false;
-				}}>Save</button
-			>
-			{#if saveStatus !== 'idle'}
-				<p
-					class="mt-2 text-sm"
-					style={saveStatus === 'success' ? 'color: #16a34a;' : 'color: #dc2626;'}
+								saveStatus = 'success';
+								saveMessage = 'Member updated successfully.';
+								updatePopupType = 'success';
+								updatePopupTitle = 'Profile updated successfully';
+								updatePopupDetails = changes.length > 0 ? changes : ['No field values changed.'];
+								showTimedToast();
+							} else if (response.error) {
+								saveStatus = 'error';
+								saveMessage = `Failed to update member: ${response.error.error}`;
+								updatePopupType = 'error';
+								updatePopupTitle = 'Unable to update profile';
+								updatePopupDetails = [response.error.error || 'Unknown error'];
+								showTimedToast();
+							}
+						} catch {
+							saveStatus = 'error';
+							saveMessage = 'Failed to update member: network error';
+							updatePopupType = 'error';
+							updatePopupTitle = 'Unable to update profile';
+							updatePopupDetails = ['Network error while saving profile changes'];
+							showTimedToast();
+						} finally {
+							isSaving = false;
+						}
+					}}>Save</button
 				>
-					{saveMessage}
-				</p>
-			{/if}
+				{#if saveStatus !== 'idle'}
+					<p
+						class="mt-2 text-sm"
+						style={saveStatus === 'success' ? 'color: #16a34a;' : 'color: #dc2626;'}
+					>
+						{saveMessage}
+					</p>
+				{/if}
 			</form>
 		</div>
 	</div>
