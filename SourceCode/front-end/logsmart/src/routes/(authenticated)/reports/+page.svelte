@@ -37,6 +37,25 @@
 		use_count: number;
 	};
 
+	type SavedReportParams = {
+		date_from_iso: string;
+		date_to_iso: string;
+		selected_branch_ids: string[];
+		selected_log_type_ids: string[];
+		arrange_by: 'date' | 'logType';
+		include_temperature_graphs: boolean;
+		params_version: number;
+	};
+
+	type ReportRun = {
+		id: string;
+		name?: string | null;
+		params: SavedReportParams;
+		created_at: string;
+		last_used_at: string;
+		use_count: number;
+	};
+
 	// Get user data from parent layout
 	let { data } = $props();
 	let user = $derived(data?.user);
