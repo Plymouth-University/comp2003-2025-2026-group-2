@@ -13,10 +13,11 @@
 		created_at: string;
 	};
 	export type Invitation = components['schemas']['InvitationResponse'];
+	type MemberRole = Member['role'];
 
 	let { data } = $props<{ data: PageData }>();
-	const members = $derived(data.members || []);
-	const invitations = $derived(data.invitations || []);
+	let members = $derived(data.members || []) as Member[];
+	let invitations = $derived(data.invitations || []) as Invitation[];
 	const user = $derived(data.user);
 	const branches = $derived(data.branches || []);
 
@@ -38,6 +39,7 @@
 	const closeSidebar = () => {
 		selectedUser = null;
 	};
+
 	const setShowingCreateModel = (show: boolean) => {
 		showingCreateModel = show;
 	};
@@ -60,10 +62,7 @@
 				return;
 			}
 
-			invitations.splice(
-				invitations.findIndex((inv: Invitation) => inv.id === invitationId),
-				1
-			);
+			invitations = invitations.filter((inv: Invitation) => inv.id !== invitationId);
 		} catch (error) {
 			alert(`Error cancelling invitation: ${error}`);
 		}
@@ -91,10 +90,7 @@
 				return;
 			}
 
-			members.splice(
-				members.findIndex((m: Member) => m.email === email),
-				1
-			);
+			members = members.filter((m: Member) => m.email !== email);
 			if (selectedUser?.email === email) {
 				selectedUser = null;
 			}
@@ -108,7 +104,7 @@
 		updates: {
 			first_name: string;
 			last_name: string;
-			role: string;
+			role: MemberRole;
 			branch_id?: string | null;
 			profile_picture_id?: string | null;
 			profile_picture_url?: string | null;
@@ -116,9 +112,11 @@
 	) => {
 		const memberIndex = members.findIndex((m: Member) => m.email === email);
 		if (memberIndex !== -1) {
-			members[memberIndex] = { ...members[memberIndex], ...updates };
+			members = members.map((member: Member, index: number) =>
+				index === memberIndex ? ({ ...member, ...updates } as Member) : member
+			);
 			if (selectedUser?.email === email) {
-				selectedUser = members[memberIndex];
+				selectedUser = members.find((member: Member) => member.email === email) || null;
 			}
 		}
 	};
