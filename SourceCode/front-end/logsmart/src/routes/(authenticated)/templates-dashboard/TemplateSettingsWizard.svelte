@@ -372,4 +372,21 @@
 	button:disabled {
 		cursor: not-allowed;
 	}
+
+	button:not(:disabled) {
+		cursor: pointer;
+		transition:
+			transform 0.12s ease,
+			filter 0.12s ease,
+			background-color 0.15s ease;
+	}
+
+	button:not(:disabled):hover {
+		transform: translateY(-1px) scale(1.02);
+		filter: brightness(0.96);
+	}
+
+	button:disabled {
+		cursor: not-allowed;
+	}
 </style>

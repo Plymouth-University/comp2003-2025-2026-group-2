@@ -413,4 +413,23 @@
 	.templates-dashboard-modal button:disabled {
 		cursor: not-allowed;
 	}
+
+	.templates-dashboard-page button:not(:disabled),
+	.templates-dashboard-modal button:not(:disabled) {
+		cursor: pointer;
+		transition:
+			transform 0.12s ease,
+			filter 0.12s ease;
+	}
+
+	.templates-dashboard-page button:not(:disabled):hover,
+	.templates-dashboard-modal button:not(:disabled):hover {
+		transform: translateY(-1px) scale(1.02);
+		filter: brightness(0.96);
+	}
+
+	.templates-dashboard-page button:disabled,
+	.templates-dashboard-modal button:disabled {
+		cursor: not-allowed;
+	}
 </style>
