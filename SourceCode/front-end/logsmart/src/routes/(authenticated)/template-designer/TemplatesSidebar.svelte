@@ -94,7 +94,7 @@
 
 			<button
 				type="button"
-				class="btn-default w-full rounded px-4 py-2 text-sm font-semibold text-white"
+				class="btn-default w-full transform rounded border-2 px-4 py-2 text-sm font-semibold text-white transition-all duration-200"
 				onclick={handleUseSelectedDefaultTemplate}
 				disabled={!selectedDefaultTemplateId}
 			>
@@ -187,20 +187,30 @@
 	}
 	.btn-default {
 		background-color: #3d7a82;
-		transition: background-color 0.15s ease;
+		border-color: #3d7a82;
+		cursor: pointer;
 	}
 	.btn-create:hover {
 		background-color: #449d44;
 	}
 	.btn-default:hover:enabled {
 		background-color: #2f6066;
+		border-color: #2f6066;
+		transform: scale(1.05);
+		box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
+		opacity: 0.95;
 	}
 	.btn-create:active {
 		background-color: #398439;
 	}
+	.btn-default:active:enabled {
+		transform: scale(1.02);
+	}
 	.btn-default:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
+		transform: none;
+		box-shadow: none;
 	}
 	@media (prefers-color-scheme: dark) {
 		.btn-create:hover {

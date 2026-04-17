@@ -26,6 +26,7 @@
 	];
 
 	let canvasItems = $state<CanvasItem[]>([]);
+	let designCanvasHeight = $state<number>(500);
 	let logTitle = $state('');
 	let selectedItemId = $state<string | null>(null);
 	let isEditing = $state(false);
@@ -70,6 +71,17 @@
 	});
 
 	const templateId = $derived(page.url.searchParams.get('id'));
+
+	function getFixedCanvasHeightForTemplateName(templateName: string): number {
+		const matched = DEFAULT_TEMPLATE_BLUEPRINTS.find(
+			(blueprint) =>
+				templateName === blueprint.name ||
+				templateName === `${blueprint.name} Copy` ||
+				templateName.startsWith(`${blueprint.name} `)
+		);
+
+		return matched?.canvas_height ?? 500;
+	}
 
 	function mapApiFieldToCanvasItem(
 		field: components['schemas']['TemplateField'],
@@ -154,6 +166,7 @@
 			logTitle = data.template_name;
 			originalTemplateName = data.template_name;
 			canvasItems = data.template_layout.map(mapApiFieldToCanvasItem);
+			designCanvasHeight = getFixedCanvasHeightForTemplateName(data.template_name);
 			isEditing = true;
 			currentVersion = data.version || 1;
 			currentVersionName = data.version_name || null;
@@ -334,6 +347,7 @@
 			}
 		}
 		canvasItems = [];
+		designCanvasHeight = 500;
 		logTitle = '';
 		selectedItemId = null;
 		isEditing = false;
@@ -355,6 +369,7 @@
 		}
 
 		canvasItems = blueprint.template_layout.map(mapApiFieldToCanvasItem);
+		designCanvasHeight = blueprint.canvas_height;
 		logTitle = `${blueprint.name} Copy`;
 		selectedItemId = null;
 		isEditing = false;
@@ -893,6 +908,7 @@
 		<!-- Canvas Area -->
 		<DesignCanvas
 			bind:canvasItems
+			bind:canvasHeight={designCanvasHeight}
 			bind:logTitle
 			bind:versionName
 			bind:branchId

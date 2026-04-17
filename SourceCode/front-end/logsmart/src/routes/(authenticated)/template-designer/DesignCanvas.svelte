@@ -9,6 +9,7 @@
 		versionName = $bindable(),
 		selectedItemId = $bindable(),
 		canvasRef = $bindable(),
+		canvasHeight = $bindable(500),
 		branchId = $bindable(null),
 		branches = [],
 		canManageCompany = false,
@@ -30,6 +31,7 @@
 		versionName: string;
 		selectedItemId: string | null;
 		canvasRef: HTMLDivElement | null;
+		canvasHeight?: number;
 		branchId?: string | null;
 		branches?: { id: string; name: string }[];
 		canManageCompany?: boolean;
@@ -50,8 +52,6 @@
 	let snapLines = $state<{ x: number[]; y: number[] }>({ x: [], y: [] });
 	let isDragging = $state(false);
 	let snapEnabled = $state(true);
-	let canvasHeight = $state<number>(500);
-
 	function selectItem(id: string) {
 		selectedItemId = id;
 	}

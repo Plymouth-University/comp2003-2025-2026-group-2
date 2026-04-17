@@ -364,28 +364,33 @@
 						{:else if (field.field_type === 'text' || field.field_type === 'text_input') && entryData[index] !== undefined}
 							{@const inputSize = field.props.size != null ? Number(field.props.size) : 16}
 							{@const safeSize = Number.isFinite(inputSize) && inputSize > 0 ? inputSize : 16}
-							<UserTextInput
-								bind:text={entryData[index] as string}
-								size={safeSize}
-								weight={getStringProp(field.props, 'weight', 'normal')}
-								placeholder={getStringProp(
-									field.props,
-									'placeholder',
-									getStringProp(field.props, 'text', `Field ${index + 1}`)
-								)}
-								fontFamily={getStringProp(field.props, 'font_family', 'system-ui')}
-								textDecoration={getStringProp(field.props, 'text_decoration', 'none')}
-								color={getStringProp(field.props, 'color')}
-								required={field.props.required === true || field.props.required === 'true'}
-								maxLength={field.props.max_length != null
-									? Number(field.props.max_length)
-									: undefined}
-								minLength={field.props.min_length != null
-									? Number(field.props.min_length)
-									: undefined}
-								inputType={getStringProp(field.props, 'input_type', 'text')}
-								disabled={mode === 'view'}
-							/>
+							<div class="flex flex-col gap-2">
+								<div class="text-sm font-medium" style="color: var(--text-primary);">
+									{getStringProp(field.props, 'text', `Field ${index + 1}`)}
+								</div>
+								<UserTextInput
+									bind:text={entryData[index] as string}
+									size={safeSize}
+									weight={getStringProp(field.props, 'weight', 'normal')}
+									placeholder={getStringProp(
+										field.props,
+										'placeholder',
+										getStringProp(field.props, 'text', `Field ${index + 1}`)
+									)}
+									fontFamily={getStringProp(field.props, 'font_family', 'system-ui')}
+									textDecoration={getStringProp(field.props, 'text_decoration', 'none')}
+									color={getStringProp(field.props, 'color')}
+									required={field.props.required === true || field.props.required === 'true'}
+									maxLength={field.props.max_length != null
+										? Number(field.props.max_length)
+										: undefined}
+									minLength={field.props.min_length != null
+										? Number(field.props.min_length)
+										: undefined}
+									inputType={getStringProp(field.props, 'input_type', 'text')}
+									disabled={mode === 'view'}
+								/>
+							</div>
 						{:else if field.field_type === 'checkbox' && entryData[index] !== undefined}
 							{@const checkboxSize = field.props.size != null ? String(field.props.size) : '16px'}
 							<UserCheckbox
@@ -398,11 +403,16 @@
 								disabled={mode === 'view'}
 							/>
 						{:else if field.field_type === 'dropdown' && entryData[index] !== undefined}
-							<UserDropdown
-								bind:selected={entryData[index] as string}
-								options={getStringArrayProp(field.props, 'options')}
-								disabled={mode === 'view'}
-							/>
+							<div class="flex flex-col gap-2">
+								<div class="text-sm font-medium" style="color: var(--text-primary);">
+									{getStringProp(field.props, 'text', `Field ${index + 1}`)}
+								</div>
+								<UserDropdown
+									bind:selected={entryData[index] as string}
+									options={getStringArrayProp(field.props, 'options')}
+									disabled={mode === 'view'}
+								/>
+							</div>
 						{:else if field.field_type === 'label'}
 							{@const labelSize = field.props.size != null ? Number(field.props.size) : 16}
 							{@const safeLabelSize = Number.isFinite(labelSize) && labelSize > 0 ? labelSize : 16}
