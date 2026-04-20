@@ -187,7 +187,7 @@
 		<button
 			type="button"
 			class="btn mt-4 flex items-center justify-center gap-2"
-			style="background-color: white; color: #3c4043; border: 1px solid #dadce0;"
+			style="background-color: var(--bg-primary); color: #3c4043; border: 1px solid #dadce0;"
 			onclick={handleGoogleLogin}
 			disabled={loading}
 		>

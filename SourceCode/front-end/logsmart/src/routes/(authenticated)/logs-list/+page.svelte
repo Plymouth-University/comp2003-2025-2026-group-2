@@ -314,7 +314,7 @@
 									<button
 										onclick={() => handleFillLog(form.template_name, form.period, form.status)}
 										class="rounded px-3 py-2 font-semibold hover:opacity-80 lg:px-6"
-										style="background-color: #3D7A82; color: white;"
+										style="background-color: var(--button-primary); color: var(--bg-primary);"
 									>
 										Fill Out
 									</button>
@@ -401,7 +401,7 @@
 											<button
 												onclick={() => handleUnsubmit(log.id)}
 												class="rounded px-3 py-2 hover:opacity-80 lg:px-6"
-												style="background-color: #f59e0b; color: white;"
+												style="background-color: #f59e0b; color: var(--bg-primary);"
 											>
 												Unsubmit
 											</button>

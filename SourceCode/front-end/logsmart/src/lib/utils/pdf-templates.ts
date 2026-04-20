@@ -36,10 +36,10 @@ export function generateAttendancePdfHtml(params: {
 <title>Attendance Report - ${companyName}</title>
 <style>
 body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
-h1 { color: #3D7A82; margin-bottom: 4px; }
+h1 { color: var(--button-primary); margin-bottom: 4px; }
 .meta { color: #666; margin-bottom: 16px; font-size: 14px; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th { background-color: #3D7A82; color: white; text-align: left; padding: 8px 12px; }
+th { background-color: var(--button-primary); color: var(--bg-primary); text-align: left; padding: 8px 12px; }
 td { padding: 8px 12px; border-bottom: 1px solid #ddd; }
 tr:nth-child(even) { background-color: #f8f9fa; }
 .status-in { color: #16a34a; font-weight: bold; }
@@ -67,7 +67,7 @@ export const PDF_STYLES = {
 		body { font-family: Arial, sans-serif; margin: 20px; }
 		.header { border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px; }
 		.entry { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; page-break-inside: avoid; }
-		.status { padding: 3px 8px; border-radius: 3px; color: white; font-size: 12px; }
+		.status { padding: 3px 8px; border-radius: 3px; color: var(--bg-primary); font-size: 12px; }
 		.submitted { background-color: #10B981; }
 		.draft { background-color: #F59E0B; }
 		.group-header { font-size: 18px; font-weight: bold; margin: 20px 0 10px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
@@ -98,7 +98,7 @@ export const PDF_STYLES = {
 		}
 		.entry-title { font-size: 12pt; font-weight: bold; margin-bottom: 4pt; }
 		.entry-id { font-size: 9pt; color: #666; margin-bottom: 4pt; }
-		.status-badge { padding: 3pt 8pt; color: white; font-size: 10pt; margin-bottom: 8pt; display: inline-block; }
+		.status-badge { padding: 3pt 8pt; color: var(--bg-primary); font-size: 10pt; margin-bottom: 8pt; display: inline-block; }
 		.entry-data-box { background-color: #f5f5f5; padding: 10pt; margin: 8pt 0; border-left: 3pt solid #10B981; }
 		.field-row { margin: 6pt 0; line-height: 1.5; }
 		.field-label { font-weight: bold; color: #333; }

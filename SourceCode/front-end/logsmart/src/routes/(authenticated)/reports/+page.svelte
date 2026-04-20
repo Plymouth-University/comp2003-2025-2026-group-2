@@ -1309,7 +1309,7 @@ ${reportContent}
 									}}
 									class="w-full border-2 px-4 py-1.5 text-center text-xs font-semibold transition-all duration-150 hover:-translate-y-0.5"
 									style={logType.checked
-										? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 6px rgba(61, 122, 130, 0.25);'
+										? 'border-color: var(--button-primary); background-color: var(--button-primary); color: var(--button-text); box-shadow: 0 0 6px rgba(61, 122, 130, 0.25);'
 										: 'border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);'}
 								>
 									{logType.label}
@@ -1326,7 +1326,7 @@ ${reportContent}
 										}}
 										class="w-full border-2 px-1.5 py-2 text-center text-[11px] leading-tight font-medium whitespace-nowrap transition-all duration-150 hover:-translate-y-0.5"
 										style={logType.checked
-											? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 6px rgba(61, 122, 130, 0.25);'
+											? 'border-color: var(--button-primary); background-color: var(--button-primary); color: var(--bg-primary); box-shadow: 0 0 6px rgba(61, 122, 130, 0.25);'
 											: 'border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);'}
 									>
 										{logType.label}
@@ -1426,7 +1426,7 @@ ${reportContent}
 							onclick={() => (arrangeBy = 'date')}
 							class="flex-1 transform border-2 px-4 py-1.5 text-sm font-semibold transition-all duration-200 hover:scale-105 hover:shadow-md"
 							style={arrangeBy === 'date'
-								? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
+								? 'border-color: var(--button-primary); background-color: var(--button-primary); color: var(--bg-primary); box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
 								: 'border-color: var(--border-primary); background-color: transparent; color: var(--text-secondary);'}
 						>
 							Date
@@ -1436,7 +1436,7 @@ ${reportContent}
 							onclick={() => (arrangeBy = 'logType')}
 							class="flex-1 transform border-2 px-4 py-1.5 text-sm font-semibold transition-all duration-200 hover:scale-105 hover:shadow-md"
 							style={arrangeBy === 'logType'
-								? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
+								? 'border-color: var(--button-primary); background-color: var(--button-primary); color: var(--bg-primary); box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
 								: 'border-color: var(--border-primary); background-color: transparent; color: var(--text-secondary);'}
 						>
 							Log Type
@@ -1460,7 +1460,7 @@ ${reportContent}
 					}}
 					class="mb-8 w-full border-2 px-4 py-3 text-left transition-all duration-150 hover:-translate-y-0.5 lg:mb-5"
 					style={includeTemperatureGraphs
-						? 'border-color: #3D7A82; background-color: #3D7A82; color: white; box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
+						? 'border-color: var(--button-primary); background-color: var(--button-primary); color: var(--bg-primary); box-shadow: 0 0 8px rgba(61, 122, 130, 0.3);'
 						: 'border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);'}
 				>
 					<div class="flex min-w-0 items-start justify-between gap-3 sm:items-center">
@@ -1477,7 +1477,9 @@ ${reportContent}
 						</div>
 						<span
 							class="min-w-11 shrink-0 text-right text-xs font-semibold tracking-wide"
-							style={includeTemperatureGraphs ? 'color: white;' : 'color: var(--text-secondary);'}
+							style={includeTemperatureGraphs
+								? 'color: var(--bg-primary);'
+								: 'color: var(--text-secondary);'}
 						>
 							{includeTemperatureGraphs ? 'ON' : 'OFF'}
 						</span>
@@ -1723,7 +1725,7 @@ ${reportContent}
 															minVal,
 															maxVal
 														)}
-														fill="#3D7A82"
+														fill="var(--button-primary)"
 														opacity="0.1"
 													/>
 
@@ -1737,7 +1739,7 @@ ${reportContent}
 															maxVal
 														)}
 														fill="none"
-														stroke="#3D7A82"
+														stroke="var(--button-primary)"
 														stroke-width="2.5"
 														stroke-linejoin="round"
 														stroke-linecap="round"
@@ -1750,8 +1752,8 @@ ${reportContent}
 																cx={point.x}
 																cy={point.y}
 																r="4"
-																fill="#3D7A82"
-																stroke="white"
+																fill="var(--button-primary)"
+																stroke="var(--bg-primary)"
 																stroke-width="2"
 															/>
 															<!-- Hover target -->
@@ -1903,8 +1905,8 @@ ${reportContent}
 													<span
 														class="rounded px-2 py-1 text-xs"
 														style={component.entry.status === 'submitted'
-															? 'background-color: #10B981; color: white;'
-															: 'background-color: #F59E0B; color: white;'}
+															? 'background-color: #10B981; color: var(--bg-primary);'
+															: 'background-color: #F59E0B; color: var(--bg-primary);'}
 													>
 														{component.entry.status}
 													</span>
@@ -1956,8 +1958,8 @@ ${reportContent}
 												<span
 													class="rounded px-2 py-1 text-xs"
 													style={entry.status === 'submitted'
-														? 'background-color: #10B981; color: white;'
-														: 'background-color: #F59E0B; color: white;'}
+														? 'background-color: #10B981; color: var(--bg-primary);'
+														: 'background-color: #F59E0B; color: var(--bg-primary);'}
 												>
 													{entry.status}
 												</span>

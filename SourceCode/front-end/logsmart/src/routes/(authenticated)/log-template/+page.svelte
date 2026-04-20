@@ -435,14 +435,14 @@
 					<button
 						onclick={handleSave}
 						class="rounded px-6 py-2 font-semibold hover:opacity-80"
-						style="background-color: #3D7A82; color: white;"
+						style="background-color: var(--button-primary); color: var(--bg-primary);"
 					>
 						Save Draft
 					</button>
 					<button
 						onclick={handleSubmit}
 						class="rounded px-6 py-2 font-semibold hover:opacity-80"
-						style="background-color: #4caf50; color: white;"
+						style="background-color: #4caf50; color: var(--bg-primary);"
 					>
 						Submit Log
 					</button>

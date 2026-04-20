@@ -291,7 +291,7 @@
 						onclick={() => (activeTab = 'database')}
 						class="rounded-t-lg px-6 py-3 font-semibold transition-colors"
 						style={activeTab === 'database'
-							? 'background-color: #3D7A82; color: white;'
+							? 'background-color: var(--button-primary); color: var(--bg-primary);'
 							: 'background-color: var(--bg-primary); color: var(--text-secondary); border: 2px solid var(--border-primary);'}
 					>
 						Database Health
@@ -300,7 +300,7 @@
 						onclick={() => (activeTab = 'security')}
 						class="rounded-t-lg px-6 py-3 font-semibold transition-colors"
 						style={activeTab === 'security'
-							? 'background-color: #3D7A82; color: white;'
+							? 'background-color: var(--button-primary); color: var(--bg-primary);'
 							: 'background-color: var(--bg-primary); color: var(--text-secondary); border: 2px solid var(--border-primary);'}
 					>
 						Security Log
@@ -315,7 +315,7 @@
 						<!-- Profile Picture (Initials) -->
 						<div
 							class="flex h-16 w-16 items-center justify-center rounded-full text-xl font-bold text-white"
-							style="background-color: #3D7A82;"
+							style="background-color: var(--button-primary);"
 						>
 							{user().initials}
 						</div>
