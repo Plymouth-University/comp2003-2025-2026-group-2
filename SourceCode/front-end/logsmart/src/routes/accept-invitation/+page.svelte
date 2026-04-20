@@ -484,7 +484,7 @@
 
 	.error {
 		background: var(--error-bg);
-		color: var(--error-col);
+		color: var(--button-secondary);
 		padding: 0.5rem 0.75rem;
 		border-radius: 6px;
 		margin-bottom: 1rem;

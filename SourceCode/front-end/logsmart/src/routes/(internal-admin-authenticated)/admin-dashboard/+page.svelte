@@ -347,7 +347,7 @@
 		{#if data.error}
 			<div
 				class="mb-4 rounded border-2 p-4"
-				style="background-color: #fee; border-color: #fcc; color: #c00;"
+				style="background-color: var(--error-bg); border-color: var(--field-error); color: var(--error);"
 			>
 				{data.error}
 			</div>
@@ -368,7 +368,9 @@
 								<div class="text-sm font-medium" style="color: var(--text-secondary);">Status</div>
 								<div
 									class="mt-2 text-2xl font-bold"
-									style="color: {dbHealth.status === 'healthy' ? '#5cb85c' : '#d9534f'};"
+									style="color: {dbHealth.status === 'healthy'
+										? 'var(--create-button)'
+										: 'var(--error)'};"
 								>
 									{dbHealth.status?.toUpperCase() ?? 'UNKNOWN'}
 								</div>
@@ -570,7 +572,7 @@
 											<td class="px-4 py-3 text-right text-sm" style="color: var(--text-secondary);"
 												>{query.mean_time_ms?.toFixed(2) ?? '0'}</td
 											>
-											<td class="px-4 py-3 text-right text-sm" style="color: #f59e0b;"
+											<td class="px-4 py-3 text-right text-sm" style="color: var(--orange);"
 												>{query.max_time_ms?.toFixed(2) ?? '0'}</td
 											>
 											<td
@@ -591,7 +593,9 @@
 					style="border-color: var(--border-primary); background-color: var(--bg-primary);"
 				>
 					<h2 class="mb-2 text-xl font-bold" style="color: var(--text-primary);">Slow Queries</h2>
-					<p style="color: #5cb85c;">No slow queries detected. Database is performing well!</p>
+					<p style="color: var(--create-button);">
+						No slow queries detected. Database is performing well!
+					</p>
 				</div>
 			{/if}
 
@@ -604,9 +608,9 @@
 					{#if indexUsage.unused_indexes && indexUsage.unused_indexes.length > 0}
 						<div
 							class="mb-4 rounded border-2 p-4"
-							style="border-color: #f59e0b; background-color: rgba(245, 158, 11, 0.1);"
+							style="border-color: var(--orange); background-color: rgba(245, 158, 11, 0.1);"
 						>
-							<h3 class="mb-2 font-semibold" style="color: #f59e0b;">
+							<h3 class="mb-2 font-semibold" style="color: var(--orange);">
 								⚠️ Unused Indexes ({indexUsage.unused_indexes.length})
 							</h3>
 							<p class="mb-2 text-sm" style="color: var(--text-secondary);">
@@ -663,8 +667,9 @@
 												>
 												<td
 													class="px-4 py-3 text-right text-sm"
-													style="color: {idx.index_scans > 0 ? '#5cb85c' : '#d9534f'};"
-													>{idx.index_scans?.toLocaleString() ?? '0'}</td
+													style="color: {idx.index_scans > 0
+														? 'var(--create-button)'
+														: 'var(--error)'};">{idx.index_scans?.toLocaleString() ?? '0'}</td
 												>
 												<td
 													class="px-4 py-3 text-right text-sm"
@@ -926,7 +931,7 @@
 			{#if securityError}
 				<div
 					class="mb-4 rounded border-2 p-4"
-					style="background-color: #fee; border-color: #fcc; color: #c00;"
+					style="background-color: var(--error-bg); border-color: var(--field-error); color: var(--error);"
 				>
 					{securityError}
 				</div>
@@ -1040,7 +1045,7 @@
 										</td>
 										<td
 											class="px-4 py-3 text-sm font-semibold"
-											style={`color: ${log.success ? '#5cb85c' : '#d9534f'};`}
+											style={`color: ${log.success ? 'var(--create-button)' : 'var(--error)'};`}
 											>{log.success ? 'true' : 'false'}</td
 										>
 										<td class="max-w-md px-4 py-3 text-sm" style="color: var(--text-secondary);">

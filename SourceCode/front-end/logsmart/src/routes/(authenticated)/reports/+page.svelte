@@ -1005,7 +1005,8 @@ ${reportContent}
 	}
 
 	function generateWordComponentHTML(component: LogComponent): string {
-		const statusBg = component.entry.status === 'submitted' ? '#10B981' : '#F59E0B';
+		const statusBg =
+			component.entry.status === 'submitted' ? 'var(--button-primary)' : 'var(--orange)';
 		const entryTitle = formatTemplateName(component.entry.template_name, component.entry.period);
 
 		return `
@@ -1035,7 +1036,7 @@ ${reportContent}
 	function generateWordEntryHTML(entry: LogEntry): string {
 		const excludedFieldTypes = getExcludedFieldTypes();
 		const entryData = parseEntryData(entry.entry_data, entry.template_layout, excludedFieldTypes);
-		const statusBg = entry.status === 'submitted' ? '#10B981' : '#F59E0B';
+		const statusBg = entry.status === 'submitted' ? 'var(--button-primary)' : 'var(--orange)';
 		const entryTitle = formatTemplateName(entry.template_name, entry.period);
 
 		// Use paragraphs with Word-specific keep-together formatting
@@ -1198,7 +1199,7 @@ ${reportContent}
 				<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
 					<div>
 						<strong>${entryTitle}</strong>
-						<small style="color: #666; margin-left: 10px;">ID: ${component.entry.id.slice(0, 8)}...</small>
+						<small style="color: var(--grey-dark); margin-left: 10px;">ID: ${component.entry.id.slice(0, 8)}...</small>
 					</div>
 					<span class="status ${component.entry.status === 'submitted' ? 'submitted' : 'draft'}">${component.entry.status}</span>
 				</div>
@@ -1221,7 +1222,7 @@ ${reportContent}
 				<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
 					<div>
 						<strong>${entryTitle}</strong>
-						<small style="color: #666; margin-left: 10px;">ID: ${entry.id.slice(0, 8)}...</small>
+						<small style="color: var(--grey-dark); margin-left: 10px;">ID: ${entry.id.slice(0, 8)}...</small>
 					</div>
 					<span class="status ${entry.status === 'submitted' ? 'submitted' : 'draft'}">${entry.status}</span>
 				</div>
@@ -1547,7 +1548,7 @@ ${reportContent}
 												deleteReportRun(run.id);
 											}}
 											class="cursor-pointer rounded border px-2 py-0.5 text-xs transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-											style="border-color: #dc2626; color: #dc2626;"
+											style="border-color: var(--button-secondary); color: var(--button-secondary);"
 										>
 											{deletingReportId === run.id ? 'Deleting...' : 'Delete'}
 										</button>
@@ -1905,8 +1906,8 @@ ${reportContent}
 													<span
 														class="rounded px-2 py-1 text-xs"
 														style={component.entry.status === 'submitted'
-															? 'background-color: #10B981; color: var(--bg-primary);'
-															: 'background-color: #F59E0B; color: var(--bg-primary);'}
+															? 'background-color: var(--button-primary); color: var(--bg-primary);'
+															: 'background-color: var(--orange); color: var(--bg-primary);'}
 													>
 														{component.entry.status}
 													</span>
@@ -1958,8 +1959,8 @@ ${reportContent}
 												<span
 													class="rounded px-2 py-1 text-xs"
 													style={entry.status === 'submitted'
-														? 'background-color: #10B981; color: var(--bg-primary);'
-														: 'background-color: #F59E0B; color: var(--bg-primary);'}
+														? 'background-color: var(--button-primary); color: var(--bg-primary);'
+														: 'background-color: var(--orange); color: var(--bg-primary);'}
 												>
 													{entry.status}
 												</span>

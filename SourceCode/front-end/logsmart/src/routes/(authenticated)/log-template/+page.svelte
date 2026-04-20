@@ -260,13 +260,15 @@
 		<div
 			class="fixed right-4 bottom-4 z-50 w-full max-w-sm overflow-hidden rounded-lg border px-4 py-3 text-left shadow-lg"
 			style={toastType === 'success'
-				? 'border-color: #16a34a; background-color: #f0fdf4;'
-				: 'border-color: #dc2626; background-color: #fef2f2;'}
+				? 'border-color: var(--create-button); background-color: var(--clock-in-bg);'
+				: 'border-color: var(--button-secondary); background-color: var(--error-bg);'}
 		>
 			<div class="mb-2 flex items-start justify-between gap-3">
 				<p
 					class="text-sm font-semibold"
-					style={toastType === 'success' ? 'color: #166534;' : 'color: #991b1b;'}
+					style={toastType === 'success'
+						? 'color: var(--create-button);'
+						: 'color: var(--button-secondary);'}
 				>
 					{toastMessage}
 				</p>
@@ -281,8 +283,8 @@
 					}}
 					class="rounded px-2 py-0.5 text-xs font-semibold transition-opacity hover:opacity-80"
 					style={toastType === 'success'
-						? 'background-color: #dcfce7; color: #166534; cursor: pointer;'
-						: 'background-color: #fee2e2; color: #991b1b; cursor: pointer;'}
+						? 'background-color: var(--clock-in-bg); color: var(--create-button); cursor: pointer;'
+						: 'background-color: var(--error-bg); color: var(--button-secondary); cursor: pointer;'}
 				>
 					Close
 				</button>
@@ -290,8 +292,8 @@
 			<div
 				class="log-toast-progress absolute right-0 bottom-0 left-0 h-1"
 				style={toastType === 'success'
-					? `background-color: #16a34a; animation-duration: ${TOAST_DURATION_MS}ms;`
-					: `background-color: #dc2626; animation-duration: ${TOAST_DURATION_MS}ms;`}
+					? `background-color: var(--create-button); animation-duration: ${TOAST_DURATION_MS}ms;`
+					: `background-color: var(--button-secondary); animation-duration: ${TOAST_DURATION_MS}ms;`}
 			></div>
 		</div>
 	{/key}
@@ -304,7 +306,7 @@
 	{#if data.error}
 		<div
 			class="mb-4 rounded p-4"
-			style="background-color: #fee; border: 1px solid #fcc; color: #c00; margin: 2rem;"
+			style="background-color: var(--error-bg); border: 1px solid var(--field-error); color: var(--error); margin: 2rem;"
 		>
 			{data.error}
 		</div>
@@ -322,14 +324,14 @@
 			{#if mode === 'view' && entry?.status === 'submitted'}
 				<div
 					class="mb-4 rounded p-4"
-					style="background-color: #e8f5e9; border: 1px solid #4caf50; color: #2e7d32;"
+					style="background-color: var(--clock-in-bg); border: 1px solid var(--create-button); color: var(--create-button);"
 				>
 					This log has been submitted and cannot be edited.
 				</div>
 			{:else if mode === 'edit' && entry?.status === 'submitted'}
 				<div
 					class="mb-4 rounded p-4"
-					style="background-color: #fff3cd; border: 1px solid #ffc107; color: #856404;"
+					style="background-color: var(--orange-light); border: 1px solid var(--orange); color: var(--orange-dark);"
 				>
 					Warning: This log was previously submitted and has been reopened for editing.
 				</div>
@@ -442,7 +444,7 @@
 					<button
 						onclick={handleSubmit}
 						class="rounded px-6 py-2 font-semibold hover:opacity-80"
-						style="background-color: #4caf50; color: var(--bg-primary);"
+						style="background-color: var(--create-button); color: var(--bg-primary);"
 					>
 						Submit Log
 					</button>
@@ -451,7 +453,11 @@
 		</div>
 
 		<div class="mt-4 flex justify-center gap-8">
-			<a href="/logs-list" class="rounded px-6 py-2" style="background-color: #ddd; color: #000;">
+			<a
+				href="/logs-list"
+				class="rounded px-6 py-2"
+				style="background-color: var(--grey-lite); color: var(--border-primary);"
+			>
 				Back to Logs
 			</a>
 		</div>

@@ -99,11 +99,11 @@
 		<div class="mb-6 text-center">
 			<div
 				class="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full"
-				style="background-color: #fee2e2;"
+				style="background-color: var(--error-bg);"
 			>
 				<svg
 					class="h-8 w-8"
-					style="color: #dc2626;"
+					style="color: var(--button-secondary);"
 					fill="none"
 					stroke="currentColor"
 					viewBox="0 0 24 24"
@@ -135,7 +135,7 @@
 		{:else if success}
 			<div
 				class="mb-6 rounded-lg p-4 text-center"
-				style="background-color: #dcfce7; color: #166534;"
+				style="background-color: var(--clock-in-bg); color: var(--create-button);"
 			>
 				<p class="mb-2 font-semibold">Success!</p>
 				<p class="text-sm">{success}</p>
@@ -150,7 +150,7 @@
 		{:else if error}
 			<div
 				class="mb-6 rounded-lg p-4 text-center"
-				style="background-color: #fee2e2; color: #dc2626;"
+				style="background-color: var(--error-bg); color: var(--button-secondary);"
 			>
 				<p class="font-semibold">Error</p>
 				<p class="text-sm">{error}</p>
@@ -196,7 +196,7 @@
 					onclick={confirmDeletion}
 					disabled={!isNameValid || deletionStarted}
 					class="w-full rounded-lg py-3 font-semibold transition-opacity disabled:opacity-50"
-					style="background-color: #dc2626; color: var(--bg-primary);"
+					style="background-color: var(--button-secondary); color: var(--bg-primary);"
 				>
 					{deletionStarted ? 'Deleting...' : 'Delete Company'}
 				</button>

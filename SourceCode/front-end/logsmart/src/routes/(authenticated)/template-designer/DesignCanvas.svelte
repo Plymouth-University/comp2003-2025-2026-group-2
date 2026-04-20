@@ -86,7 +86,7 @@
 <div class="flex-1 overflow-auto p-6">
 	<div class="mx-auto max-w-4xl">
 		<div class="mb-4 flex items-center justify-between">
-			<h2 class="text-3xl font-bold text-text-secondary">
+			<h2 class="text-3xl font-bold text-text-primary">
 				Canvas
 				<div class="tooltip" tabindex="-1" aria-label="Canvas instructions" role="tooltip">
 					﹖
@@ -282,13 +282,13 @@
 							{#each snapLines.x as lineX (lineX)}
 								<div
 									class="snap-line-vertical pointer-events-none absolute top-0 bottom-0 w-px"
-									style="left: {lineX}px; background-color: #3b82f6;"
+									style="left: {lineX}px; background-color: var(--input-focus);"
 								></div>
 							{/each}
 							{#each snapLines.y as lineY (lineY)}
 								<div
 									class="snap-line-horizontal pointer-events-none absolute right-0 left-0 h-px"
-									style="top: {lineY}px; background-color: #3b82f6;"
+									style="top: {lineY}px; background-color: var(--input-focus);"
 								></div>
 							{/each}
 						{/if}
@@ -331,14 +331,14 @@
 	}
 
 	.btn-save {
-		background-color: var(--template-edit-button);
+		background-color: var(--create-button);
 		transition: background-color 0.15s ease;
 	}
 	.btn-save:hover:not(:disabled) {
-		background-color: var(--template-edit-active);
+		background-color: var(--create-button-hover);
 	}
 	.btn-save:active:not(:disabled) {
-		background-color: var(--template-edit-active);
+		background-color: var(--create-button-active);
 	}
 
 	.btn-snap-on {
@@ -384,7 +384,8 @@
 
 	.tooltip-text {
 		visibility: hidden;
-		background-color: #1f2937;
+		background-color: var(--bg-secondary);
+		color: var(--bg-secondary);
 		font-size: 1vw;
 		text-align: center;
 		position: absolute;
@@ -405,7 +406,7 @@
 
 	.tooltip-text {
 		visibility: hidden;
-		background-color: #1f2937;
+		background-color: var(--text-primary);
 		font-size: 1vw;
 		text-align: center;
 		position: absolute;
