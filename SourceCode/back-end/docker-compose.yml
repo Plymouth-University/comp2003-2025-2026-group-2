@@ -24,7 +24,7 @@ services:
       - MONGODB_URI_FILE=/run/secrets/mongodb_uri
       - POSTGRES_USER_FILE=/run/secrets/POSTGRES_USER
       - POSTGRES_PASSWORD_FILE=/run/secrets/POSTGRES_PASSWORD
-      - OLLAMA_URL=http://100.113.172.90:11434
+      - OPENROUTER_MODEL=openrouter/free
       - RP_ID=logsmart.app
       - RP_ORIGIN=https://logsmart.app
       - COOKIE_DOMAIN=logsmart.app
