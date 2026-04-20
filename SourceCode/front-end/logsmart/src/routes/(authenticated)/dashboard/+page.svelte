@@ -177,7 +177,7 @@
 						{:else}
 							<div
 								class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white"
-								style="background-color: #3D7A82; border: 2px solid var(--border-primary);"
+								style="background-color: var(--button-primary); border: 2px solid var(--border-primary);"
 							>
 								{user.initials}
 							</div>
@@ -259,7 +259,7 @@
 												<button
 													onclick={() => handleFillLog(log.template_name, log.period, log.status)}
 													class="shrink-0 cursor-pointer rounded px-4 py-2 text-sm font-semibold hover:opacity-80"
-													style="background-color: #3D7A82; color: white;"
+													style="background-color: var(--button-primary); color: var(--bg-primary);"
 												>
 													Fill Out
 												</button>

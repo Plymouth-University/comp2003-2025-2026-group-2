@@ -35,7 +35,7 @@
 								? '/dashboard'
 								: '/logs-list'}
 						class="text-2xl font-bold"
-						style="color: #3D7A82;">LogSmart</a
+						style="color: var(--button-primary);">LogSmart</a
 					>
 					<nav class="hidden flex-wrap items-center gap-4 md:flex md:gap-6">
 						{#if data?.user?.role === 'logsmart_admin'}

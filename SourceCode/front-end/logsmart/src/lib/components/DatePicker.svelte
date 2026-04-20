@@ -430,7 +430,7 @@
 										class="flex aspect-square items-center justify-center rounded transition-colors hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
 										class:font-bold={isSelectedDay(day)}
 										style={isSelectedDay(day)
-											? 'background-color: #3D7A82; color: white;'
+											? 'background-color: var(--button-primary); color: var(--bg-primary);'
 											: 'color: var(--text-primary);'}
 									>
 										{day}
@@ -502,7 +502,7 @@
 									class="rounded px-4 py-3 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
 									class:font-bold={viewDate.getMonth() === index}
 									style={viewDate.getMonth() === index
-										? 'background-color: #3D7A82; color: white;'
+										? 'background-color: var(--button-primary); color: var(--bg-primary);'
 										: 'color: var(--text-primary); background-color: transparent;'}
 								>
 									{month}
@@ -568,7 +568,7 @@
 									class="rounded px-4 py-3 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
 									class:font-bold={viewDate.getFullYear() === year}
 									style={viewDate.getFullYear() === year
-										? 'background-color: #3D7A82; color: white;'
+										? 'background-color: var(--button-primary); color: var(--bg-primary);'
 										: 'color: var(--text-primary); background-color: transparent;'}
 								>
 									{year}

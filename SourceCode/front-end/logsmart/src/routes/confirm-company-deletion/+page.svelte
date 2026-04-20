@@ -196,7 +196,7 @@
 					onclick={confirmDeletion}
 					disabled={!isNameValid || deletionStarted}
 					class="w-full rounded-lg py-3 font-semibold transition-opacity disabled:opacity-50"
-					style="background-color: #dc2626; color: white;"
+					style="background-color: #dc2626; color: var(--bg-primary);"
 				>
 					{deletionStarted ? 'Deleting...' : 'Delete Company'}
 				</button>
