@@ -23,7 +23,6 @@
 	--color-scheme: var(--color-scheme);
 	--color-scheme: var(--color-scheme);
 
-
 	--breakpoint-xs: 350px;
 }
 
@@ -66,7 +65,7 @@
 	--step-comp-bg: #10b981;
 	--input-invite: #d1d7e0;
 	--input-focus: #6b8cff;
-	--field-error: #C56371;
+	--field-error: #c56371;
 	--field-error-2: #c93838;
 	--error-bg: #fdecea;
 	--error-col: #821313;
@@ -77,29 +76,29 @@
 	--component-temperature: #b1d0e2;
 	--component-dropdown: #cab0c9;
 	--component-label: #d6b8c5;
-	--create-button: #6AC25B;
-	--create-button-hover: #418D34;
-	--create-button-active: #3E8632;
+	--create-button: #6ac25b;
+	--create-button-hover: #418d34;
+	--create-button-active: #3e8632;
 	--history-button: #6c757d;
 	--history-button-hover: #5a6268;
 	--history-button-active: #4e555b;
-	--snap-on: #83D1C6;
+	--snap-on: #83d1c6;
 	--snap-on-hover: #40ab9c;
 	--snap-on-active: #358d81;
 	--snap-off: #6c757d;
 	--snap-off-hover: #5a6268;
 	--snap-off-active: #4e555b;
 	--save-template: #111827;
-	--button-text: #F8F8F8;
+	--button-text: #f8f8f8;
 	/* Templates Dashboard */
-	--delete-button: #C56371;
-	--delete-button-hover: #87524F;
-	--delete-button-active: #673F3C;
+	--delete-button: #c56371;
+	--delete-button-hover: #87524f;
+	--delete-button-active: #673f3c;
 	--template-edit-button: #8870a3;
 	--template-edit-hover: #745c8f;
 	--template-edit-active: #5d4a73;
 	--template-settings-button: #77a7d5;
-	--template-settings-hover: #7698B3;
+	--template-settings-hover: #7698b3;
 	--template-settings-active: #577e9d;
 	--retry-button: #337ab7;
 	--retry-button-hover: #286090;
@@ -120,7 +119,7 @@
 	--step-comp-bg: #10b981;
 	--input-invite: #d1d7e0;
 	--input-focus: #6b8cff;
-	--field-error: #C56371;
+	--field-error: #c56371;
 	--field-error-2: #c93838;
 	--error-bg: #fdecea;
 	--error-col: #821313;
@@ -144,7 +143,7 @@
 	--snap-off-hover: #5a6268;
 	--snap-off-active: #4e555b;
 	--save-template: #111827;
-	--button-text: #F8F8F8;
+	--button-text: #f8f8f8;
 	/* Templates Dashboard */
 	--delete-button: #d9534f;
 	--delete-button-hover: #c9302c;
