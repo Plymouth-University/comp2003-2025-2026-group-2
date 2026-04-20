@@ -10,6 +10,7 @@
 	import PropertiesPanel from './PropertiesPanel.svelte';
 	import AiGeneratorSidebar from './AiGeneratorSidebar.svelte';
 	import VersionHistoryModal from './VersionHistoryModal.svelte';
+	import { DEFAULT_TEMPLATE_BLUEPRINTS } from './defaultTemplates';
 	import type { CanvasItem, ComponentType, Template } from './types';
 	import type { PageData } from './$types';
 	import type { components } from '$lib/api-types';
@@ -25,6 +26,7 @@
 	];
 
 	let canvasItems = $state<CanvasItem[]>([]);
+	let designCanvasHeight = $state<number>(500);
 	let logTitle = $state('');
 	let selectedItemId = $state<string | null>(null);
 	let isEditing = $state(false);
@@ -34,6 +36,13 @@
 	let saveError = $state<string | null>(null);
 	let saveSuccess = $state(false);
 	let versionName = $state('');
+	const DEFAULT_NEW_TEMPLATE_SCHEDULE: components['schemas']['Schedule'] = {
+		frequency: 'Daily',
+		days_of_week: [1, 2, 3, 4, 5]
+	};
+	let newTemplateSchedule = $state<components['schemas']['Schedule']>({
+		...DEFAULT_NEW_TEMPLATE_SCHEDULE
+	});
 	let deleting = $state(false);
 	let deleteError = $state<string | null>(null);
 	let hasUnsavedChanges = $state(false);
@@ -62,6 +71,17 @@
 	});
 
 	const templateId = $derived(page.url.searchParams.get('id'));
+
+	function getFixedCanvasHeightForTemplateName(templateName: string): number {
+		const matched = DEFAULT_TEMPLATE_BLUEPRINTS.find(
+			(blueprint) =>
+				templateName === blueprint.name ||
+				templateName === `${blueprint.name} Copy` ||
+				templateName.startsWith(`${blueprint.name} `)
+		);
+
+		return matched?.canvas_height ?? 500;
+	}
 
 	function mapApiFieldToCanvasItem(
 		field: components['schemas']['TemplateField'],
@@ -146,6 +166,7 @@
 			logTitle = data.template_name;
 			originalTemplateName = data.template_name;
 			canvasItems = data.template_layout.map(mapApiFieldToCanvasItem);
+			designCanvasHeight = getFixedCanvasHeightForTemplateName(data.template_name);
 			isEditing = true;
 			currentVersion = data.version || 1;
 			currentVersionName = data.version_name || null;
@@ -199,16 +220,11 @@
 				return;
 			}
 		} else {
-			const schedule: components['schemas']['Schedule'] = {
-				frequency: 'Daily',
-				days_of_week: [1, 2, 3, 4, 5]
-			};
-
 			const { error } = await api.POST('/logs/templates', {
 				body: {
 					template_name: logTitle,
 					template_layout: templateLayout,
-					schedule,
+					schedule: newTemplateSchedule,
 					branch_id: branchId === 'company' || branchId === '' ? undefined : branchId
 				}
 			});
@@ -331,12 +347,36 @@
 			}
 		}
 		canvasItems = [];
+		designCanvasHeight = 500;
 		logTitle = '';
 		selectedItemId = null;
 		isEditing = false;
 		originalTemplateName = null;
+		newTemplateSchedule = { ...DEFAULT_NEW_TEMPLATE_SCHEDULE };
 		branchId = data.user?.branch_id || (canManageCompany ? 'company' : '');
 		hasUnsavedChanges = false;
+		goto('/template-designer', { replaceState: true });
+	}
+
+	function useDefaultTemplate(templateId: string) {
+		const blueprint = DEFAULT_TEMPLATE_BLUEPRINTS.find((t) => t.id === templateId);
+		if (!blueprint) return;
+
+		if (hasUnsavedChanges) {
+			if (!confirm('You have unsaved changes. Are you sure you want to load a default template?')) {
+				return;
+			}
+		}
+
+		canvasItems = blueprint.template_layout.map(mapApiFieldToCanvasItem);
+		designCanvasHeight = blueprint.canvas_height;
+		logTitle = `${blueprint.name} Copy`;
+		selectedItemId = null;
+		isEditing = false;
+		originalTemplateName = null;
+		newTemplateSchedule = { ...blueprint.schedule };
+		branchId = data.user?.branch_id || (canManageCompany ? 'company' : '');
+		hasUnsavedChanges = true;
 		goto('/template-designer', { replaceState: true });
 	}
 
@@ -838,6 +878,7 @@
 				<TemplatesSidebar
 					{templates}
 					onCreateNew={createNewTemplate}
+					onUseDefaultTemplate={useDefaultTemplate}
 					onSelectTemplate={selectTemplate}
 					currentTemplateName={isEditing ? (originalTemplateName ?? '') : logTitle}
 					isNewTemplate={!isEditing}
@@ -867,6 +908,7 @@
 		<!-- Canvas Area -->
 		<DesignCanvas
 			bind:canvasItems
+			bind:canvasHeight={designCanvasHeight}
 			bind:logTitle
 			bind:versionName
 			bind:branchId

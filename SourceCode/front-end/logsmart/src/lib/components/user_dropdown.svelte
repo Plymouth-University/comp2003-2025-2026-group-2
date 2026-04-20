@@ -2,8 +2,9 @@
 	let {
 		selected = $bindable(''),
 		options,
-		disabled = false
-	}: { selected: string; options: string[]; disabled?: boolean } = $props();
+		disabled = false,
+		placeholder = ''
+	}: { selected: string; options: string[]; disabled?: boolean; placeholder?: string } = $props();
 </script>
 
 <div>
@@ -15,6 +16,9 @@
 			? 'opacity: 0.5;'
 			: ''}"
 	>
+		{#if placeholder}
+			<option value="" disabled>{placeholder}</option>
+		{/if}
 		{#each options as option (option)}
 			<option value={option}>{option}</option>
 		{/each}

@@ -58,7 +58,7 @@
 	{#if item.type === 'text_input'}
 		{#key `${item.props.color}-${item.props.fontFamily}-${item.props.textDecoration}`}
 			<UserTextInput
-				text={item.props.text}
+				text=""
 				size={item.props.size}
 				weight={item.props.weight}
 				placeholder={item.props.placeholder}
@@ -91,8 +91,9 @@
 		/>
 	{:else if item.type === 'dropdown'}
 		<UserDropdown
-			bind:selected={item.props.selected}
+			selected=""
 			options={item.props.options}
+			placeholder="Select option"
 			disabled={true}
 		/>
 	{:else if item.type === 'label'}

@@ -541,7 +541,9 @@ All security-relevant events are logged:
 | Variable | Description |
 |----------|-------------|
 | `LOG_FORMAT` | Log format: "text" or "json" (default: text) |
-| `OLLAMA_URL` | Ollama server URL for LLM features |
+| `OPENROUTER_API_KEY` | OpenRouter API key for LLM features |
+| `OPENROUTER_MODEL` | OpenRouter model (default: `openrouter/free`) |
+| `OPENROUTER_URL` | OpenRouter chat completions URL |
 
 #### Frontend
 
