@@ -263,17 +263,17 @@
 		outline: none;
 	}
 	input:focus {
-		border-color: #6b8cff;
+		border-color: var(--input-focus);
 		box-shadow: 0 0 0 3px rgba(107, 140, 255, 0.12);
 	}
 	.field-error {
-		color: #c93838;
+		color: var(--field-error-2);
 		font-size: 0.875rem;
 		margin-top: 0.5rem;
 	}
 	.error {
-		background: #fdecea;
-		color: #821313;
+		background: var(--error-bg);
+		color: var(--error-col);
 		padding: 0.5rem 0.75rem;
 		border-radius: 6px;
 		margin-bottom: 1rem;
@@ -282,7 +282,7 @@
 	.btn {
 		width: 100%;
 		padding: 0.75rem 1rem;
-		background: #2f6fff;
+		background: var(--step-active);
 		color: white;
 		border: none;
 		border-radius: 6px;
