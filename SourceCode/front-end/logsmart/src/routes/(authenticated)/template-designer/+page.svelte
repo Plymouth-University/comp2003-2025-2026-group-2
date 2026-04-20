@@ -11,7 +11,6 @@
 	import AiGeneratorSidebar from './AiGeneratorSidebar.svelte';
 	import VersionHistoryModal from './VersionHistoryModal.svelte';
 	import { DEFAULT_TEMPLATE_BLUEPRINTS } from './defaultTemplates';
-	import { DEFAULT_TEMPLATE_BLUEPRINTS } from './defaultTemplates';
 	import type { CanvasItem, ComponentType, Template } from './types';
 	import type { PageData } from './$types';
 	import type { components } from '$lib/api-types';

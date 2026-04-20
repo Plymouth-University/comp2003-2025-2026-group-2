@@ -16,27 +16,10 @@
 	const combinedTemplates = DEFAULT_TEMPLATE_BLUEPRINTS.filter(
 		(template) => template.category === 'combined'
 	);
-	import { DEFAULT_TEMPLATE_BLUEPRINTS } from './defaultTemplates';
-
-	let selectedDefaultTemplateId = $state<string>(DEFAULT_TEMPLATE_BLUEPRINTS[0]?.id ?? '');
-	let selectedDefaultTemplate = $derived(
-		DEFAULT_TEMPLATE_BLUEPRINTS.find((t) => t.id === selectedDefaultTemplateId)
-	);
-
-	const checklistTemplates = DEFAULT_TEMPLATE_BLUEPRINTS.filter(
-		(template) => template.category === 'checklist'
-	);
-	const temperatureTemplates = DEFAULT_TEMPLATE_BLUEPRINTS.filter(
-		(template) => template.category === 'temperature'
-	);
-	const combinedTemplates = DEFAULT_TEMPLATE_BLUEPRINTS.filter(
-		(template) => template.category === 'combined'
-	);
 
 	let {
 		templates,
 		onCreateNew,
-		onUseDefaultTemplate,
 		onUseDefaultTemplate,
 		onSelectTemplate,
 		currentTemplateName = '',
@@ -45,16 +28,10 @@
 		templates: Template[];
 		onCreateNew: () => void;
 		onUseDefaultTemplate: (templateId: string) => void;
-		onUseDefaultTemplate: (templateId: string) => void;
 		onSelectTemplate: (templateName: string) => void;
 		currentTemplateName?: string;
 		isNewTemplate?: boolean;
 	} = $props();
-
-	function handleUseSelectedDefaultTemplate() {
-		if (!selectedDefaultTemplateId) return;
-		onUseDefaultTemplate(selectedDefaultTemplateId);
-	}
 
 	function handleUseSelectedDefaultTemplate() {
 		if (!selectedDefaultTemplateId) return;
