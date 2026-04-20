@@ -283,7 +283,7 @@
 		width: 100%;
 		padding: 0.75rem 1rem;
 		background: var(--step-active);
-		color: white;
+		color: var(--bg-primary);
 		border: none;
 		border-radius: 6px;
 		font-size: 1rem;
