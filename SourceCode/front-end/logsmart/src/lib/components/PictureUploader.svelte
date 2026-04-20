@@ -481,7 +481,7 @@
 		border-radius: 999px;
 		width: 12px;
 		height: 12px;
-		border: 2px solid #var(--text-primary);
+		border: 2px solid var(--text-primary);
 	}
 
 	.cropper-actions {
