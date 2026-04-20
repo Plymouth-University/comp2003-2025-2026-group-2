@@ -42,7 +42,6 @@ lettre = { version = "0.11", features = ["tokio1-native-tls", "smtp-transport", 
 dotenvy = "0.15"
 mongodb = "3.4.1"
 futures-util = "0.3.31"
-ollama-rs = { version = "0.3", features = ["stream"] }
 schemars = "1.1.0"
 webauthn-rs = { version = "0.5", features = ["danger-allow-state-serialisation", "conditional-ui"] }
 url = "2.5.7"
