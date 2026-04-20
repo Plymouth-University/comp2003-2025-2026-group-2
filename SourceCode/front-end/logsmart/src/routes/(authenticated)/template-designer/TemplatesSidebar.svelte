@@ -198,15 +198,4 @@
 		opacity: 0.6;
 		cursor: not-allowed;
 	}
-	@media (prefers-color-scheme: dark) {
-		.btn-create:hover {
-			background-color: #439c43;
-		}
-		.btn-default:hover:enabled {
-			background-color: #3b747c;
-		}
-		.btn-default:hover:enabled {
-			background-color: #3b747c;
-		}
-	}
 </style>
