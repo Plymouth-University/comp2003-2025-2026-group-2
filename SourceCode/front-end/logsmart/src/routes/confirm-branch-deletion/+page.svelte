@@ -71,11 +71,11 @@
 		<div class="mb-6 text-center">
 			<div
 				class="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full"
-				style="background-color: #fee2e2;"
+				style="background-color: var(--error-bg);"
 			>
 				<svg
 					class="h-8 w-8"
-					style="color: #dc2626;"
+					style="color: var(--button-secondary);"
 					fill="none"
 					stroke="currentColor"
 					viewBox="0 0 24 24"
@@ -107,7 +107,7 @@
 		{:else if success}
 			<div
 				class="mb-6 rounded-lg p-4 text-center"
-				style="background-color: #dcfce7; color: #166534;"
+				style="background-color: var(--clock-in-bg); color: var(--create-button);"
 			>
 				<p class="mb-2 font-semibold">Success!</p>
 				<p class="text-sm">{success}</p>
@@ -122,7 +122,7 @@
 		{:else if error && !token}
 			<div
 				class="mb-6 rounded-lg p-4 text-center"
-				style="background-color: #fee2e2; color: #dc2626;"
+				style="background-color: var(--error-bg); color: var(--button-secondary);"
 			>
 				<p class="font-semibold">{error}</p>
 			</div>
@@ -136,11 +136,11 @@
 		{:else}
 			<div
 				class="mb-6 rounded-lg border-l-4 p-4"
-				style="background-color: #fef3c7; border-color: #f59e0b;"
+				style="background-color: var(--orange-light); border-color: var(--orange);"
 			>
-				<p class="mb-2 font-semibold" style="color: #92400e;">⚠️ Important Notice</p>
-				<p class="text-sm" style="color: #92400e;">Deleting this branch will:</p>
-				<ul class="mt-2 ml-4 list-disc text-sm" style="color: #92400e;">
+				<p class="mb-2 font-semibold" style="color: var(--orange-dark);">⚠️ Important Notice</p>
+				<p class="text-sm" style="color: var(--orange-dark);">Deleting this branch will:</p>
+				<ul class="mt-2 ml-4 list-disc text-sm" style="color: var(--orange-dark);">
 					<li>Permanently remove the branch from your company</li>
 					<li>Disassociate any users currently assigned to this branch</li>
 					<li>Delete all associated data and templates (if any)</li>
@@ -150,7 +150,7 @@
 			{#if error}
 				<div
 					class="mb-4 rounded-lg p-3 text-center text-sm"
-					style="background-color: #fee2e2; color: #dc2626;"
+					style="background-color: var(--error-bg); color: var(--button-secondary);"
 				>
 					{error}
 				</div>

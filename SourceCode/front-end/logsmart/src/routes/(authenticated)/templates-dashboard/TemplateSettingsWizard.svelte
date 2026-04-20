@@ -316,8 +316,8 @@
 
 <style>
 	.day-selected {
-		background-color: var(--day-color);
-		border-color: var(--day-color);
+		background-color: var(--button-primary);
+		border-color: var(--button-primary);
 		color: var(--bg-primary);
 	}
 
@@ -329,7 +329,7 @@
 
 	.day-unselected:hover {
 		background-color: var(--bg-primary);
-		border-color: var(--day-color);
+		border-color: var(--button-primary);
 	}
 
 	.btn-cancel {

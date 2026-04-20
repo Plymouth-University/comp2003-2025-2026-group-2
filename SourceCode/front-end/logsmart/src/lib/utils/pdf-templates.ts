@@ -35,16 +35,16 @@ export function generateAttendancePdfHtml(params: {
 <head>
 <title>Attendance Report - ${companyName}</title>
 <style>
-body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
+body { font-family: Arial, sans-serif; margin: 20px; color: var(--grey-dark); }
 h1 { color: var(--button-primary); margin-bottom: 4px; }
-.meta { color: #666; margin-bottom: 16px; font-size: 14px; }
+.meta { color: var(--grey-dark); margin-bottom: 16px; font-size: 14px; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th { background-color: var(--button-primary); color: var(--bg-primary); text-align: left; padding: 8px 12px; }
-td { padding: 8px 12px; border-bottom: 1px solid #ddd; }
-tr:nth-child(even) { background-color: #f8f9fa; }
-.status-in { color: #16a34a; font-weight: bold; }
-.status-out { color: #6b7280; }
-.footer { margin-top: 20px; font-size: 11px; color: #999; }
+td { padding: 8px 12px; border-bottom: 1px solid var(--grey-lite); }
+tr:nth-child(even) { background-color: var(--button-text); }
+.status-in { color: var(--create-button); font-weight: bold; }
+.status-out { color: var(--text-secondary); }
+.footer { margin-top: 20px; font-size: 11px; color: var(--grey-lite); }
 @media print { body { margin: 0; } }
 </style>
 </head>
@@ -66,12 +66,12 @@ export const PDF_STYLES = {
 	report: `
 		body { font-family: Arial, sans-serif; margin: 20px; }
 		.header { border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px; }
-		.entry { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; page-break-inside: avoid; }
+		.entry { border: 1px solid var(--grey-lite); margin: 10px 0; padding: 15px; border-radius: 5px; page-break-inside: avoid; }
 		.status { padding: 3px 8px; border-radius: 3px; color: var(--bg-primary); font-size: 12px; }
-		.submitted { background-color: #10B981; }
-		.draft { background-color: #F59E0B; }
+		.submitted { background-color: var(--button-primary); }
+		.draft { background-color: var(--orange); }
 		.group-header { font-size: 18px; font-weight: bold; margin: 20px 0 10px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
-		.entry-data { background-color: #f5f5f5; padding: 10px; margin: 5px 0; border-radius: 3px; }
+		.entry-data { background-color: var(--bg-secondary); padding: 10px; margin: 5px 0; border-radius: 3px; }
 		@media print { body { margin: 0; } .entry { page-break-inside: avoid; } }
 	`,
 	word: `
@@ -97,10 +97,10 @@ export const PDF_STYLES = {
 			widows: 10;
 		}
 		.entry-title { font-size: 12pt; font-weight: bold; margin-bottom: 4pt; }
-		.entry-id { font-size: 9pt; color: #666; margin-bottom: 4pt; }
+		.entry-id { font-size: 9pt; color: var(--grey-dark); margin-bottom: 4pt; }
 		.status-badge { padding: 3pt 8pt; color: var(--bg-primary); font-size: 10pt; margin-bottom: 8pt; display: inline-block; }
-		.entry-data-box { background-color: #f5f5f5; padding: 10pt; margin: 8pt 0; border-left: 3pt solid #10B981; }
+		.entry-data-box { background-color: var(--bg-secondary); padding: 10pt; margin: 8pt 0; border-left: 3pt solid var(--button-primary); }
 		.field-row { margin: 6pt 0; line-height: 1.5; }
-		.field-label { font-weight: bold; color: #333; }
+		.field-label { font-weight: bold; color: var(--grey-dark); }
 	`
 };

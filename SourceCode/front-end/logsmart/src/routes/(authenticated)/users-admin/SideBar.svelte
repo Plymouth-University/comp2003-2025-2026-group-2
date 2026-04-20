@@ -139,13 +139,15 @@
 		<div
 			class="fixed right-4 bottom-4 z-50 w-full max-w-sm overflow-hidden rounded-lg border px-4 py-3 text-left shadow-lg"
 			style={updatePopupType === 'success'
-				? 'border-color: #16a34a; background-color: #f0fdf4;'
-				: 'border-color: #dc2626; background-color: #fef2f2;'}
+				? 'border-color: var(--create-button); background-color: var(--clock-in-bg);'
+				: 'border-color: var(--button-secondary); background-color: var(--error-bg);'}
 		>
 			<div class="mb-1 flex items-start justify-between gap-3">
 				<p
 					class="text-sm font-semibold"
-					style={updatePopupType === 'success' ? 'color: #166534;' : 'color: #991b1b;'}
+					style={updatePopupType === 'success'
+						? 'color: var(--create-button);'
+						: 'color: var(--button-secondary);'}
 				>
 					{updatePopupTitle}
 				</p>
@@ -160,13 +162,13 @@
 					}}
 					class="rounded px-2 py-0.5 text-xs font-semibold transition-opacity hover:opacity-80"
 					style={updatePopupType === 'success'
-						? 'background-color: #dcfce7; color: #166534; cursor: pointer;'
-						: 'background-color: #fee2e2; color: #991b1b; cursor: pointer;'}
+						? 'background-color: var(--clock-in-bg); color: var(--create-button); cursor: pointer;'
+						: 'background-color: var(--error-bg); color: var(--button-secondary); cursor: pointer;'}
 				>
 					Close
 				</button>
 			</div>
-			<div class="space-y-1 text-xs" style="color: #334155;">
+			<div class="space-y-1 text-xs" style="color: var(--input-focus);">
 				{#if updatePopupDetails.length > 0}
 					{#each updatePopupDetails as detail (detail)}
 						<p>{detail}</p>
@@ -176,8 +178,8 @@
 			<div
 				class="toast-progress absolute right-0 bottom-0 left-0 h-1"
 				style={updatePopupType === 'success'
-					? `background-color: #16a34a; animation-duration: ${TOAST_DURATION_MS}ms;`
-					: `background-color: #dc2626; animation-duration: ${TOAST_DURATION_MS}ms;`}
+					? `background-color: var(--create-button); animation-duration: ${TOAST_DURATION_MS}ms;`
+					: `background-color: var(--button-secondary); animation-duration: ${TOAST_DURATION_MS}ms;`}
 			></div>
 		</div>
 	{/key}
@@ -551,7 +553,9 @@
 				{#if saveStatus !== 'idle'}
 					<p
 						class="mt-2 text-sm"
-						style={saveStatus === 'success' ? 'color: #16a34a;' : 'color: #dc2626;'}
+						style={saveStatus === 'success'
+							? 'color: var(--create-button);'
+							: 'color: var(--button-secondary);'}
 					>
 						{saveMessage}
 					</p>

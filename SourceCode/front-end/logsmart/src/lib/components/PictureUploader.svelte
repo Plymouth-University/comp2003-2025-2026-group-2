@@ -385,8 +385,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: rgba(17, 24, 39, 0.6);
-		color: #f9fafb;
+		background: var(--border-primary);
+		color: var(--bg-primary);
 		font-weight: 600;
 		font-size: 0.875rem;
 		letter-spacing: 0.02em;
@@ -456,7 +456,7 @@
 		height: 70vh;
 		max-width: 720px;
 		max-height: 720px;
-		background: #111827;
+		background: var(--text-primary);
 		border-radius: 8px;
 		overflow: hidden;
 	}
@@ -466,7 +466,7 @@
 	}
 
 	.cropper-modal :global(cropper-selection) {
-		outline: 2px solid #f9fafb;
+		outline: 2px solid var(--bg-primary);
 		cursor: move;
 		touch-action: none;
 		pointer-events: all;
@@ -477,11 +477,11 @@
 	}
 
 	.cropper-modal :global(cropper-handle) {
-		background: #f9fafb;
+		background: var(--bg-primary);
 		border-radius: 999px;
 		width: 12px;
 		height: 12px;
-		border: 2px solid #111827;
+		border: 2px solid #var(--text-primary);
 	}
 
 	.cropper-actions {
@@ -525,12 +525,12 @@
 	}
 
 	.btn-delete {
-		border-color: #ef4444;
-		color: #ef4444;
+		border-color: var(--button-secondary);
+		color: var(--button-secondary);
 	}
 
 	.error {
-		color: #ef4444;
+		color: var(--button-secondary);
 		font-size: 0.875rem;
 	}
 </style>

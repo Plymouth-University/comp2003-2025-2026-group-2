@@ -248,9 +248,9 @@
 		{:else if error}
 			<div
 				class="rounded-lg border-2 px-6 py-12 text-center"
-				style="background-color: var(--bg-primary); border-color: #d9534f;"
+				style="background-color: var(--bg-primary); border-color: var(--error);"
 			>
-				<p class="text-lg" style="color: #d9534f;">{error}</p>
+				<p class="text-lg" style="color: var(--error);">{error}</p>
 				<button
 					type="button"
 					class="btn-retry mt-4 cursor-pointer rounded px-4 py-2 font-medium text-white"
