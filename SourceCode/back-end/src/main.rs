@@ -9,7 +9,7 @@ use url::Url;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-const VARS: [&str; 11] = [
+const VARS: [&str; 12] = [
     "JWT_SECRET",
     "SMTP_USERNAME",
     "SMTP_PASSWORD",
@@ -21,6 +21,7 @@ const VARS: [&str; 11] = [
     "POSTGRES_USER",
     "MONGODB_URI",
     "FRONTEND_URL",
+    "OPENROUTER_API_KEY",
 ];
 
 #[tokio::main]
