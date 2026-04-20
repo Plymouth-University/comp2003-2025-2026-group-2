@@ -169,7 +169,7 @@
 					onclick={confirmDeletion}
 					disabled={isDeleting}
 					class="flex-1 rounded-lg py-3 font-semibold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
-					style="background-color: #dc2626;"
+					style="background-color: var(--delete-button-active);"
 				>
 					{#if isDeleting}
 						<span class="inline-flex items-center">

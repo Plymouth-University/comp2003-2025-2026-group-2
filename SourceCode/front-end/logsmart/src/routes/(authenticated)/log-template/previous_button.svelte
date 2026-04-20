@@ -10,9 +10,9 @@
 		display: inline-block;
 		border-radius: 4px;
 		border-width: 2px;
-		border-color: #000100;
-		background-color: #ffffff;
-		color: #000100;
+		border-color: var(--border-primary);
+		background-color: var(--bg-primary);
+		color: var(--border-primary);
 		text-align: center;
 		font-size: 28px;
 		padding: 20px;
@@ -47,6 +47,6 @@
 	}
 
 	.log_button:hover {
-		background-color: #ededf2;
+		background-color: var(--border-secondary);
 	}
 </style>

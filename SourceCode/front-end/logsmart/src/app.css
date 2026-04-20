@@ -39,7 +39,8 @@
 	--component-temperature: #fef3c7;
 	--component-dropdown: #f3e8ff;
 	--component-label: #ffe4e6;
-	--create-button: #4cc650;
+	--create-button-alt: #4cc650;
+	--create-button: #3d7a82;
 	--create-button-hover: #111827;
 	--create-button-active: #111827;
 	--history-button: #546e7a;
@@ -114,6 +115,17 @@
 	--text-secondary: #9ca3af;
 	--border-primary: #4b5563;
 	--border-secondary: #374151;
+	/* Accept-invitation */
+	--step-active: #2f6fff;
+	--step-comp-bg: #10b981;
+	--input-invite: #d1d7e0;
+	--input-focus: #6b8cff;
+	--field-error: #C56371;
+	--field-error-2: #c93838;
+	--error-bg: #fdecea;
+	--error-col: #821313;
+	--pass-toggle: #374151;
+	/* Template Designer */
 	--component-text-input: #a1a6b4;
 	--component-checkbox: #7698b3;
 	--component-temperature: #83b5d1;
@@ -126,7 +138,14 @@
 	--history-button-hover: #002f45;
 	--history-button-active: #455a64;
 	--snap-on: #dcfce7;
+	--snap-on-hover: #40ab9c;
+	--snap-on-active: #358d81;
+	--snap-off: #6c757d;
+	--snap-off-hover: #5a6268;
+	--snap-off-active: #4e555b;
 	--save-template: #111827;
+	--button-text: #F8F8F8;
+	/* Templates Dashboard */
 	--delete-button: #d9534f;
 	--delete-button-hover: #c9302c;
 	--delete-button-active: #ac2925;
@@ -139,5 +158,6 @@
 	--retry-button: #337ab7;
 	--retry-button-hover: #286090;
 	--retry-button-active: #204d74;
+	--day-color: #3d7a82;
 	--color-scheme: dark;
 }

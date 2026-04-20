@@ -182,17 +182,17 @@
 		transition: background-color 0.15s ease;
 	}
 	.btn-default {
-		background-color: #3d7a82;
+		background-color: var(--create-button);
 		transition: background-color 0.15s ease;
 	}
 	.btn-create:hover {
 		background-color: var(--create-button-hover);
 	}
 	.btn-default:hover:enabled {
-		background-color: #2f6066;
+		background-color: var(--create-button-hover);
 	}
 	.btn-create:active {
-		background-color: #398439;
+		background-color: var(--create-button-active);
 	}
 	.btn-default:disabled {
 		opacity: 0.6;
@@ -201,6 +201,9 @@
 	@media (prefers-color-scheme: dark) {
 		.btn-create:hover {
 			background-color: #439c43;
+		}
+		.btn-default:hover:enabled {
+			background-color: #3b747c;
 		}
 		.btn-default:hover:enabled {
 			background-color: #3b747c;
