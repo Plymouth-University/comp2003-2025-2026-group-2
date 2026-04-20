@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import type { PageData } from './$types';
 
 	let { data } = $props<{ data: PageData }>();
@@ -105,7 +106,7 @@
 	}
 
 	function createSecurityLogsSearchParams(cursor: string | null): URLSearchParams {
-		const params = new URLSearchParams();
+		const params = new SvelteURLSearchParams();
 		params.set('limit', '15');
 		if (cursor) {
 			params.set('cursor', cursor);
@@ -188,7 +189,17 @@
 	}
 
 	function csvEscape(value: string): string {
-		return `"${value.replaceAll('"', '""')}"`;
+		const sanitized = csvSanitizeCell(value);
+		return `"${sanitized.replaceAll('"', '""')}"`;
+	}
+
+	function csvSanitizeCell(value: string): string {
+		const firstNonWhitespace = [...value].find((char) => !/\s/u.test(char));
+		if (firstNonWhitespace && ['=', '+', '-', '@'].includes(firstNonWhitespace)) {
+			return `'${value}`;
+		}
+
+		return value;
 	}
 
 	function exportVisibleCsv() {

@@ -237,8 +237,22 @@ fn parse_optional_utc_datetime(
 }
 
 fn csv_escape(value: &str) -> String {
-    let escaped = value.replace('"', "\"\"");
+    let sanitized = csv_sanitize_cell(value);
+    let escaped = sanitized.replace('"', "\"\"");
     format!("\"{escaped}\"")
+}
+
+fn csv_sanitize_cell(value: &str) -> String {
+    let starts_with_formula_symbol = matches!(
+        value.chars().find(|c| !c.is_whitespace()),
+        Some('=' | '+' | '-' | '@')
+    );
+
+    if starts_with_formula_symbol {
+        format!("'{value}")
+    } else {
+        value.to_string()
+    }
 }
 
 #[must_use]
@@ -269,5 +283,14 @@ mod tests {
     fn test_csv_escape_quotes_and_commas() {
         let escaped = csv_escape("hello, \"world\"");
         assert_eq!(escaped, "\"hello, \"\"world\"\"\"");
+    }
+
+    #[test]
+    fn test_csv_escape_sanitizes_formula_injection() {
+        let escaped = csv_escape("=HYPERLINK(\"http://evil\",\"click\")");
+        assert_eq!(
+            escaped,
+            "\"'=HYPERLINK(\"\"http://evil\"\",\"\"click\"\")\""
+        );
     }
 }
