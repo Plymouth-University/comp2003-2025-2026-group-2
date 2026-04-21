@@ -287,15 +287,13 @@
 <svelte:head>
 	<title>Admin Dashboard</title>
 </svelte:head>
-<div class="h-full w-full" style="background-color: var(--bg-secondary);">
+<div class="h-full w-full bg-bg-secondary">
 	<!-- Main Content -->
 	<div class="mx-auto max-w-7xl px-6 py-8">
 		<!-- Header with User Profile -->
 		<div class="mb-8 flex flex-wrap items-start justify-between">
 			<div class="flex-1">
-				<h1 class="mb-4 text-3xl font-bold" style="color: var(--text-primary);">
-					Internal Admin Dashboard
-				</h1>
+				<h1 class="mb-4 text-3xl font-bold text-text-primary">Internal Admin Dashboard</h1>
 				<!-- Tab Navigation -->
 				<div class="mb-6 flex gap-2">
 					<button
@@ -320,22 +318,21 @@
 			</div>
 
 			<!-- User Profile Section -->
-			<div class="inline-block border-2" style="border-color: var(--border-primary);">
-				<div class="px-6 py-4" style="background-color: var(--bg-primary);">
+			<div class="inline-block border-2 border-border-primary">
+				<div class="bg-bg-primary px-6 py-4">
 					<div class="flex items-center gap-4">
 						<!-- Profile Picture (Initials) -->
 						<div
-							class="flex h-16 w-16 items-center justify-center rounded-full text-xl font-bold text-white"
-							style="background-color: var(--button-primary);"
+							class="flex h-16 w-16 items-center justify-center rounded-full bg-button-primary text-xl font-bold text-white"
 						>
 							{user().initials}
 						</div>
 						<!-- User Info -->
 						<div class="text-left">
-							<div class="font-bold" style="color: var(--text-primary);">{user().name}</div>
-							<div class="text-sm" style="color: var(--text-secondary);">{user().email}</div>
-							<div class="text-sm" style="color: var(--text-secondary);">{user().company}</div>
-							<div class="text-sm font-medium" style="color: var(--text-primary);">
+							<div class="font-bold text-text-primary">{user().name}</div>
+							<div class="text-sm text-text-secondary">{user().email}</div>
+							<div class="text-sm text-text-secondary">{user().company}</div>
+							<div class="text-sm font-medium text-text-primary">
 								{user().role === 'logsmart_admin' ? 'Logsmart Internal Admin' : user().role}
 							</div>
 						</div>
@@ -345,10 +342,7 @@
 		</div>
 
 		{#if data.error}
-			<div
-				class="mb-4 rounded border-2 p-4"
-				style="background-color: var(--error-bg); border-color: var(--field-error); color: var(--error);"
-			>
+			<div class="mb-4 rounded border-2 border-field-error bg-error-bg p-4 text-error">
 				{data.error}
 			</div>
 		{/if}
@@ -358,54 +352,45 @@
 			<!-- Database Health Overview -->
 			{#if dbHealth}
 				<div class="mb-8">
-					<h2 class="mb-4 text-2xl font-bold" style="color: var(--text-primary);">
-						Database Overview
-					</h2>
+					<h2 class="mb-4 text-2xl font-bold text-text-primary">Database Overview</h2>
 					<div class="grid grid-cols-2 gap-6 md:grid-cols-4">
 						<!-- Status -->
-						<div class="border-2" style="border-color: var(--border-primary);">
-							<div class="px-6 py-4" style="background-color: var(--bg-primary);">
-								<div class="text-sm font-medium" style="color: var(--text-secondary);">Status</div>
+						<div class="border-2 border-border-primary">
+							<div class="bg-bg-primary px-6 py-4">
+								<div class="text-sm font-medium text-text-secondary">Status</div>
 								<div
 									class="mt-2 text-2xl font-bold"
-									style="color: {dbHealth.status === 'healthy'
-										? 'var(--create-button)'
-										: 'var(--error)'};"
+									class:text-create-button={dbHealth.status === 'healthy'}
+									class:text-error={dbHealth.status !== 'healthy'}
 								>
 									{dbHealth.status?.toUpperCase() ?? 'UNKNOWN'}
 								</div>
 							</div>
 						</div>
 						<!-- Database Size -->
-						<div class="border-2" style="border-color: var(--border-primary);">
-							<div class="px-6 py-4" style="background-color: var(--bg-primary);">
-								<div class="text-sm font-medium" style="color: var(--text-secondary);">
-									Database Size
-								</div>
-								<div class="mt-2 text-2xl font-bold" style="color: var(--text-primary);">
+						<div class="border-2 border-border-primary">
+							<div class="bg-bg-primary px-6 py-4">
+								<div class="text-sm font-medium text-text-secondary">Database Size</div>
+								<div class="mt-2 text-2xl font-bold text-text-primary">
 									{dbHealth.metrics?.database_size_mb?.toFixed(2) ?? '0'} MB
 								</div>
 							</div>
 						</div>
 						<!-- Active Connections -->
-						<div class="border-2" style="border-color: var(--border-primary);">
-							<div class="px-6 py-4" style="background-color: var(--bg-primary);">
-								<div class="text-sm font-medium" style="color: var(--text-secondary);">
-									Active Connections
-								</div>
-								<div class="mt-2 text-2xl font-bold" style="color: var(--text-primary);">
+						<div class="border-2 border-border-primary">
+							<div class="bg-bg-primary px-6 py-4">
+								<div class="text-sm font-medium text-text-secondary">Active Connections</div>
+								<div class="mt-2 text-2xl font-bold text-text-primary">
 									{dbHealth.metrics?.active_connections ?? 0} / {dbHealth.metrics
 										?.max_connections ?? 0}
 								</div>
 							</div>
 						</div>
 						<!-- Tables -->
-						<div class="border-2" style="border-color: var(--border-primary);">
-							<div class="px-6 py-4" style="background-color: var(--bg-primary);">
-								<div class="text-sm font-medium" style="color: var(--text-secondary);">
-									Tables / Indexes
-								</div>
-								<div class="mt-2 text-2xl font-bold" style="color: var(--text-primary);">
+						<div class="border-2 border-border-primary">
+							<div class="bg-bg-primary px-6 py-4">
+								<div class="text-sm font-medium text-text-secondary">Tables / Indexes</div>
+								<div class="mt-2 text-2xl font-bold text-text-primary">
 									{dbHealth.metrics?.table_count ?? 0} / {dbHealth.metrics?.index_count ?? 0}
 								</div>
 							</div>
@@ -413,32 +398,26 @@
 					</div>
 					<!-- Connection Stats -->
 					<div class="mt-4 grid grid-cols-3 gap-6">
-						<div class="border-2" style="border-color: var(--border-primary);">
-							<div class="px-6 py-4" style="background-color: var(--bg-primary);">
-								<div class="text-sm font-medium" style="color: var(--text-secondary);">
-									Total Connections
-								</div>
-								<div class="mt-2 text-xl font-bold" style="color: var(--text-primary);">
+						<div class="border-2 border-border-primary">
+							<div class="bg-bg-primary px-6 py-4">
+								<div class="text-sm font-medium text-text-secondary">Total Connections</div>
+								<div class="mt-2 text-xl font-bold text-text-primary">
 									{dbHealth.metrics?.total_connections ?? 0}
 								</div>
 							</div>
 						</div>
-						<div class="border-2" style="border-color: var(--border-primary);">
-							<div class="px-6 py-4" style="background-color: var(--bg-primary);">
-								<div class="text-sm font-medium" style="color: var(--text-secondary);">
-									Idle Connections
-								</div>
-								<div class="mt-2 text-xl font-bold" style="color: var(--text-primary);">
+						<div class="border-2 border-border-primary">
+							<div class="bg-bg-primary px-6 py-4">
+								<div class="text-sm font-medium text-text-secondary">Idle Connections</div>
+								<div class="mt-2 text-xl font-bold text-text-primary">
 									{dbHealth.metrics?.idle_connections ?? 0}
 								</div>
 							</div>
 						</div>
-						<div class="border-2" style="border-color: var(--border-primary);">
-							<div class="px-6 py-4" style="background-color: var(--bg-primary);">
-								<div class="text-sm font-medium" style="color: var(--text-secondary);">
-									Max Connections
-								</div>
-								<div class="mt-2 text-xl font-bold" style="color: var(--text-primary);">
+						<div class="border-2 border-border-primary">
+							<div class="bg-bg-primary px-6 py-4">
+								<div class="text-sm font-medium text-text-secondary">Max Connections</div>
+								<div class="mt-2 text-xl font-bold text-text-primary">
 									{dbHealth.metrics?.max_connections ?? 0}
 								</div>
 							</div>
@@ -446,11 +425,8 @@
 					</div>
 				</div>
 			{:else}
-				<div
-					class="mb-8 rounded border-2 p-4"
-					style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-				>
-					<p style="color: var(--text-secondary);">
+				<div class="mb-8 rounded border-2 border-border-primary bg-bg-primary p-4">
+					<p class="text-text-secondary">
 						Unable to load database health metrics. You may not have permission or the server is
 						unavailable.
 					</p>
@@ -460,55 +436,45 @@
 			<!-- Table Sizes -->
 			{#if tableSizes?.tables && tableSizes.tables.length > 0}
 				<div class="mb-8">
-					<h2 class="mb-4 text-2xl font-bold" style="color: var(--text-primary);">Table Sizes</h2>
-					<div
-						class="overflow-hidden rounded border-2"
-						style="border-color: var(--border-primary);"
-					>
+					<h2 class="mb-4 text-2xl font-bold text-text-primary">Table Sizes</h2>
+					<div class="overflow-hidden rounded border-2 border-border-primary">
 						<div class="overflow-x-auto">
-							<table class="w-full" style="background-color: var(--bg-primary);">
+							<table class="w-full bg-bg-primary">
 								<thead>
-									<tr style="background-color: var(--bg-secondary);">
-										<th
-											class="px-4 py-3 text-left text-sm font-semibold"
-											style="color: var(--text-primary);">Table Name</th
+									<tr class="bg-bg-secondary">
+										<th class="px-4 py-3 text-left text-sm font-semibold text-text-primary"
+											>Table Name</th
 										>
-										<th
-											class="px-4 py-3 text-right text-sm font-semibold"
-											style="color: var(--text-primary);">Row Count</th
+										<th class="px-4 py-3 text-right text-sm font-semibold text-text-primary"
+											>Row Count</th
 										>
-										<th
-											class="px-4 py-3 text-right text-sm font-semibold"
-											style="color: var(--text-primary);">Table Size (MB)</th
+										<th class="px-4 py-3 text-right text-sm font-semibold text-text-primary"
+											>Table Size (MB)</th
 										>
-										<th
-											class="px-4 py-3 text-right text-sm font-semibold"
-											style="color: var(--text-primary);">Index Size (MB)</th
+										<th class="px-4 py-3 text-right text-sm font-semibold text-text-primary"
+											>Index Size (MB)</th
 										>
-										<th
-											class="px-4 py-3 text-right text-sm font-semibold"
-											style="color: var(--text-primary);">Total Size (MB)</th
+										<th class="px-4 py-3 text-right text-sm font-semibold text-text-primary"
+											>Total Size (MB)</th
 										>
 									</tr>
 								</thead>
 								<tbody>
 									{#each tableSizes.tables as table (table.table_name)}
-										<tr class="border-t" style="border-color: var(--border-primary);">
-											<td class="px-4 py-3 text-sm font-medium" style="color: var(--text-primary);"
+										<tr class="border-t border-border-primary">
+											<td class="px-4 py-3 text-sm font-medium text-text-primary"
 												>{table.table_name}</td
 											>
-											<td class="px-4 py-3 text-right text-sm" style="color: var(--text-secondary);"
+											<td class="px-4 py-3 text-right text-sm text-text-secondary"
 												>{table.row_count?.toLocaleString() ?? '0'}</td
 											>
-											<td class="px-4 py-3 text-right text-sm" style="color: var(--text-secondary);"
+											<td class="px-4 py-3 text-right text-sm text-text-secondary"
 												>{table.table_size_mb?.toFixed(3) ?? '0'}</td
 											>
-											<td class="px-4 py-3 text-right text-sm" style="color: var(--text-secondary);"
+											<td class="px-4 py-3 text-right text-sm text-text-secondary"
 												>{table.index_size_mb?.toFixed(3) ?? '0'}</td
 											>
-											<td
-												class="px-4 py-3 text-right text-sm font-medium"
-												style="color: var(--text-primary);"
+											<td class="px-4 py-3 text-right text-sm font-medium text-text-primary"
 												>{table.total_size_mb?.toFixed(3) ?? '0'}</td
 											>
 										</tr>
@@ -523,61 +489,50 @@
 			<!-- Slow Queries -->
 			{#if slowQueries?.queries && slowQueries.queries.length > 0}
 				<div class="mb-8">
-					<h2 class="mb-4 text-2xl font-bold" style="color: var(--text-primary);">Slow Queries</h2>
-					<div
-						class="overflow-hidden rounded border-2"
-						style="border-color: var(--border-primary);"
-					>
+					<h2 class="mb-4 text-2xl font-bold text-text-primary">Slow Queries</h2>
+					<div class="overflow-hidden rounded border-2 border-border-primary">
 						<div class="overflow-x-auto">
-							<table class="w-full" style="background-color: var(--bg-primary);">
+							<table class="w-full bg-bg-primary">
 								<thead>
-									<tr style="background-color: var(--bg-secondary);">
-										<th
-											class="px-4 py-3 text-left text-sm font-semibold"
-											style="color: var(--text-primary);">Query</th
+									<tr class="bg-bg-secondary">
+										<th class="px-4 py-3 text-left text-sm font-semibold text-text-primary"
+											>Query</th
 										>
-										<th
-											class="px-4 py-3 text-right text-sm font-semibold"
-											style="color: var(--text-primary);">Calls</th
+										<th class="px-4 py-3 text-right text-sm font-semibold text-text-primary"
+											>Calls</th
 										>
-										<th
-											class="px-4 py-3 text-right text-sm font-semibold"
-											style="color: var(--text-primary);">Mean Time (ms)</th
+										<th class="px-4 py-3 text-right text-sm font-semibold text-text-primary"
+											>Mean Time (ms)</th
 										>
-										<th
-											class="px-4 py-3 text-right text-sm font-semibold"
-											style="color: var(--text-primary);">Max Time (ms)</th
+										<th class="px-4 py-3 text-right text-sm font-semibold text-text-primary"
+											>Max Time (ms)</th
 										>
-										<th
-											class="px-4 py-3 text-right text-sm font-semibold"
-											style="color: var(--text-primary);">Total Time (ms)</th
+										<th class="px-4 py-3 text-right text-sm font-semibold text-text-primary"
+											>Total Time (ms)</th
 										>
 									</tr>
 								</thead>
 								<tbody>
 									{#each slowQueries.queries as query (query.query)}
-										<tr class="border-t" style="border-color: var(--border-primary);">
+										<tr class="border-t border-border-primary">
 											<td class="max-w-md px-4 py-3 text-sm">
 												<div
-													class="truncate font-mono text-xs"
-													style="color: var(--text-primary);"
+													class="truncate font-mono text-xs text-text-primary"
 													title={query.query}
 												>
 													{query.query}
 												</div>
 											</td>
-											<td class="px-4 py-3 text-right text-sm" style="color: var(--text-secondary);"
+											<td class="px-4 py-3 text-right text-sm text-text-secondary"
 												>{query.calls?.toLocaleString() ?? '0'}</td
 											>
-											<td class="px-4 py-3 text-right text-sm" style="color: var(--text-secondary);"
+											<td class="px-4 py-3 text-right text-sm text-text-secondary"
 												>{query.mean_time_ms?.toFixed(2) ?? '0'}</td
 											>
-											<td class="px-4 py-3 text-right text-sm" style="color: var(--orange);"
+											<td class="px-4 py-3 text-right text-sm text-orange"
 												>{query.max_time_ms?.toFixed(2) ?? '0'}</td
 											>
-											<td
-												class="px-4 py-3 text-right text-sm font-medium"
-												style="color: var(--text-primary);"
+											<td class="px-4 py-3 text-right text-sm font-medium text-text-primary"
 												>{query.total_time_ms?.toFixed(2) ?? '0'}</td
 											>
 										</tr>
@@ -588,35 +543,27 @@
 					</div>
 				</div>
 			{:else if slowQueries}
-				<div
-					class="mb-8 rounded border-2 p-4"
-					style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-				>
-					<h2 class="mb-2 text-xl font-bold" style="color: var(--text-primary);">Slow Queries</h2>
-					<p style="color: var(--create-button);">
-						No slow queries detected. Database is performing well!
-					</p>
+				<div class="mb-8 rounded border-2 border-border-primary bg-bg-primary p-4">
+					<h2 class="mb-2 text-xl font-bold text-text-primary">Slow Queries</h2>
+					<p class="text-create-button">No slow queries detected. Database is performing well!</p>
 				</div>
 			{/if}
 
 			<!-- Index Usage -->
 			{#if indexUsage}
 				<div class="mb-8">
-					<h2 class="mb-4 text-2xl font-bold" style="color: var(--text-primary);">Index Usage</h2>
+					<h2 class="mb-4 text-2xl font-bold text-text-primary">Index Usage</h2>
 
 					<!-- Unused Indexes Warning -->
 					{#if indexUsage.unused_indexes && indexUsage.unused_indexes.length > 0}
-						<div
-							class="mb-4 rounded border-2 p-4"
-							style="border-color: var(--orange); background-color: rgba(245, 158, 11, 0.1);"
-						>
-							<h3 class="mb-2 font-semibold" style="color: var(--orange);">
+						<div class="mb-4 rounded border-2 border-orange bg-orange/10 p-4">
+							<h3 class="mb-2 font-semibold text-orange">
 								⚠️ Unused Indexes ({indexUsage.unused_indexes.length})
 							</h3>
-							<p class="mb-2 text-sm" style="color: var(--text-secondary);">
+							<p class="mb-2 text-sm text-text-secondary">
 								These indexes may be candidates for removal:
 							</p>
-							<ul class="list-inside list-disc text-sm" style="color: var(--text-primary);">
+							<ul class="list-inside list-disc text-sm text-text-primary">
 								{#each indexUsage.unused_indexes as idx, i (i)}
 									<li class="font-mono">{idx}</li>
 								{/each}
@@ -626,59 +573,45 @@
 
 					<!-- Index Stats Table -->
 					{#if indexUsage.indexes && indexUsage.indexes.length > 0}
-						<div
-							class="overflow-hidden rounded border-2"
-							style="border-color: var(--border-primary);"
-						>
+						<div class="overflow-hidden rounded border-2 border-border-primary">
 							<div class="overflow-x-auto">
-								<table class="w-full" style="background-color: var(--bg-primary);">
+								<table class="w-full bg-bg-primary">
 									<thead>
-										<tr style="background-color: var(--bg-secondary);">
-											<th
-												class="px-4 py-3 text-left text-sm font-semibold"
-												style="color: var(--text-primary);">Index Name</th
+										<tr class="bg-bg-secondary">
+											<th class="px-4 py-3 text-left text-sm font-semibold text-text-primary"
+												>Index Name</th
 											>
-											<th
-												class="px-4 py-3 text-left text-sm font-semibold"
-												style="color: var(--text-primary);">Table</th
+											<th class="px-4 py-3 text-left text-sm font-semibold text-text-primary"
+												>Table</th
 											>
-											<th
-												class="px-4 py-3 text-right text-sm font-semibold"
-												style="color: var(--text-primary);">Scans</th
+											<th class="px-4 py-3 text-right text-sm font-semibold text-text-primary"
+												>Scans</th
 											>
-											<th
-												class="px-4 py-3 text-right text-sm font-semibold"
-												style="color: var(--text-primary);">Rows Read</th
+											<th class="px-4 py-3 text-right text-sm font-semibold text-text-primary"
+												>Rows Read</th
 											>
-											<th
-												class="px-4 py-3 text-right text-sm font-semibold"
-												style="color: var(--text-primary);">Rows Fetched</th
+											<th class="px-4 py-3 text-right text-sm font-semibold text-text-primary"
+												>Rows Fetched</th
 											>
 										</tr>
 									</thead>
 									<tbody>
 										{#each indexUsage.indexes as idx (idx.index_name)}
-											<tr class="border-t" style="border-color: var(--border-primary);">
-												<td class="px-4 py-3 font-mono text-sm" style="color: var(--text-primary);"
+											<tr class="border-t border-border-primary">
+												<td class="px-4 py-3 font-mono text-sm text-text-primary"
 													>{idx.index_name}</td
 												>
-												<td class="px-4 py-3 text-sm" style="color: var(--text-secondary);"
-													>{idx.table_name}</td
-												>
+												<td class="px-4 py-3 text-sm text-text-secondary">{idx.table_name}</td>
 												<td
 													class="px-4 py-3 text-right text-sm"
-													style="color: {idx.index_scans > 0
-														? 'var(--create-button)'
-														: 'var(--error)'};">{idx.index_scans?.toLocaleString() ?? '0'}</td
+													class:text-create-button={idx.index_scans > 0}
+													class:text-error={idx.index_scans <= 0}
+													>{idx.index_scans?.toLocaleString() ?? '0'}</td
 												>
-												<td
-													class="px-4 py-3 text-right text-sm"
-													style="color: var(--text-secondary);"
+												<td class="px-4 py-3 text-right text-sm text-text-secondary"
 													>{idx.rows_read?.toLocaleString() ?? '0'}</td
 												>
-												<td
-													class="px-4 py-3 text-right text-sm"
-													style="color: var(--text-secondary);"
+												<td class="px-4 py-3 text-right text-sm text-text-secondary"
 													>{idx.rows_fetched?.toLocaleString() ?? '0'}</td
 												>
 											</tr>
@@ -691,178 +624,149 @@
 				</div>
 			{/if}
 		{:else if activeTab === 'security'}
-			<div
-				class="mb-6 border-2 p-4"
-				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-			>
+			<div class="mb-6 border-2 border-border-primary bg-bg-primary p-4">
 				<div class="mb-4 flex flex-wrap items-end gap-3">
 					<div>
 						<label
 							for="security-filter-event-type"
-							class="mb-1 block text-sm font-medium"
-							style="color: var(--text-secondary);">Event Type</label
+							class="mb-1 block text-sm font-medium text-text-secondary">Event Type</label
 						>
 						<input
 							id="security-filter-event-type"
 							bind:value={filterEventType}
-							class="border-2 px-3 py-2 text-sm"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
 						/>
 					</div>
 					<div>
 						<label
 							for="security-filter-user-id"
-							class="mb-1 block text-sm font-medium"
-							style="color: var(--text-secondary);">User ID</label
+							class="mb-1 block text-sm font-medium text-text-secondary">User ID</label
 						>
 						<input
 							id="security-filter-user-id"
 							bind:value={filterUserId}
-							class="border-2 px-3 py-2 text-sm"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
 						/>
 					</div>
 					<div>
 						<label
 							for="security-filter-email"
-							class="mb-1 block text-sm font-medium"
-							style="color: var(--text-secondary);">Email</label
+							class="mb-1 block text-sm font-medium text-text-secondary">Email</label
 						>
 						<input
 							id="security-filter-email"
 							bind:value={filterEmail}
-							class="border-2 px-3 py-2 text-sm"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
 						/>
 					</div>
 					<div>
 						<label
 							for="security-filter-ip-address"
-							class="mb-1 block text-sm font-medium"
-							style="color: var(--text-secondary);">IP Address</label
+							class="mb-1 block text-sm font-medium text-text-secondary">IP Address</label
 						>
 						<input
 							id="security-filter-ip-address"
 							bind:value={filterIpAddress}
-							class="border-2 px-3 py-2 text-sm"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
 						/>
 					</div>
 					<div>
 						<label
 							for="security-filter-user-agent"
-							class="mb-1 block text-sm font-medium"
-							style="color: var(--text-secondary);">User Agent</label
+							class="mb-1 block text-sm font-medium text-text-secondary">User Agent</label
 						>
 						<input
 							id="security-filter-user-agent"
 							bind:value={filterUserAgent}
-							class="border-2 px-3 py-2 text-sm"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
 						/>
 					</div>
 					<div>
 						<label
 							for="security-filter-actor-role"
-							class="mb-1 block text-sm font-medium"
-							style="color: var(--text-secondary);">Actor Role</label
+							class="mb-1 block text-sm font-medium text-text-secondary">Actor Role</label
 						>
 						<input
 							id="security-filter-actor-role"
 							bind:value={filterActorRole}
-							class="border-2 px-3 py-2 text-sm"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
 						/>
 					</div>
 					<div>
 						<label
 							for="security-filter-company-id"
-							class="mb-1 block text-sm font-medium"
-							style="color: var(--text-secondary);">Company ID</label
+							class="mb-1 block text-sm font-medium text-text-secondary">Company ID</label
 						>
 						<input
 							id="security-filter-company-id"
 							bind:value={filterCompanyId}
-							class="border-2 px-3 py-2 text-sm"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
 						/>
 					</div>
 					<div>
 						<label
 							for="security-filter-target-user-id"
-							class="mb-1 block text-sm font-medium"
-							style="color: var(--text-secondary);">Target User ID</label
+							class="mb-1 block text-sm font-medium text-text-secondary">Target User ID</label
 						>
 						<input
 							id="security-filter-target-user-id"
 							bind:value={filterTargetUserId}
-							class="border-2 px-3 py-2 text-sm"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
 						/>
 					</div>
 					<div>
 						<label
 							for="security-filter-target-email"
-							class="mb-1 block text-sm font-medium"
-							style="color: var(--text-secondary);">Target Email</label
+							class="mb-1 block text-sm font-medium text-text-secondary">Target Email</label
 						>
 						<input
 							id="security-filter-target-email"
 							bind:value={filterTargetEmail}
-							class="border-2 px-3 py-2 text-sm"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
 						/>
 					</div>
 					<div>
 						<label
 							for="security-filter-request-path"
-							class="mb-1 block text-sm font-medium"
-							style="color: var(--text-secondary);">Request Path</label
+							class="mb-1 block text-sm font-medium text-text-secondary">Request Path</label
 						>
 						<input
 							id="security-filter-request-path"
 							bind:value={filterRequestPath}
-							class="border-2 px-3 py-2 text-sm"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
 						/>
 					</div>
 					<div>
 						<label
 							for="security-filter-request-method"
-							class="mb-1 block text-sm font-medium"
-							style="color: var(--text-secondary);">Request Method</label
+							class="mb-1 block text-sm font-medium text-text-secondary">Request Method</label
 						>
 						<input
 							id="security-filter-request-method"
 							bind:value={filterRequestMethod}
-							class="border-2 px-3 py-2 text-sm"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
 						/>
 					</div>
 					<div>
 						<label
 							for="security-filter-details"
-							class="mb-1 block text-sm font-medium"
-							style="color: var(--text-secondary);">Details</label
+							class="mb-1 block text-sm font-medium text-text-secondary">Details</label
 						>
 						<input
 							id="security-filter-details"
 							bind:value={filterDetails}
-							class="border-2 px-3 py-2 text-sm"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
 						/>
 					</div>
 					<div>
 						<label
 							for="security-filter-success"
-							class="mb-1 block text-sm font-medium"
-							style="color: var(--text-secondary);">Success</label
+							class="mb-1 block text-sm font-medium text-text-secondary">Success</label
 						>
 						<select
 							id="security-filter-success"
 							bind:value={filterSuccess}
-							class="border-2 px-3 py-2 text-sm"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
 						>
 							<option value="">Any</option>
 							<option value="true">True</option>
@@ -872,56 +776,48 @@
 					<div>
 						<label
 							for="security-filter-created-from"
-							class="mb-1 block text-sm font-medium"
-							style="color: var(--text-secondary);">Created From</label
+							class="mb-1 block text-sm font-medium text-text-secondary">Created From</label
 						>
 						<input
 							id="security-filter-created-from"
 							bind:value={filterCreatedFrom}
 							type="datetime-local"
-							class="border-2 px-3 py-2 text-sm"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
 						/>
 					</div>
 					<div>
 						<label
 							for="security-filter-created-to"
-							class="mb-1 block text-sm font-medium"
-							style="color: var(--text-secondary);">Created To</label
+							class="mb-1 block text-sm font-medium text-text-secondary">Created To</label
 						>
 						<input
 							id="security-filter-created-to"
 							bind:value={filterCreatedTo}
 							type="datetime-local"
-							class="border-2 px-3 py-2 text-sm"
-							style="border-color: var(--border-primary); color: var(--text-primary);"
+							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
 						/>
 					</div>
 				</div>
 				<div class="flex flex-wrap gap-3">
 					<button
 						onclick={applySecurityFilters}
-						class="border-2 px-4 py-2 font-semibold"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
+						class="border-2 border-border-primary px-4 py-2 font-semibold text-text-primary"
 						disabled={securityLoading}>Apply Filters</button
 					>
 					<button
 						onclick={() => void fetchSecurityLogs({ reset: true })}
-						class="border-2 px-4 py-2 font-semibold"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
+						class="border-2 border-border-primary px-4 py-2 font-semibold text-text-primary"
 						disabled={securityLoading}>Refresh</button
 					>
 					<button
 						onclick={exportVisibleCsv}
-						class="border-2 px-4 py-2 font-semibold"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
+						class="border-2 border-border-primary px-4 py-2 font-semibold text-text-primary"
 						disabled={securityLoading || securityLogs.length === 0 || exportingVisible}
 						>{exportingVisible ? 'Exporting...' : 'Export Visible CSV'}</button
 					>
 					<button
 						onclick={exportAllCsv}
-						class="border-2 px-4 py-2 font-semibold"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
+						class="border-2 border-border-primary px-4 py-2 font-semibold text-text-primary"
 						disabled={securityLoading || exportingAll}
 						>{exportingAll ? 'Exporting...' : 'Export All CSV'}</button
 					>
@@ -929,112 +825,75 @@
 			</div>
 
 			{#if securityError}
-				<div
-					class="mb-4 rounded border-2 p-4"
-					style="background-color: var(--error-bg); border-color: var(--field-error); color: var(--error);"
-				>
+				<div class="mb-4 rounded border-2 border-field-error bg-error-bg p-4 text-error">
 					{securityError}
 				</div>
 			{/if}
 
-			<div class="overflow-hidden rounded border-2" style="border-color: var(--border-primary);">
+			<div class="overflow-hidden rounded border-2 border-border-primary">
 				<div class="overflow-x-auto">
-					<table class="w-full" style="background-color: var(--bg-primary);">
+					<table class="w-full bg-bg-primary">
 						<thead>
-							<tr style="background-color: var(--bg-secondary);">
-								<th
-									class="px-4 py-3 text-left text-sm font-semibold"
-									style="color: var(--text-primary);">Created At</th
+							<tr class="bg-bg-secondary">
+								<th class="px-4 py-3 text-left text-sm font-semibold text-text-primary"
+									>Created At</th
 								>
-								<th
-									class="px-4 py-3 text-left text-sm font-semibold"
-									style="color: var(--text-primary);">Event Type</th
+								<th class="px-4 py-3 text-left text-sm font-semibold text-text-primary"
+									>Event Type</th
 								>
-								<th
-									class="px-4 py-3 text-left text-sm font-semibold"
-									style="color: var(--text-primary);">User ID</th
+								<th class="px-4 py-3 text-left text-sm font-semibold text-text-primary">User ID</th>
+								<th class="px-4 py-3 text-left text-sm font-semibold text-text-primary">Email</th>
+								<th class="px-4 py-3 text-left text-sm font-semibold text-text-primary"
+									>IP Address</th
 								>
-								<th
-									class="px-4 py-3 text-left text-sm font-semibold"
-									style="color: var(--text-primary);">Email</th
+								<th class="px-4 py-3 text-left text-sm font-semibold text-text-primary"
+									>User Agent</th
 								>
-								<th
-									class="px-4 py-3 text-left text-sm font-semibold"
-									style="color: var(--text-primary);">IP Address</th
+								<th class="px-4 py-3 text-left text-sm font-semibold text-text-primary"
+									>Actor Role</th
 								>
-								<th
-									class="px-4 py-3 text-left text-sm font-semibold"
-									style="color: var(--text-primary);">User Agent</th
+								<th class="px-4 py-3 text-left text-sm font-semibold text-text-primary"
+									>Target Email</th
 								>
-								<th
-									class="px-4 py-3 text-left text-sm font-semibold"
-									style="color: var(--text-primary);">Actor Role</th
-								>
-								<th
-									class="px-4 py-3 text-left text-sm font-semibold"
-									style="color: var(--text-primary);">Target Email</th
-								>
-								<th
-									class="px-4 py-3 text-left text-sm font-semibold"
-									style="color: var(--text-primary);">Request</th
-								>
-								<th
-									class="px-4 py-3 text-left text-sm font-semibold"
-									style="color: var(--text-primary);">Success</th
-								>
-								<th
-									class="px-4 py-3 text-left text-sm font-semibold"
-									style="color: var(--text-primary);">Details</th
-								>
+								<th class="px-4 py-3 text-left text-sm font-semibold text-text-primary">Request</th>
+								<th class="px-4 py-3 text-left text-sm font-semibold text-text-primary">Success</th>
+								<th class="px-4 py-3 text-left text-sm font-semibold text-text-primary">Details</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#if securityLoading}
-								<tr class="border-t" style="border-color: var(--border-primary);">
-									<td
-										colspan="11"
-										class="px-4 py-6 text-center text-sm"
-										style="color: var(--text-secondary);">Loading security events...</td
+								<tr class="border-t border-border-primary">
+									<td colspan="11" class="px-4 py-6 text-center text-sm text-text-secondary"
+										>Loading security events...</td
 									>
 								</tr>
 							{:else if securityLogs.length === 0}
-								<tr class="border-t" style="border-color: var(--border-primary);">
-									<td
-										colspan="11"
-										class="px-4 py-6 text-center text-sm"
-										style="color: var(--text-secondary);">No security events found.</td
+								<tr class="border-t border-border-primary">
+									<td colspan="11" class="px-4 py-6 text-center text-sm text-text-secondary"
+										>No security events found.</td
 									>
 								</tr>
 							{:else}
 								{#each securityLogs as log (log.id)}
-									<tr class="border-t" style="border-color: var(--border-primary);">
-										<td class="px-4 py-3 text-sm" style="color: var(--text-secondary);"
+									<tr class="border-t border-border-primary">
+										<td class="px-4 py-3 text-sm text-text-secondary"
 											>{new Date(log.created_at).toLocaleString()}</td
 										>
-										<td class="px-4 py-3 text-sm font-medium" style="color: var(--text-primary);"
-											>{log.event_type}</td
+										<td class="px-4 py-3 text-sm font-medium text-text-primary">{log.event_type}</td
 										>
-										<td class="px-4 py-3 font-mono text-xs" style="color: var(--text-secondary);"
+										<td class="px-4 py-3 font-mono text-xs text-text-secondary"
 											>{log.user_id || '-'}</td
 										>
-										<td class="px-4 py-3 text-sm" style="color: var(--text-secondary);"
-											>{log.email || '-'}</td
-										>
-										<td class="px-4 py-3 text-sm" style="color: var(--text-secondary);"
-											>{log.ip_address || '-'}</td
-										>
-										<td class="max-w-sm px-4 py-3 text-sm" style="color: var(--text-secondary);">
+										<td class="px-4 py-3 text-sm text-text-secondary">{log.email || '-'}</td>
+										<td class="px-4 py-3 text-sm text-text-secondary">{log.ip_address || '-'}</td>
+										<td class="max-w-sm px-4 py-3 text-sm text-text-secondary">
 											<div class="truncate" title={log.user_agent || ''}>
 												{log.user_agent || '-'}
 											</div>
 										</td>
-										<td class="px-4 py-3 text-sm" style="color: var(--text-secondary);"
-											>{log.actor_role || '-'}</td
-										>
-										<td class="px-4 py-3 text-sm" style="color: var(--text-secondary);"
-											>{log.target_email || '-'}</td
-										>
-										<td class="max-w-sm px-4 py-3 text-sm" style="color: var(--text-secondary);">
+										<td class="px-4 py-3 text-sm text-text-secondary">{log.actor_role || '-'}</td>
+										<td class="px-4 py-3 text-sm text-text-secondary">{log.target_email || '-'}</td>
+										<td class="max-w-sm px-4 py-3 text-sm text-text-secondary">
 											<div
 												class="truncate"
 												title={`${log.request_method || ''} ${log.request_path || ''}`}
@@ -1048,7 +907,7 @@
 											style={`color: ${log.success ? 'var(--create-button)' : 'var(--error)'};`}
 											>{log.success ? 'true' : 'false'}</td
 										>
-										<td class="max-w-md px-4 py-3 text-sm" style="color: var(--text-secondary);">
+										<td class="max-w-md px-4 py-3 text-sm text-text-secondary">
 											<div class="truncate" title={log.details || ''}>{log.details || '-'}</div>
 										</td>
 									</tr>
@@ -1062,19 +921,15 @@
 			<div class="mt-4 flex items-center gap-3">
 				<button
 					onclick={() => void goToPreviousPage()}
-					class="border-2 px-4 py-2 text-sm font-semibold"
-					style="border-color: var(--border-primary); color: var(--text-primary);"
+					class="border-2 border-border-primary px-4 py-2 text-sm font-semibold text-text-primary"
 					disabled={securityLoading || securityCursorHistory.length === 0}>Previous</button
 				>
 				<button
 					onclick={() => void goToNextPage()}
-					class="border-2 px-4 py-2 text-sm font-semibold"
-					style="border-color: var(--border-primary); color: var(--text-primary);"
+					class="border-2 border-border-primary px-4 py-2 text-sm font-semibold text-text-primary"
 					disabled={securityLoading || !securityNextCursor}>Next</button
 				>
-				<span class="text-sm" style="color: var(--text-secondary);"
-					>Showing up to 15 events per page</span
-				>
+				<span class="text-sm text-text-secondary">Showing up to 15 events per page</span>
 			</div>
 		{/if}
 	</div>
