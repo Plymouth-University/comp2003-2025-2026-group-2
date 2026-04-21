@@ -478,17 +478,14 @@
 		onclick={(e) => e.target === e.currentTarget && cancelDeleteBranch()}
 	>
 		<div
-			class="mx-4 w-full max-w-md rounded-lg border-2 p-6 shadow-xl"
-			style="background-color: var(--bg-primary); border-color: var(--border-primary);"
+			class="mx-4 w-full max-w-md rounded-lg border-2 border-border-primary bg-bg-primary p-6 shadow-xl"
 		>
 			<div class="mb-4 text-center">
 				<div
-					class="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full"
-					style="background-color: var(--error-bg);"
+					class="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-error-bg"
 				>
 					<svg
-						class="h-6 w-6"
-						style="color: var(--button-secondary);"
+						class="h-6 w-6 text-button-secondary"
 						fill="none"
 						stroke="currentColor"
 						viewBox="0 0 24 24"
@@ -501,31 +498,26 @@
 						/>
 					</svg>
 				</div>
-				<h3 class="mb-2 text-xl font-bold" style="color: var(--text-primary);">Delete Branch</h3>
-				<p class="text-sm" style="color: var(--text-secondary);">
+				<h3 class="mb-2 text-xl font-bold text-text-primary">Delete Branch</h3>
+				<p class="text-sm text-text-secondary">
 					Are you sure you want to delete <strong>{branchToDelete.name}</strong>?
 				</p>
 			</div>
 
 			{#if deletionMessage}
-				<div
-					class="mb-4 rounded-lg p-3 text-center text-sm"
-					style="background-color: var(--clock-in-bg); color: var(--create-button);"
-				>
+				<div class="mb-4 rounded-lg bg-clock-in-bg p-3 text-center text-sm text-create-button">
 					{deletionMessage}
 				</div>
 				<button
 					type="button"
 					onclick={cancelDeleteBranch}
-					class="w-full rounded-lg py-2 font-semibold transition-opacity hover:opacity-80"
-					style="background-color: var(--bg-secondary); color: var(--text-primary);"
+					class="w-full rounded-lg bg-bg-secondary py-2 font-semibold text-text-primary transition-opacity hover:opacity-80"
 				>
 					Close
 				</button>
 			{:else}
 				<div
-					class="mb-4 rounded-lg border-l-4 p-3 text-sm"
-					style="background-color: var(--orange-light); border-color: var(--orange); color: var(--orange-dark);"
+					class="mb-4 rounded-lg border-l-4 border-orange bg-orange-light p-3 text-sm text-orange-dark"
 				>
 					<p class="mb-1 font-semibold">⚠️ This action requires email confirmation</p>
 					<p>
@@ -539,8 +531,7 @@
 						type="button"
 						onclick={cancelDeleteBranch}
 						disabled={isRequestingDeletion}
-						class="flex-1 rounded-lg border-2 py-2 font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
-						style="border-color: var(--border-primary); color: var(--text-primary);"
+						class="flex-1 rounded-lg border-2 border-border-primary py-2 font-semibold text-text-primary transition-opacity hover:opacity-80 disabled:opacity-50"
 					>
 						Cancel
 					</button>
@@ -548,8 +539,7 @@
 						type="button"
 						onclick={requestBranchDeletion}
 						disabled={isRequestingDeletion}
-						class="flex-1 rounded-lg py-2 font-semibold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
-						style="background-color: var(--button-secondary);"
+						class="flex-1 rounded-lg bg-button-secondary py-2 font-semibold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
 					>
 						{#if isRequestingDeletion}
 							<span class="inline-flex items-center">
