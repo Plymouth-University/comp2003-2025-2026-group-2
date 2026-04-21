@@ -171,15 +171,14 @@
 	<title>Attendance</title>
 </svelte:head>
 
-<div class="attendance-page h-full w-full" style="background-color: var(--bg-secondary);">
+<div class="attendance-page h-full w-full bg-bg-secondary">
 	<div class="mx-auto max-w-7xl px-6 py-8">
 		<!-- Header -->
 		<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-			<h1 class="text-3xl font-bold" style="color: var(--text-primary);">Attendance Overview</h1>
+			<h1 class="text-3xl font-bold text-text-primary">Attendance Overview</h1>
 			<button
 				onclick={printToPDF}
-				class="cursor-pointer rounded border-2 px-5 py-2 font-medium transition-opacity hover:opacity-80"
-				style="border-color: var(--button-primary); color: var(--bg-primary); background-color: var(--button-primary);"
+				class="cursor-pointer rounded border-2 border-button-primary bg-button-primary px-5 py-2 font-medium text-bg-primary transition-opacity hover:opacity-80"
 			>
 				Export PDF
 			</button>
@@ -187,24 +186,18 @@
 
 		<!-- Filters -->
 		<div
-			class="mb-6 flex flex-wrap items-end gap-4 rounded border-2 p-4"
-			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+			class="mb-6 flex flex-wrap items-end gap-4 rounded border-2 border-border-primary bg-bg-primary p-4"
 		>
 			<!-- Branch Filter (only for company_manager or hq staff) -->
 			{#if (userRole === 'company_manager' || isHQStaff) && branches.length > 0}
 				<div class="flex flex-col gap-1">
-					<label
-						for="filter-branch"
-						class="text-xs font-medium"
-						style="color: var(--text-secondary);"
-					>
+					<label for="filter-branch" class="text-xs font-medium text-text-secondary">
 						Branch
 					</label>
 					<select
 						id="filter-branch"
 						bind:value={selectedBranchId}
-						class="border-2 px-3 py-2 text-sm"
-						style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary); min-width: 180px;"
+						class="min-w-[180px] border-2 border-border-primary bg-bg-secondary px-3 py-2 text-sm text-text-primary"
 					>
 						<option value="">All Branches</option>
 						{#each branches as branch (branch.id)}
@@ -216,9 +209,7 @@
 
 			<!-- Date From -->
 			<div class="flex flex-col gap-1">
-				<label for="filter-from" class="text-xs font-medium" style="color: var(--text-secondary);"
-					>From</label
-				>
+				<label for="filter-from" class="text-xs font-medium text-text-secondary">From</label>
 				<DatePicker
 					inputId="filter-from"
 					bind:value={dateFrom}
@@ -231,9 +222,7 @@
 
 			<!-- Date To -->
 			<div class="flex flex-col gap-1">
-				<label for="filter-to" class="text-xs font-medium" style="color: var(--text-secondary);"
-					>To</label
-				>
+				<label for="filter-to" class="text-xs font-medium text-text-secondary">To</label>
 				<DatePicker
 					inputId="filter-to"
 					bind:value={dateTo}
@@ -246,36 +235,31 @@
 
 			<button
 				onclick={applyDateFilter}
-				class="cursor-pointer rounded border-2 px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
-				style="border-color: var(--button-primary); color: var(--bg-primary); background-color: var(--button-primary);"
+				class="cursor-pointer rounded border-2 border-button-primary bg-button-primary px-4 py-2 text-sm font-medium text-bg-primary transition-opacity hover:opacity-80"
 			>
 				Apply
 			</button>
 			<button
 				onclick={clearFilters}
-				class="cursor-pointer rounded border-2 px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
-				style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+				class="cursor-pointer rounded border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary transition-opacity hover:opacity-80"
 			>
 				Clear
 			</button>
 
 			<div class="ml-auto flex flex-col gap-1">
-				<label for="filter-search" class="text-xs font-medium" style="color: var(--text-secondary);"
-					>Search</label
-				>
+				<label for="filter-search" class="text-xs font-medium text-text-secondary">Search</label>
 				<input
 					id="filter-search"
 					type="text"
 					bind:value={searchQuery}
 					placeholder="Filter by name or email..."
-					class="rounded border px-3 py-2 text-sm"
-					style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary); min-width: 220px;"
+					class="min-w-[220px] rounded border border-border-primary bg-bg-secondary px-3 py-2 text-sm text-text-primary"
 				/>
 			</div>
 		</div>
 
 		<!-- Summary -->
-		<div class="mb-4 text-sm" style="color: var(--text-secondary);">
+		<div class="mb-4 text-sm text-text-secondary">
 			{filteredEvents().length} record{filteredEvents().length !== 1 ? 's' : ''}
 			{#if searchQuery.trim()}
 				&mdash; filtered by &ldquo;{searchQuery}&rdquo;
@@ -283,13 +267,10 @@
 		</div>
 
 		<!-- Table -->
-		<div
-			class="overflow-x-auto rounded border-2"
-			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-		>
+		<div class="overflow-x-auto rounded border-2 border-border-primary bg-bg-primary">
 			<table class="w-full text-left text-sm">
 				<thead>
-					<tr style="background-color: var(--button-primary); color: var(--bg-primary);">
+					<tr class="bg-button-primary text-bg-primary">
 						<th class="px-4 py-3 font-medium">Employee</th>
 						<th class="px-4 py-3 font-medium">Email</th>
 						<th class="px-4 py-3 font-medium">Clock In</th>
@@ -301,44 +282,39 @@
 				<tbody>
 					{#if filteredEvents().length === 0}
 						<tr>
-							<td colspan="6" class="px-4 py-8 text-center" style="color: var(--text-secondary);">
+							<td colspan="6" class="px-4 py-8 text-center text-text-secondary">
 								No attendance records found
 							</td>
 						</tr>
 					{:else}
 						{#each filteredEvents() as event (event.id)}
-							<tr
-								class="border-b transition-colors hover:opacity-90"
-								style="border-color: var(--border-secondary);"
-							>
-								<td class="px-4 py-3" style="color: var(--text-primary);">
+							<tr class="border-b border-border-secondary transition-colors hover:opacity-90">
+								<td class="px-4 py-3 text-text-primary">
 									{event.first_name}
 									{event.last_name}
 								</td>
-								<td class="px-4 py-3" style="color: var(--text-secondary);">
+								<td class="px-4 py-3 text-text-secondary">
 									{event.email}
 								</td>
-								<td class="px-4 py-3" style="color: var(--text-primary);">
+								<td class="px-4 py-3 text-text-primary">
 									{formatDateTime(event.clock_in)}
 								</td>
-								<td class="px-4 py-3" style="color: var(--text-primary);">
+								<td class="px-4 py-3 text-text-primary">
 									{event.clock_out ? formatDateTime(event.clock_out) : '—'}
 								</td>
-								<td class="px-4 py-3" style="color: var(--text-primary);">
+								<td class="px-4 py-3 text-text-primary">
 									{formatDuration(event.clock_in, event.clock_out)}
 								</td>
 								<td class="px-4 py-3">
 									{#if event.status === 'in'}
 										<span
-											class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
-											style="background-color: var(--clock-in-bg); color: var(--button-primary);"
+											class="inline-block rounded-full bg-clock-in-bg px-2 py-0.5 text-xs font-semibold text-button-primary"
 										>
 											Clocked In
 										</span>
 									{:else}
 										<span
-											class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
-											style="background-color: var(--clock-out-bg); color: var(--text-secondary);"
+											class="inline-block rounded-full bg-clock-out-bg px-2 py-0.5 text-xs font-semibold text-text-secondary"
 										>
 											Clocked Out
 										</span>
