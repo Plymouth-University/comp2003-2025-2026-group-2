@@ -1240,12 +1240,11 @@ ${reportContent}
 <svelte:head>
 	<title>Generate Report</title>
 </svelte:head>
-<div class="reports-page min-h-full" style="background-color: var(--bg-secondary);">
+<div class="reports-page min-h-full bg-bg-secondary">
 	<!-- Main Content -->
 	<div class="mx-auto max-w-7xl px-6 py-6 lg:py-4">
 		<h1
-			class="mb-8 text-center text-3xl font-bold md:text-4xl lg:mb-5"
-			style="color: var(--text-primary);"
+			class="mb-8 text-center text-3xl font-bold md:text-4xl lg:mb-5 text-text-primary"
 		>
 			Generate Report
 		</h1>
@@ -1257,8 +1256,7 @@ ${reportContent}
 				<div class="mb-8 lg:mb-5">
 					<label
 						for="date-from"
-						class="mb-3 block text-lg font-bold"
-						style="color: var(--text-primary);">Date From:</label
+						class="mb-3 block text-lg font-bold text-text-primary">Date From:</label
 					>
 					<DatePicker
 						inputId="date-from"
@@ -1273,8 +1271,7 @@ ${reportContent}
 				<div class="mb-8 lg:mb-5">
 					<label
 						for="date-to"
-						class="mb-3 block text-lg font-bold"
-						style="color: var(--text-primary);">Date To:</label
+						class="mb-3 block text-lg font-bold text-text-primary">Date To:</label
 					>
 					<DatePicker
 						inputId="date-to"
@@ -1290,7 +1287,7 @@ ${reportContent}
 				<!-- Log Types -->
 				<div class="mb-8 lg:mb-5">
 					<fieldset>
-						<legend class="mb-3 block text-lg font-bold" style="color: var(--text-primary);"
+						<legend class="mb-3 block text-lg font-bold text-text-primary"
 							>Log Types:</legend
 						>
 						<div class="space-y-2">
@@ -1341,7 +1338,7 @@ ${reportContent}
 				<!-- Branch Filter (for company managers and HQ, when branches exist) -->
 				{#if canSeeBranchFilter}
 					<div class="branch-filter-container mb-8 lg:mb-5" style="position: relative;">
-						<legend class="mb-3 block text-lg font-bold" style="color: var(--text-primary);"
+						<legend class="mb-3 block text-lg font-bold text-text-primary"
 							>Branches:</legend
 						>
 						<div class="relative">
@@ -1349,7 +1346,7 @@ ${reportContent}
 								type="button"
 								onclick={() => (showBranchDropdown = !showBranchDropdown)}
 								class="flex w-full items-center justify-between border-2 px-4 py-2"
-								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+								class="border-border-primary bg-bg-primary text-text-primary"
 							>
 								<span>{selectedBranchesLabel()}</span>
 								<svg
@@ -1366,12 +1363,11 @@ ${reportContent}
 							{#if showBranchDropdown}
 								<div
 									class="absolute top-full left-0 z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border-2 shadow-lg"
-									style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+									class="border-border-primary bg-bg-primary"
 								>
 									<button
 										type="button"
-										class="w-full px-4 py-2 text-left font-semibold hover:opacity-80"
-										style="color: var(--text-primary);"
+										class="w-full px-4 py-2 text-left font-semibold hover:opacity-80 text-text-primary"
 										onclick={() => {
 											selectAllBranches();
 											showBranchDropdown = false;
@@ -1381,8 +1377,7 @@ ${reportContent}
 									</button>
 									<button
 										type="button"
-										class="w-full px-4 py-2 text-left hover:opacity-80"
-										style="color: var(--text-primary);"
+										class="w-full px-4 py-2 text-left hover:opacity-80 text-text-primary"
 										onclick={() => {
 											clearBranchFilter();
 											showBranchDropdown = false;
@@ -1393,8 +1388,7 @@ ${reportContent}
 									{#each branches as branch (branch.id)}
 										<button
 											type="button"
-											class="flex w-full items-center gap-2 px-4 py-2 text-left hover:opacity-80"
-											style="color: var(--text-primary);"
+											class="flex w-full items-center gap-2 px-4 py-2 text-left hover:opacity-80 text-text-primary"
 											onclick={() => toggleBranchFilter(branch.id)}
 										>
 											<input
@@ -1409,7 +1403,7 @@ ${reportContent}
 							{/if}
 						</div>
 						{#if selectedBranches.length > 0 && selectedBranches.length < branches.length}
-							<p class="mt-1 text-xs" style="color: var(--text-secondary);">
+							<p class="mt-1 text-xs text-text-secondary">
 								Filtering by {selectedBranches.length} of {branches.length} branches
 							</p>
 						{/if}
@@ -1418,7 +1412,7 @@ ${reportContent}
 
 				<!-- Arrange By Options -->
 				<div class="mb-8 lg:mb-5">
-					<legend class="mb-3 block text-lg font-bold" style="color: var(--text-primary);"
+					<legend class="mb-3 block text-lg font-bold text-text-primary"
 						>Arrange By:</legend
 					>
 					<div class="flex gap-3">
@@ -1492,7 +1486,7 @@ ${reportContent}
 					<button
 						onclick={generateReport}
 						class="flex transform items-center gap-2 border-2 px-8 py-2 font-medium transition-all duration-200 hover:scale-105 hover:opacity-90 hover:shadow-md"
-						style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+						class="border-border-primary bg-bg-primary text-text-primary"
 					>
 						Generate
 						<svg
@@ -1510,20 +1504,20 @@ ${reportContent}
 
 				<!-- Saved Report Runs -->
 				<div class="mt-8 lg:mt-5">
-					<h3 class="mb-3 text-lg font-bold" style="color: var(--text-primary);">Recent Reports</h3>
+					<h3 class="mb-3 text-lg font-bold text-text-primary">Recent Reports</h3>
 					{#if reportRunsError}
 						<p class="mb-2 text-sm text-red-500">{reportRunsError}</p>
 					{/if}
 					{#if isReportRunsLoading}
-						<p class="text-sm" style="color: var(--text-secondary);">Loading saved reports...</p>
+						<p class="text-sm text-text-secondary">Loading saved reports...</p>
 					{:else if reportRuns.length === 0}
-						<p class="text-sm" style="color: var(--text-secondary);">No saved reports yet.</p>
+						<p class="text-sm text-text-secondary">No saved reports yet.</p>
 					{:else}
 						<div class="space-y-2 lg:max-h-58 lg:overflow-y-auto lg:pr-1">
 							{#each reportRuns as run (run.id)}
 								<div
 									class="w-full cursor-pointer rounded border-2 px-3 py-1.5 transition-all duration-150 hover:opacity-95 hover:shadow-md"
-									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+									class="border-border-primary bg-bg-primary text-text-primary"
 									role="button"
 									tabindex="0"
 									onclick={() => runSavedReport(run)}
@@ -1553,7 +1547,7 @@ ${reportContent}
 											{deletingReportId === run.id ? 'Deleting...' : 'Delete'}
 										</button>
 									</div>
-									<div class="text-xs" style="color: var(--text-secondary);">
+									<div class="text-xs text-text-secondary">
 										Used {run.use_count} time(s) • {new Date(run.last_used_at).toLocaleString()}
 									</div>
 								</div>
@@ -1595,16 +1589,14 @@ ${reportContent}
 
 				<!-- Report Preview Area -->
 				<div
-					class="min-h-104 border-2 p-4 sm:min-h-120 sm:p-6 lg:min-h-108 lg:p-5"
-					style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+					class="min-h-104 border-2 p-4 sm:min-h-120 sm:p-6 lg:min-h-108 lg:p-5 border-border-primary bg-bg-primary"
 				>
 					{#if isLoading}
 						<div class="flex items-center justify-center py-8">
 							<div
-								class="h-8 w-8 animate-spin rounded-full border-b-2"
-								style="border-color: var(--text-primary);"
+								class="h-8 w-8 animate-spin rounded-full border-b-2 border-text-primary"
 							></div>
-							<span class="ml-3" style="color: var(--text-primary);">Generating report...</span>
+							<span class="ml-3 text-text-primary">Generating report...</span>
 						</div>
 					{:else if error}
 						<div class="flex items-start gap-3 text-red-500">
@@ -1628,10 +1620,10 @@ ${reportContent}
 					{:else if reportGenerated}
 						<div>
 							<div class="mb-6">
-								<h2 class="mb-2 text-xl font-bold" style="color: var(--text-primary);">
+								<h2 class="mb-2 text-xl font-bold text-text-primary">
 									Log Report
 								</h2>
-								<p class="text-sm" style="color: var(--text-secondary);">
+								<p class="text-sm text-text-secondary">
 									Date Range: {dateFrom} - {dateTo} | Arranged by: {arrangeBy === 'date'
 										? 'Date'
 										: 'Log Type'} | Total Entries: {filteredEntries.length}
@@ -1642,8 +1634,7 @@ ${reportContent}
 							{#if includeTemperatureGraphs && temperatureGraphs.length > 0}
 								<div class="mb-8">
 									<h3
-										class="mb-4 border-b-2 pb-2 text-lg font-bold"
-										style="color: var(--text-primary); border-color: var(--border-primary);"
+										class="mb-4 border-b-2 pb-2 text-lg font-bold text-text-primary border-border-primary"
 									>
 										📈 Temperature Graphs
 									</h3>
@@ -1669,16 +1660,15 @@ ${reportContent}
 										>
 											<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 												<div>
-													<h4 class="font-bold" style="color: var(--text-primary);">
+													<h4 class="font-bold text-text-primary">
 														{graph.templateName}
 													</h4>
-													<p class="text-sm" style="color: var(--text-secondary);">
+													<p class="text-sm text-text-secondary">
 														{graph.fieldLabel} ({graph.unit})
 													</p>
 												</div>
 												<div
-													class="flex flex-wrap gap-4 text-xs"
-													style="color: var(--text-secondary);"
+													class="flex flex-wrap gap-4 text-xs text-text-secondary"
 												>
 													<span>Min: <strong>{minVal}{graph.unit}</strong></span>
 													<span>Max: <strong>{maxVal}{graph.unit}</strong></span>
@@ -1687,8 +1677,7 @@ ${reportContent}
 												</div>
 											</div>
 											<div
-												class="overflow-x-auto rounded"
-												style="background-color: var(--bg-primary);"
+												class="overflow-x-auto rounded bg-bg-primary"
 											>
 												<svg
 													viewBox="-60 -10 {chartWidth + 80} {chartHeight + 60}"
@@ -1836,9 +1825,9 @@ ${reportContent}
 							{:else if includeTemperatureGraphs && filteredEntries.length > 0}
 								<div
 									class="mb-6 rounded-lg border border-dashed p-4 text-center"
-									style="border-color: var(--border-primary);"
+									class="border-border-primary"
 								>
-									<p class="text-sm" style="color: var(--text-secondary);">
+									<p class="text-sm text-text-secondary">
 										No temperature graph data available. Graphs require at least 2 entries of the
 										same log type with temperature fields.
 									</p>
@@ -1854,16 +1843,15 @@ ${reportContent}
 										fill="none"
 										stroke="currentColor"
 										stroke-width="1"
-										class="mx-auto mb-4"
-										style="color: var(--text-secondary);"
+										class="mx-auto mb-4 text-text-secondary"
 									>
 										<circle cx="11" cy="11" r="8"></circle>
 										<path d="21 21l-4.35-4.35"></path>
 									</svg>
-									<p class="text-lg font-medium" style="color: var(--text-secondary);">
+									<p class="text-lg font-medium text-text-secondary">
 										No log entries found
 									</p>
-									<p class="text-sm" style="color: var(--text-secondary);">
+									<p class="text-sm text-text-secondary">
 										Try adjusting your date range or log type filters.
 									</p>
 								</div>
@@ -1881,8 +1869,7 @@ ${reportContent}
 								{#each Object.entries(groupedComponents) as [fieldType, componentGroup] (fieldType)}
 									<div class="mb-6">
 										<h3
-											class="mb-3 border-b pb-2 text-lg font-bold"
-											style="color: var(--text-primary); border-color: var(--border-primary);"
+											class="mb-3 border-b pb-2 text-lg font-bold text-text-primary border-border-primary"
 										>
 											{fieldType} ({componentGroup.length} components)
 										</h3>
@@ -1893,13 +1880,13 @@ ${reportContent}
 											>
 												<div class="mb-2 flex items-start justify-between">
 													<div>
-														<span class="font-medium" style="color: var(--text-primary);"
+														<span class="font-medium text-text-primary"
 															>{formatTemplateName(
 																component.entry.template_name,
 																component.entry.period
 															)}</span
 														>
-														<span class="ml-2 text-sm" style="color: var(--text-secondary);"
+														<span class="ml-2 text-sm text-text-secondary"
 															>ID: {component.entry.id.slice(0, 8)}...</span
 														>
 													</div>
@@ -1912,23 +1899,23 @@ ${reportContent}
 														{component.entry.status}
 													</span>
 												</div>
-												<div class="mb-2 rounded p-2" style="background-color: var(--bg-primary);">
-													<p class="mb-1 text-sm font-medium" style="color: var(--text-primary);">
+												<div class="mb-2 rounded p-2 bg-bg-primary">
+													<p class="mb-1 text-sm font-medium text-text-primary">
 														Component Data:
 													</p>
-													<p class="text-sm" style="color: var(--text-secondary);">
+													<p class="text-sm text-text-secondary">
 														{component.fieldData}
 													</p>
 												</div>
-												<p class="mb-2 text-sm" style="color: var(--text-secondary);">
+												<p class="mb-2 text-sm text-text-secondary">
 													Created: {new Date(component.entry.created_at).toLocaleString()}
 												</p>
 												{#if component.entry.submitted_at}
-													<p class="mb-2 text-sm" style="color: var(--text-secondary);">
+													<p class="mb-2 text-sm text-text-secondary">
 														Submitted: {new Date(component.entry.submitted_at).toLocaleString()}
 													</p>
 												{/if}
-												<p class="text-sm" style="color: var(--text-secondary);">
+												<p class="text-sm text-text-secondary">
 													Period: {component.entry.period}
 												</p>
 											</div>
@@ -1949,10 +1936,10 @@ ${reportContent}
 										>
 											<div class="mb-2 flex items-start justify-between">
 												<div>
-													<span class="font-medium" style="color: var(--text-primary);"
+													<span class="font-medium text-text-primary"
 														>{formatTemplateName(entry.template_name, entry.period)}</span
 													>
-													<span class="ml-2 text-sm" style="color: var(--text-secondary);"
+													<span class="ml-2 text-sm text-text-secondary"
 														>ID: {entry.id.slice(0, 8)}...</span
 													>
 												</div>
@@ -1965,11 +1952,11 @@ ${reportContent}
 													{entry.status}
 												</span>
 											</div>
-											<div class="mb-2 rounded p-2" style="background-color: var(--bg-primary);">
-												<p class="mb-1 text-sm font-medium" style="color: var(--text-primary);">
+											<div class="mb-2 rounded p-2 bg-bg-primary">
+												<p class="mb-1 text-sm font-medium text-text-primary">
 													Entry Data:
 												</p>
-												<p class="text-sm" style="color: var(--text-secondary);">
+												<p class="text-sm text-text-secondary">
 													{parseEntryData(
 														entry.entry_data,
 														entry.template_layout,
@@ -1977,15 +1964,15 @@ ${reportContent}
 													)}
 												</p>
 											</div>
-											<p class="mb-2 text-sm" style="color: var(--text-secondary);">
+											<p class="mb-2 text-sm text-text-secondary">
 												Created: {new Date(entry.created_at).toLocaleString()}
 											</p>
 											{#if entry.submitted_at}
-												<p class="mb-2 text-sm" style="color: var(--text-secondary);">
+												<p class="mb-2 text-sm text-text-secondary">
 													Submitted: {new Date(entry.submitted_at).toLocaleString()}
 												</p>
 											{/if}
-											<p class="text-sm" style="color: var(--text-secondary);">
+											<p class="text-sm text-text-secondary">
 												Period: {entry.period}
 											</p>
 										</div>
@@ -2007,7 +1994,7 @@ ${reportContent}
 								<polyline points="9 17 14 22 23 10"></polyline>
 								<rect x="4" y="4" width="24" height="24" rx="2" ry="2"></rect>
 							</svg>
-							<p style="color: var(--text-secondary);">Generate a report to preview</p>
+							<p class="text-text-secondary">Generate a report to preview</p>
 						</div>
 					{/if}
 				</div>
