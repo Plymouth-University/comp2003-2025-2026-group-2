@@ -86,7 +86,7 @@
 <div class="flex-1 overflow-auto p-6">
 	<div class="mx-auto max-w-4xl">
 		<div class="mb-4 flex items-center justify-between">
-			<h2 class="text-3xl font-bold text-text-secondary">
+			<h2 class="text-3xl font-bold text-text-primary">
 				Canvas
 				<div class="tooltip" tabindex="-1" aria-label="Canvas instructions" role="tooltip">
 					﹖
@@ -98,7 +98,7 @@
 			</h2>
 			<div class="flex gap-2">
 				<button
-					class="rounded px-4 py-2 font-medium"
+					class="cursor-pointer rounded px-4 py-2 font-medium"
 					class:btn-snap-on={snapEnabled}
 					class:btn-snap-off={!snapEnabled}
 					onclick={() => (snapEnabled = !snapEnabled)}
@@ -107,7 +107,7 @@
 				</button>
 				{#if isEditing && onShowHistory}
 					<button
-						class="btn-history rounded px-4 py-2 font-medium text-white"
+						class="btn-history cursor-pointer rounded px-4 py-2 font-medium text-white"
 						onclick={() => {
 							console.log('History button clicked');
 							if (onShowHistory) onShowHistory();
@@ -118,7 +118,7 @@
 				{/if}
 				{#if selectedItemId}
 					<button
-						class="btn-delete rounded px-4 py-2 font-medium text-white"
+						class="btn-delete cursor-pointer rounded px-4 py-2 font-medium text-white"
 						onclick={onDeleteSelected}
 					>
 						Delete Selected
@@ -126,7 +126,7 @@
 				{/if}
 				{#if isEditing}
 					<button
-						class="btn-delete rounded px-4 py-2 font-medium text-white disabled:opacity-50"
+						class="btn-delete cursor-pointer rounded px-4 py-2 font-medium text-white disabled:opacity-50"
 						onclick={onDeleteTemplate}
 						disabled={deleting || loading}
 					>
@@ -138,7 +138,7 @@
 					</button>
 				{/if}
 				<button
-					class="btn-save rounded px-4 py-2 font-medium text-white disabled:opacity-50"
+					class="btn-save cursor-pointer rounded px-4 py-2 font-medium text-white disabled:opacity-50"
 					onclick={onSave}
 					disabled={saving || loading}
 				>
@@ -282,13 +282,13 @@
 							{#each snapLines.x as lineX (lineX)}
 								<div
 									class="snap-line-vertical pointer-events-none absolute top-0 bottom-0 w-px"
-									style="left: {lineX}px; background-color: #3b82f6;"
+									style="left: {lineX}px; background-color: var(--input-focus);"
 								></div>
 							{/each}
 							{#each snapLines.y as lineY (lineY)}
 								<div
 									class="snap-line-horizontal pointer-events-none absolute right-0 left-0 h-px"
-									style="top: {lineY}px; background-color: #3b82f6;"
+									style="top: {lineY}px; background-color: var(--input-focus);"
 								></div>
 							{/each}
 						{/if}
@@ -320,85 +320,60 @@
 	}
 
 	.btn-delete {
-		background-color: #d9534f;
+		background-color: var(--delete-button);
 		transition: background-color 0.15s ease;
 	}
 	.btn-delete:hover {
-		background-color: #c9302c;
+		background-color: var(--delete-button-hover);
 	}
 	.btn-delete:active {
-		background-color: #ac2925;
-	}
-	@media (prefers-color-scheme: dark) {
-		.btn-delete:hover {
-			background-color: #c12e2a;
-		}
+		background-color: var(--delete-button-active);
 	}
 
 	.btn-save {
-		background-color: #337ab7;
+		background-color: var(--create-button);
 		transition: background-color 0.15s ease;
 	}
 	.btn-save:hover:not(:disabled) {
-		background-color: #286090;
+		background-color: var(--create-button-hover);
 	}
 	.btn-save:active:not(:disabled) {
-		background-color: #204d74;
-	}
-	@media (prefers-color-scheme: dark) {
-		.btn-save:hover:not(:disabled) {
-			background-color: #275f8c;
-		}
+		background-color: var(--create-button-active);
 	}
 
 	.btn-snap-on {
-		background-color: #2c7c2c;
-		color: white;
+		background-color: var(--snap-on);
+		color: var(--button-text);
 		transition: background-color 0.15s ease;
 	}
 	.btn-snap-on:hover {
-		background-color: #236b23;
+		background-color: var(--snap-on-hover);
 	}
 	.btn-snap-on:active {
-		background-color: #1a5a1a;
-	}
-	@media (prefers-color-scheme: dark) {
-		.btn-snap-on:hover {
-			background-color: #226a22;
-		}
+		background-color: var(--snap-on-active);
 	}
 
 	.btn-snap-off {
-		background-color: #6c757d;
-		color: white;
+		background-color: var(--snap-off);
+		color: var(--button-text);
 		transition: background-color 0.15s ease;
 	}
 	.btn-snap-off:hover {
-		background-color: #5a6268;
+		background-color: var(--snap-off-hover);
 	}
 	.btn-snap-off:active {
-		background-color: #4e555b;
-	}
-	@media (prefers-color-scheme: dark) {
-		.btn-snap-off:hover {
-			background-color: #596167;
-		}
+		background-color: var(--snap-off-active);
 	}
 
 	.btn-history {
-		background-color: #607d8b;
+		background-color: var(--history-button);
 		transition: background-color 0.15s ease;
 	}
 	.btn-history:hover {
-		background-color: #546e7a;
+		background-color: var(--history-button-hover);
 	}
 	.btn-history:active {
-		background-color: #455a64;
-	}
-	@media (prefers-color-scheme: dark) {
-		.btn-history:hover {
-			background-color: #536d79;
-		}
+		background-color: var(--history-button-active);
 	}
 
 	.tooltip {
@@ -409,7 +384,29 @@
 
 	.tooltip-text {
 		visibility: hidden;
-		background-color: #1f2937;
+		background-color: var(--bg-secondary);
+		color: var(--bg-secondary);
+		font-size: 1vw;
+		text-align: center;
+		position: absolute;
+		padding: 40%;
+		border-radius: 8%;
+		z-index: 1;
+	}
+
+	.tooltip:hover .tooltip-text {
+		visibility: visible;
+	}
+
+	.tooltip {
+		position: relative;
+		display: inline-block;
+		cursor: help;
+	}
+
+	.tooltip-text {
+		visibility: hidden;
+		background-color: var(--text-primary);
 		font-size: 1vw;
 		text-align: center;
 		position: absolute;

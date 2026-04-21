@@ -219,7 +219,7 @@
 			{#if !isReadonlyHQ}
 				<button
 					type="button"
-					class="btn-create rounded px-6 py-3 text-white md:font-medium"
+					class="btn-create cursor-pointer rounded px-6 py-3 text-white md:font-medium"
 					onclick={handleCreateNew}
 				>
 					<span class="hidden sm:inline">➕ Create New Template</span>
@@ -248,12 +248,12 @@
 		{:else if error}
 			<div
 				class="rounded-lg border-2 px-6 py-12 text-center"
-				style="background-color: var(--bg-primary); border-color: #d9534f;"
+				style="background-color: var(--bg-primary); border-color: var(--error);"
 			>
-				<p class="text-lg" style="color: #d9534f;">{error}</p>
+				<p class="text-lg" style="color: var(--error);">{error}</p>
 				<button
 					type="button"
-					class="btn-retry mt-4 rounded px-4 py-2 font-medium text-white"
+					class="btn-retry mt-4 cursor-pointer rounded px-4 py-2 font-medium text-white"
 					onclick={fetchTemplates}
 				>
 					Retry
@@ -327,14 +327,14 @@
 			>
 				<button
 					type="button"
-					class="btn-cancel rounded px-4 py-2 font-medium"
+					class="btn-cancel cursor-pointer rounded px-4 py-2 font-medium"
 					onclick={cancelDelete}
 				>
 					Cancel
 				</button>
 				<button
 					type="button"
-					class="btn-confirm-delete rounded px-4 py-2 font-medium text-white"
+					class="btn-confirm-delete cursor-pointer rounded px-4 py-2 font-medium text-white"
 					onclick={confirmDelete}
 				>
 					Delete
@@ -346,16 +346,16 @@
 
 <style>
 	.btn-create {
-		background-color: #5cb85c;
+		background-color: var(--create-button);
 		transition: background-color 0.15s ease;
 	}
 
 	.btn-create:hover {
-		background-color: #449d44;
+		background-color: var(--create-button-hover);
 	}
 
 	.btn-create:active {
-		background-color: #398439;
+		background-color: var(--create-button-active);
 	}
 
 	.btn-cancel {
@@ -370,29 +370,48 @@
 	}
 
 	.btn-confirm-delete {
-		background-color: #d9534f;
+		background-color: var(--delete-button);
 		transition: background-color 0.15s ease;
 	}
 
 	.btn-confirm-delete:hover {
-		background-color: #c9302c;
+		background-color: var(--delete-button-hover);
 	}
 
 	.btn-confirm-delete:active {
-		background-color: #ac2925;
+		background-color: var(--delete-button-active);
 	}
 
 	.btn-retry {
-		background-color: #337ab7;
+		background-color: var(--retry-button);
 		transition: background-color 0.15s ease;
 	}
 
 	.btn-retry:hover {
-		background-color: #286090;
+		background-color: var(--retry-button-hover);
 	}
 
 	.btn-retry:active {
-		background-color: #204d74;
+		background-color: var(--retry-button-active);
+	}
+
+	.templates-dashboard-page button:not(:disabled),
+	.templates-dashboard-modal button:not(:disabled) {
+		cursor: pointer;
+		transition:
+			transform 0.12s ease,
+			filter 0.12s ease;
+	}
+
+	.templates-dashboard-page button:not(:disabled):hover,
+	.templates-dashboard-modal button:not(:disabled):hover {
+		transform: translateY(-1px) scale(1.02);
+		filter: brightness(0.96);
+	}
+
+	.templates-dashboard-page button:disabled,
+	.templates-dashboard-modal button:disabled {
+		cursor: not-allowed;
 	}
 
 	.templates-dashboard-page button:not(:disabled),

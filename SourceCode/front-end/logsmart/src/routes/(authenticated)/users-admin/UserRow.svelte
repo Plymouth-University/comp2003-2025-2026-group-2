@@ -40,7 +40,7 @@
 				: 'var(--bg-secondary)'}; color: {item.role === 'branch_manager' ||
 			item.role === 'company_manager' ||
 			item.role === 'logsmart_admin'
-				? '#000'
+				? 'var(--border-primary)'
 				: 'var(--text-secondary)'};"
 		>
 			{item.role === 'company_manager'

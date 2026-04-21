@@ -121,7 +121,9 @@
 		<div class="mb-4 flex items-center gap-3">
 			<span
 				class="inline-block h-3 w-3 rounded-full"
-				style="background-color: {isClockedIn ? '#22c55e' : '#ef4444'};"
+				style="background-color: {isClockedIn
+					? 'var(--create-button)'
+					: 'var(--button-secondary)'};"
 			></span>
 			<span class="text-base font-medium" style="color: var(--text-primary);">
 				{isClockedIn ? 'Currently Clocked In' : 'Currently Clocked Out'}
@@ -136,7 +138,7 @@
 
 		<!-- Error message -->
 		{#if error}
-			<div class="mb-4 text-sm font-medium" style="color: #ef4444;">
+			<div class="mb-4 text-sm font-medium" style="color: var(--button-secondary);">
 				{error}
 			</div>
 		{/if}
@@ -148,7 +150,7 @@
 					onclick={handleClockOut}
 					disabled={loading}
 					class="transform cursor-pointer border-2 px-6 py-2 font-medium transition-all duration-150 hover:scale-105 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
-					style="border-color: #ef4444; color: #ef4444; background-color: var(--bg-primary);"
+					style="border-color: var(--button-secondary); color: var(--button-secondary); background-color: var(--bg-primary);"
 				>
 					{loading ? 'Processing...' : 'Clock Out'}
 				</button>
@@ -157,7 +159,7 @@
 					onclick={handleClockIn}
 					disabled={loading}
 					class="transform cursor-pointer border-2 px-6 py-2 font-medium transition-all duration-150 hover:scale-105 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
-					style="border-color: #22c55e; color: #22c55e; background-color: var(--bg-primary);"
+					style="border-color: var(--create-button); color: var(--create-button); background-color: var(--bg-primary);"
 				>
 					{loading ? 'Processing...' : 'Clock In'}
 				</button>
@@ -179,7 +181,9 @@
 							<div class="flex items-center gap-2">
 								<span
 									class="inline-block h-2 w-2 rounded-full"
-									style="background-color: {event.status === 'in' ? '#22c55e' : '#ef4444'};"
+									style="background-color: {event.status === 'in'
+										? 'var(--create-button)'
+										: 'var(--button-secondary)'};"
 								></span>
 								<span style="color: var(--text-primary);">
 									{formatDateTime(event.clock_in)}
@@ -189,7 +193,7 @@
 								{#if event.clock_out}
 									→ {formatDateTime(event.clock_out)}
 								{:else}
-									<span style="color: #22c55e;">Active</span>
+									<span style="color: var(--create-button);">Active</span>
 								{/if}
 							</div>
 							<div class="font-medium" style="color: var(--text-secondary);">

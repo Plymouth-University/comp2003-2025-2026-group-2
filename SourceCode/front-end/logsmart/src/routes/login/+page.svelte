@@ -173,7 +173,7 @@
 		<button
 			type="button"
 			class="btn mt-4"
-			style="background-color: #4285F4;"
+			style="background-color: var(--button-primary);"
 			onclick={handlePasskeyLogin}
 			disabled={loading}
 		>
@@ -187,7 +187,7 @@
 		<button
 			type="button"
 			class="btn mt-4 flex items-center justify-center gap-2"
-			style="background-color: white; color: #3c4043; border: 1px solid #dadce0;"
+			style="background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--text-secondary);"
 			onclick={handleGoogleLogin}
 			disabled={loading}
 		>
@@ -263,17 +263,17 @@
 		outline: none;
 	}
 	input:focus {
-		border-color: #6b8cff;
+		border-color: var(--input-focus);
 		box-shadow: 0 0 0 3px rgba(107, 140, 255, 0.12);
 	}
 	.field-error {
-		color: #c93838;
+		color: var(--error);
 		font-size: 0.875rem;
 		margin-top: 0.5rem;
 	}
 	.error {
-		background: #fdecea;
-		color: #821313;
+		background: var(--error-bg);
+		color: var(--button-secondary);
 		padding: 0.5rem 0.75rem;
 		border-radius: 6px;
 		margin-bottom: 1rem;
@@ -282,8 +282,8 @@
 	.btn {
 		width: 100%;
 		padding: 0.75rem 1rem;
-		background: #2f6fff;
-		color: white;
+		background: var(--button-primary);
+		color: var(--button-text);
 		border: none;
 		border-radius: 6px;
 		font-size: 1rem;

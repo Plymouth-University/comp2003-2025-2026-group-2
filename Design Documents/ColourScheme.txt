@@ -1,7 +1,13 @@
 https://coolors.co/000100-a1a6b4-94c5cc-b4d2e7-f8f8f8
+https://coolors.co/673c4f-7f557d-726e97-7698b3-83b5d1
 
 Black / #000100 
 Cadet Gray / #A1A6B4
 Light Blue / #94C5CC
 Columbia Blue / #B4D2E7
 Seasalt / #F8F8F8
+Mauve Shadow / #673C4F
+Dusty Lavender / #7F557D
+Vintage Lavender / #726E97
+Steel Blue / #7698B3
+Sky Reflection / #83B5D1

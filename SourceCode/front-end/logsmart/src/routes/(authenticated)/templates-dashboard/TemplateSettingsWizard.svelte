@@ -316,9 +316,9 @@
 
 <style>
 	.day-selected {
-		background-color: #3d7a82;
-		border-color: #3d7a82;
-		color: white;
+		background-color: var(--button-primary);
+		border-color: var(--button-primary);
+		color: var(--bg-primary);
 	}
 
 	.day-unselected {
@@ -329,7 +329,7 @@
 
 	.day-unselected:hover {
 		background-color: var(--bg-primary);
-		border-color: #3d7a82;
+		border-color: var(--button-primary);
 	}
 
 	.btn-cancel {
@@ -344,16 +344,33 @@
 	}
 
 	.btn-save {
-		background-color: #5cb85c;
+		background-color: var(--create-button);
 		transition: background-color 0.15s ease;
 	}
 
 	.btn-save:hover {
-		background-color: #449d44;
+		background-color: var(--create-button-hover);
 	}
 
 	.btn-save:active {
-		background-color: #398439;
+		background-color: var(--create-button-active);
+	}
+
+	button:not(:disabled) {
+		cursor: pointer;
+		transition:
+			transform 0.12s ease,
+			filter 0.12s ease,
+			background-color 0.15s ease;
+	}
+
+	button:not(:disabled):hover {
+		transform: translateY(-1px) scale(1.02);
+		filter: brightness(0.96);
+	}
+
+	button:disabled {
+		cursor: not-allowed;
 	}
 
 	button:not(:disabled) {

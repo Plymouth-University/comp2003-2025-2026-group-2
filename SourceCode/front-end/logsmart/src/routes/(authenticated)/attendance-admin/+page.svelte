@@ -179,7 +179,7 @@
 			<button
 				onclick={printToPDF}
 				class="cursor-pointer rounded border-2 px-5 py-2 font-medium transition-opacity hover:opacity-80"
-				style="border-color: #3D7A82; color: white; background-color: #3D7A82;"
+				style="border-color: var(--button-primary); color: var(--bg-primary); background-color: var(--button-primary);"
 			>
 				Export PDF
 			</button>
@@ -247,7 +247,7 @@
 			<button
 				onclick={applyDateFilter}
 				class="cursor-pointer rounded border-2 px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80"
-				style="border-color: #3D7A82; color: white; background-color: #3D7A82;"
+				style="border-color: var(--button-primary); color: var(--bg-primary); background-color: var(--button-primary);"
 			>
 				Apply
 			</button>
@@ -289,7 +289,7 @@
 		>
 			<table class="w-full text-left text-sm">
 				<thead>
-					<tr style="background-color: #3D7A82; color: white;">
+					<tr style="background-color: var(--button-primary); color: var(--bg-primary);">
 						<th class="px-4 py-3 font-medium">Employee</th>
 						<th class="px-4 py-3 font-medium">Email</th>
 						<th class="px-4 py-3 font-medium">Clock In</th>
@@ -331,14 +331,14 @@
 									{#if event.status === 'in'}
 										<span
 											class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
-											style="background-color: #dcfce7; color: #16a34a;"
+											style="background-color: var(--clock-in-bg); color: var(--button-primary);"
 										>
 											Clocked In
 										</span>
 									{:else}
 										<span
 											class="inline-block rounded-full px-2 py-0.5 text-xs font-semibold"
-											style="background-color: #f3f4f6; color: #6b7280;"
+											style="background-color: var(--clock-out-bg); color: var(--text-secondary);"
 										>
 											Clocked Out
 										</span>

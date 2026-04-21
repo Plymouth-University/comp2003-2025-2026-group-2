@@ -47,7 +47,7 @@
 		<h2 class="mb-4 text-2xl font-bold" style="color: var(--text-primary);">Templates</h2>
 
 		<button
-			class="btn-create mb-6 w-full rounded px-4 py-2 font-medium text-white"
+			class="btn-create mb-6 w-full cursor-pointer rounded px-4 py-2 font-medium text-white"
 			onclick={onCreateNew}
 		>
 			+ Create New
@@ -178,35 +178,24 @@
 
 <style>
 	.btn-create {
-		background-color: #5cb85c;
+		background-color: var(--create-button);
 		transition: background-color 0.15s ease;
 	}
 	.btn-default {
-		background-color: #3d7a82;
+		background-color: var(--create-button);
 		transition: background-color 0.15s ease;
 	}
 	.btn-create:hover {
-		background-color: #449d44;
+		background-color: var(--create-button-hover);
 	}
 	.btn-default:hover:enabled {
-		background-color: #2f6066;
+		background-color: var(--create-button-hover);
 	}
 	.btn-create:active {
-		background-color: #398439;
+		background-color: var(--create-button-active);
 	}
 	.btn-default:disabled {
 		opacity: 0.6;
 		cursor: not-allowed;
-	}
-	@media (prefers-color-scheme: dark) {
-		.btn-create:hover {
-			background-color: #439c43;
-		}
-		.btn-default:hover:enabled {
-			background-color: #3b747c;
-		}
-		.btn-default:hover:enabled {
-			background-color: #3b747c;
-		}
 	}
 </style>

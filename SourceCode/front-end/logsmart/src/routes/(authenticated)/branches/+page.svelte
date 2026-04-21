@@ -484,11 +484,11 @@
 			<div class="mb-4 text-center">
 				<div
 					class="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full"
-					style="background-color: #fee2e2;"
+					style="background-color: var(--error-bg);"
 				>
 					<svg
 						class="h-6 w-6"
-						style="color: #dc2626;"
+						style="color: var(--button-secondary);"
 						fill="none"
 						stroke="currentColor"
 						viewBox="0 0 24 24"
@@ -510,7 +510,7 @@
 			{#if deletionMessage}
 				<div
 					class="mb-4 rounded-lg p-3 text-center text-sm"
-					style="background-color: #dcfce7; color: #166534;"
+					style="background-color: var(--clock-in-bg); color: var(--create-button);"
 				>
 					{deletionMessage}
 				</div>
@@ -525,7 +525,7 @@
 			{:else}
 				<div
 					class="mb-4 rounded-lg border-l-4 p-3 text-sm"
-					style="background-color: #fef3c7; border-color: #f59e0b; color: #92400e;"
+					style="background-color: var(--orange-light); border-color: var(--orange); color: var(--orange-dark);"
 				>
 					<p class="mb-1 font-semibold">⚠️ This action requires email confirmation</p>
 					<p>
@@ -549,7 +549,7 @@
 						onclick={requestBranchDeletion}
 						disabled={isRequestingDeletion}
 						class="flex-1 rounded-lg py-2 font-semibold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
-						style="background-color: #dc2626;"
+						style="background-color: var(--button-secondary);"
 					>
 						{#if isRequestingDeletion}
 							<span class="inline-flex items-center">
