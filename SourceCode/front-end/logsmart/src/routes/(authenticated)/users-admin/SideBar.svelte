@@ -168,7 +168,7 @@
 					Close
 				</button>
 			</div>
-			<div class="space-y-1 text-xs" style="color: var(--input-focus);">
+			<div class="space-y-1 text-xs text-input-focus">
 				{#if updatePopupDetails.length > 0}
 					{#each updatePopupDetails as detail (detail)}
 						<p>{detail}</p>
