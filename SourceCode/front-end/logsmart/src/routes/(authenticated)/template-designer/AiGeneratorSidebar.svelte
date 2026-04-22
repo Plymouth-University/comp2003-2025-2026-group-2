@@ -41,8 +41,7 @@
 </script>
 
 <div
-	class="flex flex-col"
-	style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+	class="flex flex-col border-border-primary bg-bg-primary"
 >
 	<div class="p-4">
 		<h2 class="mb-4 text-xl font-bold text-text-primary">AI Generator</h2>
@@ -55,8 +54,7 @@
 				id="ai-prompt"
 				bind:value={aiPrompt}
 				placeholder="Describe your log template layout..."
-				class="w-full rounded border-2 p-3 text-sm"
-				style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+				class="w-full rounded border-2 p-3 text-sm border-border-primary bg-bg-secondary text-text-primary"
 				disabled={aiLoading}
 				rows="4"
 			></textarea>
@@ -65,7 +63,7 @@
 		<div class="flex gap-2">
 			<button
 				class="flex-1 rounded px-4 py-2 font-medium text-white disabled:opacity-50"
-				style="background-color: var(--input-focus);"
+				class="bg-input-focus"
 				onclick={onGenerateLayout}
 				disabled={aiLoading || !aiPrompt.trim()}
 			>
@@ -77,8 +75,7 @@
 			</button>
 			{#if hasUndoAvailable}
 				<button
-					class="rounded px-3 py-2 text-sm font-medium"
-					style="background-color: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-primary);"
+					class="rounded px-3 py-2 text-sm font-medium bg-bg-secondary text-text-primary border border-border-primary"
 					onclick={onUndoGeneration}
 					disabled={aiLoading}
 					title="Undo the last AI generation"
