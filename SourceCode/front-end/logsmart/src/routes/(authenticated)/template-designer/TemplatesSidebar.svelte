@@ -40,11 +40,10 @@
 </script>
 
 <div
-	class="flex flex-col"
-	style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+	class="flex flex-col border-border-primary bg-bg-primary"
 >
 	<div class="p-6">
-		<h2 class="mb-4 text-2xl font-bold" style="color: var(--text-primary);">Templates</h2>
+		<h2 class="mb-4 text-2xl font-bold text-text-primary">Templates</h2>
 
 		<button
 			class="btn-create mb-6 w-full cursor-pointer rounded px-4 py-2 font-medium text-white"
@@ -53,14 +52,13 @@
 			+ Create New
 		</button>
 
-		<div class="mb-6 border-2 px-4 py-4" style="border-color: var(--border-primary);">
-			<h3 class="mb-2 text-sm font-semibold uppercase" style="color: var(--text-secondary);">
+		<div class="mb-6 border-2 px-4 py-4 border-border-primary">
+			<h3 class="mb-2 text-sm font-semibold uppercase text-text-secondary">
 				Start From Default
 			</h3>
 
 			<select
-				class="mb-3 h-9 w-full max-w-60 rounded border-2 px-2 py-1 text-xs"
-				style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+				class="mb-3 h-9 w-full max-w-60 rounded border-2 px-2 py-1 text-xs border-border-primary bg-bg-primary text-text-primary"
 				bind:value={selectedDefaultTemplateId}
 			>
 				{#if checklistTemplates.length > 0}
@@ -87,7 +85,7 @@
 			</select>
 
 			{#if selectedDefaultTemplate}
-				<p class="mb-3 text-xs" style="color: var(--text-secondary);">
+				<p class="mb-3 text-xs text-text-secondary">
 					{selectedDefaultTemplate.description}
 				</p>
 			{/if}
@@ -102,16 +100,16 @@
 			</button>
 		</div>
 
-		<div class="border-2" style="border-color: var(--border-primary);">
-			<ul class="divide-y" style="border-color: var(--border-secondary);">
+		<div class="border-2 border-border-primary">
+			<ul class="divide-y border-border-secondary">
 				{#if isNewTemplate}
 					<li
 						class="flex min-w-0 items-center gap-3 px-4 py-3"
-						style="background-color: var(--bg-secondary);"
+						class="bg-bg-secondary"
 					>
 						<div
 							class="flex h-5 w-5 items-center justify-center border-2"
-							style="border-color: var(--border-primary);"
+							class="border-border-primary"
 						>
 							<svg
 								width="12"
@@ -120,7 +118,7 @@
 								fill="none"
 								stroke="currentColor"
 								stroke-width="2"
-								style="color: var(--border-primary);"
+								class="text-border-primary"
 							>
 								<line x1="2" y1="6" x2="10" y2="6"></line>
 								<line x1="6" y1="2" x2="6" y2="10"></line>
@@ -148,7 +146,7 @@
 					>
 						<div
 							class="flex h-5 w-5 items-center justify-center border-2"
-							style="border-color: var(--border-primary);"
+							class="border-border-primary"
 						>
 							{#if !isNewTemplate && currentTemplateName === template.name}
 								<svg

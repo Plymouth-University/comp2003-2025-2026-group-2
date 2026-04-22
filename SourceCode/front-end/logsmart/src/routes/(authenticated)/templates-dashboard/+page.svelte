@@ -212,10 +212,10 @@
 	<title>Templates Dashboard</title>
 </svelte:head>
 
-<div class="templates-dashboard-page min-h-screen" style="background-color: var(--bg-secondary);">
+<div class="templates-dashboard-page min-h-screen bg-bg-secondary">
 	<div class="mx-auto max-w-5xl px-6 py-8">
 		<div class="mb-8 flex items-center justify-between">
-			<h1 class="text-3xl font-bold" style="color: var(--text-primary);">Templates Dashboard</h1>
+			<h1 class="text-3xl font-bold text-text-primary">Templates Dashboard</h1>
 			{#if !isReadonlyHQ}
 				<button
 					type="button"
@@ -234,23 +234,23 @@
 				bind:value={searchQuery}
 				placeholder="Search templates..."
 				class="w-full rounded-lg border-2 px-4 py-3"
-				style="background-color: var(--bg-primary); border-color: var(--border-primary); color: var(--text-primary);"
+				class="bg-bg-primary border-border-primary text-text-primary"
 			/>
 		</div>
 
 		{#if loading}
 			<div
 				class="rounded-lg border-2 px-6 py-12 text-center"
-				style="background-color: var(--bg-primary); border-color: var(--border-primary);"
+				class="bg-bg-primary border-border-primary"
 			>
-				<p class="text-lg" style="color: var(--text-secondary);">Loading templates...</p>
+				<p class="text-lg text-text-secondary"Loading templates...</p>
 			</div>
 		{:else if error}
 			<div
 				class="rounded-lg border-2 px-6 py-12 text-center"
-				style="background-color: var(--bg-primary); border-color: var(--error);"
+				class="bg-bg-primary border-error"
 			>
-				<p class="text-lg" style="color: var(--error);">{error}</p>
+				<p class="text-lg text-error"{error}</p>
 				<button
 					type="button"
 					class="btn-retry mt-4 cursor-pointer rounded px-4 py-2 font-medium text-white"
@@ -262,14 +262,14 @@
 		{:else if filteredTemplates.length === 0}
 			<div
 				class="rounded-lg border-2 px-6 py-12 text-center"
-				style="background-color: var(--bg-primary); border-color: var(--border-primary);"
+				class="bg-bg-primary border-border-primary"
 			>
 				{#if searchQuery}
-					<p class="text-lg" style="color: var(--text-secondary);">
+					<p class="text-lg text-text-secondary"
 						No templates found matching "{searchQuery}"
 					</p>
 				{:else}
-					<p class="text-lg" style="color: var(--text-secondary);">
+					<p class="text-lg text-text-secondary"
 						No templates yet. Create your first template to get started!
 					</p>
 				{/if}
@@ -288,7 +288,7 @@
 			</div>
 		{/if}
 
-		<div class="mt-6 text-sm" style="color: var(--text-secondary);">
+		<div class="mt-6 text-sm text-text-secondary">
 			{filteredTemplates.length} template{filteredTemplates.length !== 1 ? 's' : ''}
 		</div>
 	</div>
@@ -313,17 +313,16 @@
 	>
 		<div
 			class="w-full max-w-md rounded-lg border-2 shadow-xl"
-			style="background-color: var(--bg-primary); border-color: var(--border-primary);"
+			class="bg-bg-primary border-border-primary"
 		>
 			<div class="px-6 py-6">
-				<h2 class="mb-4 text-xl font-bold" style="color: var(--text-primary);">Delete Template?</h2>
-				<p style="color: var(--text-secondary);">
+				<h2 class="mb-4 text-xl font-bold text-text-primary">Delete Template?</h2>
+				<p class="text-text-secondary">
 					Are you sure you want to delete "{templateToDelete.name}"? This action cannot be undone.
 				</p>
 			</div>
 			<div
-				class="flex justify-end gap-3 border-t-2 px-6 py-4"
-				style="border-color: var(--border-primary);"
+				class="flex justify-end gap-3 border-t-2 px-6 py-4 border-border-primary"
 			>
 				<button
 					type="button"
