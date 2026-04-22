@@ -818,7 +818,7 @@
 	onRestore={restoreVersion}
 />
 
-<div class="min-h-full" style="background-color: var(--bg-secondary);">
+<div class="min-h-full bg-bg-secondary">
 	<!-- Centered menu bar for small screens -->
 	{#if isSmallScreen}
 		<div class="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 transform">
@@ -868,7 +868,7 @@
 			class:w-80={isSmallScreen}
 			class:w-72={!isSmallScreen}
 			class:-translate-x-full={isSmallScreen && !leftSidebarOpen}
-			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+			class="border-border-primary bg-bg-primary"
 		>
 			<div
 				style="height: {leftPaletteHeight !== null
@@ -887,7 +887,7 @@
 			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 			<div
 				class="h-2 cursor-row-resize border-y-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-				style="border-color: var(--border-primary); flex-shrink: 0;"
+				class="border-border-primary" style="flex-shrink: 0;"
 				onmousedown={(e) => handleResizeStart(e, 'left')}
 				ondblclick={() => (leftPaletteHeight = null)}
 				role="separator"
@@ -942,7 +942,7 @@
 			class:w-80={isSmallScreen}
 			class:w-72={!isSmallScreen}
 			class:translate-x-full={isSmallScreen && !rightSidebarOpen}
-			style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+			class="border-border-primary bg-bg-primary"
 		>
 			<div
 				style="height: {rightPaletteHeight !== null
@@ -954,7 +954,7 @@
 			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 			<div
 				class="h-2 cursor-row-resize border-y-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-				style="border-color: var(--border-primary); flex-shrink: 0;"
+				class="border-border-primary" style="flex-shrink: 0;"
 				onmousedown={(e) => handleResizeStart(e, 'right')}
 				ondblclick={() => (rightPaletteHeight = null)}
 				role="separator"

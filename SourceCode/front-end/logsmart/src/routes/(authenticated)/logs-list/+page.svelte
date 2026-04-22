@@ -264,7 +264,7 @@
 	<title>Logs List</title>
 </svelte:head>
 <main>
-	<div class="logs-page min-h-full" style="background-color: var(--bg-secondary);">
+	<div class="logs-page min-h-full bg-bg-secondary">
 		<div class="mx-auto max-w-7xl px-6 py-8">
 			{#if data.error}
 				<div

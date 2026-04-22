@@ -13,19 +13,18 @@
 </script>
 
 <div
-	class="mb-3 flex flex-col gap-3 rounded-lg border-2 p-4 transition-all hover:opacity-80 sm:flex-row sm:items-center sm:justify-between"
-	style="background-color: var(--bg-primary); border-color: var(--border-primary);"
+	class="mb-3 flex flex-col gap-3 rounded-lg border-2 border-border-primary bg-bg-primary p-4 transition-all hover:opacity-80 sm:flex-row sm:items-center sm:justify-between"
 >
 	<button
 		onclick={() => setSelectedUser(item.email)}
 		class="flex flex-1 flex-col gap-2 text-left"
 		type="button"
 	>
-		<div class="font-semibold" style="color: var(--text-primary);">
+		<div class="font-semibold text-text-primary">
 			{item.first_name}
 			{item.last_name}
 		</div>
-		<div class="text-sm" style="color: var(--text-secondary);">
+		<div class="text-sm text-text-secondary">
 			{item.email}
 		</div>
 	</button>

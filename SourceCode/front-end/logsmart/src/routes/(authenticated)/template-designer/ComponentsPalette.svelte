@@ -71,7 +71,7 @@
 </script>
 
 <div class="h-full p-4">
-	<h2 class="mb-3 text-xl font-bold" style="color: var(--text-primary);">Components</h2>
+	<h2 class="mb-3 text-xl font-bold text-text-primary">Components</h2>
 
 	<div class="space-y-1">
 		{#each componentTypes as component (component.type)}
