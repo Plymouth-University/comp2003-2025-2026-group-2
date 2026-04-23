@@ -233,24 +233,17 @@
 				type="text"
 				bind:value={searchQuery}
 				placeholder="Search templates..."
-				class="w-full rounded-lg border-2 px-4 py-3"
-				class="bg-bg-primary border-border-primary text-text-primary"
+				class="w-full rounded-lg border-2 border-border-primary bg-bg-primary px-4 py-3 text-text-primary"
 			/>
 		</div>
 
 		{#if loading}
-			<div
-				class="rounded-lg border-2 px-6 py-12 text-center"
-				class="bg-bg-primary border-border-primary"
-			>
-				<p class="text-lg text-text-secondary"Loading templates...</p>
+			<div class="rounded-lg border-2 border-border-primary bg-bg-primary px-6 py-12 text-center">
+				<p class="text-lg text-text-secondary">Loading templates...</p>
 			</div>
 		{:else if error}
-			<div
-				class="rounded-lg border-2 px-6 py-12 text-center"
-				class="bg-bg-primary border-error"
-			>
-				<p class="text-lg text-error"{error}</p>
+			<div class="rounded-lg border-2 border-error bg-bg-primary px-6 py-12 text-center">
+				<p class="text-lg text-error">{error}</p>
 				<button
 					type="button"
 					class="btn-retry mt-4 cursor-pointer rounded px-4 py-2 font-medium text-white"
@@ -260,16 +253,13 @@
 				</button>
 			</div>
 		{:else if filteredTemplates.length === 0}
-			<div
-				class="rounded-lg border-2 px-6 py-12 text-center"
-				class="bg-bg-primary border-border-primary"
-			>
+			<div class="rounded-lg border-2 border-border-primary bg-bg-primary px-6 py-12 text-center">
 				{#if searchQuery}
-					<p class="text-lg text-text-secondary"
+					<p class="text-lg text-text-secondary">
 						No templates found matching "{searchQuery}"
 					</p>
 				{:else}
-					<p class="text-lg text-text-secondary"
+					<p class="text-lg text-text-secondary">
 						No templates yet. Create your first template to get started!
 					</p>
 				{/if}
@@ -311,19 +301,14 @@
 		aria-modal="true"
 		tabindex="-1"
 	>
-		<div
-			class="w-full max-w-md rounded-lg border-2 shadow-xl"
-			class="bg-bg-primary border-border-primary"
-		>
+		<div class="w-full max-w-md rounded-lg border-2 border-border-primary bg-bg-primary shadow-xl">
 			<div class="px-6 py-6">
 				<h2 class="mb-4 text-xl font-bold text-text-primary">Delete Template?</h2>
 				<p class="text-text-secondary">
 					Are you sure you want to delete "{templateToDelete.name}"? This action cannot be undone.
 				</p>
 			</div>
-			<div
-				class="flex justify-end gap-3 border-t-2 px-6 py-4 border-border-primary"
-			>
+			<div class="flex justify-end gap-3 border-t-2 border-border-primary px-6 py-4">
 				<button
 					type="button"
 					class="btn-cancel cursor-pointer rounded px-4 py-2 font-medium"

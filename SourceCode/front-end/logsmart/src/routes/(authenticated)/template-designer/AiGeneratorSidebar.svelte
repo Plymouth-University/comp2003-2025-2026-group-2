@@ -40,9 +40,7 @@
 	});
 </script>
 
-<div
-	class="flex flex-col border-border-primary bg-bg-primary"
->
+<div class="flex flex-col border-border-primary bg-bg-primary">
 	<div class="p-4">
 		<h2 class="mb-4 text-xl font-bold text-text-primary">AI Generator</h2>
 
@@ -54,7 +52,7 @@
 				id="ai-prompt"
 				bind:value={aiPrompt}
 				placeholder="Describe your log template layout..."
-				class="w-full rounded border-2 p-3 text-sm border-border-primary bg-bg-secondary text-text-primary"
+				class="w-full rounded border-2 border-border-primary bg-bg-secondary p-3 text-sm text-text-primary"
 				disabled={aiLoading}
 				rows="4"
 			></textarea>
@@ -62,8 +60,7 @@
 
 		<div class="flex gap-2">
 			<button
-				class="flex-1 rounded px-4 py-2 font-medium text-white disabled:opacity-50"
-				class="bg-input-focus"
+				class="flex-1 rounded bg-input-focus px-4 py-2 font-medium text-white disabled:opacity-50"
 				onclick={onGenerateLayout}
 				disabled={aiLoading || !aiPrompt.trim()}
 			>
@@ -75,7 +72,7 @@
 			</button>
 			{#if hasUndoAvailable}
 				<button
-					class="rounded px-3 py-2 text-sm font-medium bg-bg-secondary text-text-primary border border-border-primary"
+					class="rounded border border-border-primary bg-bg-secondary px-3 py-2 text-sm font-medium text-text-primary"
 					onclick={onUndoGeneration}
 					disabled={aiLoading}
 					title="Undo the last AI generation"

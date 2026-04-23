@@ -1243,9 +1243,7 @@ ${reportContent}
 <div class="reports-page min-h-full bg-bg-secondary">
 	<!-- Main Content -->
 	<div class="mx-auto max-w-7xl px-6 py-6 lg:py-4">
-		<h1
-			class="mb-8 text-center text-3xl font-bold md:text-4xl lg:mb-5 text-text-primary"
-		>
+		<h1 class="mb-8 text-center text-3xl font-bold text-text-primary md:text-4xl lg:mb-5">
 			Generate Report
 		</h1>
 
@@ -1254,9 +1252,8 @@ ${reportContent}
 			<div class="w-full lg:w-96">
 				<!-- Date From -->
 				<div class="mb-8 lg:mb-5">
-					<label
-						for="date-from"
-						class="mb-3 block text-lg font-bold text-text-primary">Date From:</label
+					<label for="date-from" class="mb-3 block text-lg font-bold text-text-primary"
+						>Date From:</label
 					>
 					<DatePicker
 						inputId="date-from"
@@ -1269,9 +1266,8 @@ ${reportContent}
 
 				<!-- Date To -->
 				<div class="mb-8 lg:mb-5">
-					<label
-						for="date-to"
-						class="mb-3 block text-lg font-bold text-text-primary">Date To:</label
+					<label for="date-to" class="mb-3 block text-lg font-bold text-text-primary"
+						>Date To:</label
 					>
 					<DatePicker
 						inputId="date-to"
@@ -1287,9 +1283,7 @@ ${reportContent}
 				<!-- Log Types -->
 				<div class="mb-8 lg:mb-5">
 					<fieldset>
-						<legend class="mb-3 block text-lg font-bold text-text-primary"
-							>Log Types:</legend
-						>
+						<legend class="mb-3 block text-lg font-bold text-text-primary">Log Types:</legend>
 						<div class="space-y-2">
 							{#each logTypes.filter((logType) => logType.id === 'all') as logType (logType.id)}
 								<button
@@ -1338,15 +1332,12 @@ ${reportContent}
 				<!-- Branch Filter (for company managers and HQ, when branches exist) -->
 				{#if canSeeBranchFilter}
 					<div class="branch-filter-container mb-8 lg:mb-5" style="position: relative;">
-						<legend class="mb-3 block text-lg font-bold text-text-primary"
-							>Branches:</legend
-						>
+						<legend class="mb-3 block text-lg font-bold text-text-primary">Branches:</legend>
 						<div class="relative">
 							<button
 								type="button"
 								onclick={() => (showBranchDropdown = !showBranchDropdown)}
-								class="flex w-full items-center justify-between border-2 px-4 py-2"
-								class="border-border-primary bg-bg-primary text-text-primary"
+								class="flex w-full items-center justify-between border-2 border-border-primary bg-bg-primary px-4 py-2 text-text-primary"
 							>
 								<span>{selectedBranchesLabel()}</span>
 								<svg
@@ -1362,12 +1353,11 @@ ${reportContent}
 							</button>
 							{#if showBranchDropdown}
 								<div
-									class="absolute top-full left-0 z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border-2 shadow-lg"
-									class="border-border-primary bg-bg-primary"
+									class="absolute top-full left-0 z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border-2 border-border-primary bg-bg-primary shadow-lg"
 								>
 									<button
 										type="button"
-										class="w-full px-4 py-2 text-left font-semibold hover:opacity-80 text-text-primary"
+										class="w-full px-4 py-2 text-left font-semibold text-text-primary hover:opacity-80"
 										onclick={() => {
 											selectAllBranches();
 											showBranchDropdown = false;
@@ -1377,7 +1367,7 @@ ${reportContent}
 									</button>
 									<button
 										type="button"
-										class="w-full px-4 py-2 text-left hover:opacity-80 text-text-primary"
+										class="w-full px-4 py-2 text-left text-text-primary hover:opacity-80"
 										onclick={() => {
 											clearBranchFilter();
 											showBranchDropdown = false;
@@ -1388,7 +1378,7 @@ ${reportContent}
 									{#each branches as branch (branch.id)}
 										<button
 											type="button"
-											class="flex w-full items-center gap-2 px-4 py-2 text-left hover:opacity-80 text-text-primary"
+											class="flex w-full items-center gap-2 px-4 py-2 text-left text-text-primary hover:opacity-80"
 											onclick={() => toggleBranchFilter(branch.id)}
 										>
 											<input
@@ -1412,9 +1402,7 @@ ${reportContent}
 
 				<!-- Arrange By Options -->
 				<div class="mb-8 lg:mb-5">
-					<legend class="mb-3 block text-lg font-bold text-text-primary"
-						>Arrange By:</legend
-					>
+					<legend class="mb-3 block text-lg font-bold text-text-primary">Arrange By:</legend>
 					<div class="flex gap-3">
 						<button
 							type="button"
@@ -1485,8 +1473,7 @@ ${reportContent}
 				<div class="flex justify-center">
 					<button
 						onclick={generateReport}
-						class="flex transform items-center gap-2 border-2 px-8 py-2 font-medium transition-all duration-200 hover:scale-105 hover:opacity-90 hover:shadow-md"
-						class="border-border-primary bg-bg-primary text-text-primary"
+						class="flex transform items-center gap-2 border-2 border-border-primary bg-bg-primary px-8 py-2 font-medium text-text-primary transition-all duration-200 hover:scale-105 hover:opacity-90 hover:shadow-md"
 					>
 						Generate
 						<svg
@@ -1516,8 +1503,7 @@ ${reportContent}
 						<div class="space-y-2 lg:max-h-58 lg:overflow-y-auto lg:pr-1">
 							{#each reportRuns as run (run.id)}
 								<div
-									class="w-full cursor-pointer rounded border-2 px-3 py-1.5 transition-all duration-150 hover:opacity-95 hover:shadow-md"
-									class="border-border-primary bg-bg-primary text-text-primary"
+									class="w-full cursor-pointer rounded border-2 border-border-primary bg-bg-primary px-3 py-1.5 text-text-primary transition-all duration-150 hover:opacity-95 hover:shadow-md"
 									role="button"
 									tabindex="0"
 									onclick={() => runSavedReport(run)}
@@ -1589,13 +1575,11 @@ ${reportContent}
 
 				<!-- Report Preview Area -->
 				<div
-					class="min-h-104 border-2 p-4 sm:min-h-120 sm:p-6 lg:min-h-108 lg:p-5 border-border-primary bg-bg-primary"
+					class="min-h-104 border-2 border-border-primary bg-bg-primary p-4 sm:min-h-120 sm:p-6 lg:min-h-108 lg:p-5"
 				>
 					{#if isLoading}
 						<div class="flex items-center justify-center py-8">
-							<div
-								class="h-8 w-8 animate-spin rounded-full border-b-2 border-text-primary"
-							></div>
+							<div class="h-8 w-8 animate-spin rounded-full border-b-2 border-text-primary"></div>
 							<span class="ml-3 text-text-primary">Generating report...</span>
 						</div>
 					{:else if error}
@@ -1620,9 +1604,7 @@ ${reportContent}
 					{:else if reportGenerated}
 						<div>
 							<div class="mb-6">
-								<h2 class="mb-2 text-xl font-bold text-text-primary">
-									Log Report
-								</h2>
+								<h2 class="mb-2 text-xl font-bold text-text-primary">Log Report</h2>
 								<p class="text-sm text-text-secondary">
 									Date Range: {dateFrom} - {dateTo} | Arranged by: {arrangeBy === 'date'
 										? 'Date'
@@ -1634,7 +1616,7 @@ ${reportContent}
 							{#if includeTemperatureGraphs && temperatureGraphs.length > 0}
 								<div class="mb-8">
 									<h3
-										class="mb-4 border-b-2 pb-2 text-lg font-bold text-text-primary border-border-primary"
+										class="mb-4 border-b-2 border-border-primary pb-2 text-lg font-bold text-text-primary"
 									>
 										📈 Temperature Graphs
 									</h3>
@@ -1667,18 +1649,14 @@ ${reportContent}
 														{graph.fieldLabel} ({graph.unit})
 													</p>
 												</div>
-												<div
-													class="flex flex-wrap gap-4 text-xs text-text-secondary"
-												>
+												<div class="flex flex-wrap gap-4 text-xs text-text-secondary">
 													<span>Min: <strong>{minVal}{graph.unit}</strong></span>
 													<span>Max: <strong>{maxVal}{graph.unit}</strong></span>
 													<span>Avg: <strong>{avgVal}{graph.unit}</strong></span>
 													<span>Entries: <strong>{graph.dataPoints.length}</strong></span>
 												</div>
 											</div>
-											<div
-												class="overflow-x-auto rounded bg-bg-primary"
-											>
+											<div class="overflow-x-auto rounded bg-bg-primary">
 												<svg
 													viewBox="-60 -10 {chartWidth + 80} {chartHeight + 60}"
 													class="w-full"
@@ -1824,8 +1802,7 @@ ${reportContent}
 								</div>
 							{:else if includeTemperatureGraphs && filteredEntries.length > 0}
 								<div
-									class="mb-6 rounded-lg border border-dashed p-4 text-center"
-									class="border-border-primary"
+									class="mb-6 rounded-lg border border-dashed border-border-primary p-4 text-center"
 								>
 									<p class="text-sm text-text-secondary">
 										No temperature graph data available. Graphs require at least 2 entries of the
@@ -1848,9 +1825,7 @@ ${reportContent}
 										<circle cx="11" cy="11" r="8"></circle>
 										<path d="21 21l-4.35-4.35"></path>
 									</svg>
-									<p class="text-lg font-medium text-text-secondary">
-										No log entries found
-									</p>
+									<p class="text-lg font-medium text-text-secondary">No log entries found</p>
 									<p class="text-sm text-text-secondary">
 										Try adjusting your date range or log type filters.
 									</p>
@@ -1869,7 +1844,7 @@ ${reportContent}
 								{#each Object.entries(groupedComponents) as [fieldType, componentGroup] (fieldType)}
 									<div class="mb-6">
 										<h3
-											class="mb-3 border-b pb-2 text-lg font-bold text-text-primary border-border-primary"
+											class="mb-3 border-b border-border-primary pb-2 text-lg font-bold text-text-primary"
 										>
 											{fieldType} ({componentGroup.length} components)
 										</h3>
@@ -1899,10 +1874,8 @@ ${reportContent}
 														{component.entry.status}
 													</span>
 												</div>
-												<div class="mb-2 rounded p-2 bg-bg-primary">
-													<p class="mb-1 text-sm font-medium text-text-primary">
-														Component Data:
-													</p>
+												<div class="mb-2 rounded bg-bg-primary p-2">
+													<p class="mb-1 text-sm font-medium text-text-primary">Component Data:</p>
 													<p class="text-sm text-text-secondary">
 														{component.fieldData}
 													</p>
@@ -1952,10 +1925,8 @@ ${reportContent}
 													{entry.status}
 												</span>
 											</div>
-											<div class="mb-2 rounded p-2 bg-bg-primary">
-												<p class="mb-1 text-sm font-medium text-text-primary">
-													Entry Data:
-												</p>
+											<div class="mb-2 rounded bg-bg-primary p-2">
+												<p class="mb-1 text-sm font-medium text-text-primary">Entry Data:</p>
 												<p class="text-sm text-text-secondary">
 													{parseEntryData(
 														entry.entry_data,

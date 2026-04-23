@@ -23,9 +23,7 @@
 
 		<!-- Alignment Options -->
 		<div class="mb-4 space-y-3 border-b-2 border-border-primary pb-4">
-			<span class="mb-2 block text-sm font-medium text-text-secondary"
-				>Alignment</span
-			>
+			<span class="mb-2 block text-sm font-medium text-text-secondary">Alignment</span>
 			<div class="grid grid-cols-3 gap-1">
 				<div></div>
 				<button
@@ -41,7 +39,7 @@
 				<div></div>
 
 				<button
-					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 border-border-primary text-text-primary text-xs transition-colors"
+					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 border-border-primary text-xs text-text-primary transition-colors"
 					class:opacity-50={selectedItem.lockX}
 					class:cursor-not-allowed={selectedItem.lockX}
 					onclick={() => onAlign(selectedItem.id, 'left', null)}
@@ -51,7 +49,7 @@
 					<span>⬅</span><span>Left</span>
 				</button>
 				<button
-					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 border-border-primary text-text-primary text-xs transition-colors"
+					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 border-border-primary text-xs text-text-primary transition-colors"
 					class:opacity-50={selectedItem.lockX && selectedItem.lockY}
 					class:cursor-not-allowed={selectedItem.lockX && selectedItem.lockY}
 					onclick={() => onAlign(selectedItem.id, 'center', 'center')}
@@ -63,7 +61,7 @@
 					<span>⊕</span><span>Center</span>
 				</button>
 				<button
-					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 border-border-primary text-text-primary text-xs transition-colors"
+					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 border-border-primary text-xs text-text-primary transition-colors"
 					class:opacity-50={selectedItem.lockX}
 					class:cursor-not-allowed={selectedItem.lockX}
 					onclick={() => onAlign(selectedItem.id, 'right', null)}
@@ -75,7 +73,7 @@
 
 				<div></div>
 				<button
-					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 border-border-primary text-text-primary text-xs transition-colors"
+					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 border-border-primary text-xs text-text-primary transition-colors"
 					class:opacity-50={selectedItem.lockY}
 					class:cursor-not-allowed={selectedItem.lockY}
 					onclick={() => onAlign(selectedItem.id, null, 'bottom')}
@@ -90,9 +88,7 @@
 
 		<!-- Position -->
 		<div class="mb-4 space-y-2 border-b-2 border-border-primary pb-4">
-			<span class="mb-2 block text-sm font-medium text-text-secondary"
-				>Position</span
-			>
+			<span class="mb-2 block text-sm font-medium text-text-secondary">Position</span>
 			<div class="flex items-center gap-2">
 				<span class="w-3 text-sm text-text-primary">X</span>
 				<input
@@ -142,7 +138,7 @@
 							type="text"
 							value={selectedItem.props.placeholder}
 							oninput={(e) => onUpdateProp(selectedItem.id, 'placeholder', e.currentTarget.value)}
-							class="mt-1 w-full border-2 px-3 py-2 border-border-primary bg-bg-primary text-text-primary"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						/>
 					</label>
 				</div>
@@ -153,7 +149,7 @@
 							value={selectedItem.props.size}
 							onchange={(e) =>
 								onUpdateProp(selectedItem.id, 'size', parseInt(e.currentTarget.value))}
-							class="mt-1 w-full border-2 px-3 py-2 border-border-primary bg-bg-primary text-text-primary"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						>
 							{#each [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48] as s (s)}
 								<option value={s}>{s}px</option>
@@ -167,7 +163,7 @@
 						<select
 							value={selectedItem.props.weight}
 							onchange={(e) => onUpdateProp(selectedItem.id, 'weight', e.currentTarget.value)}
-							class="mt-1 w-full border-2 px-3 py-2 border-border-primary bg-bg-primary text-text-primary"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						>
 							<option value="light">Light</option>
 							<option value="normal">Normal</option>
@@ -181,7 +177,7 @@
 						<select
 							value={selectedItem.props.fontFamily}
 							onchange={(e) => onUpdateProp(selectedItem.id, 'fontFamily', e.currentTarget.value)}
-							class="mt-1 w-full border-2 px-3 py-2 border-border-primary bg-bg-primary text-text-primary"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						>
 							<option value="system-ui">System UI</option>
 							<option value="serif">Serif</option>
@@ -197,7 +193,7 @@
 							value={selectedItem.props.textDecoration}
 							onchange={(e) =>
 								onUpdateProp(selectedItem.id, 'textDecoration', e.currentTarget.value)}
-							class="mt-1 w-full border-2 px-3 py-2 border-border-primary bg-bg-primary text-text-primary"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						>
 							<option value="none">None</option>
 							<option value="underline">Underline</option>
@@ -218,7 +214,7 @@
 										onUpdateProp(selectedItem.id, 'color', newColor);
 									}
 								}}
-								class="h-12 w-12 min-w-12 cursor-pointer rounded border-2 p-1 border-border-primary"
+								class="h-12 w-12 min-w-12 cursor-pointer rounded border-2 border-border-primary p-1"
 							/>
 							<input
 								type="text"
@@ -230,7 +226,7 @@
 									}
 								}}
 								placeholder="#000000"
-								class="w-2 flex-1 border-2 px-3 py-2 border-border-primary bg-bg-primary text-text-primary"
+								class="w-2 flex-1 border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 							/>
 						</div>
 					</label>
@@ -241,7 +237,7 @@
 						<select
 							value={selectedItem.props.fontFamily}
 							onchange={(e) => onUpdateProp(selectedItem.id, 'fontFamily', e.currentTarget.value)}
-							class="mt-1 w-full border-2 px-3 py-2 border-border-primary bg-bg-primary text-text-primary"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						>
 							<option value="text">Text</option>
 							<option value="int">Integer</option>
@@ -266,7 +262,7 @@
 								}
 							}}
 							placeholder="No limit"
-							class="mt-1 w-full border-2 px-3 py-2 border-border-primary bg-bg-primary text-text-primary"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						/>
 					</label>
 				</div>
@@ -287,7 +283,7 @@
 								}
 							}}
 							placeholder="No limit"
-							class="mt-1 w-full border-2 px-3 py-2 border-border-primary bg-bg-primary text-text-primary"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						/>
 					</label>
 				</div>
@@ -299,34 +295,26 @@
 						onchange={(e) => onUpdateProp(selectedItem.id, 'required', e.currentTarget.checked)}
 						class="h-4 w-4"
 					/>
-					<label for="required" class="text-sm font-medium text-text-secondary"
-						>Required</label
-					>
+					<label for="required" class="text-sm font-medium text-text-secondary">Required</label>
 				</div>
 			</div>
 		{:else if selectedItem.type === 'label'}
 			<div class="space-y-2">
 				<div>
-					<span class="mb-1 block text-sm font-medium text-text-secondary"
-						>Text</span
-					>
+					<span class="mb-1 block text-sm font-medium text-text-secondary">Text</span>
 					<input
 						type="text"
 						value={selectedItem.props.text}
 						oninput={(e) => onUpdateProp(selectedItem.id, 'text', e.currentTarget.value)}
-						class="w-full border-2 px-3 py-2"
-						class="border-border-primary bg-bg-primary text-text-primary"
+						class="w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					/>
 				</div>
 				<div>
-					<span class="mb-1 block text-sm font-medium text-text-secondary"
-						>Size (px)</span
-					>
+					<span class="mb-1 block text-sm font-medium text-text-secondary">Size (px)</span>
 					<select
 						value={selectedItem.props.size}
 						onchange={(e) => onUpdateProp(selectedItem.id, 'size', parseInt(e.currentTarget.value))}
-						class="w-full border-2 px-3 py-2"
-						class="border-border-primary bg-bg-primary text-text-primary"
+						class="w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					>
 						{#each [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48] as s (s)}
 							<option value={s}>{s}px</option>
@@ -334,14 +322,11 @@
 					</select>
 				</div>
 				<div>
-					<span class="mb-1 block text-sm font-medium text-text-secondary"
-						>Weight</span
-					>
+					<span class="mb-1 block text-sm font-medium text-text-secondary">Weight</span>
 					<select
 						value={selectedItem.props.weight}
 						onchange={(e) => onUpdateProp(selectedItem.id, 'weight', e.currentTarget.value)}
-						class="w-full border-2 px-3 py-2"
-						class="border-border-primary bg-bg-primary text-text-primary"
+						class="w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					>
 						<option value="light">Light</option>
 						<option value="normal">Normal</option>
@@ -354,8 +339,7 @@
 						<select
 							value={selectedItem.props.fontFamily}
 							onchange={(e) => onUpdateProp(selectedItem.id, 'fontFamily', e.currentTarget.value)}
-							class="mt-1 w-full border-2 px-3 py-2"
-							class="border-border-primary bg-bg-primary text-text-primary"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						>
 							<option value="system-ui">System UI</option>
 							<option value="serif">Serif</option>
@@ -371,8 +355,7 @@
 							value={selectedItem.props.textDecoration}
 							onchange={(e) =>
 								onUpdateProp(selectedItem.id, 'textDecoration', e.currentTarget.value)}
-							class="mt-1 w-full border-2 px-3 py-2"
-							class="border-border-primary bg-bg-primary text-text-primary"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						>
 							<option value="none">None</option>
 							<option value="underline">Underline</option>
@@ -388,16 +371,14 @@
 								type="color"
 								value={selectedItem.props.color || '#000000'}
 								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
-								class="h-12 w-12 min-w-12 cursor-pointer rounded border-2 p-1"
-								class="border-border-primary"
+								class="h-12 w-12 min-w-12 cursor-pointer rounded border-2 border-border-primary p-1"
 							/>
 							<input
 								type="text"
 								value={selectedItem.props.color || ''}
 								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
 								placeholder="#000000"
-								class="w-2 flex-1 border-2 px-3 py-2"
-								class="border-border-primary bg-bg-primary text-text-primary"
+								class="w-2 flex-1 border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 							/>
 						</div>
 					</label>
@@ -406,15 +387,12 @@
 		{:else if selectedItem.type === 'checkbox'}
 			<div class="space-y-2">
 				<div>
-					<span class="mb-1 block text-sm font-medium text-text-secondary"
-						>Label</span
-					>
+					<span class="mb-1 block text-sm font-medium text-text-secondary">Label</span>
 					<input
 						type="text"
 						value={selectedItem.props.text}
 						oninput={(e) => onUpdateProp(selectedItem.id, 'text', e.currentTarget.value)}
-						class="w-full border-2 px-3 py-2"
-						class="border-border-primary bg-bg-primary text-text-primary"
+						class="w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					/>
 				</div>
 				<div>
@@ -425,16 +403,14 @@
 								type="color"
 								value={selectedItem.props.color || '#000000'}
 								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
-								class="h-12 w-12 min-w-12 cursor-pointer rounded border-2 p-1"
-								class="border-border-primary"
+								class="h-12 w-12 min-w-12 cursor-pointer rounded border-2 border-border-primary p-1"
 							/>
 							<input
 								type="text"
 								value={selectedItem.props.color || ''}
 								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
 								placeholder="#000000"
-								class="w-2 flex-1 border-2 px-3 py-2"
-								class="border-border-primary bg-bg-primary text-text-primary"
+								class="w-2 flex-1 border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 							/>
 						</div>
 					</label>
@@ -447,63 +423,49 @@
 						onchange={(e) => onUpdateProp(selectedItem.id, 'required', e.currentTarget.checked)}
 						class="h-4 w-4"
 					/>
-					<label
-						for="checkbox-required"
-						class="text-sm font-medium"
-						class="text-text-secondary">Required</label
+					<label for="checkbox-required" class="text-sm font-medium text-text-secondary"
+						>Required</label
 					>
 				</div>
 			</div>
 		{:else if selectedItem.type === 'temperature'}
 			<div class="space-y-2">
 				<div>
-					<span class="mb-1 block text-sm font-medium text-text-secondary"
-						>Label</span
-					>
+					<span class="mb-1 block text-sm font-medium text-text-secondary">Label</span>
 					<input
 						type="text"
 						value={selectedItem.props.label}
 						oninput={(e) => onUpdateProp(selectedItem.id, 'label', e.currentTarget.value)}
-						class="w-full border-2 px-3 py-2"
-						class="border-border-primary bg-bg-primary text-text-primary"
+						class="w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					/>
 				</div>
 				<div>
-					<span class="mb-1 block text-sm font-medium text-text-secondary"
-						>Unit</span
-					>
+					<span class="mb-1 block text-sm font-medium text-text-secondary">Unit</span>
 					<select
 						value={selectedItem.props.unit}
 						onchange={(e) => onUpdateProp(selectedItem.id, 'unit', e.currentTarget.value)}
-						class="w-full border-2 px-3 py-2"
-						class="border-border-primary bg-bg-primary text-text-primary"
+						class="w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					>
 						<option value="°C">°C (Celsius)</option>
 						<option value="°F">°F (Fahrenheit)</option>
 					</select>
 				</div>
 				<div>
-					<span class="mb-1 block text-sm font-medium text-text-secondary"
-						>Min</span
-					>
+					<span class="mb-1 block text-sm font-medium text-text-secondary">Min</span>
 					<input
 						type="number"
 						value={selectedItem.props.min}
 						oninput={(e) => onUpdateProp(selectedItem.id, 'min', parseInt(e.currentTarget.value))}
-						class="w-full border-2 px-3 py-2"
-						class="border-border-primary bg-bg-primary text-text-primary"
+						class="w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					/>
 				</div>
 				<div>
-					<span class="mb-1 block text-sm font-medium text-text-secondary"
-						>Max</span
-					>
+					<span class="mb-1 block text-sm font-medium text-text-secondary">Max</span>
 					<input
 						type="number"
 						value={selectedItem.props.max}
 						oninput={(e) => onUpdateProp(selectedItem.id, 'max', parseInt(e.currentTarget.value))}
-						class="w-full border-2 px-3 py-2"
-						class="border-border-primary bg-bg-primary text-text-primary"
+						class="w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					/>
 				</div>
 			</div>
@@ -523,8 +485,7 @@
 								'options',
 								e.currentTarget.value.split('\n').filter((o: string) => o.trim())
 							)}
-						class="h-32 w-full border-2 px-3 py-2"
-						class="border-border-primary bg-bg-primary text-text-primary"
+						class="h-32 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					></textarea>
 				</div>
 			</div>

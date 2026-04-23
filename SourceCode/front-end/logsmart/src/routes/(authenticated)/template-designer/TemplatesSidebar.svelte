@@ -39,9 +39,7 @@
 	}
 </script>
 
-<div
-	class="flex flex-col border-border-primary bg-bg-primary"
->
+<div class="flex flex-col border-border-primary bg-bg-primary">
 	<div class="p-6">
 		<h2 class="mb-4 text-2xl font-bold text-text-primary">Templates</h2>
 
@@ -52,13 +50,11 @@
 			+ Create New
 		</button>
 
-		<div class="mb-6 border-2 px-4 py-4 border-border-primary">
-			<h3 class="mb-2 text-sm font-semibold uppercase text-text-secondary">
-				Start From Default
-			</h3>
+		<div class="mb-6 border-2 border-border-primary px-4 py-4">
+			<h3 class="mb-2 text-sm font-semibold text-text-secondary uppercase">Start From Default</h3>
 
 			<select
-				class="mb-3 h-9 w-full max-w-60 rounded border-2 px-2 py-1 text-xs border-border-primary bg-bg-primary text-text-primary"
+				class="mb-3 h-9 w-full max-w-60 rounded border-2 border-border-primary bg-bg-primary px-2 py-1 text-xs text-text-primary"
 				bind:value={selectedDefaultTemplateId}
 			>
 				{#if checklistTemplates.length > 0}
@@ -103,14 +99,8 @@
 		<div class="border-2 border-border-primary">
 			<ul class="divide-y border-border-secondary">
 				{#if isNewTemplate}
-					<li
-						class="flex min-w-0 items-center gap-3 px-4 py-3"
-						class="bg-bg-secondary"
-					>
-						<div
-							class="flex h-5 w-5 items-center justify-center border-2"
-							class="border-border-primary"
-						>
+					<li class="flex min-w-0 items-center gap-3 bg-bg-secondary px-4 py-3">
+						<div class="flex h-5 w-5 items-center justify-center border-2 border-border-primary">
 							<svg
 								width="12"
 								height="12"
@@ -144,10 +134,7 @@
 						role="button"
 						tabindex="0"
 					>
-						<div
-							class="flex h-5 w-5 items-center justify-center border-2"
-							class="border-border-primary"
-						>
+						<div class="flex h-5 w-5 items-center justify-center border-2 border-border-primary">
 							{#if !isNewTemplate && currentTemplateName === template.name}
 								<svg
 									width="12"

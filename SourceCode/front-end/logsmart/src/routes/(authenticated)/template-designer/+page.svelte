@@ -859,7 +859,7 @@
 		<!-- Left Sidebar -->
 		<div
 			data-left-sidebar
-			class="flex flex-col border-r-2 transition-transform duration-300"
+			class="flex flex-col border-r-2 border-border-primary bg-bg-primary transition-transform duration-300"
 			class:fixed={isSmallScreen}
 			class:left-0={isSmallScreen}
 			class:top-0={isSmallScreen}
@@ -868,7 +868,6 @@
 			class:w-80={isSmallScreen}
 			class:w-72={!isSmallScreen}
 			class:-translate-x-full={isSmallScreen && !leftSidebarOpen}
-			class="border-border-primary bg-bg-primary"
 		>
 			<div
 				style="height: {leftPaletteHeight !== null
@@ -886,8 +885,7 @@
 			</div>
 			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 			<div
-				class="h-2 cursor-row-resize border-y-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-				class="border-border-primary" style="flex-shrink: 0;"
+				class="h-2 shrink-0 cursor-row-resize border-y-2 border-border-primary hover:bg-gray-100 dark:hover:bg-gray-700"
 				onmousedown={(e) => handleResizeStart(e, 'left')}
 				ondblclick={() => (leftPaletteHeight = null)}
 				role="separator"
@@ -933,7 +931,7 @@
 		<!-- Right Sidebar -->
 		<div
 			data-right-sidebar
-			class="flex flex-col border-l-2 transition-transform duration-300"
+			class="flex flex-col border-l-2 border-border-primary bg-bg-primary transition-transform duration-300"
 			class:fixed={isSmallScreen}
 			class:right-0={isSmallScreen}
 			class:top-0={isSmallScreen}
@@ -942,7 +940,6 @@
 			class:w-80={isSmallScreen}
 			class:w-72={!isSmallScreen}
 			class:translate-x-full={isSmallScreen && !rightSidebarOpen}
-			class="border-border-primary bg-bg-primary"
 		>
 			<div
 				style="height: {rightPaletteHeight !== null
@@ -953,8 +950,7 @@
 			</div>
 			<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 			<div
-				class="h-2 cursor-row-resize border-y-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-				class="border-border-primary" style="flex-shrink: 0;"
+				class="h-2 shrink-0 cursor-row-resize border-y-2 border-border-primary hover:bg-gray-100 dark:hover:bg-gray-700"
 				onmousedown={(e) => handleResizeStart(e, 'right')}
 				ondblclick={() => (rightPaletteHeight = null)}
 				role="separator"
