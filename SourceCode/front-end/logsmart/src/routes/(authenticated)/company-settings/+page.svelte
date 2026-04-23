@@ -191,10 +191,10 @@
 <svelte:head>
 	<title>Company Settings</title>
 </svelte:head>
-<div class="h-full w-full" style="background-color: var(--bg-secondary);">
+<div class="h-full w-full bg-bg-secondary">
 	<div class="mx-auto max-w-7xl px-6 py-8">
 		<!-- Header -->
-		<h1 class="mb-8 text-3xl font-bold" style="color: var(--text-primary);">Company Settings</h1>
+		<h1 class="mb-8 text-3xl font-bold text-text-primary">Company Settings</h1>
 
 		<!-- Success Message -->
 		{#if showSuccessMessage}
@@ -214,23 +214,16 @@
 
 		<div class="space-y-6">
 			<!-- Company Info Settings Section -->
-			<div
-				class="border-2"
-				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-			>
-				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
-					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Company Information</h2>
+			<div class="border-2 border-border-primary bg-bg-primary">
+				<div class="border-b-2 border-border-primary px-6 py-4">
+					<h2 class="text-xl font-bold text-text-primary">Company Information</h2>
 				</div>
-				<div class="px-6 py-6" style="background-color: var(--bg-primary);">
+				<div class="bg-bg-primary px-6 py-6">
 					<div class="flex flex-col gap-6 md:flex-row">
 						<form onsubmit={handleUpdateCompany} class="max-w-2xl flex-1 space-y-4">
 							<!-- Company Name -->
 							<div>
-								<label
-									for="companyName"
-									class="mb-2 block text-sm font-medium"
-									style="color: var(--text-primary);"
-								>
+								<label for="companyName" class="mb-2 block text-sm font-medium text-text-primary">
 									Company Name
 								</label>
 								<input
@@ -241,8 +234,7 @@
 									oninput={() => {
 										// Force reactivity update
 									}}
-									class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
-									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+									class="w-full border-2 border-border-primary bg-bg-primary px-4 py-2 text-text-primary focus:ring-2 focus:outline-none"
 									placeholder="Enter the company's name"
 									required
 								/>
@@ -252,8 +244,7 @@
 							<div class="address-search-container relative">
 								<label
 									for="companyAddress"
-									class="mb-2 block text-sm font-medium"
-									style="color: var(--text-primary);"
+									class="mb-2 block text-sm font-medium text-text-primary"
 								>
 									Company Headquarters Address
 								</label>
@@ -263,8 +254,7 @@
 									type="text"
 									bind:value={companyAddress}
 									oninput={handleAddressInput}
-									class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
-									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+									class="w-full border-2 border-border-primary bg-bg-primary px-4 py-2 text-text-primary focus:ring-2 focus:outline-none"
 									placeholder="Search for address..."
 									autocomplete="off"
 									required
@@ -283,8 +273,7 @@
 											<li>
 												<button
 													type="button"
-													class="w-full cursor-pointer px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-													style="color: var(--text-primary);"
+													class="w-full cursor-pointer px-4 py-2 text-left text-sm text-text-primary hover:bg-gray-100 dark:hover:bg-gray-700"
 													onclick={() => selectAddress(result)}
 												>
 													{result.display_name}
@@ -293,7 +282,7 @@
 										{/each}
 									</ul>
 								{/if}
-								<p class="mt-1 text-xs" style="color: var(--text-secondary);">
+								<p class="mt-1 text-xs text-text-secondary">
 									>(search for locations, POIs, or addresses)
 								</p>
 							</div>
@@ -307,8 +296,7 @@
 										!companyAddress.trim() ||
 										(companyName === data.company?.name &&
 											companyAddress === data.company?.address)}
-									class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+									class="border-2 border-border-primary bg-bg-primary px-8 py-2 font-medium text-text-primary hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 								>
 									{isSubmitting ? 'Saving...' : 'Save Company Details'}
 								</button>
@@ -334,16 +322,13 @@
 			</div>
 
 			<!-- Company Data Management -->
-			<div
-				class="border-2"
-				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-			>
-				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
-					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Export Company Data</h2>
+			<div class="border-2 border-border-primary bg-bg-primary">
+				<div class="border-b-2 border-border-primary px-6 py-4">
+					<h2 class="text-xl font-bold text-text-primary">Export Company Data</h2>
 				</div>
-				<div class="px-6 py-6" style="background-color: var(--bg-primary);">
+				<div class="bg-bg-primary px-6 py-6">
 					<div class="max-w-2xl">
-						<p class="mb-4" style="color: var(--text-secondary);">
+						<p class="mb-4 text-text-secondary">
 							Data will be sent to the email address used to register your company.
 							{#if dataExportedAt}
 								<span class="text-green-600"
@@ -354,8 +339,7 @@
 						<button
 							onclick={handleExportData}
 							disabled={isSubmitting}
-							class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-							style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+							class="border-2 border-border-primary bg-bg-primary px-8 py-2 font-medium text-text-primary hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 						>
 							{isSubmitting
 								? 'Exporting...'
@@ -368,16 +352,13 @@
 			</div>
 
 			<!-- Delete Company -->
-			<div
-				class="border-2"
-				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-			>
-				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
-					<h2 class="text-xl font-bold" style="color:var(--button-secondary);">Delete Company</h2>
+			<div class="border-2 border-border-primary bg-bg-primary">
+				<div class="border-b-2 border-border-primary px-6 py-4">
+					<h2 class="text-xl font-bold text-red-800">Delete Company</h2>
 				</div>
-				<div class="px-6 py-6" style="background-color: var(--bg-primary);">
+				<div class="bg-bg-primary px-6 py-6">
 					<div class="max-w-2xl">
-						<p class="mb-4" style="color: var(--text-secondary);">
+						<p class="mb-4 text-text-secondary">
 							Company data must be exported prior to deletion. Data is retained on our servers for
 							30 days thereafter.
 						</p>
@@ -392,9 +373,7 @@
 						Delete Company
 					</button>
 					{#if !dataExportedAt}
-						<p class="mt-2 text-sm" style="color: var(--text-secondary);">
-							Export company data to enable deletion
-						</p>
+						<p class="mt-2 text-sm text-text-secondary">Export company data to enable deletion</p>
 					{/if}
 				</div>
 			</div>

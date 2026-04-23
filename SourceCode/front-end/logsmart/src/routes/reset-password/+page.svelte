@@ -110,13 +110,9 @@
 </svelte:head>
 
 <div
-	class="flex min-h-full w-full flex-1 items-center justify-center text-text-primary"
-	style="background-color: var(--bg-secondary);"
+	class="flex min-h-full w-full flex-1 items-center justify-center bg-bg-secondary text-text-primary"
 >
-	<section
-		class="mx-4 w-full max-w-lg flex-1 space-y-6 rounded-lg p-8 shadow-lg"
-		style="background-color: var(--bg-primary);"
-	>
+	<section class="mx-4 w-full max-w-lg flex-1 space-y-6 rounded-lg bg-bg-primary p-8 shadow-lg">
 		<div>
 			<h1 class="text-2xl font-semibold text-text-primary">Reset your password</h1>
 			<p class="mt-1 text-sm text-text-secondary">

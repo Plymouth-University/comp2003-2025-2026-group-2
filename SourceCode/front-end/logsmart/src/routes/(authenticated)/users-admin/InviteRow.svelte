@@ -10,25 +10,23 @@
 </script>
 
 <div
-	class="mb-3 flex flex-col gap-3 rounded-lg border-2 border-dashed p-4 transition-all hover:opacity-80 md:flex-row md:items-center md:justify-between"
-	style="background-color: var(--orange-light); border-color: var(--orange);"
+	class="mb-3 flex flex-col gap-3 rounded-lg border-2 border-dashed border-orange bg-orange-light p-4 transition-all hover:opacity-80 md:flex-row md:items-center md:justify-between"
 >
 	<div class="flex flex-1 flex-col gap-2">
 		<div class="flex items-center gap-2">
-			<div class="font-semibold" style="color: grey;">
+			<div class="font-semibold text-text-primary">
 				{invite.email}
 			</div>
-			<span class="text-xs font-medium" style="color: var(--orange-dark);">⏳ Pending</span>
+			<span class="text-xs font-medium text-orange-dark">⏳ Pending</span>
 		</div>
-		<div class="self-start text-sm" style="color: var(--text-secondary);">
+		<div class="self-start text-sm text-text-secondary">
 			Expires: {new Date(invite.expires_at).toLocaleDateString()}
 		</div>
 	</div>
 
 	<div class="flex items-center gap-2">
 		<div
-			class="rounded-full border px-3 py-1 text-sm font-medium"
-			style="background-color: var(--orange); border-color: var(--orange); color: var(--border-primary);"
+			class="rounded-full border border-orange bg-orange px-3 py-1 text-sm font-medium text-border-primary"
 		>
 			Pending Invitation
 		</div>
@@ -38,8 +36,7 @@
 		<button
 			type="button"
 			onclick={() => onCancel(invite.id)}
-			class="rounded px-3 py-1 text-sm font-medium transition-colors hover:underline"
-			style="color: var(--text-secondary);"
+			class="rounded px-3 py-1 text-sm font-medium text-text-secondary transition-colors hover:underline"
 		>
 			Cancel
 		</button>

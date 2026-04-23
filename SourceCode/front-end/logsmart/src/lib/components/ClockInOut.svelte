@@ -109,14 +109,11 @@
 	}
 </script>
 
-<div class="flex h-full w-full flex-col border-2" style="border-color: var(--border-primary);">
-	<div
-		class="border-b-2 px-6 py-4"
-		style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-	>
-		<h2 class="text-xl font-bold" style="color: var(--text-primary);">Clock In / Out</h2>
+<div class="flex h-full w-full flex-col border-2 border-border-primary">
+	<div class="border-b-2 border-border-primary bg-bg-primary px-6 py-4">
+		<h2 class="text-xl font-bold text-text-primary">Clock In / Out</h2>
 	</div>
-	<div class="flex-1 overflow-auto px-6 py-6" style="background-color: var(--bg-primary);">
+	<div class="flex-1 overflow-auto bg-bg-primary px-6 py-6">
 		<!-- Current Status -->
 		<div class="mb-4 flex items-center gap-3">
 			<span
@@ -125,20 +122,20 @@
 					? 'var(--create-button)'
 					: 'var(--button-secondary)'};"
 			></span>
-			<span class="text-base font-medium" style="color: var(--text-primary);">
+			<span class="text-base font-medium text-text-primary">
 				{isClockedIn ? 'Currently Clocked In' : 'Currently Clocked Out'}
 			</span>
 		</div>
 
 		{#if isClockedIn && currentEvent}
-			<div class="mb-4 text-sm" style="color: var(--text-secondary);">
+			<div class="mb-4 text-sm text-text-secondary">
 				Since: {formatDateTime(currentEvent.clock_in)}
 			</div>
 		{/if}
 
 		<!-- Error message -->
 		{#if error}
-			<div class="mb-4 text-sm font-medium" style="color: var(--button-secondary);">
+			<div class="mb-4 text-sm font-medium text-button-secondary">
 				{error}
 			</div>
 		{/if}
@@ -149,8 +146,7 @@
 				<button
 					onclick={handleClockOut}
 					disabled={loading}
-					class="transform cursor-pointer border-2 px-6 py-2 font-medium transition-all duration-150 hover:scale-105 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
-					style="border-color: var(--button-secondary); color: var(--button-secondary); background-color: var(--bg-primary);"
+					class="transform cursor-pointer border-2 border-button-secondary bg-bg-primary px-6 py-2 font-medium text-button-secondary transition-all duration-150 hover:scale-105 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
 				>
 					{loading ? 'Processing...' : 'Clock Out'}
 				</button>
@@ -158,8 +154,7 @@
 				<button
 					onclick={handleClockIn}
 					disabled={loading}
-					class="transform cursor-pointer border-2 px-6 py-2 font-medium transition-all duration-150 hover:scale-105 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
-					style="border-color: var(--create-button); color: var(--create-button); background-color: var(--bg-primary);"
+					class="transform cursor-pointer border-2 border-create-button bg-bg-primary px-6 py-2 font-medium text-create-button transition-all duration-150 hover:scale-105 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
 				>
 					{loading ? 'Processing...' : 'Clock In'}
 				</button>
@@ -169,14 +164,11 @@
 		<!-- Recent Events -->
 		{#if recentEvents.length > 0}
 			<div>
-				<h3 class="mb-3 text-sm font-semibold" style="color: var(--text-primary);">
-					Recent Activity
-				</h3>
+				<h3 class="mb-3 text-sm font-semibold text-text-primary">Recent Activity</h3>
 				<div class="space-y-2">
 					{#each recentEvents as event (event.id)}
 						<div
-							class="flex items-center justify-between gap-4 border-b py-2 text-sm"
-							style="border-color: var(--border-primary);"
+							class="flex items-center justify-between gap-4 border-b border-border-primary py-2 text-sm"
 						>
 							<div class="flex items-center gap-2">
 								<span
@@ -185,18 +177,18 @@
 										? 'var(--create-button)'
 										: 'var(--button-secondary)'};"
 								></span>
-								<span style="color: var(--text-primary);">
+								<span class="text-text-primary">
 									{formatDateTime(event.clock_in)}
 								</span>
 							</div>
-							<div style="color: var(--text-secondary);">
+							<div class="text-text-secondary">
 								{#if event.clock_out}
 									→ {formatDateTime(event.clock_out)}
 								{:else}
-									<span style="color: var(--create-button);">Active</span>
+									<span class="text-create-button">Active</span>
 								{/if}
 							</div>
-							<div class="font-medium" style="color: var(--text-secondary);">
+							<div class="font-medium text-text-secondary">
 								{formatDuration(event.clock_in, event.clock_out)}
 							</div>
 						</div>
@@ -204,7 +196,7 @@
 				</div>
 			</div>
 		{:else}
-			<div style="color: var(--text-secondary);">No clock events yet</div>
+			<div class="text-text-secondary">No clock events yet</div>
 		{/if}
 	</div>
 </div>

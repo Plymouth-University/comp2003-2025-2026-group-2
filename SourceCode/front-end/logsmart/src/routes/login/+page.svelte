@@ -172,8 +172,7 @@
 
 		<button
 			type="button"
-			class="btn mt-4"
-			style="background-color: var(--button-primary);"
+			class="btn mt-4 bg-button-primary"
 			onclick={handlePasskeyLogin}
 			disabled={loading}
 		>
@@ -186,8 +185,7 @@
 
 		<button
 			type="button"
-			class="btn mt-4 flex items-center justify-center gap-2"
-			style="background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--text-secondary);"
+			class="btn mt-4 flex items-center justify-center gap-2 border border-text-secondary bg-bg-primary text-text-primary"
 			onclick={handleGoogleLogin}
 			disabled={loading}
 		>

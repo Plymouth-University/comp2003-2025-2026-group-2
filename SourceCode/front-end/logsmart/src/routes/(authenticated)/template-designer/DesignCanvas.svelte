@@ -295,15 +295,14 @@
 					</div>
 					<!-- Canvas Height Resizer -->
 					<div
-						class="mx-auto h-3 w-32 cursor-row-resize rounded-b border-2 border-t-0 transition-colors hover:bg-gray-300 active:bg-gray-400"
-						style="border-color: var(--border-primary); background-color: var(--bg-primary);"
+						class="mx-auto h-3 w-32 cursor-row-resize rounded-b border-2 border-t-0 border-border-primary bg-bg-primary transition-colors hover:bg-gray-300 active:bg-gray-400"
 						onmousedown={handleCanvasResizeStart}
 						role="separator"
 						aria-label="Resize canvas height"
 						aria-orientation="horizontal"
 					>
 						<div class="flex h-full items-center justify-center">
-							<div class="h-0.5 w-8 rounded" style="background-color: var(--border-primary);"></div>
+							<div class="h-0.5 w-8 rounded bg-border-primary"></div>
 						</div>
 					</div>
 				</div>

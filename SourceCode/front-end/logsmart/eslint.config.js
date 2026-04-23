@@ -28,7 +28,19 @@ export default defineConfig(
 			// This rule doesn't work with Svelte 5 as resolve() doesn't exist
 			'svelte/no-navigation-without-resolve': 'off',
 			// Allow empty catch blocks for test files
-			'no-empty': 'off'
+			'no-empty': 'off',
+			'@typescript-eslint/no-unused-vars': [
+				'error',
+				{
+					args: 'all',
+					argsIgnorePattern: '^_',
+					caughtErrors: 'all',
+					caughtErrorsIgnorePattern: '^_',
+					destructuredArrayIgnorePattern: '^_',
+					varsIgnorePattern: '^_',
+					ignoreRestSiblings: true
+				}
+			]
 		}
 	},
 	{

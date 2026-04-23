@@ -19,20 +19,17 @@
 
 {#if selectedItem}
 	<div class="h-full overflow-auto p-6">
-		<h3 class="mb-4 text-xl font-bold" style="color: var(--text-primary);">Properties</h3>
+		<h3 class="mb-4 text-xl font-bold text-text-primary">Properties</h3>
 
 		<!-- Alignment Options -->
-		<div class="mb-4 space-y-3 border-b-2 pb-4" style="border-color: var(--border-primary);">
-			<span class="mb-2 block text-sm font-medium" style="color: var(--text-secondary);"
-				>Alignment</span
-			>
+		<div class="mb-4 space-y-3 border-b-2 border-border-primary pb-4">
+			<span class="mb-2 block text-sm font-medium text-text-secondary">Alignment</span>
 			<div class="grid grid-cols-3 gap-1">
 				<div></div>
 				<button
-					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
+					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 border-border-primary text-xs text-text-primary transition-colors"
 					class:opacity-50={selectedItem.lockY}
 					class:cursor-not-allowed={selectedItem.lockY}
-					style="border-color: var(--border-primary); color: var(--text-primary);"
 					onclick={() => onAlign(selectedItem.id, null, 'top')}
 					disabled={selectedItem.lockY}
 					title={selectedItem.lockY ? 'Disabled - Vertical lock is enabled' : 'Align Top'}
@@ -42,10 +39,9 @@
 				<div></div>
 
 				<button
-					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
+					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 border-border-primary text-xs text-text-primary transition-colors"
 					class:opacity-50={selectedItem.lockX}
 					class:cursor-not-allowed={selectedItem.lockX}
-					style="border-color: var(--border-primary); color: var(--text-primary);"
 					onclick={() => onAlign(selectedItem.id, 'left', null)}
 					disabled={selectedItem.lockX}
 					title={selectedItem.lockX ? 'Disabled - Horizontal lock is enabled' : 'Align Left'}
@@ -53,10 +49,9 @@
 					<span>⬅</span><span>Left</span>
 				</button>
 				<button
-					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
+					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 border-border-primary text-xs text-text-primary transition-colors"
 					class:opacity-50={selectedItem.lockX && selectedItem.lockY}
 					class:cursor-not-allowed={selectedItem.lockX && selectedItem.lockY}
-					style="border-color: var(--border-primary); color: var(--text-primary);"
 					onclick={() => onAlign(selectedItem.id, 'center', 'center')}
 					disabled={selectedItem.lockX && selectedItem.lockY}
 					title={selectedItem.lockX && selectedItem.lockY
@@ -66,10 +61,9 @@
 					<span>⊕</span><span>Center</span>
 				</button>
 				<button
-					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
+					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 border-border-primary text-xs text-text-primary transition-colors"
 					class:opacity-50={selectedItem.lockX}
 					class:cursor-not-allowed={selectedItem.lockX}
-					style="border-color: var(--border-primary); color: var(--text-primary);"
 					onclick={() => onAlign(selectedItem.id, 'right', null)}
 					disabled={selectedItem.lockX}
 					title={selectedItem.lockX ? 'Disabled - Horizontal lock is enabled' : 'Align Right'}
@@ -79,10 +73,9 @@
 
 				<div></div>
 				<button
-					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 text-xs transition-colors"
+					class="alignment-button flex h-10 flex-1 items-center justify-center gap-1 rounded border-2 border-border-primary text-xs text-text-primary transition-colors"
 					class:opacity-50={selectedItem.lockY}
 					class:cursor-not-allowed={selectedItem.lockY}
-					style="border-color: var(--border-primary); color: var(--text-primary);"
 					onclick={() => onAlign(selectedItem.id, null, 'bottom')}
 					disabled={selectedItem.lockY}
 					title={selectedItem.lockY ? 'Disabled - Vertical lock is enabled' : 'Align Bottom'}
@@ -94,26 +87,21 @@
 		</div>
 
 		<!-- Position -->
-		<div class="mb-4 space-y-2 border-b-2 pb-4" style="border-color: var(--border-primary);">
-			<span class="mb-2 block text-sm font-medium" style="color: var(--text-secondary);"
-				>Position</span
-			>
+		<div class="mb-4 space-y-2 border-b-2 border-border-primary pb-4">
+			<span class="mb-2 block text-sm font-medium text-text-secondary">Position</span>
 			<div class="flex items-center gap-2">
-				<span class="w-3 text-sm" style="color: var(--text-primary);">X</span>
+				<span class="w-3 text-sm text-text-primary">X</span>
 				<input
 					type="number"
 					value={Math.round(selectedItem.x)}
 					oninput={(e) => onUpdateProp(selectedItem.id, 'x', parseInt(e.currentTarget.value) || 0)}
-					class="w-20 border-2 px-2 py-1 text-sm"
+					class="w-20 border-2 border-border-primary bg-bg-primary px-2 py-1 text-sm text-text-primary"
 					class:opacity-50={selectedItem.lockX}
-					style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					disabled={selectedItem.lockX}
 				/>
 				<button
-					class={`lock-button flex h-8 w-8 items-center justify-center rounded border-2 text-sm transition-colors ${
-						selectedItem.lockX ? 'bg-blue-100 dark:bg-blue-900/30' : ''
-					}`}
-					style="border-color: var(--border-primary); color: var(--text-primary);"
+					class="lock-button flex h-8 w-8 items-center justify-center rounded border-2 border-border-primary text-sm text-text-primary transition-colors"
+					class:bg-bg-secondary={selectedItem.lockX}
 					onclick={() => onUpdateProp(selectedItem.id, 'lockX', !selectedItem.lockX)}
 					title={selectedItem.lockX ? 'Unlock X position' : 'Lock X position'}
 				>
@@ -121,21 +109,18 @@
 				</button>
 			</div>
 			<div class="flex items-center gap-2">
-				<span class="w-3 text-sm" style="color: var(--text-primary);">Y</span>
+				<span class="w-3 text-sm text-text-primary">Y</span>
 				<input
 					type="number"
 					value={Math.round(selectedItem.y)}
 					oninput={(e) => onUpdateProp(selectedItem.id, 'y', parseInt(e.currentTarget.value) || 0)}
-					class="w-20 border-2 px-2 py-1 text-sm"
+					class="w-20 border-2 border-border-primary bg-bg-primary px-2 py-1 text-sm text-text-primary"
 					class:opacity-50={selectedItem.lockY}
-					style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
 					disabled={selectedItem.lockY}
 				/>
 				<button
-					class={`lock-button flex h-8 w-8 items-center justify-center rounded border-2 text-sm transition-colors ${
-						selectedItem.lockY ? 'bg-blue-100 dark:bg-blue-900/30' : ''
-					}`}
-					style="border-color: var(--border-primary); color: var(--text-primary);"
+					class="lock-button flex h-8 w-8 items-center justify-center rounded border-2 border-border-primary text-sm text-text-primary transition-colors"
+					class:bg-bg-secondary={selectedItem.lockY}
 					onclick={() => onUpdateProp(selectedItem.id, 'lockY', !selectedItem.lockY)}
 					title={selectedItem.lockY ? 'Unlock Y position' : 'Lock Y position'}
 				>
@@ -147,26 +132,24 @@
 		{#if selectedItem.type === 'text_input'}
 			<div class="space-y-2">
 				<div>
-					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+					<label class="mb-1 block text-sm font-medium text-text-secondary">
 						Placeholder
 						<input
 							type="text"
 							value={selectedItem.props.placeholder}
 							oninput={(e) => onUpdateProp(selectedItem.id, 'placeholder', e.currentTarget.value)}
-							class="mt-1 w-full border-2 px-3 py-2"
-							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						/>
 					</label>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+					<label class="mb-1 block text-sm font-medium text-text-secondary">
 						Size (px)
 						<select
 							value={selectedItem.props.size}
 							onchange={(e) =>
 								onUpdateProp(selectedItem.id, 'size', parseInt(e.currentTarget.value))}
-							class="mt-1 w-full border-2 px-3 py-2"
-							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						>
 							{#each [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48] as s (s)}
 								<option value={s}>{s}px</option>
@@ -175,13 +158,12 @@
 					</label>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+					<label class="mb-1 block text-sm font-medium text-text-secondary">
 						Weight
 						<select
 							value={selectedItem.props.weight}
 							onchange={(e) => onUpdateProp(selectedItem.id, 'weight', e.currentTarget.value)}
-							class="mt-1 w-full border-2 px-3 py-2"
-							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						>
 							<option value="light">Light</option>
 							<option value="normal">Normal</option>
@@ -190,13 +172,12 @@
 					</label>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+					<label class="mb-1 block text-sm font-medium text-text-secondary">
 						Font Family
 						<select
 							value={selectedItem.props.fontFamily}
 							onchange={(e) => onUpdateProp(selectedItem.id, 'fontFamily', e.currentTarget.value)}
-							class="mt-1 w-full border-2 px-3 py-2"
-							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						>
 							<option value="system-ui">System UI</option>
 							<option value="serif">Serif</option>
@@ -206,14 +187,13 @@
 					</label>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+					<label class="mb-1 block text-sm font-medium text-text-secondary">
 						Text Decoration
 						<select
 							value={selectedItem.props.textDecoration}
 							onchange={(e) =>
 								onUpdateProp(selectedItem.id, 'textDecoration', e.currentTarget.value)}
-							class="mt-1 w-full border-2 px-3 py-2"
-							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						>
 							<option value="none">None</option>
 							<option value="underline">Underline</option>
@@ -222,7 +202,7 @@
 					</label>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+					<label class="mb-1 block text-sm font-medium text-text-secondary">
 						Color
 						<div class="mt-1 flex items-center gap-2">
 							<input
@@ -234,8 +214,7 @@
 										onUpdateProp(selectedItem.id, 'color', newColor);
 									}
 								}}
-								class="h-12 w-12 min-w-12 cursor-pointer rounded border-2 p-1"
-								style="border-color: var(--border-primary);"
+								class="h-12 w-12 min-w-12 cursor-pointer rounded border-2 border-border-primary p-1"
 							/>
 							<input
 								type="text"
@@ -247,20 +226,18 @@
 									}
 								}}
 								placeholder="#000000"
-								class="w-2 flex-1 border-2 px-3 py-2"
-								style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+								class="w-2 flex-1 border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 							/>
 						</div>
 					</label>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
-						Input Type
+					<label class="mb-1 block text-sm font-medium text-text-secondary">
+						Font Family
 						<select
-							value={selectedItem.props.inputType}
-							onchange={(e) => onUpdateProp(selectedItem.id, 'inputType', e.currentTarget.value)}
-							class="mt-1 w-full border-2 px-3 py-2"
-							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+							value={selectedItem.props.fontFamily}
+							onchange={(e) => onUpdateProp(selectedItem.id, 'fontFamily', e.currentTarget.value)}
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						>
 							<option value="text">Text</option>
 							<option value="int">Integer</option>
@@ -269,7 +246,7 @@
 					</label>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+					<label class="mb-1 block text-sm font-medium text-text-secondary">
 						Max Length
 						<input
 							type="number"
@@ -285,13 +262,12 @@
 								}
 							}}
 							placeholder="No limit"
-							class="mt-1 w-full border-2 px-3 py-2"
-							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						/>
 					</label>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+					<label class="mb-1 block text-sm font-medium text-text-secondary">
 						Min Length
 						<input
 							type="number"
@@ -307,8 +283,7 @@
 								}
 							}}
 							placeholder="No limit"
-							class="mt-1 w-full border-2 px-3 py-2"
-							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						/>
 					</label>
 				</div>
@@ -320,34 +295,26 @@
 						onchange={(e) => onUpdateProp(selectedItem.id, 'required', e.currentTarget.checked)}
 						class="h-4 w-4"
 					/>
-					<label for="required" class="text-sm font-medium" style="color: var(--text-secondary);"
-						>Required</label
-					>
+					<label for="required" class="text-sm font-medium text-text-secondary">Required</label>
 				</div>
 			</div>
 		{:else if selectedItem.type === 'label'}
 			<div class="space-y-2">
 				<div>
-					<span class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);"
-						>Text</span
-					>
+					<span class="mb-1 block text-sm font-medium text-text-secondary">Text</span>
 					<input
 						type="text"
 						value={selectedItem.props.text}
 						oninput={(e) => onUpdateProp(selectedItem.id, 'text', e.currentTarget.value)}
-						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						class="w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					/>
 				</div>
 				<div>
-					<span class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);"
-						>Size (px)</span
-					>
+					<span class="mb-1 block text-sm font-medium text-text-secondary">Size (px)</span>
 					<select
 						value={selectedItem.props.size}
 						onchange={(e) => onUpdateProp(selectedItem.id, 'size', parseInt(e.currentTarget.value))}
-						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						class="w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					>
 						{#each [10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 48] as s (s)}
 							<option value={s}>{s}px</option>
@@ -355,14 +322,11 @@
 					</select>
 				</div>
 				<div>
-					<span class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);"
-						>Weight</span
-					>
+					<span class="mb-1 block text-sm font-medium text-text-secondary">Weight</span>
 					<select
 						value={selectedItem.props.weight}
 						onchange={(e) => onUpdateProp(selectedItem.id, 'weight', e.currentTarget.value)}
-						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						class="w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					>
 						<option value="light">Light</option>
 						<option value="normal">Normal</option>
@@ -370,13 +334,12 @@
 					</select>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+					<label class="mb-1 block text-sm font-medium text-text-secondary">
 						Font Family
 						<select
 							value={selectedItem.props.fontFamily}
 							onchange={(e) => onUpdateProp(selectedItem.id, 'fontFamily', e.currentTarget.value)}
-							class="mt-1 w-full border-2 px-3 py-2"
-							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						>
 							<option value="system-ui">System UI</option>
 							<option value="serif">Serif</option>
@@ -386,14 +349,13 @@
 					</label>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+					<label class="mb-1 block text-sm font-medium text-text-secondary">
 						Text Decoration
 						<select
 							value={selectedItem.props.textDecoration}
 							onchange={(e) =>
 								onUpdateProp(selectedItem.id, 'textDecoration', e.currentTarget.value)}
-							class="mt-1 w-full border-2 px-3 py-2"
-							style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+							class="mt-1 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 						>
 							<option value="none">None</option>
 							<option value="underline">Underline</option>
@@ -402,23 +364,21 @@
 					</label>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+					<label class="mb-1 block text-sm font-medium text-text-secondary">
 						Color
 						<div class="mt-1 flex items-center gap-2">
 							<input
 								type="color"
 								value={selectedItem.props.color || '#000000'}
 								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
-								class="h-12 w-12 min-w-12 cursor-pointer rounded border-2 p-1"
-								style="border-color: var(--border-primary);"
+								class="h-12 w-12 min-w-12 cursor-pointer rounded border-2 border-border-primary p-1"
 							/>
 							<input
 								type="text"
 								value={selectedItem.props.color || ''}
 								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
 								placeholder="#000000"
-								class="w-2 flex-1 border-2 px-3 py-2"
-								style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+								class="w-2 flex-1 border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 							/>
 						</div>
 					</label>
@@ -427,35 +387,30 @@
 		{:else if selectedItem.type === 'checkbox'}
 			<div class="space-y-2">
 				<div>
-					<span class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);"
-						>Label</span
-					>
+					<span class="mb-1 block text-sm font-medium text-text-secondary">Label</span>
 					<input
 						type="text"
 						value={selectedItem.props.text}
 						oninput={(e) => onUpdateProp(selectedItem.id, 'text', e.currentTarget.value)}
-						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						class="w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					/>
 				</div>
 				<div>
-					<label class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);">
+					<label class="mb-1 block text-sm font-medium text-text-secondary">
 						Color
 						<div class="mt-1 flex items-center gap-2">
 							<input
 								type="color"
 								value={selectedItem.props.color || '#000000'}
 								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
-								class="h-12 w-12 min-w-12 cursor-pointer rounded border-2 p-1"
-								style="border-color: var(--border-primary);"
+								class="h-12 w-12 min-w-12 cursor-pointer rounded border-2 border-border-primary p-1"
 							/>
 							<input
 								type="text"
 								value={selectedItem.props.color || ''}
 								oninput={(e) => onUpdateProp(selectedItem.id, 'color', e.currentTarget.value)}
 								placeholder="#000000"
-								class="w-2 flex-1 border-2 px-3 py-2"
-								style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+								class="w-2 flex-1 border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 							/>
 						</div>
 					</label>
@@ -468,70 +423,56 @@
 						onchange={(e) => onUpdateProp(selectedItem.id, 'required', e.currentTarget.checked)}
 						class="h-4 w-4"
 					/>
-					<label
-						for="checkbox-required"
-						class="text-sm font-medium"
-						style="color: var(--text-secondary);">Required</label
+					<label for="checkbox-required" class="text-sm font-medium text-text-secondary"
+						>Required</label
 					>
 				</div>
 			</div>
 		{:else if selectedItem.type === 'temperature'}
 			<div class="space-y-2">
 				<div>
-					<span class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);"
-						>Label</span
-					>
+					<span class="mb-1 block text-sm font-medium text-text-secondary">Label</span>
 					<input
 						type="text"
 						value={selectedItem.props.label}
 						oninput={(e) => onUpdateProp(selectedItem.id, 'label', e.currentTarget.value)}
-						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						class="w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					/>
 				</div>
 				<div>
-					<span class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);"
-						>Unit</span
-					>
+					<span class="mb-1 block text-sm font-medium text-text-secondary">Unit</span>
 					<select
 						value={selectedItem.props.unit}
 						onchange={(e) => onUpdateProp(selectedItem.id, 'unit', e.currentTarget.value)}
-						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						class="w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					>
 						<option value="°C">°C (Celsius)</option>
 						<option value="°F">°F (Fahrenheit)</option>
 					</select>
 				</div>
 				<div>
-					<span class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);"
-						>Min</span
-					>
+					<span class="mb-1 block text-sm font-medium text-text-secondary">Min</span>
 					<input
 						type="number"
 						value={selectedItem.props.min}
 						oninput={(e) => onUpdateProp(selectedItem.id, 'min', parseInt(e.currentTarget.value))}
-						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						class="w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					/>
 				</div>
 				<div>
-					<span class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);"
-						>Max</span
-					>
+					<span class="mb-1 block text-sm font-medium text-text-secondary">Max</span>
 					<input
 						type="number"
 						value={selectedItem.props.max}
 						oninput={(e) => onUpdateProp(selectedItem.id, 'max', parseInt(e.currentTarget.value))}
-						class="w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						class="w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					/>
 				</div>
 			</div>
 		{:else if selectedItem.type === 'dropdown'}
 			<div class="space-y-2">
 				<div>
-					<span class="mb-1 block text-sm font-medium" style="color: var(--text-secondary);"
+					<span class="mb-1 block text-sm font-medium text-text-secondary"
 						>Options (one per line)</span
 					>
 					<textarea
@@ -544,8 +485,7 @@
 								'options',
 								e.currentTarget.value.split('\n').filter((o: string) => o.trim())
 							)}
-						class="h-32 w-full border-2 px-3 py-2"
-						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						class="h-32 w-full border-2 border-border-primary bg-bg-primary px-3 py-2 text-text-primary"
 					></textarea>
 				</div>
 			</div>

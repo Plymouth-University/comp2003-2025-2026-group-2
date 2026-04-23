@@ -23,13 +23,13 @@
 			<div class="mt-4 flex gap-4">
 				<a
 					href="/cookie-policy"
-					class="rounded-lg border border-border-primary bg-transparent px-6 py-2 text-sm font-medium text-text-primary transition-colors hover:border-text-primary"
+					class="rounded-lg border border-border-primary px-6 py-2 text-sm font-medium text-text-primary transition-colors hover:border-text-primary hover:bg-bg-primary"
 				>
 					View Policy
 				</a>
 				<button
 					onclick={dismissNotice}
-					class="bg-primary-color rounded-lg border-none px-6 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+					class="rounded-lg border-none bg-button-primary px-6 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
 				>
 					Dismiss
 				</button>

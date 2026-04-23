@@ -149,24 +149,23 @@
 <svelte:head>
 	<title>Dashboard</title>
 </svelte:head>
-<div class="h-full w-full overflow-auto" style="background-color: var(--bg-secondary);">
+<div class="h-full w-full overflow-auto bg-bg-secondary">
 	<!-- Main Content -->
 	<div class="mx-auto max-w-450 px-6 py-8">
 		<!-- Header with User Profile -->
 		<div class="mb-6 flex flex-wrap items-start justify-between gap-4">
 			<div>
-				<h1 class="text-3xl font-bold" style="color: var(--text-primary);">Dashboard Overview</h1>
+				<h1 class="text-3xl font-bold text-text-primary">Dashboard Overview</h1>
 			</div>
 
 			<!-- User Profile Section -->
-			<div class="border-2" style="border-color: var(--border-primary);">
-				<div class="px-6 py-4" style="background-color: var(--bg-primary);">
+			<div class="border-2 border-border-primary">
+				<div class="bg-bg-primary px-6 py-4">
 					<div class="flex items-center gap-4">
 						<!-- Profile Picture -->
 						{#if user.profilePictureUrl}
 							<div
-								class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full"
-								style="background-color: var(--bg-secondary); border: 2px solid var(--border-primary);"
+								class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-border-primary bg-bg-secondary"
 							>
 								<img
 									src={user.profilePictureUrl}
@@ -176,18 +175,17 @@
 							</div>
 						{:else}
 							<div
-								class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white"
-								style="background-color: var(--button-primary); border: 2px solid var(--border-primary);"
+								class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-border-primary bg-button-primary text-xl font-bold text-white"
 							>
 								{user.initials}
 							</div>
 						{/if}
 						<!-- User Info -->
 						<div class="text-left">
-							<div class="font-bold" style="color: var(--text-primary);">{user.name}</div>
-							<div class="text-sm" style="color: var(--text-secondary);">{user.email}</div>
-							<div class="text-sm" style="color: var(--text-secondary);">{user.company}</div>
-							<div class="text-sm font-medium" style="color: var(--text-primary);">
+							<div class="font-bold text-text-primary">{user.name}</div>
+							<div class="text-sm text-text-secondary">{user.email}</div>
+							<div class="text-sm text-text-secondary">{user.company}</div>
+							<div class="text-sm font-medium text-text-primary">
 								{user.role}
 							</div>
 						</div>
@@ -218,48 +216,37 @@
 				>
 					{#if boxId === 'logs'}
 						<!-- Today's Logs Box -->
-						<div class="flex w-full flex-col border-2" style="border-color: var(--border-primary);">
-							<div
-								class="border-b-2 px-6 py-4"
-								style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-							>
-								<h2 class="text-xl font-bold" style="color: var(--text-primary);">Today's Logs</h2>
+						<div class="flex w-full flex-col border-2 border-border-primary">
+							<div class="border-b-2 border-border-primary bg-bg-primary px-6 py-4">
+								<h2 class="text-xl font-bold text-text-primary">Today's Logs</h2>
 							</div>
-							<div
-								class="flex-1 overflow-auto px-6 py-6"
-								style="background-color: var(--bg-primary);"
-							>
+							<div class="flex-1 overflow-auto bg-bg-primary px-6 py-6">
 								{#if todaysLogs.length === 0}
-									<div style="color: var(--text-secondary);">No logs due today</div>
+									<div class="text-text-secondary">No logs due today</div>
 								{:else}
 									<div class="space-y-3">
 										{#each todaysLogs as log (log.template_name + log.period)}
 											<div
-												class="flex items-center justify-between gap-3 rounded border-2 p-3"
-												style="border-color: var(--border-primary); background-color: var(--bg-secondary);"
+												class="flex items-center justify-between gap-3 rounded border-2 border-border-primary bg-bg-secondary p-3"
 											>
 												<div class="min-w-0 flex-1">
 													<div
-														class="overflow-hidden font-semibold text-ellipsis whitespace-nowrap"
-														style="color: var(--text-primary);"
+														class="overflow-hidden text-ellipsis whitespace-nowrap text-text-primary"
 														title={formatTemplateName(log.template_name, log.period)}
 													>
 														{formatTemplateName(log.template_name, log.period)}
 													</div>
 													{#if log.status}
-														<div class="mt-1 text-sm" style="color: var(--text-secondary);">
+														<div class="mt-1 text-sm text-text-secondary">
 															Status: {log.status}
 														</div>
 													{:else}
-														<div class="mt-1 text-sm" style="color: var(--text-secondary);">
-															Not yet started
-														</div>
+														<div class="mt-1 text-sm text-text-secondary">Not yet started</div>
 													{/if}
 												</div>
 												<button
 													onclick={() => handleFillLog(log.template_name, log.period, log.status)}
-													class="shrink-0 cursor-pointer rounded px-4 py-2 text-sm font-semibold hover:opacity-80"
-													style="background-color: var(--button-primary); color: var(--bg-primary);"
+													class="shrink-0 cursor-pointer rounded bg-button-primary px-4 py-2 text-sm font-semibold text-bg-primary hover:opacity-80"
 												>
 													Fill Out
 												</button>
@@ -274,29 +261,21 @@
 						<ClockInOut initialStatus={clockStatus} />
 					{:else if boxId === 'actions'}
 						<!-- Quick Actions Box -->
-						<div class="flex w-full flex-col border-2" style="border-color: var(--border-primary);">
-							<div
-								class="border-b-2 px-6 py-4"
-								style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-							>
-								<h2 class="text-xl font-bold" style="color: var(--text-primary);">Quick Actions</h2>
+						<div class="flex w-full flex-col border-2 border-border-primary">
+							<div class="border-b-2 border-border-primary bg-bg-primary px-6 py-4">
+								<h2 class="text-xl font-bold text-text-primary">Quick Actions</h2>
 							</div>
-							<div
-								class="flex flex-1 flex-col px-6 py-6"
-								style="background-color: var(--bg-primary);"
-							>
+							<div class="flex flex-1 flex-col bg-bg-primary px-6 py-6">
 								<div class="flex flex-col gap-3">
 									<button
 										onclick={handleCreateNewTemplate}
-										class="transform cursor-pointer border-2 px-6 py-2 font-medium transition-all duration-150 hover:scale-105 hover:opacity-80"
-										style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+										class="transform cursor-pointer border-2 border-border-primary bg-bg-primary px-6 py-2 font-medium text-text-primary transition-all duration-150 hover:scale-105 hover:opacity-80"
 									>
 										+ Create New Template
 									</button>
 									<button
 										onclick={handleViewReports}
-										class="transform cursor-pointer border-2 px-6 py-2 font-medium transition-all duration-150 hover:scale-105 hover:opacity-80"
-										style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+										class="transform cursor-pointer border-2 border-border-primary bg-bg-primary px-6 py-2 font-medium text-text-primary transition-all duration-150 hover:scale-105 hover:opacity-80"
 									>
 										View Reports
 									</button>

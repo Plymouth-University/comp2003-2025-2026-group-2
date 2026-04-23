@@ -88,22 +88,14 @@
 	<title>Confirm Company Deletion - LogSmart</title>
 </svelte:head>
 
-<div
-	class="flex min-h-full w-full items-center justify-center p-6"
-	style="background-color: var(--bg-secondary);"
->
+<div class="flex min-h-full w-full items-center justify-center bg-bg-secondary p-6">
 	<div
-		class="w-full max-w-md rounded-lg border-2 p-8 shadow-lg"
-		style="background-color: var(--bg-primary); border-color: var(--border-primary);"
+		class="w-full max-w-md rounded-lg border-2 border-border-primary bg-bg-primary p-8 shadow-lg"
 	>
 		<div class="mb-6 text-center">
-			<div
-				class="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full"
-				style="background-color: var(--error-bg);"
-			>
+			<div class="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-error-bg">
 				<svg
-					class="h-8 w-8"
-					style="color: var(--button-secondary);"
+					class="h-8 w-8 text-button-secondary"
 					fill="none"
 					stroke="currentColor"
 					viewBox="0 0 24 24"
@@ -116,71 +108,51 @@
 					/>
 				</svg>
 			</div>
-			<h1 class="mb-2 text-2xl font-bold" style="color: var(--text-primary);">
-				Confirm Company Deletion
-			</h1>
-			<p class="text-sm" style="color: var(--text-secondary);">
-				This is a permanent action that cannot be undone.
-			</p>
+			<h1 class="mb-2 text-2xl font-bold text-text-primary">Confirm Company Deletion</h1>
+			<p class="text-sm text-text-secondary">This is a permanent action that cannot be undone.</p>
 		</div>
 
 		{#if isLoading}
 			<div class="py-8 text-center">
 				<div
-					class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"
-					style="border-color: var(--text-primary);"
+					class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-text-primary"
 				></div>
-				<p style="color: var(--text-secondary);">Validating confirmation link...</p>
+				<p class="text-text-secondary">Validating confirmation link...</p>
 			</div>
 		{:else if success}
-			<div
-				class="mb-6 rounded-lg p-4 text-center"
-				style="background-color: var(--clock-in-bg); color: var(--create-button);"
-			>
+			<div class="mb-6 rounded-lg bg-clock-in-bg p-4 text-center text-create-button">
 				<p class="mb-2 font-semibold">Success!</p>
 				<p class="text-sm">{success}</p>
 			</div>
 			<button
 				onclick={goToHome}
-				class="w-full rounded-lg py-3 font-semibold transition-opacity hover:opacity-80"
-				style="background-color: var(--bg-secondary); color: var(--text-primary);"
+				class="w-full rounded-lg bg-bg-secondary py-3 font-semibold text-text-primary transition-opacity hover:opacity-80"
 			>
 				Return to Home
 			</button>
 		{:else if error}
-			<div
-				class="mb-6 rounded-lg p-4 text-center"
-				style="background-color: var(--error-bg); color: var(--button-secondary);"
-			>
+			<div class="mb-6 rounded-lg bg-error-bg p-4 text-center text-button-secondary">
 				<p class="font-semibold">Error</p>
 				<p class="text-sm">{error}</p>
 			</div>
 			<button
 				onclick={goToHome}
-				class="w-full rounded-lg py-3 font-semibold transition-opacity hover:opacity-80"
-				style="background-color: var(--bg-secondary); color: var(--text-primary);"
+				class="w-full rounded-lg bg-bg-secondary py-3 font-semibold text-text-primary transition-opacity hover:opacity-80"
 			>
 				Return to Home
 			</button>
 		{:else if companyName}
 			<div class="space-y-4">
-				<p class="text-center" style="color: var(--text-secondary);">
+				<p class="text-center text-text-secondary">
 					To confirm deletion, please type the company name exactly as shown:
 				</p>
-				<div
-					class="rounded-lg p-4 text-center"
-					style="background-color: var(--bg-secondary); border: 1px solid var(--border-primary);"
-				>
-					<p class="font-mono text-lg font-bold" style="color: var(--text-primary);">
+				<div class="rounded-lg border border-border-primary bg-bg-secondary p-4 text-center">
+					<p class="font-mono text-lg font-bold text-text-primary">
 						{companyName}
 					</p>
 				</div>
 				<div>
-					<label
-						for="companyNameInput"
-						class="mb-1 block text-sm font-medium"
-						style="color: var(--text-secondary);"
-					>
+					<label for="companyNameInput" class="mb-1 block text-sm font-medium text-text-secondary">
 						Type company name to confirm
 					</label>
 					<input
@@ -188,22 +160,19 @@
 						type="text"
 						bind:value={typedCompanyName}
 						placeholder="Enter company name"
-						class="w-full rounded-lg border p-3"
-						style="background-color: var(--bg-primary); color: var(--text-primary); border-color: var(--border-primary);"
+						class="w-full rounded-lg border border-border-primary bg-bg-primary p-3 text-text-primary"
 					/>
 				</div>
 				<button
 					onclick={confirmDeletion}
 					disabled={!isNameValid || deletionStarted}
-					class="w-full rounded-lg py-3 font-semibold transition-opacity disabled:opacity-50"
-					style="background-color: var(--button-secondary); color: var(--bg-primary);"
+					class="w-full rounded-lg bg-button-secondary py-3 font-semibold text-bg-primary transition-opacity disabled:opacity-50"
 				>
 					{deletionStarted ? 'Deleting...' : 'Delete Company'}
 				</button>
 				<button
 					onclick={goToHome}
-					class="w-full rounded-lg py-3 font-semibold transition-opacity hover:opacity-80"
-					style="background-color: var(--bg-secondary); color: var(--text-primary);"
+					class="w-full rounded-lg bg-bg-secondary py-3 font-semibold text-text-primary transition-opacity hover:opacity-80"
 				>
 					Cancel
 				</button>

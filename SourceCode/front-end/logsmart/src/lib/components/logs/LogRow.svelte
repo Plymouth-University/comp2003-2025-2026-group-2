@@ -12,18 +12,16 @@
 </script>
 
 <div
-	class="flex items-center justify-between rounded border-2 p-4"
-	style="background-color: var(--bg-primary); border-color: var(--border-primary);"
+	class="flex items-center justify-between rounded border-2 border-border-primary bg-bg-primary p-4"
 >
 	<div class="min-w-0 flex-1">
 		<div
-			class="overflow-hidden text-lg font-semibold text-ellipsis whitespace-nowrap lg:text-xl"
-			style="color: var(--text-primary);"
+			class="overflow-hidden text-lg font-semibold text-ellipsis whitespace-nowrap text-text-primary lg:text-xl"
 			title={resolvedTitleAttr}
 		>
 			{props.title}
 		</div>
-		<div class="text-sm" style="color: var(--text-secondary);">
+		<div class="text-sm text-text-secondary">
 			{@render props.meta?.()}
 		</div>
 	</div>
