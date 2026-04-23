@@ -354,7 +354,7 @@
 			<!-- Delete Company -->
 			<div class="border-2 border-border-primary bg-bg-primary">
 				<div class="border-b-2 border-border-primary px-6 py-4">
-					<h2 class="text-xl font-bold text-button-secondary">Delete Company</h2>
+					<h2 class="text-xl font-bold text-red-800">Delete Company</h2>
 				</div>
 				<div class="bg-bg-primary px-6 py-6">
 					<div class="max-w-2xl">

@@ -115,7 +115,7 @@
 							</svg>
 						</div>
 						<span
-							style="color: var(--text-primary); font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;"
+							class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-text-primary italic"
 							title={currentTemplateName || 'Untitled Template'}
 						>
 							{currentTemplateName || 'Untitled Template'}
@@ -143,7 +143,7 @@
 									fill="none"
 									stroke="currentColor"
 									stroke-width="2"
-									style="color: var(--border-primary);"
+									class="flex h-5 w-5 items-center justify-center border-2 border-border-primary text-border-primary"
 								>
 									<line x1="2" y1="6" x2="10" y2="6"></line>
 									<line x1="6" y1="2" x2="6" y2="10"></line>
@@ -151,7 +151,7 @@
 							{/if}
 						</div>
 						<span
-							style="color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;"
+							class="flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-text-primary"
 							title={template.name}>{template.name}</span
 						>
 					</li>

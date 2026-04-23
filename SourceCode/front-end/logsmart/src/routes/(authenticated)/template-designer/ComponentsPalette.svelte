@@ -85,12 +85,11 @@
 				tabindex="0"
 			>
 				<div
-					class="flex h-6 w-6 items-center justify-center border text-xs font-bold"
-					style="border-color: var(--border-primary); color: var(--text-primary);"
+					class="flex h-6 w-6 items-center justify-center border border-border-primary text-xs font-bold text-text-primary"
 				>
 					{component.icon}
 				</div>
-				<span style="color: var(--text-primary);">{component.name}</span>
+				<span class="text-text-primary">{component.name}</span>
 			</div>
 		{/each}
 	</div>
@@ -99,8 +98,8 @@
 {#if draggingType}
 	<div
 		bind:this={ghostRef}
-		class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 rounded border-2 bg-bg-primary p-2 shadow-lg"
-		style="left: {ghostPosition.x}px; top: {ghostPosition.y}px; border-color: var(--border-primary);"
+		class="pointer-events-none fixed z-50 -translate-x-1/2 -translate-y-1/2 rounded border-2 border-border-primary bg-bg-primary p-2 shadow-lg"
+		style="left: {ghostPosition.x}px; top: {ghostPosition.y}px;"
 	>
 		{#if draggingType === 'text_input'}
 			<UserTextInput text="" size={16} weight="normal" placeholder="Text Input" />

@@ -1199,7 +1199,7 @@ ${reportContent}
 				<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
 					<div>
 						<strong>${entryTitle}</strong>
-						<small style="color: var(--grey-dark); margin-left: 10px;">ID: ${component.entry.id.slice(0, 8)}...</small>
+						<small class="text-grey-dark ml-2">ID: ${component.entry.id.slice(0, 8)}...</small>
 					</div>
 					<span class="status ${component.entry.status === 'submitted' ? 'submitted' : 'draft'}">${component.entry.status}</span>
 				</div>
@@ -1222,7 +1222,7 @@ ${reportContent}
 				<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
 					<div>
 						<strong>${entryTitle}</strong>
-						<small style="color: var(--grey-dark); margin-left: 10px;">ID: ${entry.id.slice(0, 8)}...</small>
+						<small class="text-grey-dark ml-2">ID: ${entry.id.slice(0, 8)}...</small>
 					</div>
 					<span class="status ${entry.status === 'submitted' ? 'submitted' : 'draft'}">${entry.status}</span>
 				</div>
@@ -1527,8 +1527,7 @@ ${reportContent}
 												e.stopPropagation();
 												deleteReportRun(run.id);
 											}}
-											class="cursor-pointer rounded border px-2 py-0.5 text-xs transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-											style="border-color: var(--button-secondary); color: var(--button-secondary);"
+											class="cursor-pointer rounded border border-button-secondary px-2 py-0.5 text-xs text-button-secondary transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-60"
 										>
 											{deletingReportId === run.id ? 'Deleting...' : 'Delete'}
 										</button>
@@ -1550,24 +1549,21 @@ ${reportContent}
 					<button
 						onclick={exportToPDF}
 						disabled={!reportGenerated || filteredEntries.length === 0}
-						class="transform border-2 px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
-						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						class="transform border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary transition-all duration-200 hover:scale-105 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 					>
 						Download PDF
 					</button>
 					<button
 						onclick={() => exportToWord('docx')}
 						disabled={!reportGenerated || filteredEntries.length === 0}
-						class="transform border-2 px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 hover:border-green-400 hover:bg-green-50 hover:text-green-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
-						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						class="transform border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary transition-all duration-200 hover:scale-105 hover:border-green-400 hover:bg-green-50 hover:text-green-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 					>
 						Download DOCX
 					</button>
 					<button
 						onclick={() => exportToWord('rtf')}
 						disabled={!reportGenerated || filteredEntries.length === 0}
-						class="transform border-2 px-4 py-2 text-sm font-medium transition-all duration-200 hover:scale-105 hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
-						style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary);"
+						class="transform border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary transition-all duration-200 hover:scale-105 hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 					>
 						Download RTF
 					</button>
@@ -1636,10 +1632,7 @@ ${reportContent}
 											maxVal
 										)}
 										{@const yTicks = getYAxisTicks(minVal, maxVal, chartHeight)}
-										<div
-											class="mb-6 rounded-lg border p-4"
-											style="border-color: var(--border-primary); background-color: var(--bg-secondary);"
-										>
+										<div class="mb-6 rounded-lg border border-border-primary bg-bg-secondary p-4">
 											<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 												<div>
 													<h4 class="font-bold text-text-primary">
@@ -1849,10 +1842,7 @@ ${reportContent}
 											{fieldType} ({componentGroup.length} components)
 										</h3>
 										{#each componentGroup as component (component.componentId)}
-											<div
-												class="mb-4 rounded border p-4"
-												style="border-color: var(--border-primary); background-color: var(--bg-secondary);"
-											>
+											<div class="mb-4 rounded border border-border-primary bg-bg-secondary p-4">
 												<div class="mb-2 flex items-start justify-between">
 													<div>
 														<span class="font-medium text-text-primary"
@@ -1903,10 +1893,7 @@ ${reportContent}
 										excludedFieldTypes
 									)}
 									{#if shouldShowEntry}
-										<div
-											class="mb-4 rounded border p-4"
-											style="border-color: var(--border-primary); background-color: var(--bg-secondary);"
-										>
+										<div class="mb-4 rounded border border-border-primary bg-bg-secondary p-4">
 											<div class="mb-2 flex items-start justify-between">
 												<div>
 													<span class="font-medium text-text-primary"
@@ -1960,7 +1947,7 @@ ${reportContent}
 								fill="none"
 								stroke="currentColor"
 								stroke-width="2"
-								style="color: var(--text-secondary);"
+								class="text-text-secondary"
 							>
 								<polyline points="9 17 14 22 23 10"></polyline>
 								<rect x="4" y="4" width="24" height="24" rx="2" ry="2"></rect>

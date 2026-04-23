@@ -360,8 +360,7 @@
 								type="button"
 								onclick={previousMonth}
 								aria-label="Previous month"
-								class="rounded p-2"
-								style="color: var(--text-primary); background-color: transparent;"
+								class="rounded bg-transparent p-2 text-text-primary"
 							>
 								<svg
 									width="20"
@@ -377,8 +376,9 @@
 							<button
 								type="button"
 								onclick={switchToMonthView}
-								class="rounded px-3 py-1 font-bold transition-colors"
-								style="color: var(--text-primary); background-color: transparent;"
+								class="rounded bg-transparent px-3 py-1 font-bold
+								text-text-primary
+								transition-colors"
 							>
 								{monthNames[viewDate.getMonth()]}
 								{viewDate.getFullYear()}
@@ -388,8 +388,9 @@
 								onclick={nextMonth}
 								disabled={!canGoToNextMonth()}
 								aria-label="Next month"
-								class="rounded p-2 disabled:cursor-not-allowed disabled:opacity-40"
-								style="color: var(--text-primary); background-color: transparent;"
+								class="rounded bg-transparent p-2 text-text-primary
+								disabled:cursor-not-allowed
+								disabled:opacity-40"
 							>
 								<svg
 									width="20"
@@ -406,10 +407,7 @@
 
 						<div class="mb-2 grid grid-cols-7 gap-1">
 							{#each ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'] as day (day)}
-								<div
-									class="py-2 text-center text-sm font-medium"
-									style="color: var(--text-secondary);"
-								>
+								<div class="py-2 text-center text-sm font-medium text-text-secondary">
 									{day}
 								</div>
 							{/each}
@@ -450,8 +448,7 @@
 								type="button"
 								onclick={previousYear}
 								aria-label="Previous year"
-								class="rounded p-2"
-								style="color: var(--text-primary); background-color: transparent;"
+								class="rounded bg-transparent p-2 text-text-primary"
 							>
 								<svg
 									width="20"
@@ -467,8 +464,7 @@
 							<button
 								type="button"
 								onclick={switchToYearView}
-								class="rounded px-3 py-1 font-bold transition-colors"
-								style="color: var(--text-primary); background-color: transparent;"
+								class="rounded bg-transparent px-3 py-1 font-bold text-text-primary transition-colors"
 							>
 								{viewDate.getFullYear()}
 							</button>
@@ -477,8 +473,7 @@
 								onclick={nextYear}
 								disabled={!canGoToNextYear()}
 								aria-label="Next year"
-								class="rounded p-2 disabled:cursor-not-allowed disabled:opacity-40"
-								style="color: var(--text-primary); background-color: transparent;"
+								class="rounded bg-transparent p-2 text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
 							>
 								<svg
 									width="20"
@@ -521,8 +516,7 @@
 								type="button"
 								onclick={previousYearRange}
 								aria-label="Previous years"
-								class="rounded p-2"
-								style="color: var(--text-primary); background-color: transparent;"
+								class="rounded bg-transparent p-2 text-text-primary"
 							>
 								<svg
 									width="20"
@@ -535,7 +529,7 @@
 									<polyline points="12 4 6 10 12 16"></polyline>
 								</svg>
 							</button>
-							<div class="font-bold" style="color: var(--text-primary);">
+							<div class="font-bold text-text-primary">
 								{getYearRange()[0]} - {getYearRange()[11]}
 							</div>
 							<button
@@ -543,8 +537,7 @@
 								onclick={nextYearRange}
 								disabled={!canGoToNextYearRange()}
 								aria-label="Next years"
-								class="rounded p-2 disabled:cursor-not-allowed disabled:opacity-40"
-								style="color: var(--text-primary); background-color: transparent;"
+								class="rounded bg-transparent p-2 text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
 							>
 								<svg
 									width="20"

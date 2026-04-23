@@ -451,7 +451,7 @@
 								<button
 									type="button"
 									onclick={() => startDeleteBranch(branch)}
-									class="rounded-base border-2 border-red-600 bg-red-200 px-4 py-1 text-sm font-bold shadow-sm transition-all duration-150 hover:scale-105 hover:opacity-80"
+									class="rounded-base border-2 border-delete-button-hover bg-delete-button px-4 py-1 text-sm font-bold shadow-sm transition-all duration-150 hover:scale-105 hover:opacity-80"
 								>
 									DELETE
 								</button>
@@ -571,21 +571,16 @@
 {/if}
 
 <style>
-	.branches-page button:not(:disabled),
 	.branches-modal button:not(:disabled) {
 		cursor: pointer;
 		transition:
 			transform 0.12s ease,
 			filter 0.12s ease;
 	}
-
-	.branches-page button:not(:disabled):hover,
 	.branches-modal button:not(:disabled):hover {
 		transform: translateY(-1px) scale(1.02);
 		filter: brightness(0.96);
 	}
-
-	.branches-page button:disabled,
 	.branches-modal button:disabled {
 		cursor: not-allowed;
 	}

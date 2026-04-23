@@ -235,7 +235,7 @@
 
 			<button
 				onclick={applyDateFilter}
-				class="cursor-pointer rounded border-2 border-button-primary bg-button-primary px-4 py-2 text-sm font-medium text-bg-primary transition-opacity hover:opacity-80"
+				class="cursor-pointer rounded border-2 border-button-primary bg-button-primary px-4 py-2 text-sm font-medium text-text-primary transition-opacity hover:opacity-80"
 			>
 				Apply
 			</button>
@@ -270,7 +270,7 @@
 		<div class="overflow-x-auto rounded border-2 border-border-primary bg-bg-primary">
 			<table class="w-full text-left text-sm">
 				<thead>
-					<tr class="bg-button-primary text-bg-primary">
+					<tr class="bg-button-primary text-text-primary">
 						<th class="px-4 py-3 font-medium">Employee</th>
 						<th class="px-4 py-3 font-medium">Email</th>
 						<th class="px-4 py-3 font-medium">Clock In</th>
