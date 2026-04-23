@@ -85,17 +85,13 @@
 </script>
 
 <div
-	class="flex flex-col gap-3 rounded-lg border-2 px-4 py-4 transition-colors hover:shadow-md sm:flex-row sm:items-center sm:justify-between sm:px-6"
-	style="background-color: var(--bg-primary); border-color: var(--border-primary);"
+	class="flex flex-col gap-3 rounded-lg border-2 border-border-primary bg-bg-primary px-4 py-4 transition-colors hover:shadow-md sm:flex-row sm:items-center sm:justify-between sm:px-6"
 >
 	<div class="min-w-0 flex-1">
-		<h3 class="truncate text-base font-bold sm:text-lg" style="color: var(--text-primary);">
+		<h3 class="truncate text-base font-bold text-text-primary sm:text-lg">
 			{template.name}
 		</h3>
-		<div
-			class="mt-1 flex flex-wrap gap-2 text-xs xs:text-sm sm:gap-4"
-			style="color: var(--text-secondary);"
-		>
+		<div class="mt-1 flex flex-wrap gap-2 text-xs text-text-secondary xs:text-sm sm:gap-4">
 			<span class="truncate">Schedule: {formatSchedule(template.schedule)}</span>
 			<span class="hidden sm:inline">•</span>
 			<span class="truncate">Updated: {formatDate(template.updatedAt)}</span>

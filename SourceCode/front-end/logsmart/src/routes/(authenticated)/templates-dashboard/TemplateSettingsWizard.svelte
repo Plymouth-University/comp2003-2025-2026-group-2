@@ -104,12 +104,9 @@
 		aria-labelledby="wizard-title"
 		tabindex="-1"
 	>
-		<div
-			class="w-full max-w-lg rounded-lg border-2 shadow-xl"
-			style="background-color: var(--bg-primary); border-color: var(--border-primary);"
-		>
-			<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
-				<h2 id="wizard-title" class="font-bold md:text-xl" style="color: var(--text-primary);">
+		<div class="w-full max-w-lg rounded-lg border-2 border-border-primary bg-bg-primary shadow-xl">
+			<div class="border-b-2 border-border-primary px-6 py-4">
+				<h2 id="wizard-title" class="font-bold text-text-primary md:text-xl">
 					Schedule Settings: {template.name}
 				</h2>
 			</div>
@@ -118,16 +115,14 @@
 				<div>
 					<label
 						for="frequency-select"
-						class="mb-2 block font-medium xs:text-sm"
-						style="color: var(--text-secondary);"
+						class="mb-2 block font-medium text-text-secondary xs:text-sm"
 					>
 						Frequency
 					</label>
 					<select
 						id="frequency-select"
 						bind:value={frequency}
-						class="w-full rounded border-2 px-4 py-2"
-						style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+						class="w-full rounded border-2 border-border-primary bg-bg-secondary px-4 py-2 text-text-primary"
 					>
 						{#each frequencyOptions as option (option.value)}
 							<option value={option.value}>{option.label}</option>
@@ -137,12 +132,10 @@
 
 				{#if frequency === 'daily'}
 					<div>
-						<p class="mb-3 font-medium xs:text-sm" style="color: var(--text-secondary);">
+						<p class="mb-3 font-medium text-text-secondary xs:text-sm">
 							Select days when this template should be completed:
 						</p>
-						<p class="mb-3 text-sm" style="color: var(--text-secondary);">
-							Leave all unselected for every day
-						</p>
+						<p class="mb-3 text-sm text-text-secondary">Leave all unselected for every day</p>
 						<div class="flex flex-wrap justify-center gap-2">
 							{#each daysOfWeek as day (day.value)}
 								<button
@@ -159,15 +152,12 @@
 					</div>
 
 					<div class="mt-4 space-y-4">
-						<p class="font-medium" style="color: var(--text-secondary);">
-							Set availability window:
-						</p>
+						<p class="font-medium text-text-secondary">Set availability window:</p>
 						<div class="grid grid-cols-2 gap-4">
 							<div>
 								<label
 									for="available-from"
-									class="mb-2 block text-sm font-medium"
-									style="color: var(--text-secondary);"
+									class="mb-2 block text-sm font-medium text-text-secondary"
 								>
 									Available from
 								</label>
@@ -175,24 +165,18 @@
 									id="available-from"
 									type="time"
 									bind:value={availableFromTime}
-									class="w-full rounded border-2 px-4 py-2"
-									style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+									class="w-full rounded border-2 border-border-primary bg-bg-secondary px-4 py-2 text-text-primary"
 								/>
 							</div>
 							<div>
-								<label
-									for="due-at"
-									class="mb-2 block text-sm font-medium"
-									style="color: var(--text-secondary);"
-								>
+								<label for="due-at" class="mb-2 block text-sm font-medium text-text-secondary">
 									Due at
 								</label>
 								<input
 									id="due-at"
 									type="time"
 									bind:value={dueAtTime}
-									class="w-full rounded border-2 px-4 py-2"
-									style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+									class="w-full rounded border-2 border-border-primary bg-bg-secondary px-4 py-2 text-text-primary"
 								/>
 							</div>
 						</div>
@@ -201,7 +185,7 @@
 
 				{#if frequency === 'weekly'}
 					<div>
-						<p class="mb-3 font-medium xs:text-sm" style="color: var(--text-secondary);">
+						<p class="mb-3 font-medium text-text-secondary xs:text-sm">
 							Select which day of the week this template should be completed on:
 						</p>
 						<div class="flex flex-wrap justify-center gap-2">
@@ -222,11 +206,7 @@
 
 				{#if frequency === 'monthly'}
 					<div>
-						<label
-							for="monthly-day"
-							class="mb-2 block font-medium xs:text-sm"
-							style="color: var(--text-secondary);"
-						>
+						<label for="monthly-day" class="mb-2 block font-medium text-text-secondary xs:text-sm">
 							Day of the month it will become available from
 						</label>
 						<input
@@ -235,8 +215,7 @@
 							min="1"
 							max="31"
 							bind:value={dayOfMonth}
-							class="w-full rounded border-2 px-4 py-2"
-							style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+							class="w-full rounded border-2 border-border-primary bg-bg-secondary px-4 py-2 text-text-primary"
 						/>
 					</div>
 				{/if}
@@ -245,8 +224,7 @@
 					<div>
 						<label
 							for="yearly-date"
-							class="mb-2 block text-base font-medium xs:text-sm"
-							style="color: var(--text-secondary);"
+							class="mb-2 block text-base font-medium text-text-secondary xs:text-sm"
 						>
 							Date of year it will become available from
 						</label>
@@ -259,10 +237,9 @@
 								monthOfYear = date.getMonth() + 1;
 								dayOfMonth = date.getDate();
 							}}
-							class="w-full rounded border-2 px-4 py-2"
-							style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+							class="w-full rounded border-2 border-border-primary bg-bg-secondary px-4 py-2 text-text-primary"
 						/>
-						<p class="mt-1 text-sm" style="color: var(--text-secondary);">
+						<p class="mt-1 text-sm text-text-secondary">
 							Selected: {months[monthOfYear - 1]}
 							{dayOfMonth}
 						</p>
@@ -273,8 +250,7 @@
 					<div>
 						<label
 							for="custom-interval"
-							class="mb-2 block font-medium xs:text-sm"
-							style="color: var(--text-secondary);"
+							class="mb-2 block font-medium text-text-secondary xs:text-sm"
 						>
 							Repeat every X days
 						</label>
@@ -284,16 +260,14 @@
 							min="1"
 							max="365"
 							bind:value={customIntervalDays}
-							class="w-full rounded border-2 px-4 py-2"
-							style="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+							class="w-full rounded border-2 border-border-primary bg-bg-secondary px-4 py-2 text-text-primary"
 						/>
 					</div>
 				{/if}
 			</div>
 
 			<div
-				class="flex justify-end gap-3 border-t-2 px-6 py-4 text-base xs:text-sm"
-				style="border-color: var(--border-primary);"
+				class="flex justify-end gap-3 border-t-2 border-border-primary px-6 py-4 text-base xs:text-sm"
 			>
 				<button
 					type="button"

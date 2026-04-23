@@ -267,22 +267,19 @@
 					/>
 					{#if isSearchingAddress}
 						<div
-							class="absolute z-10 w-full rounded-md border border-gray-300 bg-white p-2 text-center dark:bg-gray-800"
-							style="top: 70px;"
+							class="absolute top-[70px] z-10 w-full rounded-md border border-gray-300 bg-white p-2 text-center dark:bg-gray-800"
 						>
 							<span class="text-sm text-gray-500">Searching...</span>
 						</div>
 					{:else if showAddressResults && addressSearchResults.length > 0}
 						<ul
-							class="absolute z-10 max-h-60 w-full overflow-auto rounded-md border border-gray-300 bg-white shadow-lg dark:bg-gray-800"
-							style="top: 70px;"
+							class="absolute top-[70px] z-10 max-h-60 w-full overflow-auto rounded-md border border-gray-300 bg-white shadow-lg dark:bg-gray-800"
 						>
 							{#each addressSearchResults as result (result.lat + '-' + result.lon)}
 								<li>
 									<button
 										type="button"
-										class="w-full cursor-pointer px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-										style="color: var(--text-primary);"
+										class="w-full cursor-pointer px-3 py-2 text-left text-sm text-text-primary hover:bg-gray-100 dark:hover:bg-gray-700"
 										onmousedown={() => selectAddress(result)}
 									>
 										{result.display_name}
@@ -291,7 +288,7 @@
 							{/each}
 						</ul>
 					{/if}
-					<p class="mt-1 text-xs" style="color: var(--text-secondary);">
+					<p class="mt-1 text-xs text-text-secondary">
 						&gt;(search for locations, POIs, or addresses)
 					</p>
 					{#if touched.companyAddress && !companyAddressValid}

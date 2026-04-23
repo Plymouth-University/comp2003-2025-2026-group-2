@@ -305,34 +305,22 @@
 <main>
 	{#if data.error}
 		<div
-			class="mb-4 rounded p-4"
-			style="background-color: var(--error-bg); border: 1px solid var(--field-error); color: var(--error); margin: 2rem;"
+			class="mb-4 rounded border border-field-error bg-error-bg p-4 text-error"
+			style="margin: 2rem;"
 		>
 			{data.error}
 		</div>
 	{:else}
-		<h1
-			class="mb-6 text-center text-3xl font-bold"
-			style="padding-top:1%; color: var(--text-primary)"
-		>
+		<h1 class="mb-6 pt-4 text-center text-3xl font-bold text-text-primary">
 			{templateName}
 		</h1>
-		<div
-			class="rounded-lg border-2 p-8"
-			style="border-color: var(--border-color); margin-left:10%; margin-right:10%; background-color: var(--bg-primary);"
-		>
+		<div class="border-border-color mx-[10%] rounded-lg border-2 bg-bg-primary p-8">
 			{#if mode === 'view' && entry?.status === 'submitted'}
-				<div
-					class="mb-4 rounded p-4"
-					style="background-color: var(--clock-in-bg); border: 1px solid var(--create-button); color: var(--create-button);"
-				>
+				<div class="mb-4 rounded border border-create-button bg-clock-in-bg p-4 text-create-button">
 					This log has been submitted and cannot be edited.
 				</div>
 			{:else if mode === 'edit' && entry?.status === 'submitted'}
-				<div
-					class="mb-4 rounded p-4"
-					style="background-color: var(--orange-light); border: 1px solid var(--orange); color: var(--orange-dark);"
-				>
+				<div class="mb-4 rounded border border-orange bg-orange-light p-4 text-orange-dark">
 					Warning: This log was previously submitted and has been reopened for editing.
 				</div>
 			{/if}
@@ -367,7 +355,7 @@
 							{@const inputSize = field.props.size != null ? Number(field.props.size) : 16}
 							{@const safeSize = Number.isFinite(inputSize) && inputSize > 0 ? inputSize : 16}
 							<div class="flex flex-col gap-2">
-								<div class="text-sm font-medium" style="color: var(--text-primary);">
+								<div class="text-sm font-medium text-text-primary">
 									{getStringProp(field.props, 'text', `Field ${index + 1}`)}
 								</div>
 								<UserTextInput
@@ -406,7 +394,7 @@
 							/>
 						{:else if field.field_type === 'dropdown' && entryData[index] !== undefined}
 							<div class="flex flex-col gap-2">
-								<div class="text-sm font-medium" style="color: var(--text-primary);">
+								<div class="text-sm font-medium text-text-primary">
 									{getStringProp(field.props, 'text', `Field ${index + 1}`)}
 								</div>
 								<UserDropdown
@@ -436,15 +424,13 @@
 				<div class="mt-8 flex justify-end gap-4">
 					<button
 						onclick={handleSave}
-						class="rounded px-6 py-2 font-semibold hover:opacity-80"
-						style="background-color: var(--button-primary); color: var(--bg-primary);"
+						class="rounded bg-button-primary px-6 py-2 font-semibold text-bg-primary hover:opacity-80"
 					>
 						Save Draft
 					</button>
 					<button
 						onclick={handleSubmit}
-						class="rounded px-6 py-2 font-semibold hover:opacity-80"
-						style="background-color: var(--create-button); color: var(--bg-primary);"
+						class="rounded bg-create-button px-6 py-2 font-semibold text-bg-primary hover:opacity-80"
 					>
 						Submit Log
 					</button>
@@ -453,11 +439,7 @@
 		</div>
 
 		<div class="mt-4 flex justify-center gap-8">
-			<a
-				href="/logs-list"
-				class="rounded px-6 py-2"
-				style="background-color: var(--grey-lite); color: var(--border-primary);"
-			>
+			<a href="/logs-list" class="rounded bg-grey-lite px-6 py-2 text-border-primary">
 				Back to Logs
 			</a>
 		</div>

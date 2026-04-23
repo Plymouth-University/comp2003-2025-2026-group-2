@@ -104,11 +104,11 @@
 	</div>
 
 	<!-- Name/Label -->
-	<div class="text-sm" style="color: var(--text-primary);">
+	<div class="text-sm text-text-primary">
 		{label}
 	</div>
 	<!-- Units -->
-	<div class="text-right text-sm" style="color: var(--text-primary);">
+	<div class="text-right text-sm text-text-primary">
 		{unit}
 	</div>
 </div>

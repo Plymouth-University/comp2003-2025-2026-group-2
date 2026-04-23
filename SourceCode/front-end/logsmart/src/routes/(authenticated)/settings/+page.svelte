@@ -175,10 +175,10 @@
 <svelte:head>
 	<title>Settings</title>
 </svelte:head>
-<div class="settings-page min-h-full" style="background-color: var(--bg-secondary);">
+<div class="settings-page min-h-full bg-bg-secondary">
 	<div class="mx-auto max-w-7xl px-6 py-8">
 		<!-- Header -->
-		<h1 class="mb-8 text-3xl font-bold" style="color: var(--text-primary);">Settings</h1>
+		<h1 class="mb-8 text-3xl font-bold text-text-primary">Settings</h1>
 
 		<!-- Success Message -->
 		{#if showSuccessMessage}
@@ -198,14 +198,11 @@
 
 		<div class="space-y-6">
 			<!-- Profile Settings Section -->
-			<div
-				class="border-2"
-				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-			>
-				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
-					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Profile Information</h2>
+			<div class="border-2 border-border-primary bg-bg-primary">
+				<div class="border-b-2 border-border-primary px-6 py-4">
+					<h2 class="text-xl font-bold text-text-primary">Profile Information</h2>
 				</div>
-				<div class="px-6 py-6" style="background-color: var(--bg-primary);">
+				<div class="bg-bg-primary px-6 py-6">
 					<div class="flex flex-col gap-6 md:flex-row">
 						<form
 							method="POST"
@@ -221,11 +218,7 @@
 						>
 							<!-- First Name -->
 							<div>
-								<label
-									for="firstName"
-									class="mb-2 block text-sm font-medium"
-									style="color: var(--text-primary);"
-								>
+								<label for="firstName" class="mb-2 block text-sm font-medium text-text-primary">
 									First Name
 								</label>
 								<input
@@ -233,8 +226,7 @@
 									name="firstName"
 									type="text"
 									bind:value={firstName}
-									class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
-									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+									class="w-full border-2 border-border-primary bg-bg-primary px-4 py-2 text-text-primary focus:ring-2 focus:outline-none"
 									placeholder="Enter your first name"
 									required
 								/>
@@ -242,11 +234,7 @@
 
 							<!-- Last Name -->
 							<div>
-								<label
-									for="lastName"
-									class="mb-2 block text-sm font-medium"
-									style="color: var(--text-primary);"
-								>
+								<label for="lastName" class="mb-2 block text-sm font-medium text-text-primary">
 									Last Name
 								</label>
 								<input
@@ -254,8 +242,7 @@
 									name="lastName"
 									type="text"
 									bind:value={lastName}
-									class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
-									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+									class="w-full border-2 border-border-primary bg-bg-primary px-4 py-2 text-text-primary focus:ring-2 focus:outline-none"
 									placeholder="Enter your last name"
 									required
 								/>
@@ -263,11 +250,7 @@
 
 							<!-- Email -->
 							<div>
-								<label
-									for="email"
-									class="mb-2 block text-sm font-medium"
-									style="color: var(--text-primary);"
-								>
+								<label for="email" class="mb-2 block text-sm font-medium text-text-primary">
 									Email Address
 								</label>
 								<input
@@ -275,16 +258,13 @@
 									name="email"
 									type="email"
 									bind:value={email}
-									class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
-									style="border-color: var(--border-secondary); background-color: var(--bg-secondary); color: var(--text-secondary);"
+									class="w-full border-2 border-border-secondary bg-bg-secondary px-4 py-2 text-text-secondary focus:ring-2 focus:outline-none"
 									placeholder="Enter your email"
 									readonly
 									disabled
 									title="Email cannot be changed"
 								/>
-								<p class="mt-1 text-sm" style="color: var(--text-secondary);">
-									Email address cannot be changed
-								</p>
+								<p class="mt-1 text-sm text-text-secondary">Email address cannot be changed</p>
 							</div>
 
 							<!-- Save Button -->
@@ -295,8 +275,7 @@
 										!firstName.trim() ||
 										!lastName.trim() ||
 										(firstName === data.user?.first_name && lastName === data.user?.last_name)}
-									class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+									class="border-2 border-border-primary bg-bg-primary px-8 py-2 font-medium text-text-primary hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 								>
 									{isSubmitting ? 'Saving...' : 'Save Profile'}
 								</button>
@@ -323,16 +302,13 @@
 			</div>
 
 			<!-- Password Change Section -->
-			<div
-				class="border-2"
-				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-			>
-				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
-					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Reset Password</h2>
+			<div class="border-2 border-border-primary bg-bg-primary">
+				<div class="border-b-2 border-border-primary px-6 py-4">
+					<h2 class="text-xl font-bold text-text-primary">Reset Password</h2>
 				</div>
-				<div class="px-6 py-6" style="background-color: var(--bg-primary);">
+				<div class="bg-bg-primary px-6 py-6">
 					<div class="max-w-2xl">
-						<p class="mb-4" style="color: var(--text-secondary);">
+						<p class="mb-4 text-text-secondary">
 							To change your password, we'll send a password reset link to your email address.
 						</p>
 						<form
@@ -350,8 +326,7 @@
 							<button
 								type="submit"
 								disabled={isSubmitting}
-								class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+								class="border-2 border-border-primary bg-bg-primary px-8 py-2 font-medium text-text-primary hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{isSubmitting ? 'Sending...' : 'Send Password Reset Email'}
 							</button>
@@ -361,16 +336,13 @@
 			</div>
 
 			<!-- Passkeys Section -->
-			<div
-				class="border-2"
-				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-			>
-				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
-					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Passkeys</h2>
+			<div class="border-2 border-border-primary bg-bg-primary">
+				<div class="border-b-2 border-border-primary px-6 py-4">
+					<h2 class="text-xl font-bold text-text-primary">Passkeys</h2>
 				</div>
-				<div class="px-6 py-6" style="background-color: var(--bg-primary);">
+				<div class="bg-bg-primary px-6 py-6">
 					<div class="max-w-2xl">
-						<p class="mb-4" style="color: var(--text-secondary);">
+						<p class="mb-4 text-text-secondary">
 							Passkeys allow you to sign in safely without a password using your fingerprint, face,
 							or hardware key.
 						</p>
@@ -380,12 +352,11 @@
 							<div class="mb-6 space-y-3">
 								{#each data.passkeys as pk (pk.id)}
 									<div
-										class="flex items-center justify-between rounded border-2 p-3"
-										style="border-color: var(--border-secondary);"
+										class="flex items-center justify-between rounded border-2 border-border-secondary p-3"
 									>
 										<div>
-											<p class="font-medium" style="color: var(--text-primary);">{pk.name}</p>
-											<p class="text-xs" style="color: var(--text-secondary);">
+											<p class="font-medium text-text-primary">{pk.name}</p>
+											<p class="text-xs text-text-secondary">
 												Added on {new Date(pk.created_at).toLocaleDateString()}
 											</p>
 										</div>
@@ -403,27 +374,21 @@
 
 						<div class="flex items-end gap-4">
 							<div class="grow">
-								<label
-									for="passkeyName"
-									class="mb-2 block text-sm font-medium"
-									style="color: var(--text-primary);"
-								>
+								<label for="passkeyName" class="mb-2 block text-sm font-medium text-text-primary">
 									Passkey Name (Optional)
 								</label>
 								<input
 									id="passkeyName"
 									type="text"
 									bind:value={passkeyName}
-									class="w-full border-2 px-4 py-2 focus:ring-2 focus:outline-none"
-									style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+									class="w-full border-2 border-border-primary bg-bg-primary px-4 py-2 text-text-primary focus:ring-2 focus:outline-none"
 									placeholder="e.g. My MacBook"
 								/>
 							</div>
 							<button
 								onclick={handleRegisterPasskey}
 								disabled={isRegisteringPasskey}
-								class="border-2 px-6 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+								class="border-2 border-border-primary bg-bg-primary px-6 py-2 font-medium text-text-primary hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{isRegisteringPasskey ? 'Registering...' : 'Add Passkey'}
 							</button>
@@ -433,16 +398,13 @@
 			</div>
 
 			<!-- Google Account Linking Section -->
-			<div
-				class="border-2"
-				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-			>
-				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
-					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Linked Accounts</h2>
+			<div class="border-2 border-border-primary bg-bg-primary">
+				<div class="border-b-2 border-border-primary px-6 py-4">
+					<h2 class="text-xl font-bold text-text-primary">Linked Accounts</h2>
 				</div>
-				<div class="px-6 py-6" style="background-color: var(--bg-primary);">
+				<div class="bg-bg-primary px-6 py-6">
 					<div class="max-w-2xl">
-						<p class="mb-4" style="color: var(--text-secondary);">
+						<p class="mb-4 text-text-secondary">
 							Link your Google account to sign in with one click.
 						</p>
 
@@ -456,8 +418,7 @@
 							</div>
 							<button
 								onclick={handleUnlinkGoogle}
-								class="cursor-pointer border-2 px-8 py-2 font-medium hover:opacity-80"
-								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+								class="cursor-pointer border-2 border-border-primary bg-bg-primary px-8 py-2 font-medium text-text-primary hover:opacity-80"
 							>
 								Unlink Google Account
 							</button>
@@ -475,8 +436,7 @@
 							<button
 								onclick={handleLinkGoogle}
 								disabled={isLinkingGoogle}
-								class="border-2 px-8 py-2 font-medium hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-								style="border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);"
+								class="border-2 border-border-primary bg-bg-primary px-8 py-2 font-medium text-text-primary hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 							>
 								{isLinkingGoogle ? 'Linking...' : 'Link Google Account'}
 							</button>
@@ -486,21 +446,16 @@
 			</div>
 
 			<!-- Appearance Settings Section -->
-			<div
-				class="border-2"
-				style="border-color: var(--border-primary); background-color: var(--bg-primary);"
-			>
-				<div class="border-b-2 px-6 py-4" style="border-color: var(--border-primary);">
-					<h2 class="text-xl font-bold" style="color: var(--text-primary);">Appearance</h2>
+			<div class="border-2 border-border-primary bg-bg-primary">
+				<div class="border-b-2 border-border-primary px-6 py-4">
+					<h2 class="text-xl font-bold text-text-primary">Appearance</h2>
 				</div>
-				<div class="px-6 py-6" style="background-color: var(--bg-primary);">
+				<div class="bg-bg-primary px-6 py-6">
 					<div class="max-w-2xl">
 						<div class="flex items-center justify-between">
 							<div>
-								<h3 class="font-medium" style="color: var(--text-primary);">Dark Mode</h3>
-								<p class="mt-1 text-sm" style="color: var(--text-secondary);">
-									Switch between light and dark theme
-								</p>
+								<h3 class="font-medium text-text-primary">Dark Mode</h3>
+								<p class="mt-1 text-sm text-text-secondary">Switch between light and dark theme</p>
 							</div>
 							<!-- Toggle Switch -->
 							<button
@@ -517,9 +472,9 @@
 								></span>
 							</button>
 						</div>
-						<div class="mt-4 border-t pt-4" style="border-color: var(--border-secondary);">
-							<p class="text-sm" style="color: var(--text-secondary);">
-								Current theme: <span class="font-medium" style="color: var(--text-primary);"
+						<div class="mt-4 border-t border-border-secondary pt-4">
+							<p class="text-sm text-text-secondary">
+								Current theme: <span class="font-medium text-text-primary"
 									>{$isDarkMode ? 'Dark' : 'Light'}</span
 								>
 							</p>

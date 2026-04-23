@@ -60,22 +60,14 @@
 	<title>Confirm Branch Deletion - LogSmart</title>
 </svelte:head>
 
-<div
-	class="flex min-h-full w-full items-center justify-center p-6"
-	style="background-color: var(--bg-secondary);"
->
+<div class="flex min-h-full w-full items-center justify-center bg-bg-secondary p-6">
 	<div
-		class="w-full max-w-md rounded-lg border-2 p-8 shadow-lg"
-		style="background-color: var(--bg-primary); border-color: var(--border-primary);"
+		class="w-full max-w-md rounded-lg border-2 border-border-primary bg-bg-primary p-8 shadow-lg"
 	>
 		<div class="mb-6 text-center">
-			<div
-				class="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full"
-				style="background-color: var(--error-bg);"
-			>
+			<div class="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-error-bg">
 				<svg
-					class="h-8 w-8"
-					style="color: var(--button-secondary);"
+					class="h-8 w-8 text-button-secondary"
 					fill="none"
 					stroke="currentColor"
 					viewBox="0 0 24 24"
@@ -88,59 +80,43 @@
 					/>
 				</svg>
 			</div>
-			<h1 class="mb-2 text-2xl font-bold" style="color: var(--text-primary);">
-				Confirm Branch Deletion
-			</h1>
-			<p class="text-sm" style="color: var(--text-secondary);">
-				This is a permanent action that cannot be undone.
-			</p>
+			<h1 class="mb-2 text-2xl font-bold text-text-primary">Confirm Branch Deletion</h1>
+			<p class="text-sm text-text-secondary">This is a permanent action that cannot be undone.</p>
 		</div>
 
 		{#if isLoading}
 			<div class="py-8 text-center">
 				<div
-					class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"
-					style="border-color: var(--text-primary);"
+					class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-text-primary"
 				></div>
-				<p style="color: var(--text-secondary);">Loading...</p>
+				<p class="text-text-secondary">Loading...</p>
 			</div>
 		{:else if success}
-			<div
-				class="mb-6 rounded-lg p-4 text-center"
-				style="background-color: var(--clock-in-bg); color: var(--create-button);"
-			>
+			<div class="mb-6 rounded-lg bg-clock-in-bg p-4 text-center text-create-button">
 				<p class="mb-2 font-semibold">Success!</p>
 				<p class="text-sm">{success}</p>
 			</div>
 			<button
 				onclick={goToBranches}
-				class="w-full rounded-lg py-3 font-semibold transition-opacity hover:opacity-80"
-				style="background-color: var(--bg-secondary); color: var(--text-primary);"
+				class="w-full rounded-lg bg-bg-secondary py-3 font-semibold text-text-primary transition-opacity hover:opacity-80"
 			>
 				Return to Branches
 			</button>
 		{:else if error && !token}
-			<div
-				class="mb-6 rounded-lg p-4 text-center"
-				style="background-color: var(--error-bg); color: var(--button-secondary);"
-			>
+			<div class="mb-6 rounded-lg bg-error-bg p-4 text-center text-button-secondary">
 				<p class="font-semibold">{error}</p>
 			</div>
 			<button
 				onclick={goToBranches}
-				class="w-full rounded-lg py-3 font-semibold transition-opacity hover:opacity-80"
-				style="background-color: var(--bg-secondary); color: var(--text-primary);"
+				class="w-full rounded-lg bg-bg-secondary py-3 font-semibold text-text-primary transition-opacity hover:opacity-80"
 			>
 				Return to Branches
 			</button>
 		{:else}
-			<div
-				class="mb-6 rounded-lg border-l-4 p-4"
-				style="background-color: var(--orange-light); border-color: var(--orange);"
-			>
-				<p class="mb-2 font-semibold" style="color: var(--orange-dark);">⚠️ Important Notice</p>
-				<p class="text-sm" style="color: var(--orange-dark);">Deleting this branch will:</p>
-				<ul class="mt-2 ml-4 list-disc text-sm" style="color: var(--orange-dark);">
+			<div class="mb-6 rounded-lg border-l-4 border-orange bg-orange-light p-4">
+				<p class="mb-2 font-semibold text-orange-dark">⚠️ Important Notice</p>
+				<p class="text-sm text-orange-dark">Deleting this branch will:</p>
+				<ul class="mt-2 ml-4 list-disc text-sm text-orange-dark">
 					<li>Permanently remove the branch from your company</li>
 					<li>Disassociate any users currently assigned to this branch</li>
 					<li>Delete all associated data and templates (if any)</li>
@@ -148,10 +124,7 @@
 			</div>
 
 			{#if error}
-				<div
-					class="mb-4 rounded-lg p-3 text-center text-sm"
-					style="background-color: var(--error-bg); color: var(--button-secondary);"
-				>
+				<div class="mb-4 rounded-lg bg-error-bg p-3 text-center text-sm text-button-secondary">
 					{error}
 				</div>
 			{/if}
@@ -160,16 +133,14 @@
 				<button
 					onclick={goToBranches}
 					disabled={isDeleting}
-					class="flex-1 rounded-lg border-2 py-3 font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
-					style="border-color: var(--border-primary); color: var(--text-primary);"
+					class="flex-1 rounded-lg border-2 border-border-primary py-3 font-semibold text-text-primary transition-opacity hover:opacity-80 disabled:opacity-50"
 				>
 					Cancel
 				</button>
 				<button
 					onclick={confirmDeletion}
 					disabled={isDeleting}
-					class="flex-1 rounded-lg py-3 font-semibold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
-					style="background-color: var(--delete-button-active);"
+					class="flex-1 rounded-lg bg-delete-button-active py-3 font-semibold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
 				>
 					{#if isDeleting}
 						<span class="inline-flex items-center">

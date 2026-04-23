@@ -264,13 +264,10 @@
 	<title>Logs List</title>
 </svelte:head>
 <main>
-	<div class="logs-page min-h-full" style="background-color: var(--bg-secondary);">
+	<div class="logs-page min-h-full bg-bg-secondary">
 		<div class="mx-auto max-w-7xl px-6 py-8">
 			{#if data.error}
-				<div
-					class="mb-4 rounded p-4"
-					style="background-color: var(--error-bg); border: 1px solid var(--field-error); color: var(--error);"
-				>
+				<div class="mb-4 rounded border border-field-error bg-error-bg p-4 text-error">
 					{data.error}
 				</div>
 			{/if}
@@ -315,8 +312,7 @@
 								{#if !isReadonlyHQ}
 									<button
 										onclick={() => handleFillLog(form.template_name, form.period, form.status)}
-										class="rounded px-3 py-2 font-semibold hover:opacity-80 lg:px-6"
-										style="background-color: var(--button-primary); color: var(--bg-primary);"
+										class="rounded bg-button-primary px-3 py-2 font-semibold text-bg-primary hover:opacity-80 lg:px-6"
 									>
 										Fill Out
 									</button>
@@ -355,8 +351,7 @@
 								{#snippet actions()}
 									<button
 										onclick={() => handleViewLog(log.id)}
-										class="rounded px-3 py-2 hover:opacity-80 lg:px-6"
-										style="background-color: var(--bg-secondary); color: var(--text-primary);"
+										class="rounded bg-bg-secondary px-3 py-2 text-text-primary hover:opacity-80 lg:px-6"
 									>
 										View
 									</button>
@@ -394,16 +389,14 @@
 									{#if log.status === 'submitted'}
 										<button
 											onclick={() => handleViewLog(log.id)}
-											class="rounded px-3 py-2 hover:opacity-80 lg:px-6"
-											style="background-color: var(--bg-secondary); color: var(--text-primary);"
+											class="rounded bg-bg-secondary px-3 py-2 text-text-primary hover:opacity-80 lg:px-6"
 										>
 											View
 										</button>
 										{#if !isReadonlyHQ}
 											<button
 												onclick={() => handleUnsubmit(log.id)}
-												class="rounded px-3 py-2 hover:opacity-80 lg:px-6"
-												style="background-color: var(--button-secondary); color: var(--bg-primary);"
+												class="rounded bg-button-secondary px-3 py-2 text-bg-primary hover:opacity-80 lg:px-6"
 											>
 												Unsubmit
 											</button>
