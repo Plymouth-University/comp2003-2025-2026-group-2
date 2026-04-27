@@ -5,6 +5,9 @@ use crate::{
 };
 use anyhow::Result;
 use axum::http::StatusCode;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+use tokio::sync::RwLock;
 
 #[cfg(test)]
 mod oauth_service_tests {
@@ -14,9 +17,12 @@ mod oauth_service_tests {
     }
 }
 use openidconnect::{
-    AuthenticationFlow, AuthorizationCode, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce,
-    RedirectUrl, Scope, TokenResponse,
-    core::{CoreClient, CoreIdTokenClaims, CoreProviderMetadata, CoreResponseType},
+    AuthenticationFlow, AuthorizationCode, ClaimsVerificationError, ClientId, ClientSecret,
+    CsrfToken, IdTokenVerifier, IssuerUrl, JsonWebKeySetUrl, Nonce, RedirectUrl, Scope,
+    SignatureVerificationError, TokenResponse,
+    core::{
+        CoreClient, CoreIdTokenClaims, CoreJsonWebKeySet, CoreProviderMetadata, CoreResponseType,
+    },
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -28,6 +34,8 @@ pub struct GoogleOAuthClient {
     client_secret: ClientSecret,
     redirect_uri: RedirectUrl,
     provider_metadata: CoreProviderMetadata,
+    jwks_url: JsonWebKeySetUrl,
+    cached_jwks: Arc<RwLock<Option<(CoreJsonWebKeySet, Instant)>>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -65,11 +73,16 @@ impl GoogleOAuthClient {
         let redirect_uri_validated = RedirectUrl::new(redirect_uri.clone())
             .map_err(|e| anyhow::anyhow!("Invalid redirect URI: {e}"))?;
 
+        let jwks_url = JsonWebKeySetUrl::new(provider_metadata.jwks_uri().to_string())
+            .map_err(|e| anyhow::anyhow!("Invalid JWK URI: {e}"))?;
+
         Ok(Self {
             client_id: ClientId::new(client_id),
             client_secret: ClientSecret::new(client_secret),
             redirect_uri: redirect_uri_validated,
             provider_metadata,
+            jwks_url,
+            cached_jwks: Arc::new(RwLock::new(None)),
         })
     }
 
@@ -98,6 +111,42 @@ impl GoogleOAuthClient {
         )
     }
 
+    async fn get_jwks(
+        &self,
+        http_client: &openidconnect::reqwest::Client,
+        force_refresh: bool,
+    ) -> Result<CoreJsonWebKeySet, (StatusCode, serde_json::Value)> {
+        const CACHE_TTL: Duration = Duration::from_secs(300);
+
+        if !force_refresh {
+            let cached = self.cached_jwks.read().await;
+            if let Some((jwks, timestamp)) = cached.as_ref() {
+                if timestamp.elapsed() < CACHE_TTL {
+                    tracing::debug!("Using cached JWKs");
+                    return Ok(jwks.clone());
+                }
+            }
+        }
+
+        tracing::info!("Fetching fresh JWKs from Google");
+        let jwks: CoreJsonWebKeySet = CoreJsonWebKeySet::fetch_async(&self.jwks_url, http_client)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to fetch JWKs: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    json!({ "error": "Failed to fetch signing keys" }),
+                )
+            })?;
+
+        {
+            let mut cached = self.cached_jwks.write().await;
+            *cached = Some((jwks.clone(), Instant::now()));
+        }
+
+        Ok(jwks)
+    }
+
     /// Exchanges an authorization code for an ID token and user info.
     ///
     /// # Errors
@@ -107,14 +156,14 @@ impl GoogleOAuthClient {
         code: String,
         nonce: String,
     ) -> Result<(OAuthUserInfo, CoreIdTokenClaims), (StatusCode, serde_json::Value)> {
+        let http_client = openidconnect::reqwest::Client::new();
+
         let client = CoreClient::from_provider_metadata(
             self.provider_metadata.clone(),
             self.client_id.clone(),
             Some(self.client_secret.clone()),
         )
         .set_redirect_uri(self.redirect_uri.clone());
-
-        let http_client = openidconnect::reqwest::Client::new();
 
         let token_request = client
             .exchange_code(AuthorizationCode::new(code))
@@ -145,15 +194,40 @@ impl GoogleOAuthClient {
             )
         })?;
 
-        let claims = id_token
-            .claims(&client.id_token_verifier(), &Nonce::new(nonce))
-            .map_err(|e| {
+        let nonce = Nonce::new(nonce);
+        let issuer = self.provider_metadata.issuer().clone();
+        let jwks = self.get_jwks(&http_client, false).await?;
+        let verifier =
+            IdTokenVerifier::new_public_client(self.client_id.clone(), issuer.clone(), jwks);
+
+        let claims = match id_token.claims(&verifier, &nonce) {
+            Ok(claims) => claims,
+            Err(ClaimsVerificationError::SignatureVerification(
+                SignatureVerificationError::NoMatchingKey,
+            )) => {
+                tracing::warn!("No matching JWK found; refreshing JWKs and retrying verification");
+                let refreshed_jwks = self.get_jwks(&http_client, true).await?;
+                let refreshed_verifier = IdTokenVerifier::new_public_client(
+                    self.client_id.clone(),
+                    issuer,
+                    refreshed_jwks,
+                );
+                id_token.claims(&refreshed_verifier, &nonce).map_err(|e| {
+                    tracing::error!("Failed to verify ID token after JWK refresh: {:?}", e);
+                    (
+                        StatusCode::UNAUTHORIZED,
+                        json!({ "error": "Failed to verify ID token" }),
+                    )
+                })?
+            }
+            Err(e) => {
                 tracing::error!("Failed to verify ID token: {:?}", e);
-                (
+                return Err((
                     StatusCode::UNAUTHORIZED,
                     json!({ "error": "Failed to verify ID token" }),
-                )
-            })?;
+                ));
+            }
+        };
 
         let email = claims
             .email()
