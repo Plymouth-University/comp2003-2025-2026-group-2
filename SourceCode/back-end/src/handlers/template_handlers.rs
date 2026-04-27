@@ -109,13 +109,13 @@ pub async fn get_template(
     if let Some(branch) = branch_id.clone() {
         // If the template is branch-specific, check if the user has access to that branch
         if let Some(user_branch_id) = &user.branch_id {
-            if &branch != user_branch_id && !user.is_company_manager() {
+            if &branch != user_branch_id && !user.can_manage_company() {
                 return Err((
                     StatusCode::FORBIDDEN,
                     Json(json!({ "error": "User does not have access to this template" })),
                 ));
             }
-        } else if !user.is_company_manager() {
+        } else if !user.can_manage_company() {
             // If the user is not associated with any branch and is not a company manager, deny access
             return Err((
                 StatusCode::FORBIDDEN,
