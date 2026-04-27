@@ -40,7 +40,7 @@
 	};
 </script>
 
-<div class="grid grid-cols-[70px_1fr_70px] items-center gap-4">
+<div class="grid grid-cols-[70px_1fr_70px] items-center gap-4 border-2 p-1">
 	<div class="flex items-center gap-2">
 		<input
 			type="number"

@@ -333,7 +333,7 @@
 				{#each templateLayout as field, index (field.field_id || index)}
 					{@const x = field.position?.x ?? 0}
 					{@const y = field.position?.y ?? 0}
-					<div class="absolute" style="left: {x}px; top: {y}px;">
+					<div class="absolute bg-bg-secondary" style="left: {x}px; top: {y}px;">
 						{#if field.field_type === 'temperature' && entryData[index] !== undefined}
 							{@const tempMin =
 								field.props.min != null && !Number.isNaN(Number(field.props.min))

@@ -24,7 +24,7 @@
 	const safeColor = $derived(sanitizeColorValue(color || ''));
 </script>
 
-<div style={disabled ? 'opacity: 0.5; cursor: not-allowed;' : ''}>
+<div style={disabled ? 'opacity: 0.5; cursor: not-allowed;' : ''} class="border-2 p-1">
 	<label
 		for="{uid}-checkbox"
 		style="font-size: {size}; font-weight: {weight}; {safeColor

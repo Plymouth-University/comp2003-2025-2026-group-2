@@ -11,10 +11,8 @@
 	<select
 		bind:value={selected}
 		{disabled}
-		class="border-2 px-3 py-2 text-center text-sm font-medium"
-		style="border-color: var(--border-primary); color: var(--text-primary); background-color: var(--bg-primary); {disabled
-			? 'opacity: 0.5;'
-			: ''}"
+		class="border-2 border-border-primary bg-bg-secondary px-3 py-2 text-center text-sm font-medium text-text-primary"
+		style={disabled ? 'opacity: 0.5;' : ''}
 	>
 		{#if placeholder}
 			<option value="" disabled>{placeholder}</option>

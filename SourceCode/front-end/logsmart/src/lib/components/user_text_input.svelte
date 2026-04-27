@@ -62,7 +62,7 @@
         ${weight === 'light' ? 'font-light' : ''}
         ${weight === 'normal' ? 'font-normal' : ''}
         ${weight === 'bold' ? 'font-bold' : ''}
-        border-2 px-2 py-1
+        border-2 bg-bg-secondary px-2 py-1 
     `}
 	{placeholder}
 	{disabled}
@@ -71,7 +71,7 @@
 	minlength={validMinLength}
 	style="border-color: var(--border-primary); {safeColor
 		? `color: ${safeColor};`
-		: 'color: var(--text-primary);'} background-color: var(--bg-primary); font-size: {size}px; font-family: {fontFamily}; text-decoration: {textDecoration}; {disabled
+		: 'color: var(--text-primary);'} font-size: {size}px; font-family: {fontFamily}; text-decoration: {textDecoration}; {disabled
 		? 'opacity: 0.5; cursor: not-allowed;'
 		: ''}"
 />
