@@ -189,10 +189,10 @@
 				<div
 					class="flex h-10 w-10 items-center justify-center rounded-full font-semibold transition-all duration-300 {step ===
 					1
-						? 'bg-blue-600 text-white'
+						? 'bg-button-primary text-button-text'
 						: step > 1
-							? 'bg-green-500 text-white'
-							: 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}"
+							? 'bg-step-comp-bg text-button-text'
+							: 'bg-grey-lite text-grey-dark dark:bg-grey-dark dark:text-grey-dark'}"
 				>
 					1
 				</div>
@@ -203,14 +203,16 @@
 				</div>
 			</div>
 			<div
-				class="h-0.5 w-20 transition-all duration-300 {step > 1 ? 'bg-green-500' : 'bg-gray-200'}"
+				class="h-0.5 w-20 transition-all duration-300 {step > 1
+					? 'bg-step-comp-bg'
+					: 'bg-grey-lite'}"
 			></div>
 			<div class="flex flex-col items-center gap-2">
 				<div
 					class="flex h-10 w-10 items-center justify-center rounded-full font-semibold transition-all duration-300 {step ===
 					2
-						? 'bg-blue-600 text-white'
-						: 'bg-gray-200 text-gray-500'}"
+						? 'bg-button-primary text-button-text'
+						: 'bg-grey-lite text-grey-dark'}"
 				>
 					2
 				</div>
@@ -229,7 +231,7 @@
 
 				{#if error}
 					<div
-						class="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-200"
+						class="mb-4 rounded-md bg-error-bg p-3 text-sm text-error dark:bg-error-bg dark:text-error"
 						role="alert"
 					>
 						{error}
@@ -244,11 +246,13 @@
 						onblur={() => (touched.companyName = true)}
 						aria-invalid={!companyNameValid}
 						placeholder="LogSmart Ltd"
-						class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+						class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-input-focus focus:ring-2 focus:ring-input-focus/20"
 						required
 					/>
 					{#if touched.companyName && !companyNameValid}
-						<div class="mt-2 text-sm text-red-600 dark:text-red-400">Company name is required.</div>
+						<div class="mt-2 text-sm text-field-error dark:text-field-error">
+							Company name is required.
+						</div>
 					{/if}
 				</label>
 
@@ -262,24 +266,24 @@
 						autocomplete="off"
 						aria-invalid={!companyAddressValid}
 						placeholder="Search for address..."
-						class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+						class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-input-focus focus:ring-2 focus:ring-input-focus/20"
 						required
 					/>
 					{#if isSearchingAddress}
 						<div
-							class="absolute top-[70px] z-10 w-full rounded-md border border-gray-300 bg-white p-2 text-center dark:bg-gray-800"
+							class="absolute top-[70px] z-10 w-full rounded-md border border-border-secondary bg-bg-primary p-2 text-center"
 						>
-							<span class="text-sm text-gray-500">Searching...</span>
+							<span class="text-sm text-text-secondary">Searching...</span>
 						</div>
 					{:else if showAddressResults && addressSearchResults.length > 0}
 						<ul
-							class="absolute top-[70px] z-10 max-h-60 w-full overflow-auto rounded-md border border-gray-300 bg-white shadow-lg dark:bg-gray-800"
+							class="absolute top-[70px] z-10 max-h-60 w-full overflow-auto rounded-md border border-border-secondary bg-bg-primary shadow-lg"
 						>
 							{#each addressSearchResults as result (result.lat + '-' + result.lon)}
 								<li>
 									<button
 										type="button"
-										class="w-full cursor-pointer px-3 py-2 text-left text-sm text-text-primary hover:bg-gray-100 dark:hover:bg-gray-700"
+										class="w-full cursor-pointer px-3 py-2 text-left text-sm text-text-primary hover:bg-bg-secondary"
 										onmousedown={() => selectAddress(result)}
 									>
 										{result.display_name}
@@ -292,7 +296,7 @@
 						&gt;(search for locations, POIs, or addresses)
 					</p>
 					{#if touched.companyAddress && !companyAddressValid}
-						<div class="mt-2 text-sm text-red-600 dark:text-red-400">
+						<div class="mt-2 text-sm text-field-error dark:text-field-error">
 							Company address is required.
 						</div>
 					{/if}
@@ -300,7 +304,7 @@
 
 				<button
 					type="submit"
-					class="w-full rounded-md bg-blue-600 px-6 py-3 text-base font-medium text-white transition-all duration-200 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+					class="w-full rounded-md bg-button-primary px-6 py-3 text-base font-medium text-button-text transition-all duration-200 hover:bg-button-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
 					disabled={!step1Valid}
 				>
 					Next Step
@@ -313,7 +317,7 @@
 
 				{#if error}
 					<div
-						class="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-200"
+						class="mb-4 rounded-md bg-error-bg p-3 text-sm text-error dark:bg-error-bg dark:text-error"
 						role="alert"
 					>
 						{error}
@@ -329,11 +333,13 @@
 							onblur={() => (touched.firstName = true)}
 							aria-invalid={!firstNameValid}
 							placeholder="John"
-							class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+							class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-input-focus focus:ring-2 focus:ring-input-focus/20"
 							required
 						/>
 						{#if touched.firstName && !firstNameValid}
-							<div class="mt-2 text-sm text-red-600 dark:text-red-400">First name is required.</div>
+							<div class="mt-2 text-sm text-field-error dark:text-field-error">
+								First name is required.
+							</div>
 						{/if}
 					</label>
 
@@ -345,11 +351,13 @@
 							onblur={() => (touched.lastName = true)}
 							aria-invalid={!lastNameValid}
 							placeholder="Doe"
-							class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+							class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-input-focus focus:ring-2 focus:ring-input-focus/20"
 							required
 						/>
 						{#if touched.lastName && !lastNameValid}
-							<div class="mt-2 text-sm text-red-600 dark:text-red-400">Last name is required.</div>
+							<div class="mt-2 text-sm text-field-error dark:text-field-error">
+								Last name is required.
+							</div>
 						{/if}
 					</label>
 				</div>
@@ -362,11 +370,11 @@
 						onblur={() => (touched.email = true)}
 						aria-invalid={!emailValid}
 						placeholder="john@company.com"
-						class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+						class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 text-base text-text-primary outline-none focus:border-input-focus focus:ring-2 focus:ring-input-focus/20"
 						required
 					/>
 					{#if touched.email && !emailValid}
-						<div class="mt-2 text-sm text-red-600 dark:text-red-400">
+						<div class="mt-2 text-sm text-field-error dark:text-field-error">
 							Enter a valid email address.
 						</div>
 					{/if}
@@ -381,12 +389,12 @@
 							onblur={() => (touched.password = true)}
 							aria-invalid={!passwordValid}
 							placeholder="Min 8 chars, uppercase, lowercase, digit, special char"
-							class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 pr-10 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+							class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 pr-10 text-base text-text-primary outline-none focus:border-input-focus focus:ring-2 focus:ring-input-focus/20"
 							required
 						/>
 						<button
 							type="button"
-							class="absolute top-1/2 right-2 flex -translate-y-1/2 cursor-pointer items-center justify-center border-none bg-transparent p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+							class="absolute top-1/2 right-2 flex -translate-y-1/2 cursor-pointer items-center justify-center border-none bg-transparent p-1 text-pass-toggle hover:text-text-primary"
 							onclick={() => (showPassword = !showPassword)}
 							aria-label={showPassword ? 'Hide password' : 'Show password'}
 						>
@@ -420,52 +428,34 @@
 					{#if password}
 						<div class="mt-2 space-y-1 text-xs">
 							<div
-								class={passwordErrors.length === 0
-									? 'text-green-600 dark:text-green-400'
-									: 'text-gray-500 dark:text-gray-400'}
+								class={passwordErrors.length === 0 ? 'text-step-comp-bg' : 'text-text-secondary'}
 							>
 								✓ Password requirements
 							</div>
-							<div
-								class={!/[A-Z]/.test(password)
-									? 'text-red-600 dark:text-red-400'
-									: 'text-green-600 dark:text-green-400'}
-							>
+							<div class={!/[A-Z]/.test(password) ? 'text-field-error' : 'text-step-comp-bg'}>
 								{!/[A-Z]/.test(password) ? '✗' : '✓'} Uppercase letter (A-Z)
 							</div>
-							<div
-								class={!/[a-z]/.test(password)
-									? 'text-red-600 dark:text-red-400'
-									: 'text-green-600 dark:text-green-400'}
-							>
+							<div class={!/[a-z]/.test(password) ? 'text-field-error' : 'text-step-comp-bg'}>
 								{!/[a-z]/.test(password) ? '✗' : '✓'} Lowercase letter (a-z)
 							</div>
-							<div
-								class={!/\d/.test(password)
-									? 'text-red-600 dark:text-red-400'
-									: 'text-green-600 dark:text-green-400'}
-							>
+							<div class={!/\d/.test(password) ? 'text-field-error' : 'text-step-comp-bg'}>
 								{!/\d/.test(password) ? '✗' : '✓'} Digit (0-9)
 							</div>
 							<div
 								class={!/[!@#$%^&*()_+\-={};':"\\|,.<>/?]/.test(password)
-									? 'text-red-600 dark:text-red-400'
-									: 'text-green-600 dark:text-green-400'}
+									? 'text-field-error'
+									: 'text-step-comp-bg'}
 							>
 								{!/[!@#$%^&*()_+\-={};':"\\|,.<>/?]/.test(password) ? '✗' : '✓'} Special character (!@#$%^&*
 								etc)
 							</div>
-							<div
-								class={password.length < 8
-									? 'text-red-600 dark:text-red-400'
-									: 'text-green-600 dark:text-green-400'}
-							>
+							<div class={password.length < 8 ? 'text-field-error' : 'text-step-comp-bg'}>
 								{password.length < 8 ? '✗' : '✓'} At least 8 characters
 							</div>
 						</div>
 					{/if}
 					{#if touched.password && !passwordValid}
-						<div class="mt-2 text-sm text-red-600 dark:text-red-400">
+						<div class="mt-2 text-sm text-field-error dark:text-field-error">
 							Password must meet all requirements.
 						</div>
 					{/if}
@@ -480,12 +470,12 @@
 							onblur={() => (touched.confirmPassword = true)}
 							aria-invalid={!passwordsMatch}
 							placeholder="Re-enter password"
-							class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 pr-10 text-base text-text-primary outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+							class="w-full rounded-md border border-border-secondary bg-bg-primary px-3 py-2 pr-10 text-base text-text-primary outline-none focus:border-input-focus focus:ring-2 focus:ring-input-focus/20"
 							required
 						/>
 						<button
 							type="button"
-							class="absolute top-1/2 right-2 flex -translate-y-1/2 cursor-pointer items-center justify-center border-none bg-transparent p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+							class="absolute top-1/2 right-2 flex -translate-y-1/2 cursor-pointer items-center justify-center border-none bg-transparent p-1 text-pass-toggle hover:text-text-primary"
 							onclick={() => (showConfirmPassword = !showConfirmPassword)}
 							aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
 						>
@@ -517,7 +507,9 @@
 						</button>
 					</div>
 					{#if touched.confirmPassword && !passwordsMatch}
-						<div class="mt-2 text-sm text-red-600 dark:text-red-400">Passwords do not match.</div>
+						<div class="mt-2 text-sm text-field-error dark:text-field-error">
+							Passwords do not match.
+						</div>
 					{/if}
 				</label>
 
@@ -531,7 +523,7 @@
 					</button>
 					<button
 						type="submit"
-						class="w-full flex-1 rounded-md bg-blue-600 px-6 py-3 text-base font-medium text-white transition-all duration-200 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+						class="w-full flex-1 rounded-md bg-button-primary px-6 py-3 text-base font-medium text-button-text transition-all duration-200 hover:bg-button-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
 						disabled={!step2Valid || loading}
 					>
 						{#if loading}
@@ -545,7 +537,7 @@
 		{/if}
 
 		<p class="mt-6 text-center text-text-secondary">
-			Already have an account? <a href="/login" class="text-blue-600 hover:underline">Sign in</a>
+			Already have an account? <a href="/login" class="text-input-focus hover:underline">Sign in</a>
 		</p>
 	</div>
 </div>
