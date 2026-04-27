@@ -461,7 +461,9 @@
 							<button
 								onclick={handleToggleDarkMode}
 								class="relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:ring-2 focus:ring-offset-2 focus:outline-none"
-								style="background-color: {$isDarkMode ? 'var(--button-primary)' : '#E5E5E5'};"
+								style="background-color: {$isDarkMode
+									? 'var(--button-primary)'
+									: 'var(--button-secondary)'};"
 								role="switch"
 								aria-checked={$isDarkMode}
 								aria-label="Toggle dark mode"
