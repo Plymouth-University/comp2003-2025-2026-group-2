@@ -178,9 +178,9 @@
 			<h1 class="text-3xl font-bold text-text-primary">Attendance Overview</h1>
 			<button
 				onclick={printToPDF}
-				class="cursor-pointer rounded border-2 border-button-primary bg-button-primary px-5 py-2 font-medium text-bg-primary transition-opacity hover:opacity-80"
+				class="transform border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary transition-all duration-200 hover:scale-105 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 			>
-				Export PDF
+				Download PDF
 			</button>
 		</div>
 
