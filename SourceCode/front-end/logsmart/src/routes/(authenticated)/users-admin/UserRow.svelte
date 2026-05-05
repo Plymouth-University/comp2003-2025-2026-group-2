@@ -57,7 +57,7 @@
 			<button
 				type="button"
 				onclick={() => onRemove(item.email)}
-				class="rounded px-3 py-1 text-sm font-medium text-text-secondary transition-colors hover:underline"
+				class="cursor-pointer rounded px-3 py-1 text-sm font-medium text-text-secondary transition-colors hover:underline"
 			>
 				Remove
 			</button>

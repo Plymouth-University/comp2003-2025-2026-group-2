@@ -71,7 +71,7 @@
 					<select
 						id="invite-role"
 						bind:value={role}
-						class="rounded-base block w-full border-2 border-border-primary bg-bg-primary px-3 py-2.5 text-sm text-text-primary shadow-xs focus:ring-2 focus:outline-none"
+						class="rounded-base block w-full cursor-pointer border-2 border-border-primary bg-bg-primary px-3 py-2.5 text-sm text-text-primary shadow-xs focus:ring-2 focus:outline-none"
 					>
 						<option value="staff">Staff</option>
 						<option value="branch_manager" disabled={loggedInUserRole == 'branch_manager'}
@@ -89,7 +89,7 @@
 					<select
 						id="invite-branch"
 						bind:value={branchId}
-						class="rounded-base block w-full border-2 border-border-primary bg-bg-primary px-3 py-2.5 text-sm text-text-primary shadow-xs focus:ring-2 focus:outline-none"
+						class="rounded-base block w-full cursor-pointer border-2 border-border-primary bg-bg-primary px-3 py-2.5 text-sm text-text-primary shadow-xs focus:ring-2 focus:outline-none"
 					>
 						{#each branches as branch (branch.id)}
 							<option value={branch.id}>{branch.name}</option>

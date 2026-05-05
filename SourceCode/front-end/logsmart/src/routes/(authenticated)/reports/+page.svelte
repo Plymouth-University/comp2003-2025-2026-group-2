@@ -1549,21 +1549,21 @@ ${reportContent}
 					<button
 						onclick={exportToPDF}
 						disabled={!reportGenerated || filteredEntries.length === 0}
-						class="transform border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary transition-all duration-200 hover:scale-105 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
+						class="border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary hover:shadow-lg enabled:transform enabled:transition-all enabled:duration-200 enabled:hover:scale-105 enabled:hover:border-blue-400 enabled:hover:bg-blue-50 enabled:hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 					>
 						Download PDF
 					</button>
 					<button
 						onclick={() => exportToWord('docx')}
 						disabled={!reportGenerated || filteredEntries.length === 0}
-						class="transform border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary transition-all duration-200 hover:scale-105 hover:border-green-400 hover:bg-green-50 hover:text-green-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
+						class="border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary enabled:transform enabled:transition-all enabled:duration-200 enabled:hover:scale-105 enabled:hover:border-green-400 enabled:hover:bg-green-50 enabled:hover:text-green-700 enabled:hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 					>
 						Download DOCX
 					</button>
 					<button
 						onclick={() => exportToWord('rtf')}
 						disabled={!reportGenerated || filteredEntries.length === 0}
-						class="transform border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary transition-all duration-200 hover:scale-105 hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
+						class="border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary enabled:transform enabled:transition-all enabled:duration-200 enabled:hover:scale-105 enabled:hover:border-purple-400 enabled:hover:bg-purple-50 enabled:hover:text-purple-700 enabled:hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 					>
 						Download RTF
 					</button>
