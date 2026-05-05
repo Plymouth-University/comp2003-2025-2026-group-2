@@ -2763,7 +2763,7 @@ pub async fn get_company_clock_events(
     }
 
     writeln!(query_str, "ORDER BY ce.clock_in DESC, ce.id DESC")?;
-    writeln!(query_str, "LIMIT ${}", limit + 1)?;
+    writeln!(query_str, "LIMIT {}", limit + 1)?;
 
     // Log the query for debugging
     tracing::debug!("Clock events query: {}", query_str);
