@@ -29,7 +29,7 @@
 				</a>
 				<button
 					onclick={dismissNotice}
-					class="rounded-lg border-none bg-button-primary px-6 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+					class="cursor-pointer rounded-lg border-2 border-border-primary bg-bg-primary px-6 py-2 text-sm font-medium text-text-primary transition-colors hover:bg-bg-secondary hover:opacity-90"
 				>
 					Dismiss
 				</button>

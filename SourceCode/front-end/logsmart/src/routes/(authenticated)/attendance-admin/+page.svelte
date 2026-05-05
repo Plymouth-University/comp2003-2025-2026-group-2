@@ -242,7 +242,7 @@ disabled={!hasAppliedFilter || filteredEvents().length === 0}
 					<select
 						id="filter-branch"
 						bind:value={selectedBranchId}
-						class="min-w-[180px] border-2 border-border-primary bg-bg-secondary px-3 py-2 text-sm text-text-primary"
+						class="min-w-45 border-2 border-border-primary bg-bg-secondary px-3 py-2 text-sm text-text-primary"
 					>
 						<option value="">All Branches</option>
 						{#each branches as branch (branch.id)}
@@ -298,7 +298,7 @@ disabled={!hasAppliedFilter || filteredEvents().length === 0}
 					type="text"
 					bind:value={searchQuery}
 					placeholder="Filter by name or email..."
-					class="min-w-[220px] rounded border border-border-primary bg-bg-secondary px-3 py-2 text-sm text-text-primary"
+					class="min-w-55 rounded border border-border-primary bg-bg-secondary px-3 py-2 text-sm text-text-primary"
 				/>
 			</div>
 		</div>
