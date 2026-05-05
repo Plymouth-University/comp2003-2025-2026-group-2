@@ -1519,9 +1519,28 @@ pub async fn get_draft_entry_for_current_period(
                 .and_utc();
             (start, end)
         }
-        _ => {
-            let start = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc();
-            let end = now.date_naive().and_hms_opt(23, 59, 59).unwrap().and_utc();
+        Frequency::Quarterly => {
+            let quarter_start_month = ((now.date_naive().month() - 1) / 3) * 3 + 1;
+            let start = now
+                .date_naive()
+                .with_month(quarter_start_month)
+                .unwrap()
+                .with_day(1)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_utc();
+            let quarter_end_month = quarter_start_month + 2;
+            let last_day = get_month_last_day(now.date_naive().year(), quarter_end_month);
+            let end = now
+                .date_naive()
+                .with_month(quarter_end_month)
+                .unwrap()
+                .with_day(last_day)
+                .unwrap()
+                .and_hms_opt(23, 59, 59)
+                .unwrap()
+                .and_utc();
             (start, end)
         }
     };
