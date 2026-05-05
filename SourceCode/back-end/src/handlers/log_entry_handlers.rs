@@ -58,14 +58,32 @@ pub async fn list_due_forms_today(
 
     let now = chrono::Utc::now();
 
+    // First, fetch latest submitted entries for ALL templates to get actual last periods
+    let all_template_names: Vec<String> = templates
+        .iter()
+        .map(|t| t.template_name.clone())
+        .collect();
+
+    let latest_submitted_entries = logs_db::get_latest_submitted_entries_batch(
+        &state.mongodb,
+        &user.id,
+        &company_id,
+        &all_template_names,
+    )
+    .await
+    .unwrap_or_default();
+
+    // Now compute missed periods using actual last submitted periods
     let mut template_due_counts: HashMap<String, usize> = HashMap::new();
     let mut needed_templates: Vec<&logs_db::TemplateDocument> = Vec::new();
     let mut accumulated = 0usize;
 
     for template in &templates {
+        let last_submitted = latest_submitted_entries.get(&template.template_name);
+        let last_period = last_submitted.as_ref().map(|e| e.period.as_str());
         let created_at = template.created_at.to_rfc3339();
         let missed_periods =
-            logs_db::get_missed_periods(&template.schedule, None, Some(&created_at));
+            logs_db::get_missed_periods(&template.schedule, last_period, Some(&created_at));
         let missed_count = missed_periods.len();
         let due_today = if logs_db::is_form_due_today(&template.schedule) {
             1
@@ -85,15 +103,6 @@ pub async fn list_due_forms_today(
         .iter()
         .map(|t| t.template_name.clone())
         .collect();
-
-    let latest_submitted_entries = logs_db::get_latest_submitted_entries_batch(
-        &state.mongodb,
-        &user.id,
-        &company_id,
-        &needed_template_names,
-    )
-    .await
-    .unwrap_or_default();
 
     let mut all_missed_periods: Vec<String> = Vec::new();
     let mut template_missed_periods: HashMap<String, Vec<String>> = HashMap::new();
