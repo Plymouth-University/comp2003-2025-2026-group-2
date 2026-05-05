@@ -232,9 +232,22 @@
 			<input
 				type="text"
 				bind:value={searchQuery}
+				maxlength="100"
 				placeholder="Search templates..."
 				class="w-full rounded-lg border-2 border-border-primary bg-bg-primary px-4 py-3 text-text-primary"
 			/>
+			<div
+				class="mt-1 text-right text-xs"
+				style={
+					searchQuery.length >= 95
+						? 'color: var(--error);'
+						: searchQuery.length >= 80
+							? 'color: var(--orange);'
+							: 'color: var(--text-secondary);'
+				}
+			>
+				{searchQuery.length}/100 characters
+			</div>
 		</div>
 
 		{#if loading}
