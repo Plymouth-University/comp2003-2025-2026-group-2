@@ -837,9 +837,7 @@
 			// Filter entries based on date range and selected log types
 			const selectedLogTypes = logTypes
 				.filter((type) => type.checked && type.id !== 'all')
-				.map((type) => type.label);
-
-			// If "All" is selected or no specific types selected, show all types
+.map((type) => type.label);
 
 			const _showAllTypes =
 				logTypes.find((type) => type.id === 'all')?.checked || selectedLogTypes.length === 0;

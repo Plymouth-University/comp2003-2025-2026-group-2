@@ -374,5 +374,4 @@
 	.canvas-shell {
 		position: relative;
 	}
-
 </style>

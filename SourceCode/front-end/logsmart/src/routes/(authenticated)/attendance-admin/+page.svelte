@@ -98,7 +98,35 @@
 		);
 	});
 
+<<<<<<< HEAD
 	const hasAppliedFilter = $derived(page.url.searchParams.has('from') || page.url.searchParams.has('to'));
+||||||| parent of 3d965e7 (chore: auto-format and lint code)
+	// --- Pagination ---
+	let currentPage = $state(1);
+	const PAGE_SIZE = 50;
+
+	$effect(() => {
+		// reset to first page when search changes
+		const _q = searchQuery;
+		currentPage = 1;
+	});
+
+	const hasAppliedFilter = $derived(page.url.searchParams.has('from') || page.url.searchParams.has('to'));
+=======
+	// --- Pagination ---
+	let currentPage = $state(1);
+	const PAGE_SIZE = 50;
+
+	$effect(() => {
+		// reset to first page when search changes
+		const _q = searchQuery;
+		currentPage = 1;
+	});
+
+	const hasAppliedFilter = $derived(
+		page.url.searchParams.has('from') || page.url.searchParams.has('to')
+	);
+>>>>>>> 3d965e7 (chore: auto-format and lint code)
 
 	// --- Apply / Clear ---
 	function applyDateFilter() {
@@ -381,6 +409,7 @@ disabled={!hasAppliedFilter || filteredEvents().length === 0}
 				</tbody>
 			</table>
 		</div>
+<<<<<<< HEAD
 <!-- Pagination -->
 		<div class="mt-4 flex items-center justify-between">
 			<button
@@ -399,6 +428,74 @@ disabled={!hasAppliedFilter || filteredEvents().length === 0}
 				Next
 			</button>
 		</div>
+||||||| parent of 3d965e7 (chore: auto-format and lint code)
+
+		<!-- Pagination Controls -->
+		{#if hasAppliedFilter && totalPages() > 1}
+			<div class="mt-4 flex items-center justify-between px-2">
+				<p class="text-sm text-text-secondary">
+					Showing {(currentPage - 1) * PAGE_SIZE + 1} to {Math.min(currentPage * PAGE_SIZE, filteredEvents().length)} of {filteredEvents().length} records
+				</p>
+				<div class="flex gap-2">
+					<button
+						type="button"
+						disabled={currentPage === 1}
+						onclick={() => { currentPage--; }}
+						class="rounded border border-border-primary bg-bg-primary px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						Previous
+					</button>
+					<span class="flex items-center px-2 py-1 text-sm font-medium">Page {currentPage} of {totalPages()}</span>
+					<button
+						type="button"
+						disabled={currentPage === totalPages()}
+						onclick={() => { currentPage++; }}
+						class="rounded border border-border-primary bg-bg-primary px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						Next
+					</button>
+				</div>
+			</div>
+		{/if}
+=======
+
+		<!-- Pagination Controls -->
+		{#if hasAppliedFilter && totalPages() > 1}
+			<div class="mt-4 flex items-center justify-between px-2">
+				<p class="text-sm text-text-secondary">
+					Showing {(currentPage - 1) * PAGE_SIZE + 1} to {Math.min(
+						currentPage * PAGE_SIZE,
+						filteredEvents().length
+					)} of {filteredEvents().length} records
+				</p>
+				<div class="flex gap-2">
+					<button
+						type="button"
+						disabled={currentPage === 1}
+						onclick={() => {
+							currentPage--;
+						}}
+						class="rounded border border-border-primary bg-bg-primary px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						Previous
+					</button>
+					<span class="flex items-center px-2 py-1 text-sm font-medium"
+						>Page {currentPage} of {totalPages()}</span
+					>
+					<button
+						type="button"
+						disabled={currentPage === totalPages()}
+						onclick={() => {
+							currentPage++;
+						}}
+						class="rounded border border-border-primary bg-bg-primary px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+					>
+						Next
+					</button>
+				</div>
+			</div>
+		{/if}
+>>>>>>> 3d965e7 (chore: auto-format and lint code)
 	</div>
 </div>
 

@@ -530,5 +530,4 @@
 	.lock-icon {
 		font-size: 1rem;
 	}
-
 </style>

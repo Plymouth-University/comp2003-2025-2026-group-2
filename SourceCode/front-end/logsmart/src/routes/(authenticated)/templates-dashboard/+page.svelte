@@ -238,13 +238,11 @@
 			/>
 			<div
 				class="mt-1 text-right text-xs"
-				style={
-					searchQuery.length >= 95
-						? 'color: var(--error);'
-						: searchQuery.length >= 80
-							? 'color: var(--orange);'
-							: 'color: var(--text-secondary);'
-				}
+				style={searchQuery.length >= 95
+					? 'color: var(--error);'
+					: searchQuery.length >= 80
+						? 'color: var(--orange);'
+						: 'color: var(--text-secondary);'}
 			>
 				{searchQuery.length}/100 characters
 			</div>
