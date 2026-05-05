@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     AppState,
@@ -23,6 +23,7 @@ use uuid::Uuid;
 #[utoipa::path(
     get,
     path = "/logs/entries/due",
+    params(("max" = u32, Query, description = "Optional max number of due forms to return, default 20")),
     responses(
         (status = 200, description = "Due forms retrieved successfully", body = DueFormsResponse),
         (status = 401, description = "Unauthorized - invalid or missing token", body = ErrorResponse),
@@ -38,7 +39,13 @@ use uuid::Uuid;
 pub async fn list_due_forms_today(
     AnyAuthUser(_claims, user): AnyAuthUser,
     State(state): State<AppState>,
+    Query(params): Query<HashMap<String, String>>,
 ) -> Result<Json<DueFormsResponse>, (StatusCode, Json<serde_json::Value>)> {
+    let max = params
+        .get("max")
+        .and_then(|v| v.parse::<u32>().ok())
+        .unwrap_or(20);
+
     let company_id = user.company_id.ok_or((
         StatusCode::FORBIDDEN,
         Json(json!({ "error": "User is not associated with a company" })),
@@ -50,6 +57,7 @@ pub async fn list_due_forms_today(
             .map_err(|(status, err)| (status, Json(err)))?;
 
     let mut due_forms = Vec::new();
+    let mut seen_forms: HashSet<(String, String)> = HashSet::new();
     let now = chrono::Utc::now();
 
     for template in templates {
@@ -65,8 +73,9 @@ pub async fn list_due_forms_today(
 
         let last_period = last_submitted.as_ref().map(|e| e.period.as_str());
         let created_at = template.created_at.to_rfc3339();
-        let missed_periods =
+        let mut missed_periods =
             logs_db::get_missed_periods(&template.schedule, last_period, Some(&created_at));
+        missed_periods.reverse();
 
         let periods_with_entries = logs_db::get_periods_with_entries(
             &state.mongodb,
@@ -87,6 +96,12 @@ pub async fn list_due_forms_today(
             if periods_with_entries.contains(&period) {
                 continue;
             }
+
+            let form_key = (template.template_name.clone(), period.clone());
+            if seen_forms.contains(&form_key) {
+                continue;
+            }
+            seen_forms.insert(form_key);
 
             let status =
                 logs_db::get_availability_status_for_period(&template.schedule, &period, now);
@@ -151,12 +166,11 @@ pub async fn list_due_forms_today(
                     logs_db::get_available_from_datetime(&template.schedule, &period);
                 let due_at = logs_db::get_due_at_datetime(&template.schedule, &period);
 
-                if due_forms
-                    .iter()
-                    .any(|f| f.template_name == template.template_name && f.period == period)
-                {
+                let form_key = (template.template_name.clone(), period.clone());
+                if seen_forms.contains(&form_key) {
                     continue;
                 }
+                seen_forms.insert(form_key);
 
                 let status =
                     logs_db::get_availability_status_for_period(&template.schedule, &period, now);
@@ -183,7 +197,13 @@ pub async fn list_due_forms_today(
         }
     }
 
-    Ok(Json(DueFormsResponse { forms: due_forms }))
+    let forms = if due_forms.len() > max as usize {
+        due_forms.into_iter().take(max as usize).collect()
+    } else {
+        due_forms
+    };
+
+    Ok(Json(DueFormsResponse { forms }))
 }
 
 #[utoipa::path(
