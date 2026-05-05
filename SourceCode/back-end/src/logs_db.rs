@@ -1946,7 +1946,7 @@ pub fn validate_and_normalize_period(schedule: &Schedule, period: &str) -> Optio
             }
             let quarter: u32 = parts[0].parse().ok()?;
             let year: i32 = parts[1].parse().ok()?;
-            if quarter < 1 || quarter > 4 || year < 2000 {
+            if !(1..=4).contains(&quarter) || year < 2000 {
                 return None;
             }
             Some(format!("{}/{:04}", quarter, year))
@@ -2084,11 +2084,10 @@ pub fn is_form_due_today(schedule: &Schedule) -> bool {
             if let Some(month) = schedule.month_of_year {
                 let current_quarter = ((today.month() - 1) / 3) + 1;
                 let target_quarter = u32::from(month);
-                if current_quarter == target_quarter {
-                    if let Some(day) = schedule.day_of_month {
+                if current_quarter == target_quarter
+                    && let Some(day) = schedule.day_of_month {
                         return today.day() >= u32::from(day);
                     }
-                }
             }
             false
         }
@@ -2312,12 +2311,12 @@ pub fn get_missed_periods(
                 .map(|d| d.year())
                 .unwrap_or(start_from.unwrap_or(today).year());
             let mut current_quarter = last_period
-                .map(|d| ((d.month() - 1) / 3) as u32 + 1)
+                .map(|d| ((d.month() - 1) / 3) + 1)
                 .unwrap_or(1);
 
             while current_year < today.year()
                 || (current_year == today.year()
-                    && current_quarter <= ((today.month() - 1) / 3 + 1) as u32)
+                    && current_quarter <= ((today.month() - 1) / 3 + 1))
             {
                 let quarter_month = (current_quarter - 1) * 3 + 1;
                 let check_date = chrono::NaiveDate::from_ymd_opt(
