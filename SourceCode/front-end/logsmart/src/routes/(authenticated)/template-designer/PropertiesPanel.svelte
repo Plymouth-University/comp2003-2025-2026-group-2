@@ -100,12 +100,13 @@
 					disabled={selectedItem.lockX}
 				/>
 				<button
-					class="lock-button flex h-8 w-8 items-center justify-center rounded border-2 border-border-primary text-sm text-text-primary transition-colors"
-					class:bg-bg-secondary={selectedItem.lockX}
+					class="lock-button flex h-8 items-center gap-1.5 rounded border-2 px-2 text-sm transition-colors"
+					class:locked={selectedItem.lockX}
+					class:unlocked={!selectedItem.lockX}
 					onclick={() => onUpdateProp(selectedItem.id, 'lockX', !selectedItem.lockX)}
 					title={selectedItem.lockX ? 'Unlock X position' : 'Lock X position'}
 				>
-					{selectedItem.lockX ? '🔒' : '🔓'}
+					<span class="lock-icon" aria-hidden="true">{selectedItem.lockX ? '🔒' : '🔓'}</span>
 				</button>
 			</div>
 			<div class="flex items-center gap-2">
@@ -119,12 +120,13 @@
 					disabled={selectedItem.lockY}
 				/>
 				<button
-					class="lock-button flex h-8 w-8 items-center justify-center rounded border-2 border-border-primary text-sm text-text-primary transition-colors"
-					class:bg-bg-secondary={selectedItem.lockY}
+					class="lock-button flex h-8 items-center gap-1.5 rounded border-2 px-2 text-sm transition-colors"
+					class:locked={selectedItem.lockY}
+					class:unlocked={!selectedItem.lockY}
 					onclick={() => onUpdateProp(selectedItem.id, 'lockY', !selectedItem.lockY)}
 					title={selectedItem.lockY ? 'Unlock Y position' : 'Lock Y position'}
 				>
-					{selectedItem.lockY ? '🔒' : '🔓'}
+					<span class="lock-icon" aria-hidden="true">{selectedItem.lockY ? '🔒' : '🔓'}</span>
 				</button>
 			</div>
 		</div>
@@ -503,10 +505,30 @@
 	}
 
 	.lock-button {
+		border-color: var(--border-primary);
 		background-color: var(--bg-primary);
+		color: var(--text-primary);
 	}
 
 	.lock-button:hover:not(:disabled) {
 		background-color: var(--bg-secondary);
 	}
+
+	.lock-button.locked {
+		background-color: var(--delete-button);
+		border-color: var(--delete-button-hover);
+		color: var(--button-text);
+		box-shadow:
+			0 0 0 2px rgba(0, 0, 0, 0.08),
+			0 4px 10px rgba(0, 0, 0, 0.2);
+	}
+
+	.lock-button.unlocked {
+		background-color: var(--bg-secondary);
+	}
+
+	.lock-icon {
+		font-size: 1rem;
+	}
+
 </style>
