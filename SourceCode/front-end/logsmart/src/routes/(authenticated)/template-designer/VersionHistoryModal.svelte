@@ -35,7 +35,7 @@
 				<h2 class="text-xl font-bold text-gray-900 dark:text-white">Version History</h2>
 				<button
 					onclick={onClose}
-					class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+					class="cursor-pointer text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
 				>
 					<span class="sr-only">Close</span>
 					<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -155,15 +155,6 @@
 						</tbody>
 					</table>
 				{/if}
-			</div>
-
-			<div class="mt-6 flex justify-end">
-				<button
-					onclick={onClose}
-					class="rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-				>
-					Close
-				</button>
 			</div>
 		</div>
 	</div>
