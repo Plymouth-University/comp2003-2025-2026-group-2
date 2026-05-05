@@ -98,6 +98,8 @@
 		);
 	});
 
+	const hasAppliedFilter = $derived(page.url.searchParams.has('from') || page.url.searchParams.has('to'));
+
 	// --- Apply / Clear ---
 	function applyDateFilter() {
 		const params = new SvelteURLSearchParams();
@@ -220,7 +222,8 @@
 			<button
 				disabled={filteredEvents().length === 0}
 				onclick={printToPDF}
-				class="border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary enabled:transform enabled:transition-all enabled:duration-200 enabled:hover:scale-105 enabled:hover:border-blue-400 enabled:hover:bg-blue-50 enabled:hover:text-blue-700 enabled:hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
+disabled={!hasAppliedFilter || filteredEvents().length === 0}
+				class="cursor-pointer rounded border-2 border-button-primary bg-button-primary px-5 py-2 font-medium text-bg-primary transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				Download PDF
 			</button>
@@ -302,9 +305,13 @@
 
 		<!-- Summary -->
 		<div class="mb-4 text-sm text-text-secondary">
-			{filteredEvents().length} record{filteredEvents().length !== 1 ? 's' : ''}
-			{#if searchQuery.trim()}
-				&mdash; filtered by &ldquo;{searchQuery}&rdquo;
+			{#if hasAppliedFilter}
+				{filteredEvents().length} record{filteredEvents().length !== 1 ? 's' : ''}
+				{#if searchQuery.trim()}
+					&mdash; filtered by &ldquo;{searchQuery}&rdquo;
+				{/if}
+			{:else}
+				Waiting for filter application...
 			{/if}
 		</div>
 
@@ -322,7 +329,13 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#if filteredEvents().length === 0}
+					{#if !hasAppliedFilter}
+						<tr>
+							<td colspan="6" class="px-4 py-8 text-center text-text-secondary">
+								Please select a date range and apply to view records
+							</td>
+						</tr>
+					{:else if filteredEvents().length === 0}
 						<tr>
 							<td colspan="6" class="px-4 py-8 text-center text-text-secondary">
 								No attendance records found
@@ -368,8 +381,7 @@
 				</tbody>
 			</table>
 		</div>
-
-		<!-- Pagination -->
+<!-- Pagination -->
 		<div class="mt-4 flex items-center justify-between">
 			<button
 				onclick={goToPreviousPage}
