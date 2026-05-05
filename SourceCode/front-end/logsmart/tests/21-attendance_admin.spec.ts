@@ -30,7 +30,7 @@ const BRANCH_A = 'Attendance Branch A';
 const BRANCH_B = 'Attendance Branch B';
 
 test.beforeAll(async ({ browser }) => {
-	test.setTimeout(120000);
+	test.setTimeout(90000);
 	const creds = await register(browser);
 	if (!creds) throw new Error('Failed to register admin user');
 	adminCreds = creds;
@@ -203,16 +203,18 @@ test.describe('Attendance Admin - HQ Staff', () => {
 	test('hq_staff_can_view_branch_filter_dropdown', async ({ page }) => {
 		await page.getByRole('link', { name: 'Attendance' }).click();
 		await page.waitForURL('**/attendance-admin');
+		await page.waitForLoadState('networkidle');
 
-		const branchFilter = page.locator('select').first();
+		const branchFilter = page.locator('#filter-branch');
 		await expect(branchFilter).toBeVisible();
 	});
 
 	test('hq_staff_can_see_all_branches_in_filter', async ({ page }) => {
 		await page.getByRole('link', { name: 'Attendance' }).click();
 		await page.waitForURL('**/attendance-admin');
+		await page.waitForLoadState('networkidle');
 
-		const branchFilter = page.locator('select').first();
+		const branchFilter = page.locator('#filter-branch');
 		await branchFilter.click();
 		const options = await branchFilter.locator('option').allInnerTexts();
 		expect(options.some((opt) => opt.includes(BRANCH_A))).toBe(true);
@@ -280,12 +282,19 @@ test.describe('Attendance Admin - Clock Events Integration', () => {
 		await staffPage.goto('http://localhost:5173/dashboard');
 		await staffPage.waitForLoadState('networkidle');
 
+		const clockOutButton = staffPage.getByRole('button', { name: 'Clock Out' });
+		if (await clockOutButton.isVisible()) {
+			await clockOutButton.click();
+			await staffPage.waitForTimeout(1000);
+		}
+
 		const clockInButton = staffPage.getByRole('button', { name: 'Clock In' });
 		if (await clockInButton.isVisible()) {
 			await clockInButton.click();
-			await staffPage.waitForTimeout(1000);
+			await staffPage.waitForTimeout(2000);
 			await expect(staffPage.getByText('Currently Clocked In')).toBeVisible();
 		}
+		await staffPage.waitForTimeout(1000);
 		await staffPage.close();
 
 		const adminPage = await browser.newPage();
@@ -298,10 +307,11 @@ test.describe('Attendance Admin - Clock Events Integration', () => {
 
 		await adminPage.getByRole('link', { name: 'Attendance' }).click();
 		await adminPage.waitForURL('**/attendance-admin');
-		await adminPage.waitForTimeout(1000);
+		await adminPage.waitForLoadState('networkidle');
+		await adminPage.waitForTimeout(2000);
 
-		await expect(adminPage.locator('body')).toContainText('Branch');
-		await expect(adminPage.locator('body')).toContainText('Staff');
+		await expect(adminPage.locator('body')).toContainText(branchStaffCreds.email);
+		await expect(adminPage.locator('body')).toContainText('Clocked In');
 		await adminPage.close();
 	});
 
@@ -337,6 +347,8 @@ test.describe('Attendance Admin - Clock Events Integration', () => {
 		await adminPage.waitForTimeout(1000);
 
 		await expect(adminPage.locator('body')).toContainText('Branch');
+		await expect(adminPage.locator('body')).toContainText(branchStaffCreds.email);
+		await expect(adminPage.locator('body')).toContainText('Clocked Out');
 		await adminPage.close();
 	});
 });
