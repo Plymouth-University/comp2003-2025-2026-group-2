@@ -839,6 +839,7 @@
 				.filter((type) => type.checked && type.id !== 'all')
 .map((type) => type.label);
 
+			// If "All" is selected or no specific types selected, show all types
 			const _showAllTypes =
 				logTypes.find((type) => type.id === 'all')?.checked || selectedLogTypes.length === 0;
 
