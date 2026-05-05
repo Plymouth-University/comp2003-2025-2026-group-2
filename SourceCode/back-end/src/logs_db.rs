@@ -2085,9 +2085,10 @@ pub fn is_form_due_today(schedule: &Schedule) -> bool {
                 let current_quarter = ((today.month() - 1) / 3) + 1;
                 let target_quarter = u32::from(month);
                 if current_quarter == target_quarter
-                    && let Some(day) = schedule.day_of_month {
-                        return today.day() >= u32::from(day);
-                    }
+                    && let Some(day) = schedule.day_of_month
+                {
+                    return today.day() >= u32::from(day);
+                }
             }
             false
         }
@@ -2310,9 +2311,7 @@ pub fn get_missed_periods(
             let mut current_year = last_period
                 .map(|d| d.year())
                 .unwrap_or(start_from.unwrap_or(today).year());
-            let mut current_quarter = last_period
-                .map(|d| ((d.month() - 1) / 3) + 1)
-                .unwrap_or(1);
+            let mut current_quarter = last_period.map(|d| ((d.month() - 1) / 3) + 1).unwrap_or(1);
 
             while current_year < today.year()
                 || (current_year == today.year()
