@@ -349,7 +349,7 @@
 					class="btn-delete"
 					disabled={disabled || isLoading}
 				>
-					Delete
+					Delete Picture
 				</button>
 			{/if}
 		</div>
@@ -525,8 +525,33 @@
 	}
 
 	.btn-delete {
-		border-color: var(--button-secondary);
-		color: var(--button-secondary);
+		border: 2px solid var(--delete-button-hover);
+		background-color: var(--delete-button);
+		color: var(--button-text);
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+		padding: 0.35rem 0.75rem;
+		font-size: 0.875rem;
+		width: fit-content;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+		transition:
+			background-color 0.15s ease,
+			transform 0.15s ease,
+			opacity 0.15s ease;
+	}
+
+	.btn-delete:hover:not(:disabled) {
+		background-color: var(--delete-button-hover);
+		opacity: 0.8;
+		transform: scale(1.05);
+	}
+
+	.btn-delete:active:not(:disabled) {
+		background-color: var(--delete-button-active);
 	}
 
 	.error {

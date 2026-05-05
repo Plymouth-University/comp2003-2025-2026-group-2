@@ -287,10 +287,14 @@
 								type="button"
 								disabled={isReadonlyHQ}
 								onclick={() => {
-									if (selectedUser)
+									if (selectedUser) {
 										api.POST('/auth/password/request-reset', {
 											body: { email: selectedUser?.email }
 										});
+										updatePopupType = 'success';
+										updatePopupTitle = 'Email sent';
+										showTimedToast();
+									}
 								}}>Reset</button
 							>
 						</div>
@@ -433,8 +437,12 @@
 						type="button"
 						disabled={isReadonlyHQ}
 						onclick={() => {
-							if (selectedUser)
+							if (selectedUser) {
 								api.POST('/auth/password/request-reset', { body: { email: selectedUser?.email } });
+								updatePopupType = 'success';
+								updatePopupTitle = 'Email sent';
+								showTimedToast();
+							}
 						}}>Reset</button
 					>
 				</div>

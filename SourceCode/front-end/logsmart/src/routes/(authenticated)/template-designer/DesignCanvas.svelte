@@ -87,14 +87,10 @@
 	<div class="mx-auto max-w-4xl">
 		<div class="mb-4 flex items-center justify-between">
 			<h2 class="text-3xl font-bold text-text-primary">
-				Canvas
-				<div class="tooltip" tabindex="-1" aria-label="Canvas instructions" role="tooltip">
-					﹖
-					<span class="tooltip-text"
-						>Drag and drop log components onto the canvas to create a log template. Save your log
-						template to make it completable.</span
-					>
-				</div>
+				<span
+					title="Drag and drop log components onto the canvas to create a log template. Save your log template to make it completable. Use &#123;period&#125; in a template name to auto-fill the date each time."
+					>Canvas</span
+				>
 			</h2>
 			<div class="flex gap-2">
 				<button
@@ -209,7 +205,7 @@
 
 				<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 				<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-				<div class="relative">
+				<div class="canvas-shell">
 					<div
 						bind:this={canvasRef}
 						data-canvas
@@ -375,46 +371,7 @@
 		background-color: var(--history-button-active);
 	}
 
-	.tooltip {
+	.canvas-shell {
 		position: relative;
-		display: inline-block;
-		cursor: help;
-	}
-
-	.tooltip-text {
-		visibility: hidden;
-		background-color: var(--bg-secondary);
-		color: var(--bg-secondary);
-		font-size: 1vw;
-		text-align: center;
-		position: absolute;
-		padding: 40%;
-		border-radius: 8%;
-		z-index: 1;
-	}
-
-	.tooltip:hover .tooltip-text {
-		visibility: visible;
-	}
-
-	.tooltip {
-		position: relative;
-		display: inline-block;
-		cursor: help;
-	}
-
-	.tooltip-text {
-		visibility: hidden;
-		background-color: var(--text-primary);
-		font-size: 1vw;
-		text-align: center;
-		position: absolute;
-		padding: 40%;
-		border-radius: 8%;
-		z-index: 1;
-	}
-
-	.tooltip:hover .tooltip-text {
-		visibility: visible;
 	}
 </style>

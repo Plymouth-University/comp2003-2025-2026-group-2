@@ -60,7 +60,7 @@
 
 		<div class="flex gap-2">
 			<button
-				class="flex-1 rounded bg-input-focus px-4 py-2 font-medium text-white disabled:opacity-50"
+				class="flex-1 cursor-pointer rounded bg-input-focus px-4 py-2 font-medium text-white disabled:opacity-50"
 				onclick={onGenerateLayout}
 				disabled={aiLoading || !aiPrompt.trim()}
 			>
