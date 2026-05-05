@@ -54,9 +54,7 @@ test.describe('Template Versioning', () => {
 		// Ensure item is selected
 		await page.locator('.canvas-item').first().click();
 		await page.getByLabel('Placeholder').fill('Field V2');
-		await page
-			.getByPlaceholder('Give this version a name (optional)...')
-			.fill('My Custom Version Name');
+		await page.getByPlaceholder('Version name (optional)').fill('My Custom Version Name');
 		await page.getByRole('button', { name: 'Save Template' }).click();
 		await expect(page.getByText('Template saved successfully!')).toBeVisible();
 		await page.waitForTimeout(1000);

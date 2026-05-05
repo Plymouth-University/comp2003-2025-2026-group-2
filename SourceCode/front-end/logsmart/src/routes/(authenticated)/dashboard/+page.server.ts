@@ -40,7 +40,7 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies }) => {
 
 		let todaysLogs = [];
 		try {
-			const logsResponse = await fetch('/api/logs/entries/due', {
+			const logsResponse = await fetch('/api/logs/entries/due?max=5', {
 				method: 'GET',
 				headers: {
 					Authorization: `Bearer ${token}`
