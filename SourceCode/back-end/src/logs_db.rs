@@ -1236,11 +1236,6 @@ pub async fn has_entry_for_current_period(
                 .and_utc();
             (start, end)
         }
-        _ => {
-            let start = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc();
-            let end = now.date_naive().and_hms_opt(23, 59, 59).unwrap().and_utc();
-            (start, end)
-        }
     };
 
     let filter = mongodb::bson::doc! {
@@ -1366,11 +1361,6 @@ pub async fn has_submitted_entry_for_current_period(
                 .and_hms_opt(23, 59, 59)
                 .unwrap()
                 .and_utc();
-            (start, end)
-        }
-        _ => {
-            let start = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc();
-            let end = now.date_naive().and_hms_opt(23, 59, 59).unwrap().and_utc();
             (start, end)
         }
     };
