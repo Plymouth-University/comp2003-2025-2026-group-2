@@ -29,11 +29,14 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 	try {
 		const from = url.searchParams.get('from');
 		const to = url.searchParams.get('to');
+		const cursor = url.searchParams.get('cursor');
 
 		let apiUrl = '/api/clock/company';
 		const params = new URLSearchParams();
 		if (from) params.set('from', from);
 		if (to) params.set('to', to);
+		if (cursor) params.set('cursor', cursor);
+		params.set('limit', '25');
 		const qs = params.toString();
 		if (qs) apiUrl += `?${qs}`;
 
@@ -57,9 +60,9 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 
 		const data = await response.json();
 
-		// Fetch branches if user is company_manager
+		// Fetch branches if user is company_manager or logsmart_admin
 		let branches: Array<{ id: string; name: string; address: string }> = [];
-		if (user.role === 'company_manager' || isHQStaff) {
+		if (user.role === 'company_manager' || user.role === 'logsmart_admin' || isHQStaff) {
 			const branchesResponse = await fetch('/api/auth/company/branches', {
 				method: 'GET',
 				headers: {
@@ -90,6 +93,7 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 
 		const d = {
 			clockEvents: data.events ?? [],
+			nextCursor: data.next_cursor ?? null,
 			user,
 			branches,
 			userRole: user.role,

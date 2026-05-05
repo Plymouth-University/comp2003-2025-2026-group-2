@@ -1,4 +1,5 @@
 <script lang="ts">
+	import DatePicker from '$lib/components/DatePicker.svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import type { PageData } from './$types';
 
@@ -60,10 +61,19 @@
 		if (!value) {
 			return;
 		}
-		const parsed = new Date(value);
-		if (!Number.isNaN(parsed.getTime())) {
-			params.set(key, parsed.toISOString());
+		const parsed = formatToISO(value);
+		if (parsed) {
+			params.set(key, parsed);
 		}
+	}
+
+	function formatToISO(dateStr: string): string {
+		const parts = dateStr.split('/');
+		if (parts.length !== 3) {
+			return '';
+		}
+		const [day, month, year] = parts;
+		return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 	}
 
 	// Get user data from server load
@@ -298,7 +308,7 @@
 				<div class="mb-6 flex gap-2">
 					<button
 						onclick={() => (activeTab = 'database')}
-						class="rounded-t-lg px-6 py-3 font-semibold transition-colors"
+						class="cursor-pointer rounded-t-lg px-6 py-3 font-semibold transition-all hover:-translate-y-0.5 hover:opacity-90"
 						style={activeTab === 'database'
 							? 'background-color: var(--button-primary); color: var(--bg-primary);'
 							: 'background-color: var(--bg-primary); color: var(--text-secondary); border: 2px solid var(--border-primary);'}
@@ -307,7 +317,7 @@
 					</button>
 					<button
 						onclick={() => (activeTab = 'security')}
-						class="rounded-t-lg px-6 py-3 font-semibold transition-colors"
+						class="cursor-pointer rounded-t-lg px-6 py-3 font-semibold transition-all hover:-translate-y-0.5 hover:opacity-90"
 						style={activeTab === 'security'
 							? 'background-color: var(--button-primary); color: var(--bg-primary);'
 							: 'background-color: var(--bg-primary); color: var(--text-secondary); border: 2px solid var(--border-primary);'}
@@ -778,11 +788,15 @@
 							for="security-filter-created-from"
 							class="mb-1 block text-sm font-medium text-text-secondary">Created From</label
 						>
-						<input
-							id="security-filter-created-from"
+						<DatePicker
+							inputId="security-filter-created-from"
 							bind:value={filterCreatedFrom}
-							type="datetime-local"
-							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
+							wrapperClass="flex items-center gap-0"
+							inputClass="h-10 w-40 border-2 border-r-0 px-3 py-2 text-sm"
+							inputStyle="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+							buttonClass="h-10 w-10 shrink-0 cursor-pointer border-2 p-0 transition-all duration-150 hover:scale-105"
+							buttonStyle="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+							openCalendarAriaLabel="Open calendar for created from date"
 						/>
 					</div>
 					<div>
@@ -790,34 +804,38 @@
 							for="security-filter-created-to"
 							class="mb-1 block text-sm font-medium text-text-secondary">Created To</label
 						>
-						<input
-							id="security-filter-created-to"
+						<DatePicker
+							inputId="security-filter-created-to"
 							bind:value={filterCreatedTo}
-							type="datetime-local"
-							class="border-2 border-border-primary px-3 py-2 text-sm text-text-primary"
+							wrapperClass="flex items-center gap-0"
+							inputClass="h-10 w-40 border-2 border-r-0 px-3 py-2 text-sm"
+							inputStyle="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+							buttonClass="h-10 w-10 shrink-0 cursor-pointer border-2 p-0 transition-all duration-150 hover:scale-105"
+							buttonStyle="border-color: var(--border-primary); background-color: var(--bg-secondary); color: var(--text-primary);"
+							openCalendarAriaLabel="Open calendar for created to date"
 						/>
 					</div>
 				</div>
 				<div class="flex flex-wrap gap-3">
 					<button
 						onclick={applySecurityFilters}
-						class="border-2 border-border-primary px-4 py-2 font-semibold text-text-primary"
+						class="cursor-pointer border-2 border-border-primary px-4 py-2 font-semibold text-text-primary transition-all hover:-translate-y-0.5 hover:opacity-90"
 						disabled={securityLoading}>Apply Filters</button
 					>
 					<button
 						onclick={() => void fetchSecurityLogs({ reset: true })}
-						class="border-2 border-border-primary px-4 py-2 font-semibold text-text-primary"
+						class="cursor-pointer border-2 border-border-primary px-4 py-2 font-semibold text-text-primary transition-all hover:-translate-y-0.5 hover:opacity-90"
 						disabled={securityLoading}>Refresh</button
 					>
 					<button
 						onclick={exportVisibleCsv}
-						class="border-2 border-border-primary px-4 py-2 font-semibold text-text-primary"
+						class="cursor-pointer border-2 border-border-primary px-4 py-2 font-semibold text-text-primary transition-all hover:-translate-y-0.5 hover:opacity-90"
 						disabled={securityLoading || securityLogs.length === 0 || exportingVisible}
 						>{exportingVisible ? 'Exporting...' : 'Export Visible CSV'}</button
 					>
 					<button
 						onclick={exportAllCsv}
-						class="border-2 border-border-primary px-4 py-2 font-semibold text-text-primary"
+						class="cursor-pointer border-2 border-border-primary px-4 py-2 font-semibold text-text-primary transition-all hover:-translate-y-0.5 hover:opacity-90"
 						disabled={securityLoading || exportingAll}
 						>{exportingAll ? 'Exporting...' : 'Export All CSV'}</button
 					>
@@ -921,12 +939,12 @@
 			<div class="mt-4 flex items-center gap-3">
 				<button
 					onclick={() => void goToPreviousPage()}
-					class="border-2 border-border-primary px-4 py-2 text-sm font-semibold text-text-primary"
+					class="cursor-pointer border-2 border-border-primary px-4 py-2 text-sm font-semibold text-text-primary transition-all hover:-translate-y-0.5 hover:opacity-90"
 					disabled={securityLoading || securityCursorHistory.length === 0}>Previous</button
 				>
 				<button
 					onclick={() => void goToNextPage()}
-					class="border-2 border-border-primary px-4 py-2 text-sm font-semibold text-text-primary"
+					class="cursor-pointer border-2 border-border-primary px-4 py-2 text-sm font-semibold text-text-primary transition-all hover:-translate-y-0.5 hover:opacity-90"
 					disabled={securityLoading || !securityNextCursor}>Next</button
 				>
 				<span class="text-sm text-text-secondary">Showing up to 15 events per page</span>

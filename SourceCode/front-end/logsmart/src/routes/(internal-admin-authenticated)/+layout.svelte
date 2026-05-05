@@ -20,7 +20,7 @@
 	}
 </script>
 
-<div class="flex h-screen w-full flex-col bg-bg-secondary">
+<div class="flex h-full w-full flex-col bg-bg-secondary">
 	<header class="shrink-0 border-b border-border-secondary bg-bg-primary shadow-sm">
 		<div class="max-w-9xl mx-auto px-6 py-4 lg:px-30">
 			<div class="flex items-center justify-between">

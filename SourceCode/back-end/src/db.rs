@@ -2701,6 +2701,7 @@ impl CompanyClockEventRow {
 
 /// Gets all clock events for a company, joined with user name/email.
 /// Optionally filtered by date range and branch.
+/// Uses cursor-based pagination.
 ///
 /// # Errors
 /// Returns an error if the database query fails.
@@ -2710,7 +2711,12 @@ pub async fn get_company_clock_events(
     from: Option<chrono::DateTime<chrono::Utc>>,
     to: Option<chrono::DateTime<chrono::Utc>>,
     branch_id: Option<String>,
-) -> Result<Vec<CompanyClockEventRow>> {
+    limit: Option<i64>,
+    cursor: Option<String>,
+) -> Result<(Vec<CompanyClockEventRow>, Option<String>)> {
+    let limit = limit.unwrap_or(25).max(1).min(100);
+    let cursor = cursor.and_then(|c| parse_clock_events_cursor(&c).ok());
+
     // Filter out empty strings from branch_id
     let branch_id = branch_id.filter(|s| !s.is_empty());
 
@@ -2726,6 +2732,18 @@ pub async fn get_company_clock_events(
     );
 
     let mut bind_count = 1;
+
+    // Add cursor filter (keyset pagination)
+    if let Some((_cursor_time, _cursor_id)) = &cursor {
+        bind_count += 1;
+        let cursor_param_1 = bind_count;
+        bind_count += 1;
+        let cursor_param_2 = bind_count;
+        writeln!(
+            query_str,
+            "  AND (ce.clock_in, ce.id) < (${cursor_param_1}, ${cursor_param_2})"
+        )?;
+    }
 
     // Add branch filter if provided
     if branch_id.is_some() {
@@ -2744,13 +2762,18 @@ pub async fn get_company_clock_events(
         writeln!(query_str, "  AND ce.clock_in <= ${bind_count}")?;
     }
 
-    query_str.push_str("ORDER BY ce.clock_in DESC");
+    writeln!(query_str, "ORDER BY ce.clock_in DESC, ce.id DESC")?;
+    writeln!(query_str, "LIMIT {}", limit + 1)?;
 
     // Log the query for debugging
     tracing::debug!("Clock events query: {}", query_str);
     tracing::debug!("Branch ID filter: {:?}", branch_id);
 
     let mut query = sqlx::query_as::<_, CompanyClockEventRow>(&query_str).bind(company_id);
+
+    if let Some((cursor_time, cursor_id)) = &cursor {
+        query = query.bind(cursor_time).bind(cursor_id);
+    }
 
     if let Some(bid) = branch_id {
         query = query.bind(bid);
@@ -2764,9 +2787,47 @@ pub async fn get_company_clock_events(
         query = query.bind(t);
     }
 
-    let events = query.fetch_all(pool).await?;
+    let mut events = query.fetch_all(pool).await?;
 
-    Ok(events)
+    let next_cursor = if events.len() > limit as usize {
+        let last_idx = (limit as usize) - 1;
+        let last_clock_in = events[last_idx].clock_in;
+        let last_id = events[last_idx].id.clone();
+        events.truncate(limit as usize);
+        Some(create_clock_events_cursor(last_clock_in, &last_id))
+    } else {
+        None
+    };
+
+    Ok((events, next_cursor))
+}
+
+pub fn create_clock_events_cursor(created_at: chrono::DateTime<chrono::Utc>, id: &str) -> String {
+    use base64::Engine as _;
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(format!(
+        "{}|{}",
+        created_at.to_rfc3339(),
+        id
+    ))
+}
+
+pub fn parse_clock_events_cursor(cursor: &str) -> Result<(chrono::DateTime<chrono::Utc>, String)> {
+    use base64::Engine as _;
+
+    let decoded = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(cursor)
+        .map_err(|_| anyhow::anyhow!("Invalid cursor encoding"))?;
+
+    let decoded = String::from_utf8(decoded).map_err(|_| anyhow::anyhow!("Invalid cursor"))?;
+    let (created_at_str, id) = decoded
+        .split_once('|')
+        .ok_or_else(|| anyhow::anyhow!("Invalid cursor format"))?;
+
+    let created_at = chrono::DateTime::parse_from_rfc3339(created_at_str)
+        .map_err(|_| anyhow::anyhow!("Invalid cursor timestamp"))?
+        .with_timezone(&chrono::Utc);
+
+    Ok((created_at, id.to_string()))
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 {
 	"openapi": "3.1.0",
-	"info": { "title": "back-end", "description": "", "license": { "name": "" }, "version": "1.0.0" },
+	"info": { "title": "back-end", "description": "", "license": { "name": "" }, "version": "1.1.0" },
 	"paths": {
 		"/auth/admin/remove-member": {
 			"delete": {
@@ -922,6 +922,20 @@
 						"description": "Branch ID filter (optional, for `company_manager` to filter by specific branch)",
 						"required": false,
 						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "limit",
+						"in": "query",
+						"description": "Number of results per page (default 25, max 100)",
+						"required": false,
+						"schema": { "type": ["integer", "null"], "format": "int64" }
+					},
+					{
+						"name": "cursor",
+						"in": "query",
+						"description": "Cursor for pagination (base64 encoded timestamp|id)",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
 					}
 				],
 				"responses": {
@@ -1507,6 +1521,15 @@
 				"summary": "Lists all log forms that are due today for the current user's company.",
 				"description": "# Errors\nReturns an error if the user is not authorized or if the query fails.",
 				"operationId": "list_due_forms_today",
+				"parameters": [
+					{
+						"name": "max",
+						"in": "query",
+						"description": "Optional max number of due forms to return, default 20",
+						"required": true,
+						"schema": { "type": "integer", "format": "int32", "minimum": 0 }
+					}
+				],
 				"responses": {
 					"200": {
 						"description": "Due forms retrieved successfully",
@@ -2107,6 +2130,478 @@
 				},
 				"security": [{ "bearer_auth": [] }]
 			}
+		},
+		"/reports/runs": {
+			"get": {
+				"tags": ["Log Entries"],
+				"summary": "Lists saved report-generation parameter sets for the current user.",
+				"operationId": "list_report_runs",
+				"parameters": [
+					{
+						"name": "limit",
+						"in": "query",
+						"description": "Optional limit for report run list, default 20, max 100",
+						"required": true,
+						"schema": { "type": "integer", "format": "int32", "minimum": 0 }
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Saved report runs retrieved",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/ListReportRunsResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			},
+			"post": {
+				"tags": ["Log Entries"],
+				"summary": "Saves report-generation parameters for later reuse.",
+				"operationId": "create_report_run",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": { "$ref": "#/components/schemas/CreateReportRunRequest" }
+						}
+					},
+					"required": true
+				},
+				"responses": {
+					"201": {
+						"description": "Saved report run created",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/CreateReportRunResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/reports/runs/{report_id}": {
+			"delete": {
+				"tags": ["Log Entries"],
+				"summary": "Deletes a saved report run.",
+				"operationId": "delete_report_run",
+				"parameters": [
+					{
+						"name": "report_id",
+						"in": "path",
+						"description": "Saved report run ID",
+						"required": true,
+						"schema": { "type": "string" }
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Saved report run deleted",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/DeleteReportRunResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"404": {
+						"description": "Report run not found",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/reports/runs/{report_id}/use": {
+			"post": {
+				"tags": ["Log Entries"],
+				"summary": "Marks a saved report run as used.",
+				"operationId": "use_report_run",
+				"parameters": [
+					{
+						"name": "report_id",
+						"in": "path",
+						"description": "Saved report run ID",
+						"required": true,
+						"schema": { "type": "string" }
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Saved report run usage tracked",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/UseReportRunResponse" }
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"404": {
+						"description": "Report run not found",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/security/logs": {
+			"get": {
+				"tags": ["Health Monitoring"],
+				"operationId": "get_security_logs",
+				"parameters": [
+					{
+						"name": "limit",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["integer", "null"], "format": "int64" }
+					},
+					{
+						"name": "cursor",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "event_type",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "user_id",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "email",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "ip_address",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "user_agent",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "actor_role",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "company_id",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "target_user_id",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "target_email",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "request_path",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "request_method",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "details",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "success",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["boolean", "null"] }
+					},
+					{
+						"name": "created_from",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "created_to",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Security logs retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/SecurityLogsResponse" }
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid query parameters",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden - LogSmart admin only",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
+		"/security/logs/export": {
+			"get": {
+				"tags": ["Health Monitoring"],
+				"operationId": "export_security_logs_csv",
+				"parameters": [
+					{
+						"name": "limit",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["integer", "null"], "format": "int64" }
+					},
+					{
+						"name": "cursor",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "event_type",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "user_id",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "email",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "ip_address",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "user_agent",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "actor_role",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "company_id",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "target_user_id",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "target_email",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "request_path",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "request_method",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "details",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "success",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["boolean", "null"] }
+					},
+					{
+						"name": "created_from",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					},
+					{
+						"name": "created_to",
+						"in": "query",
+						"required": false,
+						"schema": { "type": ["string", "null"] }
+					}
+				],
+				"responses": {
+					"200": { "description": "CSV export of security logs", "content": { "text/csv": {} } },
+					"400": {
+						"description": "Invalid query parameters",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"401": {
+						"description": "Unauthorized",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"403": {
+						"description": "Forbidden - LogSmart admin only",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					},
+					"500": {
+						"description": "Server error",
+						"content": {
+							"application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } }
+						}
+					}
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
 		}
 	},
 	"components": {
@@ -2239,7 +2734,8 @@
 					"events": {
 						"type": "array",
 						"items": { "$ref": "#/components/schemas/CompanyClockEventResponse" }
-					}
+					},
+					"next_cursor": { "type": ["string", "null"] }
 				}
 			},
 			"CompanyResponse": {
@@ -2287,6 +2783,19 @@
 				"required": ["id", "message"],
 				"properties": { "id": { "type": "string" }, "message": { "type": "string" } }
 			},
+			"CreateReportRunRequest": {
+				"type": "object",
+				"required": ["params"],
+				"properties": {
+					"name": { "type": ["string", "null"] },
+					"params": { "$ref": "#/components/schemas/ReportRunParams" }
+				}
+			},
+			"CreateReportRunResponse": {
+				"type": "object",
+				"required": ["report_run"],
+				"properties": { "report_run": { "$ref": "#/components/schemas/ReportRunResponse" } }
+			},
 			"DatabaseHealthMetrics": {
 				"type": "object",
 				"required": [
@@ -2307,6 +2816,11 @@
 					"table_count": { "type": "integer", "format": "int64" },
 					"total_connections": { "type": "integer", "format": "int64" }
 				}
+			},
+			"DeleteReportRunResponse": {
+				"type": "object",
+				"required": ["message"],
+				"properties": { "message": { "type": "string" } }
 			},
 			"DeleteTemplateRequest": {
 				"type": "object",
@@ -2344,7 +2858,10 @@
 				"required": ["error"],
 				"properties": { "error": { "type": "string" } }
 			},
-			"Frequency": { "type": "string", "enum": ["Daily", "Weekly", "Monthly", "Yearly"] },
+			"Frequency": {
+				"type": "string",
+				"enum": ["Daily", "Weekly", "Monthly", "Quarterly", "Yearly"]
+			},
 			"GetAllTemplatesResponse": {
 				"type": "object",
 				"required": ["templates"],
@@ -2488,6 +3005,16 @@
 					}
 				}
 			},
+			"ListReportRunsResponse": {
+				"type": "object",
+				"required": ["report_runs"],
+				"properties": {
+					"report_runs": {
+						"type": "array",
+						"items": { "$ref": "#/components/schemas/ReportRunResponse" }
+					}
+				}
+			},
 			"LogEntryResponse": {
 				"type": "object",
 				"required": [
@@ -2496,11 +3023,13 @@
 					"template_layout",
 					"entry_data",
 					"status",
+					"availability_status",
 					"created_at",
 					"updated_at",
 					"period"
 				],
 				"properties": {
+					"availability_status": { "type": "string" },
 					"created_at": { "type": "string" },
 					"entry_data": {},
 					"id": { "type": "string" },
@@ -2588,6 +3117,39 @@
 				"required": ["message"],
 				"properties": { "message": { "type": "string" } }
 			},
+			"ReportRunParams": {
+				"type": "object",
+				"required": [
+					"date_from_iso",
+					"date_to_iso",
+					"selected_branch_ids",
+					"selected_log_type_ids",
+					"arrange_by",
+					"include_temperature_graphs",
+					"params_version"
+				],
+				"properties": {
+					"arrange_by": { "type": "string" },
+					"date_from_iso": { "type": "string" },
+					"date_to_iso": { "type": "string" },
+					"include_temperature_graphs": { "type": "boolean" },
+					"params_version": { "type": "integer", "format": "int32", "minimum": 0 },
+					"selected_branch_ids": { "type": "array", "items": { "type": "string" } },
+					"selected_log_type_ids": { "type": "array", "items": { "type": "string" } }
+				}
+			},
+			"ReportRunResponse": {
+				"type": "object",
+				"required": ["id", "params", "created_at", "last_used_at", "use_count"],
+				"properties": {
+					"created_at": { "type": "string" },
+					"id": { "type": "string" },
+					"last_used_at": { "type": "string" },
+					"name": { "type": ["string", "null"] },
+					"params": { "$ref": "#/components/schemas/ReportRunParams" },
+					"use_count": { "type": "integer", "format": "int32", "minimum": 0 }
+				}
+			},
 			"RequestBranchDeletionRequest": {
 				"type": "object",
 				"required": ["branch_id"],
@@ -2632,6 +3194,69 @@
 					"due_at_time": { "type": ["string", "null"] },
 					"frequency": { "$ref": "#/components/schemas/Frequency" },
 					"month_of_year": { "type": ["integer", "null"], "format": "int32", "minimum": 0 }
+				}
+			},
+			"SecurityLogDto": {
+				"type": "object",
+				"required": ["id", "event_type", "success", "created_at"],
+				"properties": {
+					"actor_role": { "type": ["string", "null"] },
+					"company_id": { "type": ["string", "null"] },
+					"created_at": { "type": "string", "format": "date-time" },
+					"details": { "type": ["string", "null"] },
+					"email": { "type": ["string", "null"] },
+					"event_type": { "type": "string" },
+					"id": { "type": "string" },
+					"ip_address": { "type": ["string", "null"] },
+					"request_method": { "type": ["string", "null"] },
+					"request_path": { "type": ["string", "null"] },
+					"success": { "type": "boolean" },
+					"target_email": { "type": ["string", "null"] },
+					"target_user_id": { "type": ["string", "null"] },
+					"user_agent": { "type": ["string", "null"] },
+					"user_id": { "type": ["string", "null"] }
+				}
+			},
+			"SecurityLogsQuery": {
+				"type": "object",
+				"properties": {
+					"actor_role": { "type": ["string", "null"], "example": "company_manager" },
+					"company_id": {
+						"type": ["string", "null"],
+						"example": "550e8400-e29b-41d4-a716-446655440001"
+					},
+					"created_from": { "type": ["string", "null"], "example": "2026-04-01T00:00:00Z" },
+					"created_to": { "type": ["string", "null"], "example": "2026-04-13T23:59:59Z" },
+					"cursor": {
+						"type": ["string", "null"],
+						"example": "MjAyNi0wNC0xM1QxMjozNDo1Nlo=fGFiYy0xMjM"
+					},
+					"details": { "type": ["string", "null"], "example": "Passkey verification failed" },
+					"email": { "type": ["string", "null"], "example": "user@example.com" },
+					"event_type": { "type": ["string", "null"], "example": "login" },
+					"ip_address": { "type": ["string", "null"], "example": "203.0.113.42" },
+					"limit": { "type": ["integer", "null"], "format": "int64", "example": 15 },
+					"request_method": { "type": ["string", "null"], "example": "PUT" },
+					"request_path": { "type": ["string", "null"], "example": "/companies/123" },
+					"success": { "type": ["boolean", "null"], "example": true },
+					"target_email": { "type": ["string", "null"], "example": "target@example.com" },
+					"target_user_id": {
+						"type": ["string", "null"],
+						"example": "550e8400-e29b-41d4-a716-446655440002"
+					},
+					"user_agent": { "type": ["string", "null"], "example": "Mozilla/5.0" },
+					"user_id": {
+						"type": ["string", "null"],
+						"example": "550e8400-e29b-41d4-a716-446655440000"
+					}
+				}
+			},
+			"SecurityLogsResponse": {
+				"type": "object",
+				"required": ["logs"],
+				"properties": {
+					"logs": { "type": "array", "items": { "$ref": "#/components/schemas/SecurityLogDto" } },
+					"next_cursor": { "type": ["string", "null"] }
 				}
 			},
 			"SlowQueriesResponse": {
@@ -2796,6 +3421,11 @@
 				}
 			},
 			"UpdateTemplateResponse": {
+				"type": "object",
+				"required": ["message"],
+				"properties": { "message": { "type": "string" } }
+			},
+			"UseReportRunResponse": {
 				"type": "object",
 				"required": ["message"],
 				"properties": { "message": { "type": "string" } }

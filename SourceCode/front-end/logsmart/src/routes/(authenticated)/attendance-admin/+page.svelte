@@ -16,6 +16,12 @@
 	const members = $derived(data?.members ?? []);
 	const userRole = $derived(data?.userRole ?? '');
 	const isHQStaff = $derived(data?.isHQStaff ?? false);
+	const nextCursor = $derived(data?.nextCursor ?? null);
+	const hasPrevPage = $derived.by(() => {
+		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const stackParam = params.get('cursor_stack') || '';
+		return stackParam.split(',').filter(Boolean).length > 0;
+	});
 
 	// Create mapping from user_id to branch_id for client-side filtering
 	const userToBranchMap = $derived.by(() => {
@@ -92,6 +98,10 @@
 		);
 	});
 
+	const hasAppliedFilter = $derived(
+		page.url.searchParams.has('from') || page.url.searchParams.has('to')
+	);
+
 	// --- Apply / Clear ---
 	function applyDateFilter() {
 		const params = new SvelteURLSearchParams();
@@ -120,6 +130,41 @@
 			selectedBranchId = '';
 		}
 		goto('/attendance-admin', { invalidateAll: true });
+	}
+
+	function goToNextPage() {
+		if (!nextCursor) return;
+		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const currentCursor = params.get('cursor') || '';
+		const stackParam = params.get('cursor_stack') || '';
+		const stack = stackParam ? stackParam.split(',').filter(Boolean) : [];
+		if (currentCursor) {
+			stack.push(currentCursor);
+		}
+		params.set('cursor', nextCursor);
+		if (stack.length > 0) {
+			params.set('cursor_stack', stack.join(','));
+		}
+		goto(`/attendance-admin?${params.toString()}`, { invalidateAll: true });
+	}
+
+	function goToPreviousPage() {
+		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const stackParam = params.get('cursor_stack') || '';
+		const stack = stackParam ? stackParam.split(',').filter(Boolean) : [];
+		if (stack.length > 0) {
+			const prevCursor = stack.pop() ?? '';
+			params.set('cursor', prevCursor);
+			if (stack.length > 0) {
+				params.set('cursor_stack', stack.join(','));
+			} else {
+				params.delete('cursor_stack');
+			}
+		} else {
+			params.delete('cursor');
+			params.delete('cursor_stack');
+		}
+		goto(`/attendance-admin?${params.toString()}`, { invalidateAll: true });
 	}
 
 	function formatDateTime(iso: string) {
@@ -178,9 +223,10 @@
 			<h1 class="text-3xl font-bold text-text-primary">Attendance Overview</h1>
 			<button
 				onclick={printToPDF}
-				class="cursor-pointer rounded border-2 border-button-primary bg-button-primary px-5 py-2 font-medium text-bg-primary transition-opacity hover:opacity-80"
+				disabled={!hasAppliedFilter || filteredEvents().length === 0}
+				class="cursor-pointer rounded border-2 border-button-primary bg-button-primary px-5 py-2 font-medium text-bg-primary transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 			>
-				Export PDF
+				Download PDF
 			</button>
 		</div>
 
@@ -189,7 +235,7 @@
 			class="mb-6 flex flex-wrap items-end gap-4 rounded border-2 border-border-primary bg-bg-primary p-4"
 		>
 			<!-- Branch Filter (only for company_manager or hq staff) -->
-			{#if (userRole === 'company_manager' || isHQStaff) && branches.length > 0}
+			{#if (userRole === 'company_manager' || userRole === 'logsmart_admin' || isHQStaff) && branches.length > 0}
 				<div class="flex flex-col gap-1">
 					<label for="filter-branch" class="text-xs font-medium text-text-secondary">
 						Branch
@@ -197,7 +243,7 @@
 					<select
 						id="filter-branch"
 						bind:value={selectedBranchId}
-						class="min-w-[180px] border-2 border-border-primary bg-bg-secondary px-3 py-2 text-sm text-text-primary"
+						class="min-w-45 border-2 border-border-primary bg-bg-secondary px-3 py-2 text-sm text-text-primary"
 					>
 						<option value="">All Branches</option>
 						{#each branches as branch (branch.id)}
@@ -253,16 +299,20 @@
 					type="text"
 					bind:value={searchQuery}
 					placeholder="Filter by name or email..."
-					class="min-w-[220px] rounded border border-border-primary bg-bg-secondary px-3 py-2 text-sm text-text-primary"
+					class="min-w-55 rounded border border-border-primary bg-bg-secondary px-3 py-2 text-sm text-text-primary"
 				/>
 			</div>
 		</div>
 
 		<!-- Summary -->
 		<div class="mb-4 text-sm text-text-secondary">
-			{filteredEvents().length} record{filteredEvents().length !== 1 ? 's' : ''}
-			{#if searchQuery.trim()}
-				&mdash; filtered by &ldquo;{searchQuery}&rdquo;
+			{#if hasAppliedFilter}
+				{filteredEvents().length} record{filteredEvents().length !== 1 ? 's' : ''}
+				{#if searchQuery.trim()}
+					&mdash; filtered by &ldquo;{searchQuery}&rdquo;
+				{/if}
+			{:else}
+				Waiting for filter application...
 			{/if}
 		</div>
 
@@ -280,7 +330,13 @@
 					</tr>
 				</thead>
 				<tbody>
-					{#if filteredEvents().length === 0}
+					{#if !hasAppliedFilter}
+						<tr>
+							<td colspan="6" class="px-4 py-8 text-center text-text-secondary">
+								Please select a date range and apply to view records
+							</td>
+						</tr>
+					{:else if filteredEvents().length === 0}
 						<tr>
 							<td colspan="6" class="px-4 py-8 text-center text-text-secondary">
 								No attendance records found
@@ -325,6 +381,25 @@
 					{/if}
 				</tbody>
 			</table>
+		</div>
+
+		<!-- Pagination -->
+		<div class="mt-4 flex items-center justify-between">
+			<button
+				onclick={goToPreviousPage}
+				disabled={!hasPrevPage}
+				class="rounded border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+			>
+				Previous
+			</button>
+			<span class="text-sm text-text-secondary">Showing up to 25 records per page</span>
+			<button
+				onclick={goToNextPage}
+				disabled={!nextCursor}
+				class="rounded border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+			>
+				Next
+			</button>
 		</div>
 	</div>
 </div>

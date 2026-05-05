@@ -830,6 +830,8 @@ impl From<db::CompanyClockEventRow> for CompanyClockEventResponse {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct CompanyClockEventsResponse {
     pub events: Vec<CompanyClockEventResponse>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_cursor: Option<String>,
 }
 
 // Company DTOs
