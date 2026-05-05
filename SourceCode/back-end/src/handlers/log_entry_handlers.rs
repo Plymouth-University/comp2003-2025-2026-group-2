@@ -69,7 +69,13 @@ pub async fn list_due_forms_today(
         &all_template_names,
     )
     .await
-    .unwrap_or_default();
+    .map_err(|e| {
+        tracing::error!("Failed to get latest submitted entries: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to retrieve due forms" })),
+        )
+    })?;
 
     // Now compute missed periods using actual last submitted periods
     let mut template_due_counts: HashMap<String, usize> = HashMap::new();
@@ -123,7 +129,13 @@ pub async fn list_due_forms_today(
         &all_missed_periods,
     )
     .await
-    .unwrap_or_default();
+    .map_err(|e| {
+        tracing::error!("Failed to get periods with entries: {:?}", e);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({ "error": "Failed to retrieve due forms" })),
+        )
+    })?;
 
     let mut due_forms = Vec::new();
     let mut seen_forms: HashSet<(String, String)> = HashSet::new();
@@ -193,7 +205,13 @@ pub async fn list_due_forms_today(
                 &template.schedule.frequency,
             )
             .await
-            .unwrap_or(false);
+            .map_err(|e| {
+                tracing::error!("Failed to check submission status: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Failed to retrieve due forms" })),
+                )
+            })?;
 
             if !has_submitted {
                 let draft_entry = logs_db::get_draft_entry_for_current_period(

@@ -17,7 +17,11 @@
 	const userRole = $derived(data?.userRole ?? '');
 	const isHQStaff = $derived(data?.isHQStaff ?? false);
 	const nextCursor = $derived(data?.nextCursor ?? null);
-	const prevCursor = $derived(data?.prevCursor ?? null);
+	const hasPrevPage = $derived.by(() => {
+		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const stackParam = params.get('cursor_stack') || '';
+		return stackParam.split(',').filter(Boolean).length > 0;
+	});
 
 	// Create mapping from user_id to branch_id for client-side filtering
 	const userToBranchMap = $derived.by(() => {
@@ -127,13 +131,35 @@
 	function goToNextPage() {
 		if (!nextCursor) return;
 		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const currentCursor = params.get('cursor') || '';
+		const stackParam = params.get('cursor_stack') || '';
+		const stack = stackParam ? stackParam.split(',').filter(Boolean) : [];
+		if (currentCursor) {
+			stack.push(currentCursor);
+		}
 		params.set('cursor', nextCursor);
+		if (stack.length > 0) {
+			params.set('cursor_stack', stack.join(','));
+		}
 		goto(`/attendance-admin?${params.toString()}`, { invalidateAll: true });
 	}
 
 	function goToPreviousPage() {
 		const params = new SvelteURLSearchParams(page.url.searchParams);
-		params.delete('cursor');
+		const stackParam = params.get('cursor_stack') || '';
+		const stack = stackParam ? stackParam.split(',').filter(Boolean) : [];
+		if (stack.length > 0) {
+			const prevCursor = stack.pop() ?? '';
+			params.set('cursor', prevCursor);
+			if (stack.length > 0) {
+				params.set('cursor_stack', stack.join(','));
+			} else {
+				params.delete('cursor_stack');
+			}
+		} else {
+			params.delete('cursor');
+			params.delete('cursor_stack');
+		}
 		goto(`/attendance-admin?${params.toString()}`, { invalidateAll: true });
 	}
 
@@ -346,7 +372,7 @@
 		<div class="mt-4 flex items-center justify-between">
 			<button
 				onclick={goToPreviousPage}
-				disabled={!prevCursor}
+				disabled={!hasPrevPage}
 				class="rounded border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				Previous

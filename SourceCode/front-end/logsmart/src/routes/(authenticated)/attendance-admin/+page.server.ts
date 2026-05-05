@@ -94,7 +94,6 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 		const d = {
 			clockEvents: data.events ?? [],
 			nextCursor: data.next_cursor ?? null,
-			prevCursor: cursor,
 			user,
 			branches,
 			userRole: user.role,
