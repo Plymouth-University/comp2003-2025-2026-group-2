@@ -72,7 +72,23 @@ pub enum Frequency {
     Daily,
     Weekly,
     Monthly,
+    Quarterly,
     Yearly,
+}
+
+fn get_month_last_day(year: i32, month: u32) -> u32 {
+    match month {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 => {
+            if (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0) {
+                29
+            } else {
+                28
+            }
+        }
+        _ => 0,
+    }
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize, ToSchema)]
@@ -579,7 +595,7 @@ pub async fn delete_template(
     Ok(())
 }
 
-#[derive(Debug, serde::Deserialize, serde::Serialize, ToSchema)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize, ToSchema)]
 pub struct LogEntry {
     pub entry_id: String,
     pub template_name: String,
@@ -931,6 +947,183 @@ pub async fn get_latest_submitted_entry(
     Ok(result)
 }
 
+/// Batch version of get_latest_submitted_entry - gets latest submitted entry for multiple templates.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+pub async fn get_latest_submitted_entries_batch(
+    client: &mongodb::Client,
+    user_id: &str,
+    company_id: &str,
+    template_names: &[String],
+) -> Result<std::collections::HashMap<String, LogEntry>> {
+    if template_names.is_empty() {
+        return Ok(std::collections::HashMap::new());
+    }
+
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "user_id": user_id,
+        "company_id": company_id,
+        "template_name": { "$in": template_names },
+        "status": mongodb::bson::to_bson(&LogStatus::Submitted)?,
+    };
+
+    let mut cursor = collection
+        .find(filter)
+        .sort(mongodb::bson::doc! { "submitted_at": -1 })
+        .await?;
+    let mut results: std::collections::HashMap<String, LogEntry> = std::collections::HashMap::new();
+
+    while let Some(entry) = cursor.try_next().await? {
+        results.entry(entry.template_name.clone()).or_insert(entry);
+    }
+
+    Ok(results)
+}
+
+/// Batch version of get_periods_with_entries - gets periods with entries for multiple templates.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+pub async fn get_periods_with_entries_batch(
+    client: &mongodb::Client,
+    company_id: &str,
+    template_names: &[String],
+    all_periods: &[String],
+) -> Result<std::collections::HashMap<String, std::collections::HashSet<String>>> {
+    if template_names.is_empty() || all_periods.is_empty() {
+        return Ok(std::collections::HashMap::new());
+    }
+
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "company_id": company_id,
+        "template_name": { "$in": template_names },
+        "period": { "$in": all_periods }
+    };
+
+    let cursor = collection.find(filter).await?;
+    let entries: Vec<LogEntry> = cursor.try_collect().await?;
+
+    let mut results: std::collections::HashMap<String, std::collections::HashSet<String>> =
+        std::collections::HashMap::new();
+    for entry in entries {
+        results
+            .entry(entry.template_name)
+            .or_default()
+            .insert(entry.period);
+    }
+
+    Ok(results)
+}
+
+/// Batch version of has_submitted_entry_for_current_period - checks multiple templates at once.
+///
+/// Uses a simple approach: fetches all submitted entries for the current period for all templates,
+/// then builds a lookup map.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+///
+/// # Panics
+/// Panics if period boundary calculations fail.
+pub async fn has_submitted_entries_batch(
+    client: &mongodb::Client,
+    company_id: &str,
+    templates: &[(&str, &Frequency)],
+) -> Result<std::collections::HashMap<String, bool>> {
+    if templates.is_empty() {
+        return Ok(std::collections::HashMap::new());
+    }
+
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let template_names: Vec<&str> = templates.iter().map(|(n, _)| *n).collect();
+    let now = chrono::Utc::now();
+    let period_start = now - chrono::Duration::days(400);
+    let period_end = now;
+
+    let filter = mongodb::bson::doc! {
+        "company_id": company_id,
+        "template_name": { "$in": template_names },
+        "submitted_at": {
+            "$gte": mongodb::bson::DateTime::from_system_time(std::time::SystemTime::from(period_start)),
+            "$lte": mongodb::bson::DateTime::from_system_time(std::time::SystemTime::from(period_end))
+        },
+        "status": mongodb::bson::to_bson(&LogStatus::Submitted)?,
+    };
+
+    let cursor = collection.find(filter).await?;
+    let entries: Vec<LogEntry> = cursor.try_collect().await?;
+
+    let mut results: std::collections::HashMap<String, bool> = std::collections::HashMap::new();
+    for (name, _) in templates {
+        let has_submitted = entries.iter().any(|e| {
+            e.template_name == *name && is_in_current_period(&e.submitted_at, &e.period, now)
+        });
+        results.insert(name.to_string(), has_submitted);
+    }
+
+    Ok(results)
+}
+
+fn is_in_current_period(
+    submitted_at: &Option<chrono::DateTime<chrono::Utc>>,
+    _period: &str,
+    now: chrono::DateTime<chrono::Utc>,
+) -> bool {
+    let Some(ts) = submitted_at else {
+        return false;
+    };
+
+    ts.date_naive() == now.date_naive()
+}
+
+/// Batch version of get_draft_entry_for_current_period - gets draft entries for multiple templates.
+///
+/// # Errors
+/// Returns an error if the database query fails.
+pub async fn get_draft_entries_batch(
+    client: &mongodb::Client,
+    user_id: &str,
+    company_id: &str,
+    template_names: &[String],
+) -> Result<std::collections::HashMap<String, Option<LogEntry>>> {
+    if template_names.is_empty() {
+        return Ok(std::collections::HashMap::new());
+    }
+
+    let db = client.database("logs_db");
+    let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
+
+    let filter = mongodb::bson::doc! {
+        "user_id": user_id,
+        "company_id": company_id,
+        "template_name": { "$in": template_names },
+        "status": mongodb::bson::to_bson(&LogStatus::Draft)?,
+    };
+
+    let cursor = collection.find(filter).await?;
+    let entries: Vec<LogEntry> = cursor.try_collect().await?;
+
+    let mut results: std::collections::HashMap<String, Option<LogEntry>> = std::collections::HashMap::new();
+    for name in template_names {
+        results.insert(name.clone(), None);
+    }
+    for entry in entries {
+        let name = entry.template_name.clone();
+        results.insert(name, Some(entry));
+    }
+
+    Ok(results)
+}
+
 /// Checks if a log entry exists for the current period and template.
 ///
 /// # Errors
@@ -948,7 +1141,7 @@ pub async fn has_entry_for_current_period(
     let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
 
     let now = chrono::Utc::now();
-    let (period_start, period_end) = match frequency {
+let (period_start, period_end) = match frequency {
         Frequency::Daily => {
             let start = now
                 .date_naive()
@@ -966,11 +1159,11 @@ pub async fn has_entry_for_current_period(
             let days_since_monday = now.weekday().num_days_from_sunday();
             let start = (now.date_naive() - chrono::Duration::days(i64::from(days_since_monday)))
                 .and_hms_opt(0, 0, 0)
-                .unwrap_or_else(|| panic!("Error finding week start date: {now}"))
+                .unwrap()
                 .and_utc();
-            let end = (start.date_naive() + chrono::Duration::days(6))
+            let end = (now.date_naive() + chrono::Duration::days(6 - i64::from(days_since_monday)))
                 .and_hms_opt(23, 59, 59)
-                .unwrap_or_else(|| panic!("Error finding week end date: {now}"))
+                .unwrap()
                 .and_utc();
             (start, end)
         }
@@ -997,6 +1190,30 @@ pub async fn has_entry_for_current_period(
                 .and_utc();
             (start, end)
         }
+        Frequency::Quarterly => {
+            let quarter_start_month = ((now.date_naive().month() - 1) / 3) * 3 + 1;
+            let start = now
+                .date_naive()
+                .with_month(quarter_start_month)
+                .unwrap()
+                .with_day(1)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_utc();
+            let quarter_end_month = quarter_start_month + 2;
+            let last_day = get_month_last_day(now.date_naive().year(), quarter_end_month);
+            let end = now
+                .date_naive()
+                .with_month(quarter_end_month)
+                .unwrap()
+                .with_day(last_day)
+                .unwrap()
+                .and_hms_opt(23, 59, 59)
+                .unwrap()
+                .and_utc();
+            (start, end)
+        }
         Frequency::Yearly => {
             let start = now
                 .date_naive()
@@ -1016,6 +1233,11 @@ pub async fn has_entry_for_current_period(
                 .and_hms_opt(23, 59, 59)
                 .unwrap()
                 .and_utc();
+            (start, end)
+        }
+        _ => {
+            let start = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc();
+            let end = now.date_naive().and_hms_opt(23, 59, 59).unwrap().and_utc();
             (start, end)
         }
     };
@@ -1042,6 +1264,7 @@ pub async fn has_entry_for_current_period(
 /// Panics if period boundary calculations fail.
 pub async fn has_submitted_entry_for_current_period(
     client: &mongodb::Client,
+    user_id: &str,
     company_id: &str,
     template_name: &str,
     frequency: &Frequency,
@@ -1099,30 +1322,28 @@ pub async fn has_submitted_entry_for_current_period(
                 .and_utc();
             (start, end)
         }
+        Frequency::Quarterly => {
+            let quarter_start_month = ((now.date_naive().month() - 1) / 3) * 3 + 1;
+            let start = now.date_naive().with_month(quarter_start_month).unwrap().with_day(1).unwrap().and_hms_opt(0, 0, 0).unwrap().and_utc();
+            let quarter_end_month = quarter_start_month + 2;
+            let last_day = get_month_last_day(now.date_naive().year(), quarter_end_month);
+            let end = now.date_naive().with_month(quarter_end_month).unwrap().with_day(last_day).unwrap().and_hms_opt(23, 59, 59).unwrap().and_utc();
+            (start, end)
+        }
         Frequency::Yearly => {
-            let start = now
-                .date_naive()
-                .with_month(1)
-                .unwrap()
-                .with_day(1)
-                .unwrap()
-                .and_hms_opt(0, 0, 0)
-                .unwrap()
-                .and_utc();
-            let end = now
-                .date_naive()
-                .with_month(12)
-                .unwrap()
-                .with_day(31)
-                .unwrap()
-                .and_hms_opt(23, 59, 59)
-                .unwrap()
-                .and_utc();
+            let start = now.date_naive().with_month(1).unwrap().with_day(1).unwrap().and_hms_opt(0, 0, 0).unwrap().and_utc();
+            let end = now.date_naive().with_month(12).unwrap().with_day(31).unwrap().and_hms_opt(23, 59, 59).unwrap().and_utc();
+            (start, end)
+        }
+        _ => {
+            let start = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc();
+            let end = now.date_naive().and_hms_opt(23, 59, 59).unwrap().and_utc();
             (start, end)
         }
     };
 
     let filter = mongodb::bson::doc! {
+        "user_id": user_id,
         "company_id": company_id,
         "template_name": template_name,
         "status": mongodb::bson::to_bson(&LogStatus::Submitted)?,
@@ -1273,6 +1494,11 @@ pub async fn get_draft_entry_for_current_period(
                 .and_hms_opt(23, 59, 59)
                 .unwrap()
                 .and_utc();
+            (start, end)
+        }
+        _ => {
+            let start = now.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc();
+            let end = now.date_naive().and_hms_opt(23, 59, 59).unwrap().and_utc();
             (start, end)
         }
     };
@@ -1525,6 +1751,14 @@ pub fn compute_due_date_for_period(schedule: &Schedule, period: &str) -> Option<
             let day = target_day.min(last_day_of_month.day());
             chrono::NaiveDate::from_ymd_opt(year, month, day)
         }
+        Frequency::Quarterly => {
+            let parts: Vec<&str> = period.split('/').collect();
+            if parts.len() != 2 { return None; }
+            let quarter: u32 = parts[0].parse().ok()?;
+            let year: i32 = parts[1].parse().ok()?;
+            let month = (quarter - 1) * 3 + 1;
+            chrono::NaiveDate::from_ymd_opt(year, month, 1)
+        }
     }
 }
 
@@ -1576,7 +1810,7 @@ pub fn get_availability_status_for_period(
                 }
                 AvailabilityStatus::Available
             }
-            Frequency::Weekly | Frequency::Monthly | Frequency::Yearly => {
+            Frequency::Quarterly | Frequency::Weekly | Frequency::Monthly | Frequency::Yearly => {
                 if current_time >= 23 * 60 + 59 {
                     return AvailabilityStatus::Overdue;
                 }
@@ -1679,6 +1913,18 @@ pub fn validate_and_normalize_period(schedule: &Schedule, period: &str) -> Optio
             }
             let date = parse_period_to_date(period)?;
             Some(format_period_for_monthly(date))
+        }
+        Frequency::Quarterly => {
+            let parts: Vec<&str> = period.split('/').collect();
+            if parts.len() != 2 {
+                return None;
+            }
+            let quarter: u32 = parts[0].parse().ok()?;
+            let year: i32 = parts[1].parse().ok()?;
+            if quarter < 1 || quarter > 4 || year < 2000 {
+                return None;
+            }
+            Some(format!("{}/{:04}", quarter, year))
         }
         Frequency::Yearly => {
             let parts: Vec<&str> = period.split('/').collect();
@@ -1808,6 +2054,18 @@ pub fn is_form_due_today(schedule: &Schedule) -> bool {
             } else {
                 false
             }
+        }
+        Frequency::Quarterly => {
+            if let Some(month) = schedule.month_of_year {
+                let current_quarter = ((today.month() - 1) / 3) + 1;
+                let target_quarter = u32::from(month);
+                if current_quarter == target_quarter {
+                    if let Some(day) = schedule.day_of_month {
+                        return today.day() >= u32::from(day);
+                    }
+                }
+            }
+            false
         }
     }
 }
@@ -2022,6 +2280,31 @@ pub fn get_missed_periods(
                 current_year += 1;
             }
         }
+        Frequency::Quarterly => {
+            let _target_month = schedule.month_of_year.unwrap_or(1);
+            let target_day = schedule.day_of_month.unwrap_or(1);
+            let mut current_year = last_period.map(|d| d.year()).unwrap_or(start_from.unwrap_or(today).year());
+            let mut current_quarter = last_period.map(|d| ((d.month() - 1) / 3) as u32 + 1).unwrap_or(1);
+
+            while current_year < today.year() || (current_year == today.year() && current_quarter <= ((today.month() - 1) / 3 + 1) as u32) {
+                let quarter_month = (current_quarter - 1) * 3 + 1;
+                let check_date = chrono::NaiveDate::from_ymd_opt(current_year, quarter_month, u32::from(target_day));
+
+                if let Some(d) = check_date
+                    && d <= today
+                    && created_date.is_none_or(|created| d >= created)
+                {
+                    missed.push(format!("{}/{:04}", current_quarter, current_year));
+                }
+
+                if current_quarter == 4 {
+                    current_quarter = 1;
+                    current_year += 1;
+                } else {
+                    current_quarter += 1;
+                }
+            }
+        }
     }
 
     missed
@@ -2079,6 +2362,16 @@ pub fn get_available_from_datetime(schedule: &Schedule, period: &str) -> Option<
             );
             Some(datetime.to_rfc3339())
         }
+        Frequency::Quarterly => {
+            let from_hour = schedule.available_from_time.as_ref()
+                .and_then(|s| parse_time_string(s).map(|(h, _)| h))
+                .unwrap_or(8);
+            let datetime = chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(
+                target_date.and_hms_opt(from_hour, 0, 0)?,
+                chrono::Utc,
+            );
+            Some(datetime.to_rfc3339())
+        }
     }
 }
 
@@ -2106,6 +2399,16 @@ pub fn get_due_at_datetime(schedule: &Schedule, period: &str) -> Option<String> 
         Frequency::Weekly | Frequency::Monthly | Frequency::Yearly => {
             let datetime = chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(
                 target_date.and_hms_opt(23, 59, 0)?,
+                chrono::Utc,
+            );
+            Some(datetime.to_rfc3339())
+        }
+        Frequency::Quarterly => {
+            let due_hour = schedule.due_at_time.as_ref()
+                .and_then(|s| parse_time_string(s).map(|(h, _)| h))
+                .unwrap_or(17);
+            let datetime = chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(
+                target_date.and_hms_opt(due_hour, 59, 0)?,
                 chrono::Utc,
             );
             Some(datetime.to_rfc3339())
@@ -2154,6 +2457,10 @@ pub fn format_period_for_frequency(frequency: &Frequency) -> String {
             )
         }
         Frequency::Monthly => now.format("%m/%Y").to_string(),
+        Frequency::Quarterly => {
+            let quarter = ((now.month() - 1) / 3) + 1;
+            format!("{}/{}", quarter, now.format("%Y"))
+        }
         Frequency::Yearly => now.format("%Y").to_string(),
     }
 }
