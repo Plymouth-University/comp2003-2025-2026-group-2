@@ -59,10 +59,8 @@ pub async fn list_due_forms_today(
     let now = chrono::Utc::now();
 
     // First, fetch latest submitted entries for ALL templates to get actual last periods
-    let all_template_names: Vec<String> = templates
-        .iter()
-        .map(|t| t.template_name.clone())
-        .collect();
+    let all_template_names: Vec<String> =
+        templates.iter().map(|t| t.template_name.clone()).collect();
 
     let latest_submitted_entries = logs_db::get_latest_submitted_entries_batch(
         &state.mongodb,
@@ -140,9 +138,10 @@ pub async fn list_due_forms_today(
         if let Some(missed_periods) = missed_periods {
             for period in missed_periods {
                 if let Some(periods_with_entries_map) = periods_with_entries_map
-                    && periods_with_entries_map.contains(period) {
-                        continue;
-                    }
+                    && periods_with_entries_map.contains(period)
+                {
+                    continue;
+                }
 
                 let form_key = (template.template_name.clone(), period.clone());
                 if seen_forms.contains(&form_key) {

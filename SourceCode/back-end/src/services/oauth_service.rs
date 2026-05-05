@@ -121,10 +121,11 @@ impl GoogleOAuthClient {
         if !force_refresh {
             let cached = self.cached_jwks.read().await;
             if let Some((jwks, timestamp)) = cached.as_ref()
-                && timestamp.elapsed() < CACHE_TTL {
-                    tracing::debug!("Using cached JWKs");
-                    return Ok(jwks.clone());
-                }
+                && timestamp.elapsed() < CACHE_TTL
+            {
+                tracing::debug!("Using cached JWKs");
+                return Ok(jwks.clone());
+            }
         }
 
         tracing::info!("Fetching fresh JWKs from Google");
