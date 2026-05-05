@@ -98,7 +98,9 @@
 		);
 	});
 
-const hasAppliedFilter = $derived(page.url.searchParams.has('from') || page.url.searchParams.has('to'));
+	const hasAppliedFilter = $derived(
+		page.url.searchParams.has('from') || page.url.searchParams.has('to')
+	);
 
 	// --- Apply / Clear ---
 	function applyDateFilter() {
@@ -220,9 +222,8 @@ const hasAppliedFilter = $derived(page.url.searchParams.has('from') || page.url.
 		<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
 			<h1 class="text-3xl font-bold text-text-primary">Attendance Overview</h1>
 			<button
-				disabled={filteredEvents().length === 0}
 				onclick={printToPDF}
-disabled={!hasAppliedFilter || filteredEvents().length === 0}
+				disabled={!hasAppliedFilter || filteredEvents().length === 0}
 				class="cursor-pointer rounded border-2 border-button-primary bg-button-primary px-5 py-2 font-medium text-bg-primary transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
 			>
 				Download PDF
@@ -381,8 +382,8 @@ disabled={!hasAppliedFilter || filteredEvents().length === 0}
 				</tbody>
 			</table>
 		</div>
-<<<<<<< HEAD
-<!-- Pagination -->
+
+		<!-- Pagination -->
 		<div class="mt-4 flex items-center justify-between">
 			<button
 				onclick={goToPreviousPage}
@@ -400,44 +401,6 @@ disabled={!hasAppliedFilter || filteredEvents().length === 0}
 				Next
 			</button>
 		</div>
-
-		<!-- Pagination Controls -->
-		{#if hasAppliedFilter && totalPages() > 1}
-			<div class="mt-4 flex items-center justify-between px-2">
-				<p class="text-sm text-text-secondary">
-					Showing {(currentPage - 1) * PAGE_SIZE + 1} to {Math.min(
-						currentPage * PAGE_SIZE,
-						filteredEvents().length
-					)} of {filteredEvents().length} records
-				</p>
-				<div class="flex gap-2">
-					<button
-						type="button"
-						disabled={currentPage === 1}
-						onclick={() => {
-							currentPage--;
-						}}
-						class="rounded border border-border-primary bg-bg-primary px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						Previous
-					</button>
-					<span class="flex items-center px-2 py-1 text-sm font-medium"
-						>Page {currentPage} of {totalPages()}</span
-					>
-					<button
-						type="button"
-						disabled={currentPage === totalPages()}
-						onclick={() => {
-							currentPage++;
-						}}
-						class="rounded border border-border-primary bg-bg-primary px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-					>
-						Next
-					</button>
-				</div>
-			</div>
-		{/if}
->>>>>>> 3d965e7 (chore: auto-format and lint code)
 	</div>
 </div>
 
