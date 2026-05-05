@@ -16,6 +16,8 @@
 	const members = $derived(data?.members ?? []);
 	const userRole = $derived(data?.userRole ?? '');
 	const isHQStaff = $derived(data?.isHQStaff ?? false);
+	const nextCursor = $derived(data?.nextCursor ?? null);
+	const prevCursor = $derived(data?.prevCursor ?? null);
 
 	// Create mapping from user_id to branch_id for client-side filtering
 	const userToBranchMap = $derived.by(() => {
@@ -120,6 +122,19 @@
 			selectedBranchId = '';
 		}
 		goto('/attendance-admin', { invalidateAll: true });
+	}
+
+	function goToNextPage() {
+		if (!nextCursor) return;
+		const params = new SvelteURLSearchParams(page.url.searchParams);
+		params.set('cursor', nextCursor);
+		goto(`/attendance-admin?${params.toString()}`, { invalidateAll: true });
+	}
+
+	function goToPreviousPage() {
+		const params = new SvelteURLSearchParams(page.url.searchParams);
+		params.delete('cursor');
+		goto(`/attendance-admin?${params.toString()}`, { invalidateAll: true });
 	}
 
 	function formatDateTime(iso: string) {
@@ -325,6 +340,25 @@
 					{/if}
 				</tbody>
 			</table>
+		</div>
+
+		<!-- Pagination -->
+		<div class="mt-4 flex items-center justify-between">
+			<button
+				onclick={goToPreviousPage}
+				disabled={!prevCursor}
+				class="rounded border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+			>
+				Previous
+			</button>
+			<span class="text-sm text-text-secondary">Showing up to 25 records per page</span>
+			<button
+				onclick={goToNextPage}
+				disabled={!nextCursor}
+				class="rounded border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+			>
+				Next
+			</button>
 		</div>
 	</div>
 </div>

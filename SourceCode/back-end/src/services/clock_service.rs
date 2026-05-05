@@ -141,17 +141,21 @@ impl ClockService {
         from: Option<DateTime<Utc>>,
         to: Option<DateTime<Utc>>,
         branch_id: Option<String>,
-    ) -> Result<Vec<db::CompanyClockEventRow>, (StatusCode, serde_json::Value)> {
-        let events = db::get_company_clock_events(pool, company_id, from, to, branch_id)
-            .await
-            .map_err(|e| {
-                tracing::error!("Database error fetching company clock events: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    json!({"error": "Database error"}),
-                )
-            })?;
-        Ok(events)
+        limit: Option<i64>,
+        cursor: Option<String>,
+    ) -> Result<(Vec<db::CompanyClockEventRow>, Option<String>), (StatusCode, serde_json::Value)>
+    {
+        let (events, next_cursor) =
+            db::get_company_clock_events(pool, company_id, from, to, branch_id, limit, cursor)
+                .await
+                .map_err(|e| {
+                    tracing::error!("Database error fetching company clock events: {:?}", e);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        json!({"error": "Database error"}),
+                    )
+                })?;
+        Ok((events, next_cursor))
     }
 }
 

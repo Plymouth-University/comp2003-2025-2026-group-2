@@ -885,6 +885,90 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/reports/runs': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		/** Lists saved report-generation parameter sets for the current user. */
+		get: operations['list_report_runs'];
+		put?: never;
+		/** Saves report-generation parameters for later reuse. */
+		post: operations['create_report_run'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/reports/runs/{report_id}': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		post?: never;
+		/** Deletes a saved report run. */
+		delete: operations['delete_report_run'];
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/reports/runs/{report_id}/use': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get?: never;
+		put?: never;
+		/** Marks a saved report run as used. */
+		post: operations['use_report_run'];
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/security/logs': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: operations['get_security_logs'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
+	'/security/logs/export': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: operations['export_security_logs_csv'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -978,6 +1062,7 @@ export interface components {
 		};
 		CompanyClockEventsResponse: {
 			events: components['schemas']['CompanyClockEventResponse'][];
+			next_cursor?: string | null;
 		};
 		CompanyResponse: {
 			address: string;
@@ -1015,6 +1100,13 @@ export interface components {
 			id: string;
 			message: string;
 		};
+		CreateReportRunRequest: {
+			name?: string | null;
+			params: components['schemas']['ReportRunParams'];
+		};
+		CreateReportRunResponse: {
+			report_run: components['schemas']['ReportRunResponse'];
+		};
 		DatabaseHealthMetrics: {
 			/** Format: int64 */
 			active_connections: number;
@@ -1030,6 +1122,9 @@ export interface components {
 			table_count: number;
 			/** Format: int64 */
 			total_connections: number;
+		};
+		DeleteReportRunResponse: {
+			message: string;
 		};
 		DeleteTemplateRequest: {
 			template_name: string;
@@ -1054,7 +1149,7 @@ export interface components {
 			error: string;
 		};
 		/** @enum {string} */
-		Frequency: 'Daily' | 'Weekly' | 'Monthly' | 'Yearly';
+		Frequency: 'Daily' | 'Weekly' | 'Monthly' | 'Quarterly' | 'Yearly';
 		GetAllTemplatesResponse: {
 			templates: components['schemas']['TemplateInfo'][];
 		};
@@ -1134,7 +1229,11 @@ export interface components {
 		ListLogEntriesResponse: {
 			entries: components['schemas']['LogEntryResponse'][];
 		};
+		ListReportRunsResponse: {
+			report_runs: components['schemas']['ReportRunResponse'][];
+		};
 		LogEntryResponse: {
+			availability_status: string;
 			created_at: string;
 			entry_data: unknown;
 			id: string;
@@ -1197,6 +1296,25 @@ export interface components {
 		RenameTemplateResponse: {
 			message: string;
 		};
+		ReportRunParams: {
+			arrange_by: string;
+			date_from_iso: string;
+			date_to_iso: string;
+			include_temperature_graphs: boolean;
+			/** Format: int32 */
+			params_version: number;
+			selected_branch_ids: string[];
+			selected_log_type_ids: string[];
+		};
+		ReportRunResponse: {
+			created_at: string;
+			id: string;
+			last_used_at: string;
+			name?: string | null;
+			params: components['schemas']['ReportRunParams'];
+			/** Format: int32 */
+			use_count: number;
+		};
 		RequestBranchDeletionRequest: {
 			/** @example 550e8400-e29b-41d4-a716-446655440000 */
 			branch_id: string;
@@ -1229,6 +1347,67 @@ export interface components {
 			frequency: components['schemas']['Frequency'];
 			/** Format: int32 */
 			month_of_year?: number | null;
+		};
+		SecurityLogDto: {
+			actor_role?: string | null;
+			company_id?: string | null;
+			/** Format: date-time */
+			created_at: string;
+			details?: string | null;
+			email?: string | null;
+			event_type: string;
+			id: string;
+			ip_address?: string | null;
+			request_method?: string | null;
+			request_path?: string | null;
+			success: boolean;
+			target_email?: string | null;
+			target_user_id?: string | null;
+			user_agent?: string | null;
+			user_id?: string | null;
+		};
+		SecurityLogsQuery: {
+			/** @example company_manager */
+			actor_role?: string | null;
+			/** @example 550e8400-e29b-41d4-a716-446655440001 */
+			company_id?: string | null;
+			/** @example 2026-04-01T00:00:00Z */
+			created_from?: string | null;
+			/** @example 2026-04-13T23:59:59Z */
+			created_to?: string | null;
+			/** @example MjAyNi0wNC0xM1QxMjozNDo1Nlo=fGFiYy0xMjM */
+			cursor?: string | null;
+			/** @example Passkey verification failed */
+			details?: string | null;
+			/** @example user@example.com */
+			email?: string | null;
+			/** @example login */
+			event_type?: string | null;
+			/** @example 203.0.113.42 */
+			ip_address?: string | null;
+			/**
+			 * Format: int64
+			 * @example 15
+			 */
+			limit?: number | null;
+			/** @example PUT */
+			request_method?: string | null;
+			/** @example /companies/123 */
+			request_path?: string | null;
+			/** @example true */
+			success?: boolean | null;
+			/** @example target@example.com */
+			target_email?: string | null;
+			/** @example 550e8400-e29b-41d4-a716-446655440002 */
+			target_user_id?: string | null;
+			/** @example Mozilla/5.0 */
+			user_agent?: string | null;
+			/** @example 550e8400-e29b-41d4-a716-446655440000 */
+			user_id?: string | null;
+		};
+		SecurityLogsResponse: {
+			logs: components['schemas']['SecurityLogDto'][];
+			next_cursor?: string | null;
 		};
 		SlowQueriesResponse: {
 			queries: components['schemas']['SlowQueryInfo'][];
@@ -1353,6 +1532,9 @@ export interface components {
 			version_name?: string | null;
 		};
 		UpdateTemplateResponse: {
+			message: string;
+		};
+		UseReportRunResponse: {
 			message: string;
 		};
 		UserResponse: {
@@ -2502,6 +2684,10 @@ export interface operations {
 				to?: string | null;
 				/** @description Branch ID filter (optional, for `company_manager` to filter by specific branch) */
 				branch_id?: string | null;
+				/** @description Number of results per page (default 25, max 100) */
+				limit?: number | null;
+				/** @description Cursor for pagination (base64 encoded timestamp|id) */
+				cursor?: string | null;
 			};
 			header?: never;
 			path?: never;
@@ -3318,7 +3504,10 @@ export interface operations {
 	};
 	list_due_forms_today: {
 		parameters: {
-			query?: never;
+			query: {
+				/** @description Optional max number of due forms to return, default 20 */
+				max: number;
+			};
 			header?: never;
 			path?: never;
 			cookie?: never;
@@ -4041,6 +4230,373 @@ export interface operations {
 				};
 			};
 			/** @description Forbidden */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	list_report_runs: {
+		parameters: {
+			query: {
+				/** @description Optional limit for report run list, default 20, max 100 */
+				limit: number;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Saved report runs retrieved */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ListReportRunsResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	create_report_run: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody: {
+			content: {
+				'application/json': components['schemas']['CreateReportRunRequest'];
+			};
+		};
+		responses: {
+			/** @description Saved report run created */
+			201: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['CreateReportRunResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	delete_report_run: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				/** @description Saved report run ID */
+				report_id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Saved report run deleted */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['DeleteReportRunResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Report run not found */
+			404: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	use_report_run: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path: {
+				/** @description Saved report run ID */
+				report_id: string;
+			};
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Saved report run usage tracked */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['UseReportRunResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Report run not found */
+			404: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	get_security_logs: {
+		parameters: {
+			query?: {
+				limit?: number | null;
+				cursor?: string | null;
+				event_type?: string | null;
+				user_id?: string | null;
+				email?: string | null;
+				ip_address?: string | null;
+				user_agent?: string | null;
+				actor_role?: string | null;
+				company_id?: string | null;
+				target_user_id?: string | null;
+				target_email?: string | null;
+				request_path?: string | null;
+				request_method?: string | null;
+				details?: string | null;
+				success?: boolean | null;
+				created_from?: string | null;
+				created_to?: string | null;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Security logs retrieved successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['SecurityLogsResponse'];
+				};
+			};
+			/** @description Invalid query parameters */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden - LogSmart admin only */
+			403: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Server error */
+			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+		};
+	};
+	export_security_logs_csv: {
+		parameters: {
+			query?: {
+				limit?: number | null;
+				cursor?: string | null;
+				event_type?: string | null;
+				user_id?: string | null;
+				email?: string | null;
+				ip_address?: string | null;
+				user_agent?: string | null;
+				actor_role?: string | null;
+				company_id?: string | null;
+				target_user_id?: string | null;
+				target_email?: string | null;
+				request_path?: string | null;
+				request_method?: string | null;
+				details?: string | null;
+				success?: boolean | null;
+				created_from?: string | null;
+				created_to?: string | null;
+			};
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description CSV export of security logs */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'text/csv': unknown;
+				};
+			};
+			/** @description Invalid query parameters */
+			400: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['ErrorResponse'];
+				};
+			};
+			/** @description Forbidden - LogSmart admin only */
 			403: {
 				headers: {
 					[name: string]: unknown;

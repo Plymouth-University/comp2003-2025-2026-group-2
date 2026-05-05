@@ -133,6 +133,10 @@ pub struct CompanyClockQuery {
     pub to: Option<String>,
     /// Branch ID filter (optional, for `company_manager` to filter by specific branch)
     pub branch_id: Option<String>,
+    /// Number of results per page (default 25, max 100)
+    pub limit: Option<i64>,
+    /// Cursor for pagination (base64 encoded timestamp|id)
+    pub cursor: Option<String>,
 }
 
 #[utoipa::path(
@@ -178,12 +182,14 @@ pub async fn get_company_clock_events(
         params.branch_id
     };
 
-    let events = services::ClockService::get_company_clock_events(
+    let (events, next_cursor) = services::ClockService::get_company_clock_events(
         &state.postgres,
         &company_id,
         from,
         to,
         branch_id_filter,
+        params.limit,
+        params.cursor,
     )
     .await
     .map_err(|(status, err)| (status, Json(err)))?;
@@ -192,5 +198,8 @@ pub async fn get_company_clock_events(
         .into_iter()
         .map(CompanyClockEventResponse::from)
         .collect();
-    Ok(Json(CompanyClockEventsResponse { events }))
+    Ok(Json(CompanyClockEventsResponse {
+        events,
+        next_cursor,
+    }))
 }
