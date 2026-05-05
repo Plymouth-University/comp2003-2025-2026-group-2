@@ -2734,7 +2734,7 @@ pub async fn get_company_clock_events(
     let mut bind_count = 1;
 
     // Add cursor filter (keyset pagination)
-    if let Some((cursor_time, cursor_id)) = &cursor {
+    if let Some((_cursor_time, _cursor_id)) = &cursor {
         bind_count += 1;
         let cursor_param_1 = bind_count;
         bind_count += 1;
