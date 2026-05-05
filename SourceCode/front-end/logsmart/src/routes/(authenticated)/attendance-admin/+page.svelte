@@ -230,7 +230,7 @@
 			class="mb-6 flex flex-wrap items-end gap-4 rounded border-2 border-border-primary bg-bg-primary p-4"
 		>
 			<!-- Branch Filter (only for company_manager or hq staff) -->
-			{#if (userRole === 'company_manager' || isHQStaff) && branches.length > 0}
+			{#if (userRole === 'company_manager' || userRole === 'logsmart_admin' || isHQStaff) && branches.length > 0}
 				<div class="flex flex-col gap-1">
 					<label for="filter-branch" class="text-xs font-medium text-text-secondary">
 						Branch

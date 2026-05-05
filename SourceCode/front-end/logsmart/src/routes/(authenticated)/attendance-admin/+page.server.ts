@@ -60,9 +60,9 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 
 		const data = await response.json();
 
-		// Fetch branches if user is company_manager
+		// Fetch branches if user is company_manager or logsmart_admin
 		let branches: Array<{ id: string; name: string; address: string }> = [];
-		if (user.role === 'company_manager' || isHQStaff) {
+		if (user.role === 'company_manager' || user.role === 'logsmart_admin' || isHQStaff) {
 			const branchesResponse = await fetch('/api/auth/company/branches', {
 				method: 'GET',
 				headers: {
