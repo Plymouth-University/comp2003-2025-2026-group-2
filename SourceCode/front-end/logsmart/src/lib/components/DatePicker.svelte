@@ -9,6 +9,7 @@
 		inputId,
 		maxDate = null,
 		openCalendarAriaLabel = 'Open calendar',
+		wrapperClass = 'flex items-center gap-2',
 		inputClass = 'flex-1 border-2 px-4 py-2',
 		inputStyle = 'border-color: var(--border-primary); background-color: var(--bg-primary); color: var(--text-primary);',
 		buttonClass = 'transform border-2 p-2 transition-all duration-150 hover:scale-105',
@@ -22,6 +23,7 @@
 		inputId?: string;
 		maxDate?: Date | null;
 		openCalendarAriaLabel?: string;
+		wrapperClass?: string;
 		inputClass?: string;
 		inputStyle?: string;
 		buttonClass?: string;
@@ -313,7 +315,7 @@
 </script>
 
 <div class="relative" bind:this={container}>
-	<div class="flex items-center gap-2">
+	<div class={wrapperClass}>
 		<input
 			id={inputId}
 			type="text"

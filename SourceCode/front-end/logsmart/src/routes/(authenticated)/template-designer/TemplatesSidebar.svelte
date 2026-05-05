@@ -88,7 +88,7 @@
 
 			<button
 				type="button"
-				class="btn-default w-full rounded px-4 py-2 text-sm font-semibold text-white"
+				class="btn-default w-full cursor-pointer rounded px-4 py-2 text-sm font-semibold text-white"
 				onclick={handleUseSelectedDefaultTemplate}
 				disabled={!selectedDefaultTemplateId}
 			>
