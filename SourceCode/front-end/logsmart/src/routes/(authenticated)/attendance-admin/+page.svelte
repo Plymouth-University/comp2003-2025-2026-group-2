@@ -177,6 +177,7 @@
 		<div class="mb-6 flex flex-wrap items-center justify-between gap-4">
 			<h1 class="text-3xl font-bold text-text-primary">Attendance Overview</h1>
 			<button
+				disabled={filteredEvents().length === 0}
 				onclick={printToPDF}
 				class="border-2 border-border-primary bg-bg-primary px-4 py-2 text-sm font-medium text-text-primary enabled:transform enabled:transition-all enabled:duration-200 enabled:hover:scale-105 enabled:hover:border-blue-400 enabled:hover:bg-blue-50 enabled:hover:text-blue-700 enabled:hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:transform-none disabled:hover:shadow-none sm:text-base"
 			>
