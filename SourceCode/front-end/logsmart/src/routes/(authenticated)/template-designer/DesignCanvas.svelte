@@ -185,7 +185,7 @@
 								id="version-name-input"
 								type="text"
 								bind:value={versionName}
-								placeholder="Give this version a name (optional)..."
+								placeholder="Version name (optional)"
 								class="h-full w-full border-2 border-l-0 border-border-primary bg-bg-primary px-4 py-2 text-sm text-text-primary italic"
 							/>
 						</div>
