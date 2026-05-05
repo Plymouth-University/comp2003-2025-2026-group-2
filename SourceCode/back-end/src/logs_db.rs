@@ -1112,7 +1112,8 @@ pub async fn get_draft_entries_batch(
     let cursor = collection.find(filter).await?;
     let entries: Vec<LogEntry> = cursor.try_collect().await?;
 
-    let mut results: std::collections::HashMap<String, Option<LogEntry>> = std::collections::HashMap::new();
+    let mut results: std::collections::HashMap<String, Option<LogEntry>> =
+        std::collections::HashMap::new();
     for name in template_names {
         results.insert(name.clone(), None);
     }
@@ -1141,7 +1142,7 @@ pub async fn has_entry_for_current_period(
     let collection: mongodb::Collection<LogEntry> = db.collection("log_entries");
 
     let now = chrono::Utc::now();
-let (period_start, period_end) = match frequency {
+    let (period_start, period_end) = match frequency {
         Frequency::Daily => {
             let start = now
                 .date_naive()
@@ -1324,15 +1325,47 @@ pub async fn has_submitted_entry_for_current_period(
         }
         Frequency::Quarterly => {
             let quarter_start_month = ((now.date_naive().month() - 1) / 3) * 3 + 1;
-            let start = now.date_naive().with_month(quarter_start_month).unwrap().with_day(1).unwrap().and_hms_opt(0, 0, 0).unwrap().and_utc();
+            let start = now
+                .date_naive()
+                .with_month(quarter_start_month)
+                .unwrap()
+                .with_day(1)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_utc();
             let quarter_end_month = quarter_start_month + 2;
             let last_day = get_month_last_day(now.date_naive().year(), quarter_end_month);
-            let end = now.date_naive().with_month(quarter_end_month).unwrap().with_day(last_day).unwrap().and_hms_opt(23, 59, 59).unwrap().and_utc();
+            let end = now
+                .date_naive()
+                .with_month(quarter_end_month)
+                .unwrap()
+                .with_day(last_day)
+                .unwrap()
+                .and_hms_opt(23, 59, 59)
+                .unwrap()
+                .and_utc();
             (start, end)
         }
         Frequency::Yearly => {
-            let start = now.date_naive().with_month(1).unwrap().with_day(1).unwrap().and_hms_opt(0, 0, 0).unwrap().and_utc();
-            let end = now.date_naive().with_month(12).unwrap().with_day(31).unwrap().and_hms_opt(23, 59, 59).unwrap().and_utc();
+            let start = now
+                .date_naive()
+                .with_month(1)
+                .unwrap()
+                .with_day(1)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap()
+                .and_utc();
+            let end = now
+                .date_naive()
+                .with_month(12)
+                .unwrap()
+                .with_day(31)
+                .unwrap()
+                .and_hms_opt(23, 59, 59)
+                .unwrap()
+                .and_utc();
             (start, end)
         }
         _ => {
@@ -1753,7 +1786,9 @@ pub fn compute_due_date_for_period(schedule: &Schedule, period: &str) -> Option<
         }
         Frequency::Quarterly => {
             let parts: Vec<&str> = period.split('/').collect();
-            if parts.len() != 2 { return None; }
+            if parts.len() != 2 {
+                return None;
+            }
             let quarter: u32 = parts[0].parse().ok()?;
             let year: i32 = parts[1].parse().ok()?;
             let month = (quarter - 1) * 3 + 1;
@@ -2283,12 +2318,23 @@ pub fn get_missed_periods(
         Frequency::Quarterly => {
             let _target_month = schedule.month_of_year.unwrap_or(1);
             let target_day = schedule.day_of_month.unwrap_or(1);
-            let mut current_year = last_period.map(|d| d.year()).unwrap_or(start_from.unwrap_or(today).year());
-            let mut current_quarter = last_period.map(|d| ((d.month() - 1) / 3) as u32 + 1).unwrap_or(1);
+            let mut current_year = last_period
+                .map(|d| d.year())
+                .unwrap_or(start_from.unwrap_or(today).year());
+            let mut current_quarter = last_period
+                .map(|d| ((d.month() - 1) / 3) as u32 + 1)
+                .unwrap_or(1);
 
-            while current_year < today.year() || (current_year == today.year() && current_quarter <= ((today.month() - 1) / 3 + 1) as u32) {
+            while current_year < today.year()
+                || (current_year == today.year()
+                    && current_quarter <= ((today.month() - 1) / 3 + 1) as u32)
+            {
                 let quarter_month = (current_quarter - 1) * 3 + 1;
-                let check_date = chrono::NaiveDate::from_ymd_opt(current_year, quarter_month, u32::from(target_day));
+                let check_date = chrono::NaiveDate::from_ymd_opt(
+                    current_year,
+                    quarter_month,
+                    u32::from(target_day),
+                );
 
                 if let Some(d) = check_date
                     && d <= today
@@ -2363,7 +2409,9 @@ pub fn get_available_from_datetime(schedule: &Schedule, period: &str) -> Option<
             Some(datetime.to_rfc3339())
         }
         Frequency::Quarterly => {
-            let from_hour = schedule.available_from_time.as_ref()
+            let from_hour = schedule
+                .available_from_time
+                .as_ref()
                 .and_then(|s| parse_time_string(s).map(|(h, _)| h))
                 .unwrap_or(8);
             let datetime = chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(
@@ -2404,7 +2452,9 @@ pub fn get_due_at_datetime(schedule: &Schedule, period: &str) -> Option<String> 
             Some(datetime.to_rfc3339())
         }
         Frequency::Quarterly => {
-            let due_hour = schedule.due_at_time.as_ref()
+            let due_hour = schedule
+                .due_at_time
+                .as_ref()
                 .and_then(|s| parse_time_string(s).map(|(h, _)| h))
                 .unwrap_or(17);
             let datetime = chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(
