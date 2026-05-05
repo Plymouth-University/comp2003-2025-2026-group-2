@@ -130,11 +130,10 @@ pub async fn list_due_forms_today(
 
         if let Some(missed_periods) = missed_periods {
             for period in missed_periods {
-                if let Some(periods_with_entries_map) = periods_with_entries_map {
-                    if periods_with_entries_map.contains(period) {
+                if let Some(periods_with_entries_map) = periods_with_entries_map
+                    && periods_with_entries_map.contains(period) {
                         continue;
                     }
-                }
 
                 let form_key = (template.template_name.clone(), period.clone());
                 if seen_forms.contains(&form_key) {
