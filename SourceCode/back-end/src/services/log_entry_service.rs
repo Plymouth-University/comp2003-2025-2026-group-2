@@ -89,6 +89,7 @@ impl LogEntryService {
                                     logs_db::Frequency::Daily => "daily",
                                     logs_db::Frequency::Weekly => "weekly",
                                     logs_db::Frequency::Monthly => "monthly",
+                                    logs_db::Frequency::Quarterly => "quarterly",
                                     logs_db::Frequency::Yearly => "yearly",
                                 }),
                                 logs_db::PeriodValidationError::DueDateInFuture => "Period due date cannot be in the future".to_string(),

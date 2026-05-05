@@ -56,95 +56,139 @@ pub async fn list_due_forms_today(
             .await
             .map_err(|(status, err)| (status, Json(err)))?;
 
-    let mut due_forms = Vec::new();
-    let mut seen_forms: HashSet<(String, String)> = HashSet::new();
     let now = chrono::Utc::now();
 
-    for template in templates {
-        let last_submitted = logs_db::get_latest_submitted_entry(
-            &state.mongodb,
-            &user.id,
-            &company_id,
-            &template.template_name,
-        )
-        .await
-        .ok()
-        .flatten();
+    let mut template_due_counts: HashMap<String, usize> = HashMap::new();
+    let mut needed_templates: Vec<&logs_db::TemplateDocument> = Vec::new();
+    let mut accumulated = 0usize;
 
+    for template in &templates {
+        let created_at = template.created_at.to_rfc3339();
+        let missed_periods =
+            logs_db::get_missed_periods(&template.schedule, None, Some(&created_at));
+        let missed_count = missed_periods.len();
+        let due_today = if logs_db::is_form_due_today(&template.schedule) {
+            1
+        } else {
+            0
+        };
+        let total_due = missed_count + due_today;
+
+        if accumulated < max as usize {
+            needed_templates.push(template);
+            template_due_counts.insert(template.template_name.clone(), total_due);
+            accumulated += total_due;
+        }
+    }
+
+    let needed_template_names: Vec<String> = needed_templates
+        .iter()
+        .map(|t| t.template_name.clone())
+        .collect();
+
+    let latest_submitted_entries = logs_db::get_latest_submitted_entries_batch(
+        &state.mongodb,
+        &user.id,
+        &company_id,
+        &needed_template_names,
+    )
+    .await
+    .unwrap_or_default();
+
+    let mut all_missed_periods: Vec<String> = Vec::new();
+    let mut template_missed_periods: HashMap<String, Vec<String>> = HashMap::new();
+
+    for template in &needed_templates {
+        let last_submitted = latest_submitted_entries.get(&template.template_name);
         let last_period = last_submitted.as_ref().map(|e| e.period.as_str());
         let created_at = template.created_at.to_rfc3339();
         let mut missed_periods =
             logs_db::get_missed_periods(&template.schedule, last_period, Some(&created_at));
         missed_periods.reverse();
+        all_missed_periods.extend(missed_periods.clone());
+        template_missed_periods.insert(template.template_name.clone(), missed_periods);
+    }
 
-        let periods_with_entries = logs_db::get_periods_with_entries(
-            &state.mongodb,
-            &company_id,
-            &template.template_name,
-            &missed_periods,
-        )
-        .await
-        .map_err(|e| {
-            tracing::error!("Failed to get periods with entries: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Failed to check existing log entries" })),
-            )
-        })?;
+    let periods_with_entries = logs_db::get_periods_with_entries_batch(
+        &state.mongodb,
+        &company_id,
+        &needed_template_names,
+        &all_missed_periods,
+    )
+    .await
+    .unwrap_or_default();
 
-        for period in missed_periods {
-            if periods_with_entries.contains(&period) {
-                continue;
+    let mut due_forms = Vec::new();
+    let mut seen_forms: HashSet<(String, String)> = HashSet::new();
+
+    for template in needed_templates {
+        let last_submitted = latest_submitted_entries
+            .get(&template.template_name)
+            .cloned();
+        let missed_periods = template_missed_periods.get(&template.template_name);
+        let periods_with_entries_map = periods_with_entries.get(&template.template_name);
+
+        if let Some(missed_periods) = missed_periods {
+            for period in missed_periods {
+                if let Some(periods_with_entries_map) = periods_with_entries_map {
+                    if periods_with_entries_map.contains(period) {
+                        continue;
+                    }
+                }
+
+                let form_key = (template.template_name.clone(), period.clone());
+                if seen_forms.contains(&form_key) {
+                    continue;
+                }
+                seen_forms.insert(form_key);
+
+                if due_forms.len() >= max as usize {
+                    break;
+                }
+
+                let status =
+                    logs_db::get_availability_status_for_period(&template.schedule, period, now);
+
+                let processed_layout = logs_db::process_template_layout_with_period_string(
+                    &template.template_layout,
+                    period,
+                );
+
+                let available_from =
+                    logs_db::get_available_from_datetime(&template.schedule, period);
+                let due_at = logs_db::get_due_at_datetime(&template.schedule, period);
+
+                due_forms.push(DueFormInfo {
+                    template_name: template.template_name.clone(),
+                    template_layout: processed_layout,
+                    last_submitted: last_submitted
+                        .as_ref()
+                        .and_then(|e| e.submitted_at.map(|ts| ts.to_rfc3339())),
+                    period: period.clone(),
+                    status: Some(LogStatus::Overdue.as_str().to_string()),
+                    availability_status: status.as_str().to_string(),
+                    available_from,
+                    due_at,
+                });
             }
+        }
 
-            let form_key = (template.template_name.clone(), period.clone());
-            if seen_forms.contains(&form_key) {
-                continue;
-            }
-            seen_forms.insert(form_key);
-
-            let status =
-                logs_db::get_availability_status_for_period(&template.schedule, &period, now);
-
-            let processed_layout = logs_db::process_template_layout_with_period_string(
-                &template.template_layout,
-                &period,
-            );
-
-            let available_from = logs_db::get_available_from_datetime(&template.schedule, &period);
-            let due_at = logs_db::get_due_at_datetime(&template.schedule, &period);
-
-            due_forms.push(DueFormInfo {
-                template_name: template.template_name.clone(),
-                template_layout: processed_layout,
-                last_submitted: last_submitted
-                    .as_ref()
-                    .and_then(|e| e.submitted_at.map(|ts| ts.to_rfc3339())),
-                period: period.clone(),
-                status: Some(LogStatus::Overdue.as_str().to_string()),
-                availability_status: status.as_str().to_string(),
-                available_from,
-                due_at,
-            });
+        if due_forms.len() >= max as usize {
+            break;
         }
 
         if logs_db::is_form_due_today(&template.schedule) {
-            let has_submitted_entry = logs_db::has_submitted_entry_for_current_period(
+            let has_submitted = logs_db::has_submitted_entry_for_current_period(
                 &state.mongodb,
+                &user.id,
                 &company_id,
                 &template.template_name,
                 &template.schedule.frequency,
             )
             .await
-            .map_err(|e| {
-                tracing::error!("Failed to check submitted entry: {:?}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(json!({ "error": "Failed to check submission status" })),
-                )
-            })?;
+            .unwrap_or(false);
 
-            if !has_submitted_entry {
+            if !has_submitted {
                 let draft_entry = logs_db::get_draft_entry_for_current_period(
                     &state.mongodb,
                     &user.id,
@@ -175,7 +219,7 @@ pub async fn list_due_forms_today(
                 let status =
                     logs_db::get_availability_status_for_period(&template.schedule, &period, now);
 
-                let derived_draft_status = draft_entry.map(|e| {
+                let derived_draft_status = draft_entry.as_ref().map(|e| {
                     logs_db::derive_log_status(e.status, &template.schedule, &period, now)
                         .0
                         .as_str()
@@ -183,7 +227,7 @@ pub async fn list_due_forms_today(
                 });
 
                 due_forms.push(DueFormInfo {
-                    template_name: template.template_name,
+                    template_name: template.template_name.clone(),
                     template_layout: processed_layout,
                     last_submitted: last_submitted
                         .and_then(|e| e.submitted_at.map(|ts| ts.to_rfc3339())),
@@ -197,11 +241,7 @@ pub async fn list_due_forms_today(
         }
     }
 
-    let forms = if due_forms.len() > max as usize {
-        due_forms.into_iter().take(max as usize).collect()
-    } else {
-        due_forms
-    };
+    let forms = due_forms;
 
     Ok(Json(DueFormsResponse { forms }))
 }
