@@ -29,11 +29,14 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 	try {
 		const from = url.searchParams.get('from');
 		const to = url.searchParams.get('to');
+		const cursor = url.searchParams.get('cursor');
 
 		let apiUrl = '/api/clock/company';
 		const params = new URLSearchParams();
 		if (from) params.set('from', from);
 		if (to) params.set('to', to);
+		if (cursor) params.set('cursor', cursor);
+		params.set('limit', '25');
 		const qs = params.toString();
 		if (qs) apiUrl += `?${qs}`;
 
@@ -90,6 +93,8 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 
 		const d = {
 			clockEvents: data.events ?? [],
+			nextCursor: data.next_cursor ?? null,
+			prevCursor: cursor,
 			user,
 			branches,
 			userRole: user.role,
