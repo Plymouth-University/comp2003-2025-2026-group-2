@@ -233,11 +233,10 @@ fn parse_optional_utc_datetime(
             if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(raw) {
                 return Ok(Some(dt.with_timezone(&chrono::Utc)));
             }
-            if let Ok(date) = chrono::NaiveDate::parse_from_str(raw, "%Y-%m-%d") {
-                if let Some(datetime) = date.and_hms_opt(0, 0, 0) {
+            if let Ok(date) = chrono::NaiveDate::parse_from_str(raw, "%Y-%m-%d")
+                && let Some(datetime) = date.and_hms_opt(0, 0, 0) {
                     return Ok(Some(datetime.and_utc()));
                 }
-            }
             Err(format!("Invalid datetime format: {raw}"))
         }
         _ => Ok(None),
