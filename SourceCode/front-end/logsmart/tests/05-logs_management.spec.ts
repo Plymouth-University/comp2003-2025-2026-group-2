@@ -62,7 +62,6 @@ test.describe('Logs Management - Admin', () => {
 		const unsubmitButton = page.getByRole('button', { name: 'Unsubmit' }).first();
 		if (await unsubmitButton.isVisible()) {
 			await unsubmitButton.click();
-			await page.waitForTimeout(500);
 		}
 	});
 

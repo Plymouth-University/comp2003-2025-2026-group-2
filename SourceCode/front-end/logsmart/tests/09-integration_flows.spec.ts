@@ -38,18 +38,15 @@ test.describe('Integration Flow: Complete Company Onboarding to First Log', () =
 
 		const nameInput = page.getByPlaceholder('Template Name');
 		await nameInput.fill('Flow Test Temperature Log');
-		await page.waitForTimeout(500);
 
 		const tempButton = page.getByRole('button', { name: 'Temperature' });
 		if (await tempButton.isVisible()) {
 			await tempButton.click();
-			await page.waitForTimeout(500);
 		}
 
 		const saveButton = page.getByRole('button', { name: 'Save' });
 		if ((await saveButton.isVisible()) && (await saveButton.isEnabled())) {
 			await saveButton.click();
-			await page.waitForTimeout(1000);
 		}
 
 		await page.getByRole('link', { name: 'Logs', exact: true }).click();
@@ -63,7 +60,6 @@ test.describe('Integration Flow: Complete Company Onboarding to First Log', () =
 			const submitButton = page.getByRole('button', { name: 'Submit Log' });
 			if (await submitButton.isVisible()) {
 				await submitButton.click();
-				await page.waitForTimeout(1000);
 			}
 			await page.waitForURL('**/logs-list');
 			await expect(page.locator('body')).toContainText('submitted');
@@ -122,13 +118,11 @@ test.describe('Integration Flow: Admin Invites Member to Complete Log', () => {
 			const saveButton = memberPage.getByRole('button', { name: 'Save Draft' });
 			if (await saveButton.isVisible()) {
 				await saveButton.click();
-				await page.waitForTimeout(500);
 			}
 
 			const submitButton = memberPage.getByRole('button', { name: 'Submit Log' });
 			if (await submitButton.isVisible()) {
 				await submitButton.click();
-				await memberPage.waitForTimeout(1000);
 			}
 		}
 
@@ -165,7 +159,6 @@ test.describe('Integration Flow: Admin Reviews and Unsubmits Log', () => {
 		const unsubmitButton = page.getByRole('button', { name: 'Unsubmit' }).first();
 		if (await unsubmitButton.isVisible()) {
 			await unsubmitButton.click();
-			await page.waitForTimeout(1000);
 		}
 
 		const memberEmail = `flowmember${Date.now()}@logsmart.app`;
@@ -241,18 +234,15 @@ test.describe('Integration Flow: Template Lifecycle', () => {
 
 		const nameInput = page.getByPlaceholder('Template Name');
 		await nameInput.fill(templateName);
-		await page.waitForTimeout(500);
 
 		const textInputButton = page.getByRole('button', { name: 'Text Input' });
 		if (await textInputButton.isVisible()) {
 			await textInputButton.click();
-			await page.waitForTimeout(500);
 		}
 
 		const saveButton = page.getByRole('button', { name: 'Save' });
 		if ((await saveButton.isVisible()) && (await saveButton.isEnabled())) {
 			await saveButton.click();
-			await page.waitForTimeout(1000);
 		}
 
 		await page.getByRole('link', { name: 'Templates' }).click();
@@ -261,18 +251,15 @@ test.describe('Integration Flow: Template Lifecycle', () => {
 		const searchInput = page.getByPlaceholder('Search templates');
 		if (await searchInput.isVisible()) {
 			await searchInput.fill(templateName);
-			await page.waitForTimeout(500);
 		}
 
 		const settingsButton = page.getByRole('button', { name: 'Settings', exact: true }).first();
 		if (await settingsButton.isVisible()) {
 			await settingsButton.click();
-			await page.waitForTimeout(500);
 
 			const saveScheduleButton = page.getByRole('button', { name: 'Save' });
 			if (await saveScheduleButton.isVisible()) {
 				await saveScheduleButton.click();
-				await page.waitForTimeout(1000);
 			}
 		}
 
@@ -284,7 +271,6 @@ test.describe('Integration Flow: Template Lifecycle', () => {
 		const submitButton = page.getByRole('button', { name: 'Submit Log' });
 		if (await submitButton.isVisible()) {
 			await submitButton.click();
-			await page.waitForTimeout(1000);
 		}
 
 		await page.goto('http://localhost:5173/templates-dashboard');
@@ -292,18 +278,15 @@ test.describe('Integration Flow: Template Lifecycle', () => {
 
 		if (await searchInput.isVisible()) {
 			await searchInput.fill(templateName);
-			await page.waitForTimeout(500);
 		}
 
 		const deleteButton = page.getByRole('button', { name: 'Delete' }).first();
 		if (await deleteButton.isVisible()) {
 			await deleteButton.click();
-			await page.waitForTimeout(500);
 
 			const confirmButton = page.getByRole('button', { name: 'Confirm' });
 			if (await confirmButton.isVisible()) {
 				await confirmButton.click();
-				await page.waitForTimeout(1000);
 			}
 		}
 	});
@@ -329,7 +312,6 @@ test.describe('Integration Flow: Multi-User Collaboration', () => {
 			const saveButton = page.getByRole('button', { name: 'Save Draft' });
 			if (await saveButton.isVisible()) {
 				await saveButton.click();
-				await page.waitForTimeout(500);
 			}
 
 			await page.waitForURL('**/logs-list');
@@ -375,7 +357,6 @@ test.describe('Integration Flow: Multi-User Collaboration', () => {
 			const memberSubmitButton = memberPage.getByRole('button', { name: 'Submit Log' });
 			if (await memberSubmitButton.isVisible()) {
 				await memberSubmitButton.click();
-				await memberPage.waitForTimeout(1000);
 			}
 		}
 
@@ -403,7 +384,6 @@ test.describe('Integration Flow: Settings and Profile Management', () => {
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
 		await page.getByRole('textbox', { name: 'Last Name' }).fill('Name');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-		await page.waitForTimeout(1000);
 
 		await page.getByRole('link', { name: 'Dashboard', exact: true }).click();
 		await page.waitForURL('**/dashboard');
@@ -420,7 +400,6 @@ test.describe('Integration Flow: Settings and Profile Management', () => {
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
 		await page.getByRole('textbox', { name: 'Last Name' }).fill('User');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-		await page.waitForTimeout(1000);
 	});
 });
 

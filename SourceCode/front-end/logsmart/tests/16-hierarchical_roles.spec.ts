@@ -10,6 +10,38 @@ test('hierarchical_access_control', async ({ browser }) => {
 	if (!cmPage) throw new Error('Failed to get CM page');
 	console.log('CM Registered:', cmEmail);
 
+	await cmPage.route('https://nominatim.openstreetmap.org/search**', async (route) => {
+		await route.fulfill({
+			json: [
+				{
+					place_id: 1,
+					licence: 'test',
+					osm_type: 'way',
+					osm_id: 1,
+					lat: '10.0000000',
+					lon: '10.0000000',
+					class: 'test',
+					type: 'test',
+					place_rank: 1,
+					importance: 1,
+					addresstype: 'test',
+					name: 'test',
+					display_name: 'test',
+					address: {
+						city: 'test',
+						county: 'test',
+						state_district: 'test',
+						state: 'Test',
+						'ISO3166-2-lvl4': 'TE-ST',
+						country: 'TEST',
+						country_code: 'TEST'
+					},
+					boundingbox: ['10.0000000', '10.0000000', '-10.0000000', '-10.0000000']
+				}
+			]
+		});
+	});
+
 	await cmPage.getByRole('link', { name: 'Branches' }).click();
 	await cmPage.waitForURL('**/branches');
 	await cmPage.getByRole('textbox', { name: 'Branch Name' }).fill('North Branch');

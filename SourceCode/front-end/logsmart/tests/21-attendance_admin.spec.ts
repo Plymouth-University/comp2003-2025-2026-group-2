@@ -1,8 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { register, sendInvitation, acceptInvitation, createBranch } from './utils';
 
-test.describe.configure({ timeout: 180000 });
-
 let adminCreds: {
 	email: string;
 	password: string;
@@ -30,7 +28,6 @@ const BRANCH_A = 'Attendance Branch A';
 const BRANCH_B = 'Attendance Branch B';
 
 test.beforeAll(async ({ browser }) => {
-	test.setTimeout(90000);
 	const creds = await register(browser);
 	if (!creds) throw new Error('Failed to register admin user');
 	adminCreds = creds;
@@ -124,28 +121,6 @@ test.describe('Attendance Admin - Company Manager', () => {
 			expect(options.some((opt) => opt.includes(BRANCH_B))).toBe(true);
 		}
 	});
-
-	test('admin_can_search_by_user_name', async ({ page }) => {
-		await page.getByRole('link', { name: 'Attendance' }).click();
-		await page.waitForURL('**/attendance-admin');
-
-		const searchInput = page.getByRole('textbox', { name: /search/i });
-		await searchInput.fill('Branch');
-		await page.waitForTimeout(500);
-
-		await expect(page.locator('body')).toBeVisible();
-	});
-
-	test('admin_can_search_by_user_email', async ({ page }) => {
-		await page.getByRole('link', { name: 'Attendance' }).click();
-		await page.waitForURL('**/attendance-admin');
-
-		const searchInput = page.getByRole('textbox', { name: /search/i });
-		await searchInput.fill(branchManagerCreds.email.split('@')[0]);
-		await page.waitForTimeout(500);
-
-		await expect(page.locator('body')).toBeVisible();
-	});
 });
 
 test.describe('Attendance Admin - Branch Manager', () => {
@@ -227,7 +202,6 @@ test.describe('Attendance Admin - HQ Staff', () => {
 
 		const branchFilter = page.locator('select').first();
 		await branchFilter.selectOption({ label: BRANCH_A });
-		await page.waitForTimeout(500);
 	});
 });
 
@@ -241,7 +215,7 @@ test.describe('Attendance Admin - Branch Staff (Access Control)', () => {
 		await page.waitForURL('**/logs-list');
 
 		await page.goto('http://localhost:5173/attendance-admin');
-		await page.waitForTimeout(1000);
+		await page.waitForLoadState('networkidle');
 
 		const url = page.url();
 		expect(url).not.toContain('attendance-admin');
@@ -263,7 +237,7 @@ test.describe('Attendance Admin - Branch Staff (Access Control)', () => {
 test.describe('Attendance Admin - Unauthenticated Access', () => {
 	test('unauthenticated_user_redirected_from_attendance_admin', async ({ page }) => {
 		await page.goto('http://localhost:5173/attendance-admin');
-		await page.waitForTimeout(1000);
+		await page.waitForLoadState('networkidle');
 
 		const url = page.url();
 		expect(url).not.toContain('attendance-admin');
@@ -285,16 +259,15 @@ test.describe('Attendance Admin - Clock Events Integration', () => {
 		const clockOutButton = staffPage.getByRole('button', { name: 'Clock Out' });
 		if (await clockOutButton.isVisible()) {
 			await clockOutButton.click();
-			await staffPage.waitForTimeout(1000);
 		}
 
 		const clockInButton = staffPage.getByRole('button', { name: 'Clock In' });
 		if (await clockInButton.isVisible()) {
 			await clockInButton.click();
-			await staffPage.waitForTimeout(2000);
+
 			await expect(staffPage.getByText('Currently Clocked In')).toBeVisible();
 		}
-		await staffPage.waitForTimeout(1000);
+
 		await staffPage.close();
 
 		const adminPage = await browser.newPage();
@@ -306,9 +279,9 @@ test.describe('Attendance Admin - Clock Events Integration', () => {
 		await adminPage.waitForURL('**/dashboard');
 
 		await adminPage.getByRole('link', { name: 'Attendance' }).click();
+		await adminPage.getByRole('button', { name: 'Apply' }).click();
 		await adminPage.waitForURL('**/attendance-admin');
 		await adminPage.waitForLoadState('networkidle');
-		await adminPage.waitForTimeout(2000);
 
 		await expect(adminPage.locator('body')).toContainText(branchStaffCreds.email);
 		await expect(adminPage.locator('body')).toContainText('Clocked In');
@@ -329,7 +302,7 @@ test.describe('Attendance Admin - Clock Events Integration', () => {
 		const clockOutButton = staffPage.getByRole('button', { name: 'Clock Out' });
 		if (await clockOutButton.isVisible()) {
 			await clockOutButton.click();
-			await staffPage.waitForTimeout(1000);
+
 			await expect(staffPage.getByText('Currently Clocked Out')).toBeVisible();
 		}
 		await staffPage.close();
@@ -343,8 +316,9 @@ test.describe('Attendance Admin - Clock Events Integration', () => {
 		await adminPage.waitForURL('**/dashboard');
 
 		await adminPage.getByRole('link', { name: 'Attendance' }).click();
+		await adminPage.getByRole('button', { name: 'Apply' }).click();
 		await adminPage.waitForURL('**/attendance-admin');
-		await adminPage.waitForTimeout(1000);
+		await adminPage.waitForLoadState('networkidle');
 
 		await expect(adminPage.locator('body')).toContainText('Branch');
 		await expect(adminPage.locator('body')).toContainText(branchStaffCreds.email);

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { register } from './utils';
+import { _ } from '$env/static/private';
 
 async function fillMockOAuthForm(page: Page, email: string, firstName: string, lastName: string) {
 	await page.fill('input[name="subject"], input#subject, input[type="text"]', email);
@@ -42,21 +43,19 @@ test.describe('Google OAuth Authentication', () => {
 		await page.goto('http://localhost:5173/settings');
 		await page.waitForLoadState('networkidle');
 		await page.getByRole('button', { name: 'Link Google Account' }).click();
-		await page.waitForURL(/localhost:8080/, { timeout: 10000 });
+		await page.waitForURL(/localhost:8080/);
 
 		await fillMockOAuthForm(page, adminCreds.email, adminCreds.firstName, adminCreds.lastName);
-		await page.waitForURL('**/settings', { timeout: 10000 });
-		await expect(page.getByRole('button', { name: /unlink google account/i })).toBeVisible({
-			timeout: 5000
-		});
+		await page.waitForURL('**/settings');
+		await expect(page.getByRole('button', { name: /unlink google account/i })).toBeVisible();
 		await page.getByRole('button', { name: /logout/i }).click();
 		await page.waitForURL('**/login');
 
 		await page.getByRole('button', { name: 'Sign in with Google' }).click();
-		await page.waitForURL(/localhost:8080/, { timeout: 10000 });
+		await page.waitForURL(/localhost:8080/);
 
 		await fillMockOAuthForm(page, adminCreds.email, adminCreds.firstName, adminCreds.lastName);
-		await page.waitForURL('**/dashboard', { timeout: 30000 });
+		await page.waitForURL('**/dashboard');
 		await expect(page.locator('body')).toContainText(adminCreds.email);
 	});
 });
