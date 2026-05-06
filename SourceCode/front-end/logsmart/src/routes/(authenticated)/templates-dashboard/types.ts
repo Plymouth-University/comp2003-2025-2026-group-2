@@ -1,4 +1,4 @@
-export type ScheduleFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+export type ScheduleFrequency = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly' | 'custom';
 
 export type DayOfWeek =
 	| 'monday'

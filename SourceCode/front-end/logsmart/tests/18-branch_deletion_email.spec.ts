@@ -48,8 +48,6 @@ test('company_manager_can_request_branch_deletion', async ({ browser }) => {
 	await expect(page.getByRole('button', { name: 'Request Deletion' })).toBeVisible();
 	await page.getByRole('button', { name: 'Request Deletion' }).click();
 
-	await page.waitForTimeout(2000);
-
 	const confirmationText = page.locator('body');
 	await expect(confirmationText).toContainText('confirmation email');
 });
@@ -68,8 +66,6 @@ test('branch_deletion_email_contains_confirmation_link', async ({ browser }) => 
 	const deleteButton = page.getByRole('button', { name: /Delete|🗑️/i });
 	await deleteButton.click();
 	await page.getByRole('button', { name: 'Request Deletion' }).click();
-
-	await page.waitForTimeout(2000);
 
 	const token = await getBranchDeletionToken(adminCreds.email);
 	expect(token).toBeTruthy();
@@ -91,8 +87,6 @@ test('confirm_branch_deletion_via_email_link', async ({ browser }) => {
 	const deleteButton = page.getByRole('button', { name: /Delete|🗑️/i });
 	await deleteButton.click();
 	await page.getByRole('button', { name: 'Request Deletion' }).click();
-
-	await page.waitForTimeout(2000);
 
 	const token = await getBranchDeletionToken(adminCreds.email);
 	expect(token).toBeTruthy();

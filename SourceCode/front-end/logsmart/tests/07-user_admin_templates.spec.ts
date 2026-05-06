@@ -64,7 +64,6 @@ test.describe('User Administration - Admin Access', () => {
 		const memberRow = page.locator('#eventHide').first();
 		if (await memberRow.isVisible()) {
 			await memberRow.click();
-			await page.waitForTimeout(500);
 		}
 	});
 
@@ -72,7 +71,6 @@ test.describe('User Administration - Admin Access', () => {
 		await page.getByRole('link', { name: 'Users' }).click();
 		await page.waitForURL('**/users-admin');
 		await page.getByRole('button', { name: '➕' }).click();
-		await page.waitForTimeout(500);
 		await expect(page.getByRole('textbox', { name: "New user's email" })).toBeVisible();
 	});
 
@@ -85,7 +83,6 @@ test.describe('User Administration - Admin Access', () => {
 			.getByRole('textbox', { name: "New user's email" })
 			.fill(`newinvite${timestamp}@logsmart.app`);
 		await page.getByRole('button', { name: 'Send Invite' }).click();
-		await page.waitForTimeout(1000);
 	});
 
 	test('send_invitation_invalid_email_format', async ({ page }) => {
@@ -98,7 +95,6 @@ test.describe('User Administration - Admin Access', () => {
 			const isDisabled = await sendButton.isDisabled();
 			if (!isDisabled) {
 				await sendButton.click();
-				await page.waitForTimeout(500);
 			} else {
 				await expect(sendButton).toBeDisabled();
 			}
@@ -117,14 +113,12 @@ test.describe('User Administration - Admin Access', () => {
 		await page.getByRole('link', { name: 'Users' }).click();
 		await page.waitForURL('**/users-admin');
 		await page.getByRole('button', { name: '➕' }).click();
-		await page.waitForTimeout(500);
+
 		const closeButton = page.getByRole('button', { name: 'Close' });
 		if (await closeButton.isVisible()) {
 			await closeButton.click();
-			await page.waitForTimeout(300);
 		} else {
 			await page.keyboard.press('Escape');
-			await page.waitForTimeout(300);
 		}
 	});
 
@@ -142,7 +136,7 @@ test.describe('User Administration - Admin Access', () => {
 		const memberRow = page.locator('#eventHide').first();
 		if (await memberRow.isVisible()) {
 			await memberRow.click();
-			await page.waitForTimeout(500);
+
 			const sidebar = page.locator('aside, .sidebar, [role="complementary"]').first();
 			if (await sidebar.isVisible()) {
 				await expect(sidebar).toBeVisible();
@@ -179,7 +173,7 @@ test.describe('User Administration - Admin Access', () => {
 
 		for (let i = 0; i < 5; i++) {
 			try {
-				await page.waitForTimeout(1000);
+				await page.waitForTimeout(100);
 				await page.reload();
 				await page.waitForSelector(`text=${newFirstName}`);
 				break;
@@ -228,7 +222,7 @@ test.describe('User Administration - Admin Access', () => {
 			if (i === 4) {
 				throw new Error('User sidebar did not open after selecting invited user');
 			}
-			await page.waitForTimeout(300);
+			await page.waitForTimeout(100);
 		}
 		await expect(sidebar).toBeVisible();
 
@@ -237,13 +231,11 @@ test.describe('User Administration - Admin Access', () => {
 
 		await page.getByRole('button', { name: 'Save' }).click();
 
-		await page.waitForTimeout(2000);
-
 		for (let i = 0; i < 5; i++) {
 			try {
 				await page.reload();
 				await page.waitForURL('**/users-admin**');
-				await page.waitForTimeout(500);
+
 				await page.locator(`button:has-text("${invitedEmail}")`).click();
 				const updatedSidebar = page.locator('#userSidebar');
 				await expect(updatedSidebar).toBeVisible();
@@ -255,7 +247,6 @@ test.describe('User Administration - Admin Access', () => {
 			} catch {
 				if (i === 4) throw new Error('Role update not verified after multiple retries');
 			}
-			await page.waitForTimeout(1000);
 		}
 		await expect(page.locator('#sidebar-role')).toHaveValue('company_manager');
 	});
@@ -281,7 +272,6 @@ test.describe('Templates Dashboard - Admin Access', () => {
 		await page.getByRole('link', { name: 'Templates Dashboard' }).click();
 		await page.waitForURL('**/templates-dashboard');
 		await page.waitForLoadState('networkidle');
-		await page.waitForTimeout(500);
 	});
 
 	test('search_templates_by_name', async ({ page }) => {
@@ -290,7 +280,6 @@ test.describe('Templates Dashboard - Admin Access', () => {
 		const searchInput = page.getByPlaceholder('Search templates');
 		if (await searchInput.isVisible()) {
 			await searchInput.fill('Test');
-			await page.waitForTimeout(500);
 		}
 	});
 
@@ -317,7 +306,6 @@ test.describe('Templates Dashboard - Admin Access', () => {
 		const settingsButton = page.getByRole('button', { name: 'Settings', exact: true }).first();
 		if (await settingsButton.isVisible()) {
 			await settingsButton.click();
-			await page.waitForTimeout(500);
 		}
 	});
 
@@ -327,11 +315,10 @@ test.describe('Templates Dashboard - Admin Access', () => {
 		const settingsButton = page.getByRole('button', { name: 'Settings', exact: true }).first();
 		if (await settingsButton.isVisible()) {
 			await settingsButton.click();
-			await page.waitForTimeout(500);
+
 			const saveButton = page.getByRole('button', { name: 'Save' });
 			if (await saveButton.isVisible()) {
 				await saveButton.click();
-				await page.waitForTimeout(500);
 			}
 		}
 	});
@@ -342,11 +329,10 @@ test.describe('Templates Dashboard - Admin Access', () => {
 		const deleteButton = page.getByRole('button', { name: 'Delete' }).first();
 		if (await deleteButton.isVisible()) {
 			await deleteButton.click();
-			await page.waitForTimeout(500);
+
 			const confirmButton = page.getByRole('button', { name: 'Confirm' });
 			if (await confirmButton.isVisible()) {
 				await confirmButton.click();
-				await page.waitForTimeout(1000);
 			}
 		}
 	});
@@ -357,14 +343,12 @@ test.describe('Templates Dashboard - Admin Access', () => {
 		const deleteButton = page.getByRole('button', { name: 'Delete' }).first();
 		if (await deleteButton.isVisible()) {
 			await deleteButton.click();
-			await page.waitForTimeout(500);
+
 			const cancelButton = page.getByRole('button', { name: 'Cancel' });
 			if (await cancelButton.isVisible()) {
 				await cancelButton.click();
-				await page.waitForTimeout(300);
 			} else {
 				await page.keyboard.press('Escape');
-				await page.waitForTimeout(300);
 			}
 		}
 	});
@@ -383,7 +367,6 @@ test.describe('Templates Dashboard - Admin Access', () => {
 		await page.getByRole('link', { name: 'Templates Dashboard' }).click();
 		await page.waitForURL('**/templates-dashboard');
 		await page.waitForLoadState('networkidle');
-		await page.waitForTimeout(500);
 	});
 
 	test('empty_templates_list_shows_message', async ({ page }) => {
@@ -392,7 +375,6 @@ test.describe('Templates Dashboard - Admin Access', () => {
 		const searchInput = page.getByPlaceholder('Search templates');
 		if (await searchInput.isVisible()) {
 			await searchInput.fill('NonExistentTemplate12345');
-			await page.waitForTimeout(500);
 		}
 	});
 });

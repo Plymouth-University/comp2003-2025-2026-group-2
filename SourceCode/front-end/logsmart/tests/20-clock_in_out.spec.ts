@@ -1,8 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { register, sendInvitation, acceptInvitation, createBranch } from './utils';
 
-test.describe.configure({ timeout: 120000 });
-
 let adminCreds: {
 	email: string;
 	password: string;
@@ -75,7 +73,6 @@ test.describe('Clock In/Out - Staff User', () => {
 		const clockInButton = page.getByRole('button', { name: 'Clock In' });
 		if (await clockInButton.isVisible()) {
 			await clockInButton.click();
-			await page.waitForTimeout(1000);
 
 			await expect(page.getByText('Currently Clocked In')).toBeVisible();
 			await expect(page.getByRole('button', { name: 'Clock Out' })).toBeVisible();
@@ -89,13 +86,11 @@ test.describe('Clock In/Out - Staff User', () => {
 		const clockInButton = page.getByRole('button', { name: 'Clock In' });
 		if (await clockInButton.isVisible()) {
 			await clockInButton.click();
-			await page.waitForTimeout(1000);
 		}
 
 		const clockOutButton = page.getByRole('button', { name: 'Clock Out' });
 		await expect(clockOutButton).toBeVisible();
 		await clockOutButton.click();
-		await page.waitForTimeout(1000);
 
 		await expect(page.getByText('Currently Clocked Out')).toBeVisible();
 		await expect(page.getByRole('button', { name: 'Clock In' })).toBeVisible();
@@ -105,7 +100,6 @@ test.describe('Clock In/Out - Staff User', () => {
 		const clockInButton = page.getByRole('button', { name: 'Clock In' });
 		if (await clockInButton.isVisible()) {
 			await clockInButton.click();
-			await page.waitForTimeout(1000);
 		}
 
 		await expect(page.getByText('Currently Clocked In')).toBeVisible();
@@ -120,14 +114,13 @@ test.describe('Clock In/Out - Staff User', () => {
 		const clockInButton = page.getByRole('button', { name: 'Clock In' });
 		if (await clockInButton.isVisible()) {
 			await clockInButton.click();
-			await page.waitForTimeout(1000);
 		}
 
 		await expect(page.getByText('Currently Clocked In')).toBeVisible();
 
 		const clockOutButton = page.getByRole('button', { name: 'Clock Out' });
 		await clockOutButton.click();
-		await page.waitForTimeout(1000);
+
 		await expect(page.getByText('Currently Clocked Out')).toBeVisible();
 	});
 
@@ -135,11 +128,9 @@ test.describe('Clock In/Out - Staff User', () => {
 		const clockInButton = page.getByRole('button', { name: 'Clock In' });
 		if (await clockInButton.isVisible()) {
 			await clockInButton.click();
-			await page.waitForTimeout(500);
 
 			const clockOutButton = page.getByRole('button', { name: 'Clock Out' });
 			await clockOutButton.click();
-			await page.waitForTimeout(1000);
 		}
 
 		const recentActivity = page.locator('text=Recent Activity');
@@ -165,7 +156,7 @@ test.describe('Clock In/Out - Admin User', () => {
 		const clockInButton = page.getByRole('button', { name: 'Clock In', exact: true });
 		if (await clockInButton.isVisible()) {
 			await clockInButton.click();
-			await page.waitForTimeout(1000);
+
 			await expect(page.getByText('Currently Clocked In')).toBeVisible();
 		} else {
 			await expect(page.getByRole('button', { name: 'Clock Out' })).toBeVisible();
@@ -176,13 +167,11 @@ test.describe('Clock In/Out - Admin User', () => {
 		const clockInButton = page.getByRole('button', { name: 'Clock In', exact: true });
 		if (await clockInButton.isVisible()) {
 			await clockInButton.click();
-			await page.waitForTimeout(1000);
 		}
 
 		const clockOutButton = page.getByRole('button', { name: 'Clock Out', exact: true });
 		await expect(clockOutButton).toBeVisible();
 		await clockOutButton.click();
-		await page.waitForTimeout(1000);
 
 		await expect(page.getByText('Currently Clocked Out')).toBeVisible();
 	});
@@ -202,7 +191,6 @@ test.describe('Clock In/Out - Multiple Sessions', () => {
 		const clockInButton = page.getByRole('button', { name: 'Clock In' });
 		if (await clockInButton.isVisible()) {
 			await clockInButton.click();
-			await page.waitForTimeout(500);
 		}
 
 		await page.getByRole('button', { name: 'Clock Out' }).click();
