@@ -229,9 +229,16 @@ fn parse_optional_utc_datetime(
     value: Option<&str>,
 ) -> Result<Option<chrono::DateTime<chrono::Utc>>, String> {
     match value {
-        Some(raw) if !raw.trim().is_empty() => chrono::DateTime::parse_from_rfc3339(raw)
-            .map(|dt| Some(dt.with_timezone(&chrono::Utc)))
-            .map_err(|_| format!("Invalid RFC3339 datetime: {raw}")),
+        Some(raw) if !raw.trim().is_empty() => {
+            if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(raw) {
+                return Ok(Some(dt.with_timezone(&chrono::Utc)));
+            }
+            if let Ok(date) = chrono::NaiveDate::parse_from_str(raw, "%Y-%m-%d")
+                && let Some(datetime) = date.and_hms_opt(0, 0, 0) {
+                    return Ok(Some(datetime.and_utc()));
+                }
+            Err(format!("Invalid datetime format: {raw}"))
+        }
         _ => Ok(None),
     }
 }
@@ -271,6 +278,15 @@ mod tests {
             .expect("value should be present");
 
         assert_eq!(parsed.to_rfc3339(), "2026-04-13T12:00:00+00:00");
+    }
+
+    #[test]
+    fn test_parse_optional_utc_datetime_plain_date() {
+        let parsed = parse_optional_utc_datetime(Some("2026-04-13"))
+            .expect("plain date should parse")
+            .expect("value should be present");
+
+        assert_eq!(parsed.to_rfc3339(), "2026-04-13T00:00:00+00:00");
     }
 
     #[test]
