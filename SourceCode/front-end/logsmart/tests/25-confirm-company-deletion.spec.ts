@@ -29,7 +29,7 @@ test.describe('Confirm Company Deletion Page', () => {
 	test('shows_error_when_missing_params', async ({ page }) => {
 		await page.goto('http://localhost:5173/confirm-company-deletion');
 		await expect(page.getByText('Missing company ID or confirmation token')).toBeVisible({
-			timeout: 10000
+			timeout: 1000
 		});
 	});
 
@@ -41,7 +41,7 @@ test.describe('Confirm Company Deletion Page', () => {
 			page.getByText(
 				/Failed to delete company|The token may have expired|Invalid or expired|Company not found/
 			)
-		).toBeVisible({ timeout: 10000 });
+		).toBeVisible({ timeout: 1000 });
 	});
 });
 
@@ -64,17 +64,16 @@ test.describe('Complete Company Deletion Flow', () => {
 		await page.waitForURL('**/company-settings');
 
 		await page.getByRole('button', { name: /Export Company Data|Re-export Company Data/ }).click();
-		await page.waitForTimeout(2000);
 
 		const deleteButton = page.getByRole('button', { name: 'Delete Company' });
-		await expect(deleteButton).toBeEnabled({ timeout: 10000 });
+		await expect(deleteButton).toBeEnabled({ timeout: 1000 });
 
 		page.on('dialog', async (dialog) => {
 			await dialog.accept();
 		});
 
 		await deleteButton.click();
-		await page.waitForTimeout(2000);
+		await page.waitForTimeout(500);
 
 		const tokenData = await getCompanyDeletionToken(creds.email);
 		expect(tokenData).toBeTruthy();
@@ -91,7 +90,7 @@ test.describe('Complete Company Deletion Flow', () => {
 
 		await expect(
 			confirmPage.getByRole('textbox', { name: 'Type company name to confirm' })
-		).toBeVisible({ timeout: 10000 });
+		).toBeVisible({ timeout: 1000 });
 		await confirmPage
 			.getByRole('textbox', { name: 'Type company name to confirm' })
 			.fill(creds.companyName);
@@ -121,17 +120,16 @@ test.describe('Complete Company Deletion Flow', () => {
 		await page.waitForURL('**/company-settings');
 
 		await page.getByRole('button', { name: /Export Company Data|Re-export Company Data/ }).click();
-		await page.waitForTimeout(2000);
 
 		const deleteButton = page.getByRole('button', { name: 'Delete Company' });
-		await expect(deleteButton).toBeEnabled({ timeout: 10000 });
+		await expect(deleteButton).toBeEnabled({ timeout: 1000 });
 
 		page.on('dialog', async (dialog) => {
 			await dialog.accept();
 		});
 
 		await deleteButton.click();
-		await page.waitForTimeout(2000);
+
 		await page.close();
 
 		const tokenData = await getCompanyDeletionToken(creds.email);
@@ -147,7 +145,7 @@ test.describe('Complete Company Deletion Flow', () => {
 
 		await expect(
 			confirmPage.getByRole('textbox', { name: 'Type company name to confirm' })
-		).toBeVisible({ timeout: 10000 });
+		).toBeVisible({ timeout: 1000 });
 		await confirmPage
 			.getByRole('textbox', { name: 'Type company name to confirm' })
 			.fill(creds.companyName);
@@ -191,17 +189,15 @@ test.describe('Complete Company Deletion Flow', () => {
 		await page.waitForURL('**/company-settings');
 
 		await page.getByRole('button', { name: /Export Company Data|Re-export Company Data/ }).click();
-		await page.waitForTimeout(2000);
 
 		const deleteButton = page.getByRole('button', { name: 'Delete Company' });
-		await expect(deleteButton).toBeEnabled({ timeout: 10000 });
+		await expect(deleteButton).toBeEnabled({ timeout: 1000 });
 
 		page.on('dialog', async (dialog) => {
 			await dialog.accept();
 		});
 
 		await deleteButton.click();
-		await page.waitForTimeout(2000);
 
 		const tokenData = await getCompanyDeletionToken(creds.email);
 		expect(tokenData).toBeTruthy();
@@ -216,7 +212,7 @@ test.describe('Complete Company Deletion Flow', () => {
 
 		await expect(
 			confirmPage.getByRole('textbox', { name: 'Type company name to confirm' })
-		).toBeVisible({ timeout: 10000 });
+		).toBeVisible({ timeout: 1000 });
 		await confirmPage
 			.getByRole('textbox', { name: 'Type company name to confirm' })
 			.fill(creds.companyName);
@@ -273,7 +269,7 @@ test.describe('Complete Company Deletion Flow', () => {
 
 		await page.getByRole('textbox', { name: 'Passkey Name' }).fill('Test Passkey');
 		await page.getByRole('button', { name: 'Add Passkey' }).click();
-		await expect(page.locator('text=Changes saved successfully!')).toBeVisible({ timeout: 10000 });
+		await expect(page.locator('text=Changes saved successfully!')).toBeVisible({ timeout: 1000 });
 
 		await page.getByRole('link', { name: 'Company Settings' }).click();
 		await page.waitForURL('**/company-settings');
@@ -281,17 +277,15 @@ test.describe('Complete Company Deletion Flow', () => {
 		await page.waitForURL('**/company-settings');
 
 		await page.getByRole('button', { name: /Export Company Data|Re-export Company Data/ }).click();
-		await page.waitForTimeout(2000);
 
 		const deleteButton = page.getByRole('button', { name: 'Delete Company' });
-		await expect(deleteButton).toBeEnabled({ timeout: 10000 });
+		await expect(deleteButton).toBeEnabled({ timeout: 1000 });
 
 		page.on('dialog', async (dialog) => {
 			await dialog.accept();
 		});
 
 		await deleteButton.click();
-		await page.waitForTimeout(3000);
 
 		const tokenData = await getCompanyDeletionToken(creds.email, 60);
 		expect(tokenData).toBeTruthy();
@@ -306,7 +300,7 @@ test.describe('Complete Company Deletion Flow', () => {
 
 		await expect(
 			confirmPage.getByRole('textbox', { name: 'Type company name to confirm' })
-		).toBeVisible({ timeout: 10000 });
+		).toBeVisible({ timeout: 1000 });
 		await confirmPage
 			.getByRole('textbox', { name: 'Type company name to confirm' })
 			.fill(creds.companyName);
@@ -325,7 +319,6 @@ test.describe('Complete Company Deletion Flow', () => {
 		await passkeyBtn.waitFor({ state: 'visible' });
 		await passkeyBtn.click();
 
-		await page.waitForTimeout(2000);
 		const currentUrl = page.url();
 		expect(currentUrl).not.toContain('dashboard');
 		expect(currentUrl).toContain('login');
@@ -349,7 +342,7 @@ test.describe('Complete Company Deletion Flow', () => {
 		await page.goto('http://localhost:5173/settings');
 		await page.waitForLoadState('networkidle');
 		await page.getByRole('button', { name: 'Link Google Account' }).click();
-		await page.waitForURL(/localhost:8080/, { timeout: 10000 });
+		await page.waitForURL(/localhost:8080/);
 
 		await page.fill('input[name="subject"], input#subject, input[type="text"]', creds.email);
 		const claimsJson = JSON.stringify({
@@ -364,7 +357,7 @@ test.describe('Complete Company Deletion Flow', () => {
 			.getByRole('button', { name: /sign-in/i })
 			.first()
 			.click();
-		await page.waitForURL('**/settings', { timeout: 10000 });
+		await page.waitForURL('**/settings');
 
 		await page.getByRole('link', { name: 'Company Settings' }).click();
 		await page.waitForURL('**/company-settings');
@@ -372,17 +365,15 @@ test.describe('Complete Company Deletion Flow', () => {
 		await page.waitForURL('**/company-settings');
 
 		await page.getByRole('button', { name: /Export Company Data|Re-export Company Data/ }).click();
-		await page.waitForTimeout(2000);
 
 		const deleteButton = page.getByRole('button', { name: 'Delete Company' });
-		await expect(deleteButton).toBeEnabled({ timeout: 10000 });
+		await expect(deleteButton).toBeEnabled({ timeout: 1000 });
 
 		page.on('dialog', async (dialog) => {
 			await dialog.accept();
 		});
 
 		await deleteButton.click();
-		await page.waitForTimeout(2000);
 
 		const tokenData = await getCompanyDeletionToken(creds.email);
 		expect(tokenData).toBeTruthy();
@@ -397,7 +388,7 @@ test.describe('Complete Company Deletion Flow', () => {
 
 		await expect(
 			confirmPage.getByRole('textbox', { name: 'Type company name to confirm' })
-		).toBeVisible({ timeout: 10000 });
+		).toBeVisible({ timeout: 1000 });
 		await confirmPage
 			.getByRole('textbox', { name: 'Type company name to confirm' })
 			.fill(creds.companyName);
@@ -411,9 +402,9 @@ test.describe('Complete Company Deletion Flow', () => {
 		await page.waitForURL('**/login');
 
 		const googleBtn = page.getByRole('button', { name: 'Sign in with Google' });
-		await googleBtn.waitFor({ state: 'visible', timeout: 10000 });
+		await googleBtn.waitFor({ state: 'visible', timeout: 1000 });
 		await googleBtn.click();
-		await page.waitForURL(/localhost:8080/, { timeout: 10000 });
+		await page.waitForURL(/localhost:8080/);
 
 		await page.fill('input[name="subject"], input#subject, input[type="text"]', creds.email);
 		const loginClaimsJson = JSON.stringify({
@@ -429,7 +420,6 @@ test.describe('Complete Company Deletion Flow', () => {
 			.first()
 			.click();
 
-		await page.waitForTimeout(2000);
 		const currentUrl = page.url();
 		expect(currentUrl).not.toContain('dashboard');
 		expect(currentUrl).toContain('login');

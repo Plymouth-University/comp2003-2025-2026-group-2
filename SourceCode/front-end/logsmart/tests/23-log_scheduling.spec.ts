@@ -43,7 +43,6 @@ test.describe('Log Scheduling - Template Settings', () => {
 
 			const nameInput = page.getByPlaceholder('Template Name');
 			await nameInput.fill('Daily Schedule Test Template');
-			await page.waitForTimeout(500);
 
 			await page.getByRole('button', { name: 'Save Template' }).click();
 			await page.getByRole('link', { name: 'Templates Dashboard' }).click();
@@ -51,11 +50,9 @@ test.describe('Log Scheduling - Template Settings', () => {
 			await page.waitForLoadState('networkidle');
 
 			await page.getByRole('button', { name: 'Settings' }).click();
-			await page.waitForTimeout(500);
 
 			const frequencySelect = page.locator('#frequency-select');
 			await frequencySelect.selectOption('daily');
-			await page.waitForTimeout(500);
 
 			const availableFromInput = page.locator('#available-from');
 			const dueAtInput = page.locator('#due-at');
@@ -81,7 +78,6 @@ test.describe('Log Scheduling - Template Settings', () => {
 
 			const nameInput = page.getByPlaceholder('Template Name');
 			await nameInput.fill('Custom Time Template');
-			await page.waitForTimeout(500);
 
 			await page.getByRole('button', { name: 'Save Template' }).click();
 			await page.getByRole('link', { name: 'Templates Dashboard' }).click();
@@ -89,20 +85,16 @@ test.describe('Log Scheduling - Template Settings', () => {
 			await page.waitForLoadState('networkidle');
 
 			await page.getByRole('button', { name: 'Settings' }).first().click();
-			await page.waitForTimeout(500);
 
 			const frequencySelect = page.locator('#frequency-select');
 			await frequencySelect.selectOption('daily');
-			await page.waitForTimeout(500);
 
 			await page.locator('#available-from').fill('09:00');
 			await page.locator('#due-at').fill('18:00');
 
 			await page.getByRole('button', { name: 'Save' }).click();
-			await page.waitForTimeout(1000);
 
 			await page.getByRole('button', { name: 'Settings' }).first().click();
-			await page.waitForTimeout(500);
 
 			await expect(page.locator('#available-from')).toHaveValue('09:00');
 			await expect(page.locator('#due-at')).toHaveValue('18:00');
@@ -122,7 +114,6 @@ test.describe('Log Scheduling - Template Settings', () => {
 
 			const nameInput = page.getByPlaceholder('Template Name');
 			await nameInput.fill('Weekly Schedule Test Template');
-			await page.waitForTimeout(500);
 
 			await page.getByRole('button', { name: 'Save Template' }).click();
 			await page.getByRole('link', { name: 'Templates Dashboard' }).click();
@@ -130,11 +121,9 @@ test.describe('Log Scheduling - Template Settings', () => {
 			await page.waitForLoadState('networkidle');
 
 			await page.getByRole('button', { name: 'Settings' }).click();
-			await page.waitForTimeout(500);
 
 			const frequencySelect = page.locator('#frequency-select');
 			await frequencySelect.selectOption('weekly');
-			await page.waitForTimeout(500);
 
 			const availableFromInput = page.locator('#available-from');
 			const dueAtInput = page.locator('#due-at');
@@ -251,7 +240,7 @@ test.describe('Log Scheduling - Fill Out and Status', () => {
 		await page.waitForLoadState('networkidle');
 
 		const fillOutButton = page.getByRole('button', { name: 'Fill Out' }).first();
-		if (await fillOutButton.isVisible({ timeout: 5000 })) {
+		if (await fillOutButton.isVisible()) {
 			await expect(fillOutButton).toBeEnabled();
 		}
 	});
@@ -266,14 +255,14 @@ test.describe('Log Scheduling - Fill Out and Status', () => {
 		await page.waitForLoadState('networkidle');
 
 		const fillOutButton = page.getByRole('button', { name: 'Fill Out' }).first();
-		if (await fillOutButton.isVisible({ timeout: 5000 })) {
+		if (await fillOutButton.isVisible()) {
 			await fillOutButton.click();
 			await page.waitForLoadState('networkidle');
 
 			const submitButton = page.getByRole('button', { name: 'Submit Log' });
-			if (await submitButton.isVisible({ timeout: 5000 })) {
+			if (await submitButton.isVisible()) {
 				await submitButton.click();
-				await page.waitForTimeout(2000);
+
 				await page.waitForURL('**/logs-list');
 				await expect(page.locator('body')).toContainText('submitted');
 			}

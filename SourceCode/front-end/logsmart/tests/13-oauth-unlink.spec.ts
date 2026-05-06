@@ -42,17 +42,14 @@ test.describe('Google OAuth Unlink', () => {
 		await page.goto('http://localhost:5173/settings');
 		await page.waitForLoadState('networkidle');
 		await page.getByRole('button', { name: 'Link Google Account' }).click();
-		await page.waitForURL(/localhost:8080/, { timeout: 10000 });
+		await page.waitForURL(/localhost:8080/);
 
 		await fillMockOAuthForm(page, adminCreds.email, adminCreds.firstName, adminCreds.lastName);
-		await page.waitForURL('**/settings', { timeout: 30000 });
-		await expect(page.getByRole('button', { name: /unlink google account/i })).toBeVisible({
-			timeout: 5000
-		});
+		await page.waitForURL('**/settings');
+		await expect(page.getByRole('button', { name: /unlink google account/i })).toBeVisible();
 
 		page.on('dialog', (dialog) => dialog.accept());
 		await page.getByRole('button', { name: 'Unlink Google Account' }).click();
-		await page.waitForTimeout(1000);
 		await page.waitForLoadState('networkidle');
 		await expect(page.locator('body')).toContainText(/Link Google Account/i);
 		await expect(page.locator('body')).not.toContainText(/google account is linked/i);
@@ -61,7 +58,7 @@ test.describe('Google OAuth Unlink', () => {
 		await page.waitForURL('**/login');
 
 		await page.getByRole('button', { name: 'Sign in with Google' }).click();
-		await page.waitForURL(/localhost:8080/, { timeout: 10000 });
+		await page.waitForURL(/localhost:8080/);
 
 		await fillMockOAuthForm(page, adminCreds.email, adminCreds.firstName, adminCreds.lastName);
 		await expect(page.url()).toEqual(

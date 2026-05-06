@@ -22,8 +22,7 @@ test.describe('Security: SQL Injection Prevention', () => {
 		await page.getByRole('textbox', { name: 'Email' }).fill("admin@ex.com'--");
 		await page.getByRole('textbox', { name: 'Password' }).fill('anything');
 		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-		await page.waitForTimeout(1000);
-		await expect(page).toHaveURL('/login');
+		await page.waitForURL('**/login');
 	});
 
 	test('sql_injection_login_password', async ({ page }) => {
@@ -32,8 +31,7 @@ test.describe('Security: SQL Injection Prevention', () => {
 		await page.getByRole('textbox', { name: 'Email' }).fill('testuser@logsmart.app');
 		await page.getByRole('textbox', { name: 'Password' }).fill("' OR '1'='1");
 		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-		await page.waitForTimeout(1000);
-		await expect(page).toHaveURL('/login');
+		await page.waitForURL('**/login');
 	});
 
 	test('sql_injection_register_company_name', async ({ page }) => {
@@ -51,7 +49,6 @@ test.describe('Security: SQL Injection Prevention', () => {
 			.fill('Test123!');
 		await page.getByRole('textbox', { name: 'Confirm Password Show password' }).fill('Test123!');
 		await page.getByRole('button', { name: 'Create Account' }).click();
-		await page.waitForTimeout(1000);
 	});
 
 	test('sql_injection_template_search', async ({ page }) => {
@@ -66,7 +63,6 @@ test.describe('Security: SQL Injection Prevention', () => {
 		const searchInput = page.getByPlaceholder('Search templates');
 		if (await searchInput.isVisible()) {
 			await searchInput.fill("'; DELETE FROM templates WHERE '1'='1");
-			await page.waitForTimeout(1000);
 		}
 	});
 });
@@ -86,7 +82,6 @@ test.describe('Security: XSS Prevention', () => {
 			.fill('Test123!');
 		await page.getByRole('textbox', { name: 'Confirm Password Show password' }).fill('Test123!');
 		await page.getByRole('button', { name: 'Create Account' }).click();
-		await page.waitForTimeout(1000);
 	});
 
 	test('xss_script_in_first_name', async ({ page }) => {
@@ -104,11 +99,10 @@ test.describe('Security: XSS Prevention', () => {
 			.getByRole('textbox', { name: 'First Name' })
 			.fill('<img src=x onerror=alert("XSS")>');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-		await page.waitForTimeout(1000);
+		await page.reload();
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill('Test');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-		await page.waitForTimeout(500);
 	});
 
 	test('xss_html_in_template_name', async ({ page }) => {
@@ -123,7 +117,6 @@ test.describe('Security: XSS Prevention', () => {
 		const nameInput = page.getByPlaceholder('Template Name');
 		if (await nameInput.isVisible()) {
 			await nameInput.fill('<b>Bold Template</b><script>alert("XSS")</script>');
-			await page.waitForTimeout(500);
 		}
 	});
 
@@ -132,7 +125,7 @@ test.describe('Security: XSS Prevention', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill('javascript:alert("XSS")');
 		await page.getByRole('textbox', { name: 'Password' }).fill('Test123!');
-		await page.waitForTimeout(500);
+
 		const signInButton = page.getByRole('button', { name: 'Sign in', exact: true });
 		await expect(signInButton).toBeDisabled();
 	});
@@ -149,7 +142,6 @@ test.describe('Security: Authorization Boundary Tests', () => {
 
 		await page.goto('http://localhost:5173/log-template?entry=1');
 		await page.waitForLoadState('networkidle');
-		await page.waitForTimeout(1000);
 	});
 
 	test('vertical_privilege_escalation_member_to_admin', async ({ page }) => {
@@ -187,7 +179,6 @@ test.describe('Security: Authorization Boundary Tests', () => {
 
 		await page.goto('http://localhost:5173/log-template?entry=999999999');
 		await page.waitForLoadState('networkidle');
-		await page.waitForTimeout(1000);
 	});
 
 	test('api_endpoint_authorization_without_token', async ({ page }) => {
@@ -203,7 +194,6 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		await page.getByRole('textbox', { name: 'Company Name' }).fill(longName);
 		await page.getByRole('textbox', { name: 'Company Address' }).fill('123 Test St');
 		await page.getByRole('button', { name: 'Next Step' }).click();
-		await page.waitForTimeout(500);
 	});
 
 	test('very_long_email_address', async ({ page }) => {
@@ -212,7 +202,6 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill(longEmail);
 		await page.getByRole('textbox', { name: 'Password' }).fill('Test123!');
-		await page.waitForTimeout(500);
 	});
 
 	test('very_long_password', async ({ page }) => {
@@ -222,7 +211,6 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		await page.getByRole('textbox', { name: 'Email' }).fill('testuser@logsmart.app');
 		await page.getByRole('textbox', { name: 'Password' }).fill(longPassword);
 		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-		await page.waitForTimeout(1000);
 	});
 
 	test('unicode_characters_in_names', async ({ page }) => {
@@ -240,13 +228,12 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
 		await page.getByRole('textbox', { name: 'Last Name' }).fill('González');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-		await page.waitForTimeout(1000);
+		await page.reload();
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill('Test');
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
 		await page.getByRole('textbox', { name: 'Last Name' }).fill('User');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-		await page.waitForTimeout(500);
 	});
 
 	test('emoji_in_template_name', async ({ page }) => {
@@ -261,7 +248,6 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		const nameInput = page.getByPlaceholder('Template Name');
 		if (await nameInput.isVisible()) {
 			await nameInput.fill('🌡️ Temperature Log 📊');
-			await page.waitForTimeout(500);
 		}
 	});
 
@@ -270,7 +256,6 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		await page.getByRole('link', { name: 'Login' }).click();
 		await page.getByRole('textbox', { name: 'Email' }).fill('test\u0000user@logsmart.app');
 		await page.getByRole('textbox', { name: 'Password' }).fill('Test123!');
-		await page.waitForTimeout(500);
 	});
 
 	test('zero_as_numeric_input', async ({ page }) => {
@@ -285,13 +270,12 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		const tempButton = page.getByRole('button', { name: 'Temperature' });
 		if (await tempButton.isVisible()) {
 			await tempButton.click();
-			await page.waitForTimeout(500);
+
 			const minInput = page.getByLabel('Min');
 			const maxInput = page.getByLabel('Max');
 			if ((await minInput.isVisible()) && (await maxInput.isVisible())) {
 				await minInput.fill('0');
 				await maxInput.fill('0');
-				await page.waitForTimeout(300);
 			}
 		}
 	});
@@ -308,13 +292,12 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		const tempButton = page.getByRole('button', { name: 'Temperature' });
 		if (await tempButton.isVisible()) {
 			await tempButton.click();
-			await page.waitForTimeout(500);
+
 			const minInput = page.getByLabel('Min');
 			const maxInput = page.getByLabel('Max');
 			if ((await minInput.isVisible()) && (await maxInput.isVisible())) {
 				await minInput.fill('-50');
 				await maxInput.fill('50');
-				await page.waitForTimeout(300);
 			}
 		}
 	});
@@ -331,13 +314,12 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		const tempButton = page.getByRole('button', { name: 'Temperature' });
 		if (await tempButton.isVisible()) {
 			await tempButton.click();
-			await page.waitForTimeout(500);
+
 			const minInput = page.getByLabel('Min');
 			const maxInput = page.getByLabel('Max');
 			if ((await minInput.isVisible()) && (await maxInput.isVisible())) {
 				await minInput.fill('0');
 				await maxInput.fill('999999');
-				await page.waitForTimeout(300);
 			}
 		}
 	});
@@ -351,9 +333,7 @@ test.describe('Edge Cases: Concurrent Operations', () => {
 		await page.getByRole('textbox', { name: 'Password' }).fill('Test123!');
 		for (let i = 0; i < 5; i++) {
 			await page.getByRole('button', { name: 'Sign in', exact: true }).click({ force: true });
-			await page.waitForTimeout(100);
 		}
-		await page.waitForTimeout(1000);
 	});
 
 	test('rapid_navigation_between_pages', async ({ page }) => {
@@ -367,11 +347,10 @@ test.describe('Edge Cases: Concurrent Operations', () => {
 
 		for (let i = 0; i < 3; i++) {
 			await page.getByRole('link', { name: 'Logs', exact: true }).click();
-			await page.waitForTimeout(200);
+
 			await page.getByRole('link', { name: 'Templates' }).click();
-			await page.waitForTimeout(200);
+
 			await page.getByRole('link', { name: 'Dashboard', exact: true }).click();
-			await page.waitForTimeout(200);
 		}
 	});
 
@@ -390,13 +369,11 @@ test.describe('Edge Cases: Concurrent Operations', () => {
 			await page.getByRole('textbox', { name: 'First Name' }).clear();
 			await page.getByRole('textbox', { name: 'First Name' }).fill(`Test${i}`);
 			await page.getByRole('button', { name: 'Save Profile' }).click();
-			await page.waitForTimeout(500);
 		}
-
+		await page.reload();
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill('Test');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-		await page.waitForTimeout(500);
 	});
 });
 

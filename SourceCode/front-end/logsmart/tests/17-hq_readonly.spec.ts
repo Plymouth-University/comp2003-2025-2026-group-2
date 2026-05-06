@@ -261,7 +261,7 @@ test.describe('HQ Staff - Invite Without Branch Creates HQ', () => {
 		await page.getByRole('textbox', { name: 'Confirm Password' }).fill('AutoHQ123!');
 		await page.getByRole('button', { name: 'Create Account' }).click();
 
-		await page.waitForURL('**/dashboard', { timeout: 10000 });
+		await page.waitForURL('**/dashboard');
 
 		await page.getByRole('link', { name: 'Users' }).click();
 		await page.waitForURL('**/users-admin');
