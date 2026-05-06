@@ -2,7 +2,7 @@
 	import type { PageData } from './$types';
 	import type { components } from '$lib/api-types';
 	import { goto } from '$app/navigation';
-	import { onDestroy } from 'svelte';
+	import { showSuccess, showError } from '$lib/toast';
 	import TemperaturePicker from '$lib/components/temperature_picker.svelte';
 	import UserCheckbox from '$lib/components/user_checkbox.svelte';
 	import UserDropdown from '$lib/components/user_dropdown.svelte';
@@ -36,34 +36,6 @@
 	);
 
 	let entryData = $state<Record<number, string | number | boolean>>({});
-	let showToast = $state(false);
-	let toastType = $state<'success' | 'error'>('success');
-	let toastMessage = $state('');
-	let toastSequence = $state(0);
-	let toastTimer = $state<number | null>(null);
-	const TOAST_DURATION_MS = 5000;
-
-	function pushToast(type: 'success' | 'error', message: string) {
-		toastType = type;
-		toastMessage = message;
-		toastSequence += 1;
-		showToast = true;
-
-		if (toastTimer !== null) {
-			window.clearTimeout(toastTimer);
-		}
-
-		toastTimer = window.setTimeout(() => {
-			showToast = false;
-			toastTimer = null;
-		}, TOAST_DURATION_MS);
-	}
-
-	onDestroy(() => {
-		if (toastTimer !== null) {
-			window.clearTimeout(toastTimer);
-		}
-	});
 
 	// Calculate canvas height based on field positions
 	let canvasHeight = $derived(() => {
@@ -205,13 +177,13 @@
 			});
 
 			if (response.ok) {
-				pushToast('success', 'Log saved successfully');
+				showSuccess('Log saved successfully');
 			} else {
-				pushToast('error', 'Failed to save log');
+				showError('Failed to save log');
 			}
 		} catch (error) {
 			console.error('Error saving log:', error);
-			pushToast('error', 'Error saving log');
+			showError('Error saving log');
 		}
 	}
 
@@ -221,7 +193,7 @@
 		// Validate form before submission
 		const validationError = validateForm();
 		if (validationError) {
-			pushToast('error', validationError);
+			showError(validationError);
 			return;
 		}
 
@@ -246,58 +218,14 @@
 			} else {
 				const error = await response.text();
 				console.error('Submit failed:', error);
-				pushToast('error', 'Failed to submit log');
+				showError('Failed to submit log');
 			}
 		} catch (error) {
 			console.error('Error submitting log:', error);
-			pushToast('error', 'Error submitting log');
+			showError('Error submitting log');
 		}
 	}
 </script>
-
-{#if showToast}
-	{#key toastSequence}
-		<div
-			class="fixed right-4 bottom-4 z-50 w-full max-w-sm overflow-hidden rounded-lg border px-4 py-3 text-left shadow-lg"
-			style={toastType === 'success'
-				? 'border-color: var(--create-button); background-color: var(--clock-in-bg);'
-				: 'border-color: var(--button-secondary); background-color: var(--error-bg);'}
-		>
-			<div class="mb-2 flex items-start justify-between gap-3">
-				<p
-					class="text-sm font-semibold"
-					style={toastType === 'success'
-						? 'color: var(--create-button);'
-						: 'color: var(--button-secondary);'}
-				>
-					{toastMessage}
-				</p>
-				<button
-					type="button"
-					onclick={() => {
-						showToast = false;
-						if (toastTimer !== null) {
-							window.clearTimeout(toastTimer);
-							toastTimer = null;
-						}
-					}}
-					class="rounded px-2 py-0.5 text-xs font-semibold transition-opacity hover:opacity-80"
-					style={toastType === 'success'
-						? 'background-color: var(--clock-in-bg); color: var(--create-button); cursor: pointer;'
-						: 'background-color: var(--error-bg); color: var(--button-secondary); cursor: pointer;'}
-				>
-					Close
-				</button>
-			</div>
-			<div
-				class="log-toast-progress absolute right-0 bottom-0 left-0 h-1"
-				style={toastType === 'success'
-					? `background-color: var(--create-button); animation-duration: ${TOAST_DURATION_MS}ms;`
-					: `background-color: var(--button-secondary); animation-duration: ${TOAST_DURATION_MS}ms;`}
-			></div>
-		</div>
-	{/key}
-{/if}
 
 <svelte:head>
 	<title>{templateName}</title>
@@ -447,19 +375,4 @@
 </main>
 
 <style>
-	@keyframes logToastCountdown {
-		from {
-			transform: scaleX(1);
-		}
-		to {
-			transform: scaleX(0);
-		}
-	}
-
-	.log-toast-progress {
-		transform-origin: left center;
-		animation-name: logToastCountdown;
-		animation-timing-function: linear;
-		animation-fill-mode: forwards;
-	}
 </style>
