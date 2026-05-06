@@ -447,10 +447,9 @@
 									);
 								}
 
-								showSuccess(
-									'Profile updated successfully',
-									changes.length > 0 ? changes : ['No field values changed.']
-								);
+								if (changes.length > 0) {
+									showSuccess('Profile updated successfully', changes);
+								}
 							} else if (response.error) {
 								showError('Unable to update profile', [response.error.error || 'Unknown error']);
 							}
