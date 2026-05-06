@@ -134,7 +134,6 @@
 		templates.filter((t) => {
 			if (!t.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
 			if (scheduleFilter === 'all') return true;
-			if (scheduleFilter === 'none') return !t.schedule.frequency;
 			return t.schedule.frequency === scheduleFilter;
 		})
 	);
@@ -266,7 +265,6 @@
 				<option value="quarterly">Quarterly</option>
 				<option value="yearly">Yearly</option>
 				<option value="custom">Custom</option>
-				<option value="none">No Schedule</option>
 			</select>
 		</div>
 
