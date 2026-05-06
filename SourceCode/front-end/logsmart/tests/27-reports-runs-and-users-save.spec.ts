@@ -216,12 +216,10 @@ test.describe('Reports route behavior', () => {
 		await expect(textTypeButton).toHaveAttribute('aria-pressed', 'true');
 		await expect(tempTypeButton).toHaveAttribute('aria-pressed', 'false');
 
-		await page.waitForTimeout(500);
-
 		await page.getByRole('button', { name: 'Generate' }).click();
 
 		await expect
-			.poll(async () => (await page.locator('body').textContent()) || '', { timeout: 15000 })
+			.poll(async () => (await page.locator('body').textContent()) || '')
 			.toContain('Log Report');
 
 		await expect(page.locator('body')).toContainText(textTemplate);
@@ -258,7 +256,7 @@ test.describe('Users admin save error handling', () => {
 			if (await page.locator('#userSidebar').isVisible()) {
 				break;
 			}
-			await page.waitForTimeout(300);
+			await page.waitForTimeout(100);
 		}
 		await expect(page.locator('#userSidebar')).toBeVisible();
 

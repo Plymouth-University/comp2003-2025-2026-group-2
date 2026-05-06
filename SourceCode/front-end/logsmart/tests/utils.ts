@@ -183,7 +183,7 @@ const requestPasswordResetToken = async (
 	await page.goto('http://localhost:5173/reset-password');
 	await page.getByRole('textbox', { name: 'Email' }).fill(email);
 	await page.getByRole('button', { name: 'Send Reset Link' }).click();
-	await page.waitForTimeout(2000);
+
 	await page.close();
 
 	return await getPasswordResetToken(email, 60);
@@ -227,7 +227,6 @@ const register = async (browser: Browser, close = true) => {
 		}
 	}, companyName);
 
-	await page.waitForTimeout(1000);
 	await expect(page.getByRole('button', { name: 'Next Step' })).toBeEnabled();
 	await page.getByRole('button', { name: 'Next Step' }).click();
 	await page.getByRole('textbox', { name: 'First Name' }).click();
@@ -250,7 +249,6 @@ const register = async (browser: Browser, close = true) => {
 	await page.getByPlaceholder('Re-enter password').fill(password);
 	await page.getByPlaceholder('Re-enter password').dispatchEvent('blur');
 
-	await page.waitForTimeout(500);
 	await page.getByRole('button', { name: 'Create Account' }).click();
 	if (
 		await page
@@ -270,6 +268,38 @@ const register = async (browser: Browser, close = true) => {
 };
 
 const createBranch = async (page: Page, name: string, address: string): Promise<void> => {
+	await page.route('https://nominatim.openstreetmap.org/search**', async (route) => {
+		await route.fulfill({
+			json: [
+				{
+					place_id: 1,
+					licence: 'testlicense',
+					osm_type: 'way',
+					osm_id: 1,
+					lat: '10.0000000',
+					lon: '10.0000000',
+					class: 'testclass',
+					type: 'testtype',
+					place_rank: 1,
+					importance: 1,
+					addresstype: 'testaddrtype',
+					name: 'testloc1',
+					display_name: 'testname1',
+					address: {
+						city: 'testcity',
+						county: 'testcountry',
+						state_district: 'teststated',
+						state: 'Teststate',
+						'ISO3166-2-lvl4': 'TE-ST',
+						country: 'TESTC',
+						country_code: 'TESTCC'
+					},
+					boundingbox: ['10.0000000', '10.0000000', '-10.0000000', '-10.0000000']
+				}
+			]
+		});
+	});
+
 	await page.getByRole('link', { name: 'Branches' }).click();
 	await page.waitForURL('**/branches');
 	await page.getByRole('textbox', { name: 'Branch Name' }).fill(name);
@@ -334,7 +364,6 @@ const sendInvitation = async (
 	console.log(`[sendInvitation] Clicking Send Invite`);
 	await page.getByRole('button', { name: 'Send Invite' }).click();
 
-	await page.waitForTimeout(1000);
 	await page.close();
 
 	console.log(`[sendInvitation] Fetching token from Mailhog for ${email}`);

@@ -49,9 +49,7 @@ test.describe('Company Settings', () => {
 
 		await page.getByRole('button', { name: 'Save Company Details' }).click();
 
-		await expect(page.getByText('Company details saved successfully')).toBeVisible({
-			timeout: 10000
-		});
+		await expect(page.getByText('Company details saved successfully')).toBeVisible();
 	});
 
 	test('export_company_data', async ({ page }) => {
@@ -60,9 +58,7 @@ test.describe('Company Settings', () => {
 
 		await page.getByRole('button', { name: /Export Company Data|Re-export Company Data/ }).click();
 
-		await expect(page.getByText(/Data exported on/)).toBeVisible({
-			timeout: 10000
-		});
+		await expect(page.getByText(/Data exported on/)).toBeVisible();
 	});
 });
 
@@ -88,10 +84,9 @@ test.describe('Company Data Export & Deletion', () => {
 		await page.waitForURL('**/company-settings');
 
 		await page.getByRole('button', { name: /Export Company Data|Re-export Company Data/ }).click();
-		await page.waitForTimeout(2000);
 
 		const deleteButton = page.getByRole('button', { name: 'Delete Company' });
-		await expect(deleteButton).toBeEnabled({ timeout: 10000 });
+		await expect(deleteButton).toBeEnabled({ timeout: 1000 });
 	});
 });
 
@@ -107,12 +102,11 @@ test.describe('Company Logo', () => {
 			buffer: Buffer.from(PNG_BASE64, 'base64')
 		});
 
-		await page.waitForSelector('.cropper-modal', { timeout: 10000 });
+		await page.waitForSelector('.cropper-modal');
 
 		await page.getByRole('button', { name: 'Save', exact: true }).click();
-		await page.waitForTimeout(3000);
 
-		await expect(page.locator('img.picture-preview')).toBeVisible({ timeout: 10000 });
+		await expect(page.locator('img.picture-preview')).toBeVisible({ timeout: 1000 });
 
 		await page.reload();
 		await page.waitForURL('**/company-settings');
@@ -136,15 +130,15 @@ test.describe('Company Logo', () => {
 				buffer: Buffer.from(PNG_BASE64, 'base64')
 			});
 
-			await page.waitForSelector('.cropper-modal', { timeout: 10000 });
+			await page.waitForSelector('.cropper-modal');
 			await page.getByRole('button', { name: 'Save', exact: true }).click();
-			await expect(page.locator('img.picture-preview')).toBeVisible({ timeout: 10000 });
+			await expect(page.locator('img.picture-preview')).toBeVisible({ timeout: 1000 });
 		}
 
 		const deleteBtn = page.getByRole('button', { name: 'Delete', exact: true });
-		await expect(deleteBtn).toBeVisible({ timeout: 10000 });
+		await expect(deleteBtn).toBeVisible({ timeout: 1000 });
 		await deleteBtn.click();
-		await expect(deleteBtn).toBeHidden({ timeout: 10000 });
+		await expect(deleteBtn).toBeHidden({ timeout: 1000 });
 		await page.reload();
 		await expect(page.locator('div.no-picture')).toBeVisible();
 	});

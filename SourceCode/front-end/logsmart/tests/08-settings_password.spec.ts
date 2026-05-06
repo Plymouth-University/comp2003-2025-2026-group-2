@@ -57,7 +57,6 @@ test.describe('Settings - Profile Updates', () => {
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill('UpdatedFirst');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-		await page.waitForTimeout(1000);
 	});
 
 	test('update_last_name', async ({ page }) => {
@@ -66,7 +65,6 @@ test.describe('Settings - Profile Updates', () => {
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
 		await page.getByRole('textbox', { name: 'Last Name' }).fill('UpdatedLast');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-		await page.waitForTimeout(1000);
 	});
 
 	test('update_both_names', async ({ page }) => {
@@ -77,7 +75,6 @@ test.describe('Settings - Profile Updates', () => {
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
 		await page.getByRole('textbox', { name: 'Last Name' }).fill('User');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-		await page.waitForTimeout(1000);
 	});
 
 	test('empty_first_name_validation', async ({ page }) => {
@@ -103,7 +100,6 @@ test.describe('Settings - Profile Updates', () => {
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill(longName);
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-		await page.waitForTimeout(1000);
 	});
 
 	test('special_characters_in_names', async ({ page }) => {
@@ -118,14 +114,12 @@ test.describe('Settings - Profile Updates', () => {
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
 		await page.getByRole('textbox', { name: 'Last Name' }).fill('Smith-Jones');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-		await page.waitForTimeout(1000);
 
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill(originalFirstName);
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
 		await page.getByRole('textbox', { name: 'Last Name' }).fill(originalLastName);
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-		await page.waitForTimeout(1000);
 	});
 });
 
@@ -151,7 +145,6 @@ test.describe('Settings - Password Reset', () => {
 		const resetButton = page.getByRole('button', { name: 'Request Password Reset' });
 		if (await resetButton.isVisible()) {
 			await resetButton.click();
-			await page.waitForTimeout(1000);
 		}
 	});
 
@@ -161,7 +154,6 @@ test.describe('Settings - Password Reset', () => {
 		const resetButton = page.getByRole('button', { name: 'Request Password Reset' });
 		if (await resetButton.isVisible()) {
 			await resetButton.click();
-			await page.waitForTimeout(1000);
 		}
 	});
 });
@@ -190,7 +182,6 @@ test.describe('Settings - Dark Mode', () => {
 			.or(page.getByLabel('Dark Mode'));
 		if (await darkModeToggle.isVisible()) {
 			await darkModeToggle.check();
-			await page.waitForTimeout(500);
 			const htmlElement = page.locator('html');
 			await htmlElement.evaluate((el) => el.classList.contains('dark'));
 		}
@@ -205,7 +196,6 @@ test.describe('Settings - Dark Mode', () => {
 			.or(page.getByLabel('Dark Mode'));
 		if (await darkModeToggle.isVisible()) {
 			await darkModeToggle.uncheck();
-			await page.waitForTimeout(500);
 		}
 	});
 
@@ -218,10 +208,10 @@ test.describe('Settings - Dark Mode', () => {
 			.or(page.getByLabel('Dark Mode'));
 		if (await darkModeToggle.isVisible()) {
 			await darkModeToggle.check();
-			await page.waitForTimeout(500);
+
 			await page.getByRole('link', { name: 'Dashboard', exact: true }).click();
 			await page.waitForURL('**/dashboard');
-			await page.waitForTimeout(500);
+
 			await page.getByRole('link', { name: 'Settings', exact: true }).click();
 			await page.waitForURL('**/settings');
 		}
@@ -236,7 +226,6 @@ test.describe('Settings - Dark Mode', () => {
 			.or(page.getByLabel('Dark Mode'));
 		if (await darkModeToggle.isVisible()) {
 			await darkModeToggle.check();
-			await page.waitForTimeout(500);
 			await page.getByRole('button', { name: 'Logout' }).click();
 			await page.waitForURL('**/login');
 			await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
@@ -245,7 +234,6 @@ test.describe('Settings - Dark Mode', () => {
 			await page.waitForURL('**/dashboard');
 			await page.getByRole('link', { name: 'Settings', exact: true }).click();
 			await page.waitForURL('**/settings');
-			await page.waitForTimeout(500);
 		}
 	});
 });
@@ -305,7 +293,6 @@ test.describe('Settings - Member Access', () => {
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill('Invited');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-		await page.waitForTimeout(1000);
 	});
 
 	test('member_can_toggle_dark_mode', async ({ page }) => {
@@ -317,9 +304,8 @@ test.describe('Settings - Member Access', () => {
 			.or(page.getByLabel('Dark Mode'));
 		if (await darkModeToggle.isVisible()) {
 			await darkModeToggle.check();
-			await page.waitForTimeout(500);
+
 			await darkModeToggle.uncheck();
-			await page.waitForTimeout(500);
 		}
 	});
 });
@@ -340,7 +326,6 @@ test.describe('Password Reset Flow - Unauthenticated', () => {
 		await page.goto('http://localhost:5173/reset-password');
 		await page.getByRole('textbox', { name: 'Email' }).fill(passwordResetCreds.email);
 		await page.getByRole('button', { name: 'Send Reset Link' }).click();
-		await page.waitForTimeout(1000);
 	});
 
 	test('request_password_reset_invalid_email_format', async ({ page }) => {
@@ -354,7 +339,6 @@ test.describe('Password Reset Flow - Unauthenticated', () => {
 		await page.goto('http://localhost:5173/reset-password');
 		await page.getByRole('textbox', { name: 'Email' }).fill('nonexistent@logsmart.app');
 		await page.getByRole('button', { name: 'Send Reset Link' }).click();
-		await page.waitForTimeout(1000);
 	});
 
 	test('reset_password_with_valid_token', async ({ page, browser }) => {
@@ -367,7 +351,6 @@ test.describe('Password Reset Flow - Unauthenticated', () => {
 			await passwordField.fill('NewPassword123!');
 			await page.getByRole('textbox', { name: 'Confirm Password' }).fill('NewPassword123!');
 			await page.getByRole('button', { name: 'Set new password' }).click();
-			await page.waitForTimeout(1000);
 		}
 	});
 
@@ -407,6 +390,5 @@ test.describe('Password Reset Flow - Unauthenticated', () => {
 	test('reset_password_invalid_token', async ({ page }) => {
 		await page.goto('http://localhost:5173/reset-password?token=invalid-token-xyz');
 		await page.waitForLoadState('networkidle');
-		await page.waitForTimeout(1000);
 	});
 });

@@ -48,7 +48,7 @@ test.describe('Template Versioning', () => {
 		await page.getByLabel('Placeholder').fill('Field V1');
 		await page.getByRole('button', { name: 'Save Template' }).click();
 		await expect(page.getByText('Template saved successfully!')).toBeVisible();
-		await page.waitForTimeout(1000); // Wait for save to complete
+		await page.waitForLoadState('networkidle');
 
 		// 3. Update template (Version 2)
 		// Ensure item is selected
@@ -57,14 +57,14 @@ test.describe('Template Versioning', () => {
 		await page.getByPlaceholder('Version name (optional)').fill('My Custom Version Name');
 		await page.getByRole('button', { name: 'Save Template' }).click();
 		await expect(page.getByText('Template saved successfully!')).toBeVisible();
-		await page.waitForTimeout(1000);
+		await page.waitForLoadState('networkidle');
 
 		// 4. Update template again (Version 3)
 		await page.locator('.canvas-item').first().click();
 		await page.getByLabel('Placeholder').fill('Field V3');
 		await page.getByRole('button', { name: 'Save Template' }).click();
 		await expect(page.getByText('Template saved successfully!')).toBeVisible();
-		await page.waitForTimeout(1000);
+		await page.waitForLoadState('networkidle');
 
 		// 5. Open History
 		await page.getByRole('button', { name: 'History' }).click();
@@ -98,7 +98,7 @@ test.describe('Template Versioning', () => {
 		// Assuming the canvas items are reset, the first item should correspond to the text input we added
 
 		// Wait for reload (loadTemplate is async)
-		await page.waitForTimeout(1000);
+		await page.waitForLoadState('networkidle');
 
 		// Click the component (assuming it's roughly where we placed it or default pos)
 		// Default x,y is 0,0 usually or defined in addComponent.
