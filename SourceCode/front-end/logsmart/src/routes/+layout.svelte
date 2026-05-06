@@ -8,6 +8,7 @@
 	import { isDarkMode } from '$lib/stores/theme';
 	import PwaInstallPrompt from '$lib/components/pwa_install_prompt.svelte';
 	import CookieConsent from '$lib/components/CookieConsent.svelte';
+	import Toast from '$lib/components/Toast.svelte';
 
 	let { children, data } = $props<{ children: import('svelte').Snippet; data: LayoutData }>();
 
@@ -195,4 +196,5 @@
 	{#if !isLegalRoute}
 		<CookieConsent show={showCookieConsent} />
 	{/if}
+	<Toast />
 </div>

@@ -3,7 +3,8 @@
 	import type { Member } from './+page.svelte';
 	import PictureUploader from '$lib/components/PictureUploader.svelte';
 	import { invalidateAll } from '$app/navigation';
-	import { onDestroy } from 'svelte';
+	import { showSuccess, showError } from '$lib/toast';
+	import { toasts } from '$lib/stores/toast';
 
 	const { selectedUser, loggedInUserRole, updateMember, branches, isReadonlyHQ, onClose } = $props<{
 		selectedUser: Member | null;
@@ -37,16 +38,6 @@
 	let role = $state('');
 	let branchId = $state(null as string | null);
 	let isSaving = $state(false);
-	let saveStatus = $state<'idle' | 'success' | 'error'>('idle');
-	let saveMessage = $state('');
-	let showUpdatePopup = $state(false);
-	let updatePopupType = $state<'success' | 'error'>('success');
-	let updatePopupTitle = $state('');
-	let updatePopupDetails = $state<string[]>([]);
-	let updateToastTimer = $state<number | null>(null);
-	let lastSelectedEmail = $state<string | null>(null);
-	let toastSequence = $state(0);
-	const TOAST_DURATION_MS = 5000;
 
 	let profilePictureUrl = $derived(
 		selectedUser?.profile_picture_url
@@ -54,19 +45,19 @@
 			: selectedUser?.oauth_picture || null
 	);
 
+	let _lastUserEmail = $state<string | null>(null);
+
 	$effect(() => {
 		if (selectedUser) {
-			const hasSelectedUserChanged = selectedUser.email !== lastSelectedEmail;
-			lastSelectedEmail = selectedUser.email;
+			const previousEmail = _lastUserEmail;
+			_lastUserEmail = selectedUser.email;
+			if (previousEmail && previousEmail !== selectedUser.email) {
+				toasts.clear();
+			}
 			firstName = selectedUser.first_name;
 			lastName = selectedUser.last_name;
 			role = selectedUser.role;
 			branchId = selectedUser.branch_id || null;
-			saveStatus = 'idle';
-			saveMessage = '';
-			if (hasSelectedUserChanged) {
-				showUpdatePopup = false;
-			}
 		}
 	});
 
@@ -88,32 +79,6 @@
 		const branch = branches.find((item: { id: string; name: string }) => item.id === id);
 		return branch?.name || 'Unknown Branch';
 	}
-
-	function showTimedToast(
-		type: 'success' | 'error',
-		title: string,
-		details: string[] = [],
-		durationMs = TOAST_DURATION_MS
-	) {
-		if (updateToastTimer !== null) {
-			window.clearTimeout(updateToastTimer);
-		}
-		updatePopupType = type;
-		updatePopupTitle = title;
-		updatePopupDetails = details;
-		toastSequence += 1;
-		showUpdatePopup = true;
-		updateToastTimer = window.setTimeout(() => {
-			showUpdatePopup = false;
-			updateToastTimer = null;
-		}, durationMs);
-	}
-
-	onDestroy(() => {
-		if (updateToastTimer !== null) {
-			window.clearTimeout(updateToastTimer);
-		}
-	});
 
 	async function handlePictureUpload(pictureUrl: string) {
 		if (!selectedUser || isReadonlyHQ) return;
@@ -141,57 +106,6 @@
 		await invalidateAll();
 	}
 </script>
-
-{#if showUpdatePopup}
-	{#key toastSequence}
-		<div
-			class="fixed right-4 bottom-4 z-50 w-full max-w-sm overflow-hidden rounded-lg border px-4 py-3 text-left shadow-lg"
-			style={updatePopupType === 'success'
-				? 'border-color: var(--create-button); background-color: var(--clock-in-bg);'
-				: 'border-color: var(--button-secondary); background-color: var(--error-bg);'}
-		>
-			<div class="mb-1 flex items-start justify-between gap-3">
-				<p
-					class="text-sm font-semibold"
-					style={updatePopupType === 'success'
-						? 'color: var(--create-button);'
-						: 'color: var(--button-secondary);'}
-				>
-					{updatePopupTitle}
-				</p>
-				<button
-					type="button"
-					onclick={() => {
-						showUpdatePopup = false;
-						if (updateToastTimer !== null) {
-							window.clearTimeout(updateToastTimer);
-							updateToastTimer = null;
-						}
-					}}
-					class="rounded px-2 py-0.5 text-xs font-semibold transition-opacity hover:opacity-80"
-					style={updatePopupType === 'success'
-						? 'background-color: var(--clock-in-bg); color: var(--create-button); cursor: pointer;'
-						: 'background-color: var(--error-bg); color: var(--button-secondary); cursor: pointer;'}
-				>
-					Close
-				</button>
-			</div>
-			<div class="space-y-1 text-xs text-input-focus">
-				{#if updatePopupDetails.length > 0}
-					{#each updatePopupDetails as detail (detail)}
-						<p>{detail}</p>
-					{/each}
-				{/if}
-			</div>
-			<div
-				class="toast-progress absolute right-0 bottom-0 left-0 h-1"
-				style={updatePopupType === 'success'
-					? `background-color: var(--create-button); animation-duration: ${TOAST_DURATION_MS}ms;`
-					: `background-color: var(--button-secondary); animation-duration: ${TOAST_DURATION_MS}ms;`}
-			></div>
-		</div>
-	{/key}
-{/if}
 
 <svelte:window onresize={handleResize} />
 
@@ -299,7 +213,7 @@
 										api.POST('/auth/password/request-reset', {
 											body: { email: selectedUser?.email }
 										});
-										showTimedToast('success', 'Password reset email sent');
+										showSuccess('Password reset email sent');
 									}
 								}}>Reset</button
 							>
@@ -445,7 +359,7 @@
 						onclick={() => {
 							if (selectedUser) {
 								api.POST('/auth/password/request-reset', { body: { email: selectedUser?.email } });
-								showTimedToast('success', 'Password reset email sent');
+								showSuccess('Password reset email sent');
 							}
 						}}>Reset</button
 					>
@@ -499,9 +413,6 @@
 						const previousBranchId = selectedUser.branch_id || null;
 
 						isSaving = true;
-						saveStatus = 'idle';
-						saveMessage = '';
-						showUpdatePopup = false;
 						try {
 							const response = await api.PUT('/auth/admin/update-member', {
 								body: {
@@ -536,63 +447,26 @@
 									);
 								}
 
-								saveStatus = 'success';
-								saveMessage = 'Member updated successfully.';
-								showTimedToast(
-									'success',
+								showSuccess(
 									'Profile updated successfully',
 									changes.length > 0 ? changes : ['No field values changed.']
 								);
 							} else if (response.error) {
-								saveStatus = 'error';
-								saveMessage = `Failed to update member: ${response.error.error}`;
-								showTimedToast('error', 'Unable to update profile', [
-									response.error.error || 'Unknown error'
-								]);
+								showError('Unable to update profile', [response.error.error || 'Unknown error']);
 							}
 						} catch {
-							saveStatus = 'error';
-							saveMessage = 'Failed to update member: network error';
-							showTimedToast('error', 'Unable to update profile', [
-								'Network error while saving profile changes'
-							]);
+							showError('Unable to update profile', ['Network error while saving profile changes']);
 						} finally {
 							isSaving = false;
 						}
 					}}>Save</button
 				>
-				{#if saveStatus !== 'idle'}
-					<p
-						class="mt-2 text-sm"
-						style={saveStatus === 'success'
-							? 'color: var(--create-button);'
-							: 'color: var(--button-secondary);'}
-					>
-						{saveMessage}
-					</p>
-				{/if}
 			</form>
 		</div>
 	</div>
 {/if}
 
 <style>
-	@keyframes toastCountdown {
-		from {
-			transform: scaleX(1);
-		}
-		to {
-			transform: scaleX(0);
-		}
-	}
-
-	.toast-progress {
-		transform-origin: left center;
-		animation-name: toastCountdown;
-		animation-timing-function: linear;
-		animation-fill-mode: forwards;
-	}
-
 	#userSidebar button:not(:disabled) {
 		cursor: pointer;
 	}
