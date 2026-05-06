@@ -128,9 +128,14 @@
 	let deleteConfirmOpen = $state(false);
 	let templateToDelete = $state<Template | null>(null);
 	let searchQuery = $state('');
+	let scheduleFilter = $state<string>('all');
 
 	const filteredTemplates = $derived(
-		templates.filter((t) => t.name.toLowerCase().includes(searchQuery.toLowerCase()))
+		templates.filter((t) => {
+			if (!t.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+			if (scheduleFilter === 'all') return true;
+			return t.schedule.frequency === scheduleFilter;
+		})
 	);
 
 	function handleEdit(template: Template) {
@@ -248,6 +253,21 @@
 			</div>
 		</div>
 
+		<div class="mb-6 flex gap-4">
+			<select
+				bind:value={scheduleFilter}
+				class="flex-1 rounded-lg border-2 border-border-primary bg-bg-primary px-4 py-3 text-text-primary"
+			>
+				<option value="all">All Schedules</option>
+				<option value="daily">Daily</option>
+				<option value="weekly">Weekly</option>
+				<option value="monthly">Monthly</option>
+				<option value="quarterly">Quarterly</option>
+				<option value="yearly">Yearly</option>
+				<option value="custom">Custom</option>
+			</select>
+		</div>
+
 		{#if loading}
 			<div class="rounded-lg border-2 border-border-primary bg-bg-primary px-6 py-12 text-center">
 				<p class="text-lg text-text-secondary">Loading templates...</p>
@@ -265,9 +285,11 @@
 			</div>
 		{:else if filteredTemplates.length === 0}
 			<div class="rounded-lg border-2 border-border-primary bg-bg-primary px-6 py-12 text-center">
-				{#if searchQuery}
+				{#if searchQuery || scheduleFilter !== 'all'}
 					<p class="text-lg text-text-secondary">
-						No templates found matching "{searchQuery}"
+						No templates found matching "{searchQuery}"{searchQuery && scheduleFilter !== 'all'
+							? ' and '
+							: ''}{scheduleFilter !== 'all' ? `with ${scheduleFilter} schedule` : ''}
 					</p>
 				{:else}
 					<p class="text-lg text-text-secondary">

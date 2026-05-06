@@ -15,6 +15,7 @@
 		{ value: 'daily', label: 'Daily' },
 		{ value: 'weekly', label: 'Weekly' },
 		{ value: 'monthly', label: 'Monthly' },
+		{ value: 'quarterly', label: 'Quarterly' },
 		{ value: 'yearly', label: 'Yearly' },
 		{ value: 'custom', label: 'Custom Interval' }
 	];
