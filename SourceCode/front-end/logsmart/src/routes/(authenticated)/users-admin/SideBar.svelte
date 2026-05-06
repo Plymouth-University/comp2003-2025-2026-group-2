@@ -89,10 +89,18 @@
 		return branch?.name || 'Unknown Branch';
 	}
 
-	function showTimedToast(durationMs = TOAST_DURATION_MS) {
+	function showTimedToast(
+		type: 'success' | 'error',
+		title: string,
+		details: string[] = [],
+		durationMs = TOAST_DURATION_MS
+	) {
 		if (updateToastTimer !== null) {
 			window.clearTimeout(updateToastTimer);
 		}
+		updatePopupType = type;
+		updatePopupTitle = title;
+		updatePopupDetails = details;
 		toastSequence += 1;
 		showUpdatePopup = true;
 		updateToastTimer = window.setTimeout(() => {
@@ -291,9 +299,7 @@
 										api.POST('/auth/password/request-reset', {
 											body: { email: selectedUser?.email }
 										});
-										updatePopupType = 'success';
-										updatePopupTitle = 'Email sent';
-										showTimedToast();
+										showTimedToast('success', 'Password reset email sent');
 									}
 								}}>Reset</button
 							>
@@ -439,9 +445,7 @@
 						onclick={() => {
 							if (selectedUser) {
 								api.POST('/auth/password/request-reset', { body: { email: selectedUser?.email } });
-								updatePopupType = 'success';
-								updatePopupTitle = 'Email sent';
-								showTimedToast();
+								showTimedToast('success', 'Password reset email sent');
 							}
 						}}>Reset</button
 					>
@@ -534,25 +538,24 @@
 
 								saveStatus = 'success';
 								saveMessage = 'Member updated successfully.';
-								updatePopupType = 'success';
-								updatePopupTitle = 'Profile updated successfully';
-								updatePopupDetails = changes.length > 0 ? changes : ['No field values changed.'];
-								showTimedToast();
+								showTimedToast(
+									'success',
+									'Profile updated successfully',
+									changes.length > 0 ? changes : ['No field values changed.']
+								);
 							} else if (response.error) {
 								saveStatus = 'error';
 								saveMessage = `Failed to update member: ${response.error.error}`;
-								updatePopupType = 'error';
-								updatePopupTitle = 'Unable to update profile';
-								updatePopupDetails = [response.error.error || 'Unknown error'];
-								showTimedToast();
+								showTimedToast('error', 'Unable to update profile', [
+									response.error.error || 'Unknown error'
+								]);
 							}
 						} catch {
 							saveStatus = 'error';
 							saveMessage = 'Failed to update member: network error';
-							updatePopupType = 'error';
-							updatePopupTitle = 'Unable to update profile';
-							updatePopupDetails = ['Network error while saving profile changes'];
-							showTimedToast();
+							showTimedToast('error', 'Unable to update profile', [
+								'Network error while saving profile changes'
+							]);
 						} finally {
 							isSaving = false;
 						}
