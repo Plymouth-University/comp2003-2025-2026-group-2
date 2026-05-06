@@ -19,8 +19,9 @@
 	const nextCursor = $derived(data?.nextCursor ?? null);
 	const hasPrevPage = $derived.by(() => {
 		const params = new SvelteURLSearchParams(page.url.searchParams);
+		const cursorParam = params.get('cursor') || '';
 		const stackParam = params.get('cursor_stack') || '';
-		return stackParam.split(',').filter(Boolean).length > 0;
+		return !!cursorParam || stackParam.split(',').filter(Boolean).length > 0;
 	});
 
 	// Create mapping from user_id to branch_id for client-side filtering
