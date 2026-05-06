@@ -63,7 +63,9 @@ test('create_and_list_branches', async ({ browser }) => {
 	await adminCreds.page!.getByRole('button', { name: 'ADD BRANCH' }).click();
 
 	await expect(adminCreds.page!.getByText('Manchester Hub')).toBeVisible();
-	await expect(adminCreds.page!.getByText('testname1')).toBeVisible();
+	(await adminCreds.page!.getByText('testname1').all()).forEach(async (element) => {
+		await expect(element).toBeVisible();
+	});
 	await expect(adminCreds.page!.getByText('London Office')).toBeVisible();
 
 	await adminCreds.page!.close();

@@ -99,7 +99,7 @@ test.describe('Security: XSS Prevention', () => {
 			.getByRole('textbox', { name: 'First Name' })
 			.fill('<img src=x onerror=alert("XSS")>');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-
+		await page.reload();
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill('Test');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
@@ -228,7 +228,7 @@ test.describe('Edge Cases: Boundary Conditions', () => {
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
 		await page.getByRole('textbox', { name: 'Last Name' }).fill('González');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-
+		await page.reload();
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill('Test');
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
@@ -370,7 +370,7 @@ test.describe('Edge Cases: Concurrent Operations', () => {
 			await page.getByRole('textbox', { name: 'First Name' }).fill(`Test${i}`);
 			await page.getByRole('button', { name: 'Save Profile' }).click();
 		}
-
+		await page.reload();
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill('Test');
 		await page.getByRole('button', { name: 'Save Profile' }).click();

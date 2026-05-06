@@ -121,7 +121,7 @@ test.describe('Company Logo', () => {
 		await page.getByRole('link', { name: 'Company Settings' }).click();
 		await page.waitForURL('**/company-settings');
 
-		const deleteButton = page.getByRole('button', { name: 'Delete', exact: true });
+		const deleteButton = page.getByRole('button', { name: 'Delete Picture', exact: true });
 		if (!(await deleteButton.isVisible())) {
 			const fileInput = page.locator('.file-input');
 			await fileInput.setInputFiles({
@@ -135,7 +135,7 @@ test.describe('Company Logo', () => {
 			await expect(page.locator('img.picture-preview')).toBeVisible({ timeout: 1000 });
 		}
 
-		const deleteBtn = page.getByRole('button', { name: 'Delete', exact: true });
+		const deleteBtn = page.getByRole('button', { name: 'Delete Picture', exact: true });
 		await expect(deleteBtn).toBeVisible({ timeout: 1000 });
 		await deleteBtn.click();
 		await expect(deleteBtn).toBeHidden({ timeout: 1000 });

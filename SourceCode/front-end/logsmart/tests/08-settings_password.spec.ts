@@ -115,6 +115,8 @@ test.describe('Settings - Profile Updates', () => {
 		await page.getByRole('textbox', { name: 'Last Name' }).fill('Smith-Jones');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
 
+		await page.reload();
+
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill(originalFirstName);
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();

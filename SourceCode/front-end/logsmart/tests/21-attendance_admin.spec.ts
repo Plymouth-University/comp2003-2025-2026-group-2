@@ -279,6 +279,7 @@ test.describe('Attendance Admin - Clock Events Integration', () => {
 		await adminPage.waitForURL('**/dashboard');
 
 		await adminPage.getByRole('link', { name: 'Attendance' }).click();
+		await adminPage.getByRole('button', { name: 'Apply' }).click();
 		await adminPage.waitForURL('**/attendance-admin');
 		await adminPage.waitForLoadState('networkidle');
 
@@ -315,6 +316,7 @@ test.describe('Attendance Admin - Clock Events Integration', () => {
 		await adminPage.waitForURL('**/dashboard');
 
 		await adminPage.getByRole('link', { name: 'Attendance' }).click();
+		await adminPage.getByRole('button', { name: 'Apply' }).click();
 		await adminPage.waitForURL('**/attendance-admin');
 		await adminPage.waitForLoadState('networkidle');
 
