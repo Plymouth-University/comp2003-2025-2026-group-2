@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-
 	let { open = $bindable(false), title = 'Confirm', message = '', onConfirm, onCancel } = $props<{
 		open?: boolean;
 		title?: string;

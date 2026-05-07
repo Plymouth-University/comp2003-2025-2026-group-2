@@ -1,4 +1,4 @@
-import { writable, get } from 'svelte/store';
+import { writable } from 'svelte/store';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -27,8 +27,7 @@ function createToastStore() {
 		},
 		clear: () => {
 			set([]);
-		},
-		getAll: () => get({ subscribe })
+		}
 	};
 }
 
