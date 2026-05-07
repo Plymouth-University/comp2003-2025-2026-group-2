@@ -4,6 +4,7 @@
 	import { page } from '$app/state';
 	import { api } from '$lib/api';
 	import { onMount } from 'svelte';
+	import { showError } from '$lib/toast';
 	import TemplatesSidebar from './TemplatesSidebar.svelte';
 	import DesignCanvas from './DesignCanvas.svelte';
 	import ComponentsPalette from './ComponentsPalette.svelte';
@@ -756,7 +757,7 @@
 
 		if (error) {
 			console.error('Failed to fetch versions:', error);
-			alert('Failed to load version history');
+			showError('Failed to load version history');
 			return;
 		}
 
@@ -789,7 +790,7 @@
 
 		if (error) {
 			console.error('Failed to restore version:', error);
-			alert('Failed to restore version');
+			showError('Failed to restore version');
 			void restoring;
 			return;
 		}

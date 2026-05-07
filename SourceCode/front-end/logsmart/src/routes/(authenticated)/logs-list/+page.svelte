@@ -5,7 +5,7 @@
 	import LogRow from '$lib/components/logs/LogRow.svelte';
 	import LogSection from '$lib/components/logs/LogSection.svelte';
 	import { onMount } from 'svelte';
-	import { showSuccess } from '$lib/toast';
+	import { showSuccess, showError } from '$lib/toast';
 	import { SvelteDate } from 'svelte/reactivity';
 
 	type LogEntry = components['schemas']['LogEntryResponse'];
@@ -170,16 +170,16 @@
 			});
 
 			if (response.ok) {
-				alert('Log unsubmitted successfully');
+				showSuccess('Log unsubmitted successfully');
 				window.location.reload();
 			} else {
 				const error = await response.text();
 				console.error('Unsubmit failed:', error);
-				alert('Failed to unsubmit log');
+				showError('Failed to unsubmit log');
 			}
 		} catch (error) {
 			console.error('Error unsubmitting log:', error);
-			alert('Error unsubmitting log');
+			showError('Error unsubmitting log');
 		}
 	}
 </script>

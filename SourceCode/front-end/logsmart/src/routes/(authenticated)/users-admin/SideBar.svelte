@@ -281,7 +281,7 @@
 										branch_id: branchId
 									});
 								} else if (response.error) {
-									alert(`Failed to update member: ${response.error.error}`);
+									showError('Failed to update member', [response.error.error]);
 								}
 							}}>Save</button
 						>

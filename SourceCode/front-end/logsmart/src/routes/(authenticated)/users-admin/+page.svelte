@@ -2,6 +2,7 @@
 	import { api } from '$lib/api';
 	import type { components } from '$lib/api-types';
 	import type { PageData } from './$types';
+	import { showSuccess, showError } from '$lib/toast';
 	import InviteModal from './InviteModal.svelte';
 	import InviteRow from './InviteRow.svelte';
 	import SideBar from './SideBar.svelte';
@@ -58,13 +59,13 @@
 			});
 
 			if (response.error) {
-				alert(`Failed to cancel invitation: ${response.error || 'Unknown error'}`);
+				showError('Failed to cancel invitation', [response.error || 'Unknown error']);
 				return;
 			}
 
 			invitations = invitations.filter((inv: Invitation) => inv.id !== invitationId);
 		} catch (error) {
-			alert(`Error cancelling invitation: ${error}`);
+			showError('Error cancelling invitation');
 		}
 	};
 
@@ -72,7 +73,7 @@
 		const member = members.find((m: Member) => m.email === email);
 		if (!member) return;
 		if (member.email === user.email) {
-			alert('You cannot remove yourself.');
+			showError('You cannot remove yourself');
 			return;
 		}
 
@@ -86,7 +87,7 @@
 			});
 
 			if (response.error) {
-				alert(`Failed to remove member: ${response.data || 'Unknown error'}`);
+				showError('Failed to remove member', [response.data || 'Unknown error']);
 				return;
 			}
 
@@ -95,7 +96,7 @@
 				selectedUser = null;
 			}
 		} catch (error) {
-			alert(`Error removing member: ${error}`);
+			showError('Error removing member');
 		}
 	};
 
