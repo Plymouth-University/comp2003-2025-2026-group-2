@@ -5,6 +5,7 @@
 	import { api } from '$lib/api';
 	import { onMount } from 'svelte';
 	import { showError } from '$lib/toast';
+	import { confirm } from '$lib/confirm';
 	import TemplatesSidebar from './TemplatesSidebar.svelte';
 	import DesignCanvas from './DesignCanvas.svelte';
 	import ComponentsPalette from './ComponentsPalette.svelte';
@@ -277,34 +278,32 @@
 			return;
 		}
 
-		if (
-			!confirm(
-				`Are you sure you want to delete "${originalTemplateName}"? This action cannot be undone.`
-			)
-		) {
-			return;
-		}
+		confirm(
+			'Delete Template',
+			`Are you sure you want to delete "${originalTemplateName}"? This action cannot be undone.`,
+			async () => {
+				deleting = true;
+				deleteError = null;
 
-		deleting = true;
-		deleteError = null;
+				const { error } = await api.DELETE('/logs/templates', {
+					params: {
+						query: {
+							template_name: originalTemplateName
+						}
+					}
+				});
 
-		const { error } = await api.DELETE('/logs/templates', {
-			params: {
-				query: {
-					template_name: originalTemplateName
+				if (error) {
+					deleteError = 'Failed to delete template';
+					deleting = false;
+					return;
 				}
+
+				deleting = false;
+				createNewTemplate();
+				await fetchTemplates();
 			}
-		});
-
-		if (error) {
-			deleteError = 'Failed to delete template';
-			deleting = false;
-			return;
-		}
-
-		deleting = false;
-		createNewTemplate();
-		await fetchTemplates();
+		);
 	}
 
 	onMount(() => {
@@ -342,54 +341,75 @@
 	});
 
 	function createNewTemplate() {
+		const doCreate = () => {
+			canvasItems = [];
+			designCanvasHeight = 500;
+			logTitle = '';
+			selectedItemId = null;
+			isEditing = false;
+			originalTemplateName = null;
+			newTemplateSchedule = { ...DEFAULT_NEW_TEMPLATE_SCHEDULE };
+			branchId = data.user?.branch_id || (canManageCompany ? 'company' : '');
+			hasUnsavedChanges = false;
+			goto('/template-designer', { replaceState: true });
+		};
+
 		if (hasUnsavedChanges) {
-			if (!confirm('You have unsaved changes. Are you sure you want to create a new template?')) {
-				return;
-			}
+			confirm(
+				'Unsaved Changes',
+				'You have unsaved changes. Are you sure you want to create a new template?',
+				doCreate
+			);
+			return;
 		}
-		canvasItems = [];
-		designCanvasHeight = 500;
-		logTitle = '';
-		selectedItemId = null;
-		isEditing = false;
-		originalTemplateName = null;
-		newTemplateSchedule = { ...DEFAULT_NEW_TEMPLATE_SCHEDULE };
-		branchId = data.user?.branch_id || (canManageCompany ? 'company' : '');
-		hasUnsavedChanges = false;
-		goto('/template-designer', { replaceState: true });
+		doCreate();
 	}
 
 	function useDefaultTemplate(templateId: string) {
 		const blueprint = DEFAULT_TEMPLATE_BLUEPRINTS.find((t) => t.id === templateId);
 		if (!blueprint) return;
 
-		if (hasUnsavedChanges) {
-			if (!confirm('You have unsaved changes. Are you sure you want to load a default template?')) {
-				return;
-			}
-		}
+		const doLoad = () => {
+			canvasItems = blueprint.template_layout.map(mapApiFieldToCanvasItem);
+			designCanvasHeight = blueprint.canvas_height;
+			logTitle = `${blueprint.name} Copy`;
+			selectedItemId = null;
+			isEditing = false;
+			originalTemplateName = null;
+			newTemplateSchedule = { ...blueprint.schedule };
+			branchId = data.user?.branch_id || (canManageCompany ? 'company' : '');
+			hasUnsavedChanges = true;
+			goto('/template-designer', { replaceState: true });
+		};
 
-		canvasItems = blueprint.template_layout.map(mapApiFieldToCanvasItem);
-		designCanvasHeight = blueprint.canvas_height;
-		logTitle = `${blueprint.name} Copy`;
-		selectedItemId = null;
-		isEditing = false;
-		originalTemplateName = null;
-		newTemplateSchedule = { ...blueprint.schedule };
-		branchId = data.user?.branch_id || (canManageCompany ? 'company' : '');
-		hasUnsavedChanges = true;
-		goto('/template-designer', { replaceState: true });
+		if (hasUnsavedChanges) {
+			confirm(
+				'Unsaved Changes',
+				'You have unsaved changes. Are you sure you want to load a default template?',
+				doLoad
+			);
+			return;
+		}
+		doLoad();
 	}
 
 	function selectTemplate(templateName: string) {
 		if (templateName === originalTemplateName) return;
+
+		const doSwitch = () => {
+			goto(`/template-designer?id=${encodeURIComponent(templateName)}`, { replaceState: true });
+			loadTemplate(templateName);
+		};
+
 		if (hasUnsavedChanges) {
-			if (!confirm('You have unsaved changes. Are you sure you want to switch templates?')) {
-				return;
-			}
+			confirm(
+				'Unsaved Changes',
+				'You have unsaved changes. Are you sure you want to switch templates?',
+				doSwitch
+			);
+			return;
 		}
-		goto(`/template-designer?id=${encodeURIComponent(templateName)}`, { replaceState: true });
-		loadTemplate(templateName);
+		doSwitch();
 	}
 
 	function generateId() {
@@ -769,15 +789,13 @@
 
 	async function restoreVersion(version: number) {
 		if (!originalTemplateName) return;
-		if (
-			!confirm(
-				`Are you sure you want to restore version ${version}? Current changes will be saved as a new version.`
-			)
-		)
-			return;
 
-		const restoring = true;
-		const { error } = await api.POST('/logs/templates/versions/restore', {
+		confirm(
+			'Restore Version',
+			`Are you sure you want to restore version ${version}? Current changes will be saved as a new version.`,
+			async () => {
+				const restoring = true;
+				const { error } = await api.POST('/logs/templates/versions/restore', {
 			params: {
 				query: {
 					template_name: originalTemplateName
@@ -796,13 +814,15 @@
 		}
 
 		// Reload the template to reflect changes
-		await loadTemplate(originalTemplateName);
-		showHistory = false;
-		void restoring;
-		saveSuccess = true;
-		setTimeout(() => {
-			saveSuccess = false;
-		}, 3000);
+				await loadTemplate(originalTemplateName);
+				showHistory = false;
+				void restoring;
+				saveSuccess = true;
+				setTimeout(() => {
+					saveSuccess = false;
+				}, 3000);
+			}
+		);
 	}
 </script>
 

@@ -2,6 +2,7 @@
 	import type { PageData } from './$types';
 	import { invalidateAll } from '$app/navigation';
 	import PictureUploader from '$lib/components/PictureUploader.svelte';
+	import { confirm } from '$lib/confirm';
 
 	let { data } = $props<{ data: PageData }>();
 
@@ -154,13 +155,16 @@
 
 	async function deleteCompany() {
 		if (!data.company?.id) return;
-		if (!confirm('Are you sure you want to delete the company?')) return;
 
-		isSubmitting = true;
-		errorMessage = '';
-		showSuccessMessage = false;
+		confirm(
+			'Delete Company',
+			'Are you sure you want to delete the company?',
+			async () => {
+				isSubmitting = true;
+				errorMessage = '';
+				showSuccessMessage = false;
 
-		try {
+				try {
 			const res = await fetch(`/api/companies/${data.company.id}`, {
 				method: 'DELETE'
 			});
@@ -172,17 +176,18 @@
 			}
 
 			const result = await res.json();
-			successMessage = result.message || 'Company deletion requested';
-			showSuccessMessage = true;
-			setTimeout(() => {
-				showSuccessMessage = false;
-			}, 3000);
-			invalidateAll();
-		} catch {
-			errorMessage = 'Failed to delete company';
-		} finally {
-			isSubmitting = false;
-		}
+				successMessage = result.message || 'Company deletion requested';
+				showSuccessMessage = true;
+				setTimeout(() => {
+					showSuccessMessage = false;
+				}, 3000);
+				invalidateAll();
+			} catch {
+				errorMessage = 'Failed to delete company';
+			} finally {
+				isSubmitting = false;
+			}
+		);
 	}
 </script>
 

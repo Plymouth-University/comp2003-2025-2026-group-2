@@ -6,6 +6,7 @@
 	import LogSection from '$lib/components/logs/LogSection.svelte';
 	import { onMount } from 'svelte';
 	import { showSuccess, showError } from '$lib/toast';
+	import { confirm } from '$lib/confirm';
 	import { SvelteDate } from 'svelte/reactivity';
 
 	type LogEntry = components['schemas']['LogEntryResponse'];
@@ -155,32 +156,32 @@
 	}
 
 	async function handleUnsubmit(entryId: string) {
-		if (
-			!confirm('Are you sure you want to unsubmit this log? This will allow it to be edited again.')
-		) {
-			return;
-		}
+		confirm(
+			'Unsubmit Log',
+			'Are you sure you want to unsubmit this log? This will allow it to be edited again.',
+			async () => {
+				try {
+					const response = await fetch(`/api/logs/entries/${entryId}/unsubmit`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						}
+					});
 
-		try {
-			const response = await fetch(`/api/logs/entries/${entryId}/unsubmit`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
+					if (response.ok) {
+						showSuccess('Log unsubmitted successfully');
+						window.location.reload();
+					} else {
+						const error = await response.text();
+						console.error('Unsubmit failed:', error);
+						showError('Failed to unsubmit log');
+					}
+				} catch (error) {
+					console.error('Error unsubmitting log:', error);
+					showError('Error unsubmitting log');
 				}
-			});
-
-			if (response.ok) {
-				showSuccess('Log unsubmitted successfully');
-				window.location.reload();
-			} else {
-				const error = await response.text();
-				console.error('Unsubmit failed:', error);
-				showError('Failed to unsubmit log');
 			}
-		} catch (error) {
-			console.error('Error unsubmitting log:', error);
-			showError('Error unsubmitting log');
-		}
+		);
 	}
 </script>
 

@@ -3,6 +3,7 @@
 	import type { components } from '$lib/api-types';
 	import type { PageData } from './$types';
 	import { showSuccess, showError } from '$lib/toast';
+	import { confirm } from '$lib/confirm';
 	import InviteModal from './InviteModal.svelte';
 	import InviteRow from './InviteRow.svelte';
 	import SideBar from './SideBar.svelte';
@@ -49,24 +50,26 @@
 		const invitation = invitations.find((inv: Invitation) => inv.id === invitationId);
 		if (!invitation) return;
 
-		if (!confirm(`Cancel invitation for ${invitation.email}?`)) {
-			return;
-		}
+		confirm(
+			'Cancel Invitation',
+			`Cancel invitation for ${invitation.email}?`,
+			async () => {
+				try {
+					const response = await api.PUT('/auth/invitations/cancel', {
+						body: { invitation_id: invitationId }
+					});
 
-		try {
-			const response = await api.PUT('/auth/invitations/cancel', {
-				body: { invitation_id: invitationId }
-			});
+					if (response.error) {
+						showError('Failed to cancel invitation', [response.error || 'Unknown error']);
+						return;
+					}
 
-			if (response.error) {
-				showError('Failed to cancel invitation', [response.error || 'Unknown error']);
-				return;
+					invitations = invitations.filter((inv: Invitation) => inv.id !== invitationId);
+				} catch (error) {
+					showError('Error cancelling invitation');
+				}
 			}
-
-			invitations = invitations.filter((inv: Invitation) => inv.id !== invitationId);
-		} catch (error) {
-			showError('Error cancelling invitation');
-		}
+		);
 	};
 
 	const removeMember = async (email: string) => {
@@ -77,27 +80,29 @@
 			return;
 		}
 
-		if (!confirm(`Remove ${member.first_name} ${member.last_name} (${email})?`)) {
-			return;
-		}
+		confirm(
+			'Remove Member',
+			`Remove ${member.first_name} ${member.last_name} (${email})?`,
+			async () => {
+				try {
+					const response = await api.DELETE('/auth/admin/remove-member', {
+						body: { email }
+					});
 
-		try {
-			const response = await api.DELETE('/auth/admin/remove-member', {
-				body: { email }
-			});
+					if (response.error) {
+						showError('Failed to remove member', [response.data || 'Unknown error']);
+						return;
+					}
 
-			if (response.error) {
-				showError('Failed to remove member', [response.data || 'Unknown error']);
-				return;
+					members = members.filter((m: Member) => m.email !== email);
+					if (selectedUser?.email === email) {
+						selectedUser = null;
+					}
+				} catch (error) {
+					showError('Error removing member');
+				}
 			}
-
-			members = members.filter((m: Member) => m.email !== email);
-			if (selectedUser?.email === email) {
-				selectedUser = null;
-			}
-		} catch (error) {
-			showError('Error removing member');
-		}
+		);
 	};
 
 	const updateMember = (

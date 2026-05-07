@@ -9,6 +9,8 @@
 	import PwaInstallPrompt from '$lib/components/pwa_install_prompt.svelte';
 	import CookieConsent from '$lib/components/CookieConsent.svelte';
 	import Toast from '$lib/components/Toast.svelte';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import { confirmDialog } from '$lib/stores/confirm';
 
 	let { children, data } = $props<{ children: import('svelte').Snippet; data: LayoutData }>();
 
@@ -197,4 +199,11 @@
 		<CookieConsent show={showCookieConsent} />
 	{/if}
 	<Toast />
+	<ConfirmDialog
+		bind:open={$confirmDialog.open}
+		title={$confirmDialog.title}
+		message={$confirmDialog.message}
+		onConfirm={$confirmDialog.onConfirm ?? undefined}
+		onCancel={$confirmDialog.onCancel ?? undefined}
+	/>
 </div>

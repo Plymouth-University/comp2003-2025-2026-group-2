@@ -6,6 +6,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import ProfilePictureUploader from '$lib/components/PictureUploader.svelte';
+	import { confirm } from '$lib/confirm';
 
 	let { data, form } = $props<{ data: PageData; form: ActionData }>();
 
@@ -112,36 +113,46 @@
 	}
 
 	async function handleUnlinkGoogle() {
-		if (!confirm('Are you sure you want to unlink your Google account?')) return;
-		try {
-			const resp = await fetch('/api/auth/google/unlink', { method: 'DELETE' });
-			if (resp.ok) {
-				await invalidateAll();
-				showSuccessMessage = true;
-				setTimeout(() => {
-					showSuccessMessage = false;
-				}, 3000);
-			} else {
-				const err = await resp.json();
-				errorMessage = err.error || 'Failed to unlink Google account';
+		confirm(
+			'Unlink Google Account',
+			'Are you sure you want to unlink your Google account?',
+			async () => {
+				try {
+					const resp = await fetch('/api/auth/google/unlink', { method: 'DELETE' });
+					if (resp.ok) {
+						await invalidateAll();
+						showSuccessMessage = true;
+						setTimeout(() => {
+							showSuccessMessage = false;
+						}, 3000);
+					} else {
+						const err = await resp.json();
+						errorMessage = err.error || 'Failed to unlink Google account';
+					}
+				} catch {
+					errorMessage = 'Failed to unlink Google account';
+				}
 			}
-		} catch {
-			errorMessage = 'Failed to unlink Google account';
-		}
+		);
 	}
 
 	async function deletePasskey(id: string) {
-		if (!confirm('Are you sure you want to remove this passkey?')) return;
-		try {
-			const resp = await fetch(`/api/auth/passkeys/${id}`, { method: 'DELETE' });
-			if (resp.ok) {
-				await invalidateAll();
-			} else {
-				errorMessage = 'Failed to delete passkey';
+		confirm(
+			'Remove Passkey',
+			'Are you sure you want to remove this passkey?',
+			async () => {
+				try {
+					const resp = await fetch(`/api/auth/passkeys/${id}`, { method: 'DELETE' });
+					if (resp.ok) {
+						await invalidateAll();
+					} else {
+						errorMessage = 'Failed to delete passkey';
+					}
+				} catch {
+					errorMessage = 'Failed to delete passkey';
+				}
 			}
-		} catch {
-			errorMessage = 'Failed to delete passkey';
-		}
+		);
 	}
 
 	$effect(() => {
