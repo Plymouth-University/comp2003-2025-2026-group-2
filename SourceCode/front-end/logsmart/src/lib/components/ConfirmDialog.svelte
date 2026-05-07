@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { confirmDialog } from '$lib/stores/confirm';
+
 	let { open = $bindable(false), title = 'Confirm', message = '', onConfirm, onCancel } = $props<{
 		open?: boolean;
 		title?: string;
@@ -10,15 +12,17 @@
 	function handleConfirm() {
 		onConfirm?.();
 		open = false;
+		confirmDialog.close();
 	}
 
 	function handleCancel() {
 		onCancel?.();
 		open = false;
+		confirmDialog.close();
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape') {
+		if (event.key === 'Escape' && open) {
 			handleCancel();
 		}
 	}
