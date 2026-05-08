@@ -50,26 +50,26 @@
 		const invitation = invitations.find((inv: Invitation) => inv.id === invitationId);
 		if (!invitation) return;
 
-		confirm(
-			'Cancel Invitation',
-			`Cancel invitation for ${invitation.email}?`,
-			async () => {
-				try {
-					const response = await api.PUT('/auth/invitations/cancel', {
-						body: { invitation_id: invitationId }
-					});
+		confirm('Cancel Invitation', `Cancel invitation for ${invitation.email}?`, async () => {
+			try {
+				const response = await api.PUT('/auth/invitations/cancel', {
+					body: { invitation_id: invitationId }
+				});
 
-					if (response.error) {
-						showError('Failed to cancel invitation', [response.error || 'Unknown error']);
-						return;
-					}
-
-					invitations = invitations.filter((inv: Invitation) => inv.id !== invitationId);
-				} catch (error) {
-					showError('Error cancelling invitation');
+				if (response.error) {
+					const errorMsg =
+						typeof response.error === 'object' && 'error' in response.error
+							? response.error.error
+							: 'Unknown error';
+					showError('Failed to cancel invitation', [errorMsg]);
+					return;
 				}
+
+				invitations = invitations.filter((inv: Invitation) => inv.id !== invitationId);
+			} catch (error) {
+				showError('Error cancelling invitation');
 			}
-		);
+		});
 	};
 
 	const removeMember = async (email: string) => {

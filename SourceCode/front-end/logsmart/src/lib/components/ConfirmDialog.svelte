@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { confirmDialog } from '$lib/stores/confirm';
 
-	let { open = $bindable(false), title = 'Confirm', message = '', onConfirm, onCancel } = $props<{
+	let {
+		open = $bindable(false),
+		title = 'Confirm',
+		message = '',
+		onConfirm,
+		onCancel
+	} = $props<{
 		open?: boolean;
 		title?: string;
 		message?: string;
@@ -42,7 +48,9 @@
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="confirm-dialog-title"
+		tabindex={-1}
 		onclick={handleBackdropClick}
+		onkeydown={handleKeydown}
 	>
 		<div
 			class="w-full max-w-md rounded-lg border-2 border-border-primary bg-bg-primary p-6 shadow-lg"
@@ -61,7 +69,7 @@
 				</button>
 				<button
 					type="button"
-					class="rounded bg-[var(--button-secondary)] px-4 py-2 font-bold text-white hover:opacity-80"
+					class="rounded bg-button-secondary px-4 py-2 font-bold text-white hover:opacity-80"
 					onclick={handleConfirm}
 				>
 					Confirm

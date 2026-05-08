@@ -207,20 +207,16 @@ const register = async (browser: Browser, close = true) => {
 			'input[placeholder="LogSmart Ltd"]'
 		) as HTMLInputElement;
 		if (companyNameInput) {
-			Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set.call(
-				companyNameInput,
-				companyName
-			);
+			const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+			descriptor?.set?.call(companyNameInput, companyName);
 			companyNameInput.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true }));
 		}
 		const companyAddressInput = document.querySelector(
 			'input[placeholder="Search for address..."]'
 		) as HTMLInputElement;
 		if (companyAddressInput) {
-			Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set.call(
-				companyAddressInput,
-				'TestAddress1, ABC'
-			);
+			const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+			descriptor?.set?.call(companyAddressInput, 'TestAddress1, ABC');
 			companyAddressInput.dispatchEvent(
 				new InputEvent('input', { bubbles: true, cancelable: true })
 			);

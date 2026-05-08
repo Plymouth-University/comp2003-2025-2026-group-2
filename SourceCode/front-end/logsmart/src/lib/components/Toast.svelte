@@ -26,7 +26,7 @@
 		}
 	};
 
-	const timers = new SvelteMap<number, ReturnType<typeof setTimeout>>();
+	const timers = new SvelteMap<number, number>();
 
 	function dismiss(id: number) {
 		toasts.remove(id);
@@ -85,7 +85,7 @@
 		<div class="w-full overflow-hidden rounded-lg border bg-bg-secondary {style.outline} shadow-lg">
 			<div class="flex items-start gap-3 p-3">
 				<svg
-					class="mt-0.5 h-5 w-5 flex-shrink-0"
+					class="mt-0.5 h-5 w-5 shrink-0"
 					fill="none"
 					stroke="currentColor"
 					viewBox="0 0 24 24"
@@ -112,7 +112,8 @@
 				<button
 					type="button"
 					onclick={() => dismiss(toast.id)}
-					class="flex-shrink-0 rounded p-1 text-text-secondary hover:bg-bg-primary hover:text-text-primary"
+					aria-label="Dismiss"
+					class="shrink-0 rounded p-1 text-text-secondary hover:bg-bg-primary hover:text-text-primary"
 				>
 					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path

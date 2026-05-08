@@ -137,22 +137,18 @@
 	}
 
 	async function deletePasskey(id: string) {
-		confirm(
-			'Remove Passkey',
-			'Are you sure you want to remove this passkey?',
-			async () => {
-				try {
-					const resp = await fetch(`/api/auth/passkeys/${id}`, { method: 'DELETE' });
-					if (resp.ok) {
-						await invalidateAll();
-					} else {
-						errorMessage = 'Failed to delete passkey';
-					}
-				} catch {
+		confirm('Remove Passkey', 'Are you sure you want to remove this passkey?', async () => {
+			try {
+				const resp = await fetch(`/api/auth/passkeys/${id}`, { method: 'DELETE' });
+				if (resp.ok) {
+					await invalidateAll();
+				} else {
 					errorMessage = 'Failed to delete passkey';
 				}
+			} catch {
+				errorMessage = 'Failed to delete passkey';
 			}
-		);
+		});
 	}
 
 	$effect(() => {

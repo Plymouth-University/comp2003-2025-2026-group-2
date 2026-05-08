@@ -285,6 +285,12 @@
 				deleting = true;
 				deleteError = null;
 
+				if (!originalTemplateName) {
+					deleteError = 'No template selected';
+					deleting = false;
+					return;
+				}
+
 				const { error } = await api.DELETE('/logs/templates', {
 					params: {
 						query: {
@@ -371,7 +377,7 @@
 
 		const doLoad = () => {
 			canvasItems = blueprint.template_layout.map(mapApiFieldToCanvasItem);
-			designCanvasHeight = blueprint.canvas_height;
+			designCanvasHeight = blueprint.canvas_height ?? 500;
 			logTitle = `${blueprint.name} Copy`;
 			selectedItemId = null;
 			isEditing = false;
@@ -788,7 +794,8 @@
 	}
 
 	async function restoreVersion(version: number) {
-		if (!originalTemplateName) return;
+		const templateName = originalTemplateName;
+		if (!templateName) return;
 
 		confirm(
 			'Restore Version',
@@ -796,25 +803,25 @@
 			async () => {
 				const restoring = true;
 				const { error } = await api.POST('/logs/templates/versions/restore', {
-			params: {
-				query: {
-					template_name: originalTemplateName
+					params: {
+						query: {
+							template_name: templateName
+						}
+					},
+					body: {
+						version
+					}
+				});
+
+				if (error) {
+					console.error('Failed to restore version:', error);
+					showError('Failed to restore version');
+					void restoring;
+					return;
 				}
-			},
-			body: {
-				version
-			}
-		});
 
-		if (error) {
-			console.error('Failed to restore version:', error);
-			showError('Failed to restore version');
-			void restoring;
-			return;
-		}
-
-		// Reload the template to reflect changes
-				await loadTemplate(originalTemplateName);
+				// Reload the template to reflect changes
+				await loadTemplate(templateName);
 				showHistory = false;
 				void restoring;
 				saveSuccess = true;

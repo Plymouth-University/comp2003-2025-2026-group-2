@@ -114,7 +114,7 @@ async function proxyRequest(event: RequestEvent) {
 			headers: { 'content-type': contentType || 'application/octet-stream' }
 		});
 	} catch (error: unknown) {
-		if (error?.status && error?.location) {
+		if (error && typeof error === 'object' && 'status' in error && 'location' in error) {
 			throw error;
 		}
 		console.error('Proxy error:', error);

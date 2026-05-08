@@ -2,11 +2,12 @@ import { test, expect } from '@playwright/test';
 import { register } from './utils';
 
 test.describe('Passkey Management', () => {
-	let userData: unknown;
+	let userData: { email: string; password: string };
 
 	test.beforeEach(async ({ browser }) => {
-		userData = await register(browser);
-		expect(userData).toBeTruthy();
+		const result = await register(browser);
+		expect(result).toBeTruthy();
+		userData = result as { email: string; password: string };
 	});
 
 	test('should register a passkey and login with it', async ({ page }) => {

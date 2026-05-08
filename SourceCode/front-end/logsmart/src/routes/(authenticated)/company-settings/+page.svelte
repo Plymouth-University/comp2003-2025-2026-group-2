@@ -156,26 +156,23 @@
 	async function deleteCompany() {
 		if (!data.company?.id) return;
 
-		confirm(
-			'Delete Company',
-			'Are you sure you want to delete the company?',
-			async () => {
-				isSubmitting = true;
-				errorMessage = '';
-				showSuccessMessage = false;
+		confirm('Delete Company', 'Are you sure you want to delete the company?', async () => {
+			isSubmitting = true;
+			errorMessage = '';
+			showSuccessMessage = false;
 
-				try {
-			const res = await fetch(`/api/companies/${data.company.id}`, {
-				method: 'DELETE'
-			});
+			try {
+				const res = await fetch(`/api/companies/${data.company.id}`, {
+					method: 'DELETE'
+				});
 
-			if (!res.ok) {
-				const err = await res.json();
-				errorMessage = err.error || 'Failed to delete company';
-				return;
-			}
+				if (!res.ok) {
+					const err = await res.json();
+					errorMessage = err.error || 'Failed to delete company';
+					return;
+				}
 
-			const result = await res.json();
+				const result = await res.json();
 				successMessage = result.message || 'Company deletion requested';
 				showSuccessMessage = true;
 				setTimeout(() => {
@@ -187,7 +184,7 @@
 			} finally {
 				isSubmitting = false;
 			}
-		);
+		});
 	}
 </script>
 
