@@ -89,10 +89,14 @@
 						body: { email }
 					});
 
-					if (response.error) {
-						showError('Failed to remove member', [response.data || 'Unknown error']);
-						return;
-					}
+				if (response.error) {
+					const errorMsg =
+						typeof response.error === 'object' && 'error' in response.error
+							? response.error.error
+							: 'Unknown error';
+					showError('Failed to remove member', [errorMsg]);
+					return;
+				}
 
 					members = members.filter((m: Member) => m.email !== email);
 					if (selectedUser?.email === email) {

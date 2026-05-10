@@ -40,7 +40,7 @@
 	// Calculate canvas height based on field positions
 	let canvasHeight = $derived(() => {
 		if (!templateLayout || templateLayout.length === 0) return 500;
-		const maxY = Math.max(...templateLayout.map((f: any) => (f.position?.y || 0) + 100));
+		const maxY = Math.max(...templateLayout.map((f: TemplateField) => (f.position?.y || 0) + 100));
 		return Math.max(500, maxY + 100); // Add padding at bottom
 	});
 
@@ -70,11 +70,14 @@
 				initialData[index] = typeof props.value === 'string' ? props.value : '';
 			} else if (field.field_type === 'checkbox') {
 				initialData[index] = props.value === 'true' || props.value === true;
-			} else if (field.field_type === 'dropdown') {
-				const sel = props.selected;
-				const opts = Array.isArray(props.options) ? props.options : [];
-				initialData[index] = typeof sel === 'string' ? sel : ((opts[0] as string) ?? '');
-			}
+		} else if (field.field_type === 'dropdown') {
+			const sel = props.selected;
+			const opts = Array.isArray(props.options) ? props.options : [];
+			const firstOpt = Array.isArray(opts) && opts.length > 0 && typeof opts[0] === 'string' 
+				? opts[0] 
+				: '';
+			initialData[index] = typeof sel === 'string' ? sel : firstOpt;
+		}
 		});
 		return initialData;
 	}

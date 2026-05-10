@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { api } from '$lib/api';
 	import type { PageData } from './$types';
-	import { showSuccess, showError } from '$lib/toast';
+	import { showError } from '$lib/toast';
 
 	const { data } = $props<{ data: PageData }>();
 	let branches = $derived([...data.branches]);
@@ -90,7 +90,11 @@
 			});
 
 			if (error) {
-				showError('Failed to create branch', [error.error]);
+				const errorMsg =
+					typeof error === 'object' && error !== null && 'error' in error
+						? String(error.error)
+						: 'Unknown error';
+				showError('Failed to create branch', [errorMsg]);
 			} else if (branch) {
 				branches = [...branches, branch];
 				newBranchName = '';
@@ -200,7 +204,11 @@
 			});
 
 			if (error) {
-				showError('Failed to update branch', [error.error]);
+				const errorMsg =
+					typeof error === 'object' && error !== null && 'error' in error
+						? String(error.error)
+						: 'Unknown error';
+				showError('Failed to update branch', [errorMsg]);
 			} else if (updatedBranch) {
 				branches = branches.map((b) => (b.id === editingBranchId ? updatedBranch : b));
 				cancelEditingBranch();
