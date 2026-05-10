@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { confirmDialog } from '$lib/stores/confirm';
-
 	let {
 		open = $bindable(false),
 		title = 'Confirm',
@@ -16,15 +14,15 @@
 	}>();
 
 	function handleConfirm() {
-		onConfirm?.();
+		const callback = onConfirm;
 		open = false;
-		confirmDialog.close();
+		callback?.();
 	}
 
 	function handleCancel() {
-		onCancel?.();
+		const callback = onCancel;
 		open = false;
-		confirmDialog.close();
+		callback?.();
 	}
 
 	function handleKeydown(event: KeyboardEvent) {

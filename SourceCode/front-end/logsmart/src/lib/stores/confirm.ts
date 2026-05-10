@@ -19,6 +19,7 @@ function createConfirmStore() {
 
 	return {
 		subscribe,
+		set,
 		open: (title: string, message: string, onConfirm?: () => void, onCancel?: () => void) => {
 			set({
 				open: true,
