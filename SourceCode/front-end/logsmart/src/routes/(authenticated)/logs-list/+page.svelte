@@ -81,6 +81,11 @@
 
 		if (toastToken === 'log_submitted_success') {
 			showSuccess('Log submitted successfully');
+		} else if (toastToken === 'log_unsubmitted_success') {
+			showSuccess('Log unsubmitted successfully');
+		}
+
+		if (toastToken) {
 			params.delete('toast');
 			const nextQuery = params.toString();
 			const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
@@ -169,8 +174,9 @@
 					});
 
 					if (response.ok) {
-						showSuccess('Log unsubmitted successfully');
-						window.location.reload();
+						const url = new URL(window.location.href);
+						url.searchParams.set('toast', 'log_unsubmitted_success');
+						window.location.href = url.toString();
 					} else {
 						const error = await response.text();
 						console.error('Unsubmit failed:', error);
