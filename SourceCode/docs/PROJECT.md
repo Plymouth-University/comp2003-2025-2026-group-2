@@ -336,6 +336,16 @@ interface LogEntry {
 | PUT | `/auth/company/branches` | Update branch |
 | POST | `/auth/company/branches/request-deletion` | Request branch deletion |
 | POST | `/auth/company/branches/confirm-deletion` | Confirm branch deletion |
+| GET | `/companies/{company_id}` | Get company details |
+| PUT | `/companies/{company_id}` | Update company details |
+| POST | `/companies/{company_id}/logo` | Upload company logo |
+| GET | `/companies/{company_id}/logo` | Get company logo |
+| DELETE | `/companies/{company_id}/logo` | Delete company logo |
+| POST | `/companies/{company_id}/export` | Export company data |
+| GET | `/companies/{company_id}/export/download/{filename}` | Download exported data |
+| DELETE | `/companies/{company_id}` | Delete company |
+| GET | `/companies/{company_id}/validate-deletion-token` | Validate company deletion token |
+| POST | `/companies/{company_id}/confirm-deletion` | Confirm company deletion |
 
 ### Admin Routes
 
@@ -356,6 +366,15 @@ interface LogEntry {
 | DELETE | `/logs/templates` | Delete template |
 | GET | `/logs/templates/versions` | Get template version history |
 | POST | `/logs/templates/versions/restore` | Restore template version |
+
+### Report Routes
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/reports/runs` | List saved report runs |
+| POST | `/reports/runs` | Create saved report run |
+| POST | `/reports/runs/{report_id}/use` | Mark a report run as used |
+| DELETE | `/reports/runs/{report_id}` | Delete a saved report run |
 
 ### Log Entry Routes
 
@@ -497,6 +516,10 @@ All security-relevant events are logged:
 | `CookieConsent.svelte` | Cookie consent banner |
 | `pwa_install_prompt.svelte` | PWA install prompt |
 | `user_dropdown.svelte` | Dropdown select |
+| `ConfirmDialog.svelte` | Reusable modal dialog for user confirmation actions |
+| `Toast.svelte` | Toast notification component |
+| `logs/LogRow.svelte` | Generic row component for displaying a log |
+| `logs/LogSection.svelte` | Section container for log lists |
 
 ### Template Designer Components
 

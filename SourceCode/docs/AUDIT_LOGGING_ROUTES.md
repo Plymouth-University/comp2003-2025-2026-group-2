@@ -109,6 +109,15 @@ Legend:
 | POST | `/logs/entries/{entry_id}/submit` | No |
 | POST | `/logs/entries/{entry_id}/unsubmit` | No |
 
+## Reports
+
+| Method | Route | Logging |
+|---|---|---|
+| POST | `/reports/runs` | No |
+| GET | `/reports/runs` | No |
+| POST | `/reports/runs/{report_id}/use` | No |
+| DELETE | `/reports/runs/{report_id}` | No |
+
 ## Clock, LLM, Health, Security Log Read
 
 | Method | Route | Logging |
