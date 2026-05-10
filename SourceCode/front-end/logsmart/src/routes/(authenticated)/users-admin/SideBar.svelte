@@ -281,9 +281,10 @@
 										branch_id: branchId
 									});
 								} else if (response.error) {
-									const errorMsg = typeof response.error === 'object' && 'error' in response.error
-										? response.error.error
-										: 'Unknown error';
+									const errorMsg =
+										typeof response.error === 'object' && 'error' in response.error
+											? response.error.error
+											: 'Unknown error';
 									showError('Failed to update member', [errorMsg]);
 								}
 							}}>Save</button
@@ -454,9 +455,10 @@
 									showSuccess('Profile updated successfully', changes);
 								}
 							} else if (response.error) {
-								const errorMsg = typeof response.error === 'object' && 'error' in response.error
-									? response.error.error
-									: 'Unknown error';
+								const errorMsg =
+									typeof response.error === 'object' && 'error' in response.error
+										? response.error.error
+										: 'Unknown error';
 								showError('Unable to update profile', [errorMsg]);
 							}
 						} catch {

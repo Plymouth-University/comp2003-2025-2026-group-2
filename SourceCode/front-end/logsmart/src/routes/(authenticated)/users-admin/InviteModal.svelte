@@ -112,16 +112,17 @@
 								branch_id: branchId || undefined
 							}
 						});
-					if (!error) {
-						setShowingCreateModel(false);
-						window.location.reload();
-					} else {
-						console.error('Error sending invite:', error);
-						const errorMsg = typeof error === 'object' && error !== null && 'error' in error
-							? String(error.error)
-							: 'Unknown error';
-						showError('Failed to send invite', [errorMsg]);
-					}
+						if (!error) {
+							setShowingCreateModel(false);
+							window.location.reload();
+						} else {
+							console.error('Error sending invite:', error);
+							const errorMsg =
+								typeof error === 'object' && error !== null && 'error' in error
+									? String(error.error)
+									: 'Unknown error';
+							showError('Failed to send invite', [errorMsg]);
+						}
 					}}
 				>
 					<span class="text-sm font-semibold text-text-primary">Send Invite</span>

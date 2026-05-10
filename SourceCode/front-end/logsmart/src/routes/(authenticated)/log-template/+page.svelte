@@ -70,14 +70,13 @@
 				initialData[index] = typeof props.value === 'string' ? props.value : '';
 			} else if (field.field_type === 'checkbox') {
 				initialData[index] = props.value === 'true' || props.value === true;
-		} else if (field.field_type === 'dropdown') {
-			const sel = props.selected;
-			const opts = Array.isArray(props.options) ? props.options : [];
-			const firstOpt = Array.isArray(opts) && opts.length > 0 && typeof opts[0] === 'string' 
-				? opts[0] 
-				: '';
-			initialData[index] = typeof sel === 'string' ? sel : firstOpt;
-		}
+			} else if (field.field_type === 'dropdown') {
+				const sel = props.selected;
+				const opts = Array.isArray(props.options) ? props.options : [];
+				const firstOpt =
+					Array.isArray(opts) && opts.length > 0 && typeof opts[0] === 'string' ? opts[0] : '';
+				initialData[index] = typeof sel === 'string' ? sel : firstOpt;
+			}
 		});
 		return initialData;
 	}
