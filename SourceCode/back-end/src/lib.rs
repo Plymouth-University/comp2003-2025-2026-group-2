@@ -16,6 +16,7 @@ pub mod security;
 pub mod services;
 pub mod utils;
 
+#[cfg(test)]
 #[path = "../tests/common/mod.rs"]
 pub mod common;
 

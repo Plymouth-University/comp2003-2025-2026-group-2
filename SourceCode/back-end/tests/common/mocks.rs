@@ -359,6 +359,9 @@ impl MockRateLimiter {
 }
 
 // Helper functions for creating mock instances
+// Note: These functions use types that may not be accessible during compilation
+// They are left as placeholders for future implementation
+/*
 #[must_use]
 pub fn create_mock_webauthn() -> webauthn_rs::Webauthn {
     // This will need to be implemented based on the actual WebAuthnState structure
@@ -378,4 +381,17 @@ pub fn create_mock_oauth_state_store() -> crate::handlers::OAuthStateStore {
     // This will need to be implemented based on the actual OAuthStateStore structure
     // For now, return a placeholder
     todo!("Implement mock OAuthStateStore creation")
+}
+*/
+
+#[must_use]
+pub fn create_mock_google_oauth() -> String {
+    // Placeholder for OAuth client mocking
+    "mock_oauth".to_string()
+}
+
+#[must_use]
+pub fn create_mock_oauth_state_store() -> String {
+    // Placeholder for state store mocking
+    "mock_store".to_string()
 }

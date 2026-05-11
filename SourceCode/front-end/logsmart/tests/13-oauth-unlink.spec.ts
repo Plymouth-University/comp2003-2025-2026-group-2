@@ -48,8 +48,9 @@ test.describe('Google OAuth Unlink', () => {
 		await page.waitForURL('**/settings');
 		await expect(page.getByRole('button', { name: /unlink google account/i })).toBeVisible();
 
-		page.on('dialog', (dialog) => dialog.accept());
 		await page.getByRole('button', { name: 'Unlink Google Account' }).click();
+		await page.getByRole('button', { name: 'Confirm' }).click();
+
 		await page.waitForLoadState('networkidle');
 		await expect(page.locator('body')).toContainText(/Link Google Account/i);
 		await expect(page.locator('body')).not.toContainText(/google account is linked/i);
