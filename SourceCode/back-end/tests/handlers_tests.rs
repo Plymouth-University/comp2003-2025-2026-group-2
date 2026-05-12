@@ -8,25 +8,29 @@ use back_end::dto::{
 };
 use back_end::jwt_manager::JwtManager;
 
+use uuid::Uuid;
+
 #[test]
 fn test_register_request_validation() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let req = RegisterRequest {
-        email: "test@example.com".to_string(),
+        email: format!("test{}@example.com", unique_id),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         password: "password123".to_string(),
         company_name: "Test Co".to_string(),
         company_address: "123 Main St".to_string(),
     };
-    assert_eq!(req.email, "test@example.com");
+    assert_eq!(req.email, format!("test{}@example.com", unique_id));
     assert_eq!(req.first_name, "John");
     assert_eq!(req.password, "password123");
 }
 
 #[test]
 fn test_register_with_short_password() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let req = RegisterRequest {
-        email: "test@example.com".to_string(),
+        email: format!("test{}@example.com", unique_id),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         password: "short".to_string(),
@@ -52,11 +56,12 @@ fn test_register_missing_fields() {
 
 #[test]
 fn test_login_request_validation() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let req = LoginRequest {
-        email: "test@example.com".to_string(),
+        email: format!("test{}@example.com", unique_id),
         password: "password123".to_string(),
     };
-    assert_eq!(req.email, "test@example.com");
+    assert_eq!(req.email, format!("test{}@example.com", unique_id));
     assert_eq!(req.password, "password123");
 }
 
@@ -71,8 +76,9 @@ fn test_login_missing_email() {
 
 #[test]
 fn test_login_missing_password() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let req = LoginRequest {
-        email: "test@example.com".to_string(),
+        email: format!("test{}@example.com", unique_id),
         password: "".to_string(),
     };
     assert!(req.password.is_empty());
@@ -80,12 +86,13 @@ fn test_login_missing_password() {
 
 #[test]
 fn test_invite_user_request_validation() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let req = InviteUserRequest {
-        email: "newuser@example.com".to_string(),
+        email: format!("newuser{}@example.com", unique_id),
         role: Some(back_end::db::UserRole::Staff),
         branch_id: Some("branch123".to_string()),
     };
-    assert_eq!(req.email, "newuser@example.com");
+    assert_eq!(req.email, format!("newuser{}@example.com", unique_id));
     assert_eq!(req.role, Some(back_end::db::UserRole::Staff));
     assert_eq!(req.branch_id, Some("branch123".to_string()));
 }
@@ -139,9 +146,10 @@ use back_end::db::UserRole;
 
 #[test]
 fn test_user_response_structure() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let user_response = UserResponse {
         id: "user123".to_string(),
-        email: "test@example.com".to_string(),
+        email: format!("test{}@example.com", unique_id),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         company_id: Some("company123".to_string()),
@@ -153,16 +161,20 @@ fn test_user_response_structure() {
         created_at: chrono::Utc::now(),
         oauth_provider: None,
     };
-    assert_eq!(user_response.email, "test@example.com");
+    assert_eq!(
+        user_response.email,
+        format!("test{}@example.com", unique_id)
+    );
     assert_eq!(user_response.role, UserRole::CompanyManager);
     assert_eq!(user_response.company_name, Some("Test Company".to_string()));
 }
 
 #[test]
 fn test_user_response_without_company() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let user_response = UserResponse {
         id: "user123".to_string(),
-        email: "test@example.com".to_string(),
+        email: format!("test{}@example.com", unique_id),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         oauth_picture: None,
@@ -179,20 +191,25 @@ fn test_user_response_without_company() {
 
 #[test]
 fn test_invitation_response_structure() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let inv_response = InvitationResponse {
         id: "invite1".to_string(),
-        email: "newuser@example.com".to_string(),
+        email: format!("newuser{}@example.com", unique_id),
         expires_at: chrono::Utc::now(),
     };
     assert_eq!(inv_response.id, "invite1");
-    assert_eq!(inv_response.email, "newuser@example.com");
+    assert_eq!(
+        inv_response.email,
+        format!("newuser{}@example.com", unique_id)
+    );
 }
 
 #[test]
 fn test_auth_response_structure() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let user_response = UserResponse {
         id: "user123".to_string(),
-        email: "test@example.com".to_string(),
+        email: format!("test{}@example.com", unique_id),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         company_id: Some("company123".to_string()),
@@ -209,7 +226,10 @@ fn test_auth_response_structure() {
         user: user_response,
     };
     assert!(!auth_response.token.is_empty());
-    assert_eq!(auth_response.user.email, "test@example.com");
+    assert_eq!(
+        auth_response.user.email,
+        format!("test{}@example.com", unique_id)
+    );
 }
 
 #[test]
@@ -228,8 +248,9 @@ fn test_jwt_manager_caches_secret() {
 
 #[test]
 fn test_register_request_serialization() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let req = RegisterRequest {
-        email: "test@example.com".to_string(),
+        email: format!("test{}@example.com", unique_id),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         password: "password123".to_string(),
@@ -237,25 +258,27 @@ fn test_register_request_serialization() {
         company_address: "123 Main St".to_string(),
     };
     let json = serde_json::to_string(&req).unwrap();
-    assert!(json.contains("test@example.com"));
+    assert!(json.contains(&format!("test{}@example.com", unique_id)));
     assert!(json.contains("Test Co"));
 }
 
 #[test]
 fn test_login_request_serialization() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let req = LoginRequest {
-        email: "test@example.com".to_string(),
+        email: format!("test{}@example.com", unique_id),
         password: "password123".to_string(),
     };
     let json = serde_json::to_string(&req).unwrap();
-    assert!(json.contains("test@example.com"));
+    assert!(json.contains(&format!("test{}@example.com", unique_id)));
 }
 
 #[test]
 fn test_user_response_serialization() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let user_response = UserResponse {
         id: "user123".to_string(),
-        email: "test@example.com".to_string(),
+        email: format!("test{}@example.com", unique_id),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         oauth_picture: None,
@@ -274,14 +297,15 @@ fn test_user_response_serialization() {
 
 #[test]
 fn test_invitation_response_serialization() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let inv_response = InvitationResponse {
         id: "invite1".to_string(),
-        email: "newuser@example.com".to_string(),
+        email: format!("newuser{}@example.com", unique_id),
         expires_at: chrono::Utc::now(),
     };
     let json = serde_json::to_string(&inv_response).unwrap();
     assert!(json.contains("invite1"));
-    assert!(json.contains("newuser@example.com"));
+    assert!(json.contains(&format!("newuser{}@example.com", unique_id)));
 }
 
 #[test]
@@ -307,9 +331,10 @@ fn test_password_validation_length() {
 
 #[test]
 fn test_response_contains_token() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let user_response = UserResponse {
         id: "user123".to_string(),
-        email: "test@example.com".to_string(),
+        email: format!("test{}@example.com", unique_id),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         company_id: Some("Test Company".to_string()),

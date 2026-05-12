@@ -293,13 +293,14 @@ async fn make_request(
 #[tokio::test]
 async fn test_register_user_success() {
     let mut app = setup_test_app().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let (status, body) = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "adminuser1@example.com",
+            "email": format!("adminuser1{}@example.com", unique_id),
             "first_name": "Admin",
             "last_name": "User",
             "password": "SecurePassword123!",
@@ -312,20 +313,24 @@ async fn test_register_user_success() {
 
     assert_eq!(status, StatusCode::CREATED);
     assert!(body["token"].is_string());
-    assert_eq!(body["user"]["email"], "adminuser1@example.com");
+    assert_eq!(
+        body["user"]["email"],
+        format!("adminuser1{}@example.com", unique_id)
+    );
     assert_eq!(body["user"]["role"], "company_manager");
 }
 
 #[tokio::test]
 async fn test_register_user_short_password() {
     let mut app = setup_test_app().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let (status, body) = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "admin@example.com",
+            "email": format!("admin{}@example.com", unique_id),
             "first_name": "Admin",
             "last_name": "User",
             "password": "short",
@@ -366,13 +371,14 @@ async fn test_register_user_missing_fields() {
 #[tokio::test]
 async fn test_login_user_success() {
     let mut app = setup_test_app().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let register_response = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "user_login_success@example.com",
+            "email": format!("user_login_success{}@example.com", unique_id),
             "first_name": "Test",
             "last_name": "User",
             "password": "TestPassword123!",
@@ -390,7 +396,7 @@ async fn test_login_user_success() {
         "POST",
         "/auth/login",
         Some(json!({
-            "email": "user_login_success@example.com",
+            "email": format!("user_login_success{}@example.com", unique_id),
             "password": "TestPassword123!"
         })),
         None,
@@ -401,20 +407,21 @@ async fn test_login_user_success() {
     assert!(login_body["token"].is_string());
     assert_eq!(
         login_body["user"]["email"],
-        "user_login_success@example.com"
+        format!("user_login_success{}@example.com", unique_id)
     );
 }
 
 #[tokio::test]
 async fn test_login_user_invalid_password() {
     let mut app = setup_test_app().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let _register_response = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "user@example.com",
+            "email": format!("user{}@example.com", unique_id),
             "first_name": "Test",
             "last_name": "User",
             "password": "CorrectPassword123!",
@@ -430,7 +437,7 @@ async fn test_login_user_invalid_password() {
         "POST",
         "/auth/login",
         Some(json!({
-            "email": "user@example.com",
+            "email": format!("user{}@example.com", unique_id),
             "password": "WrongPassword1!"
         })),
         None,
@@ -471,13 +478,14 @@ async fn test_get_current_user_without_token() {
 #[tokio::test]
 async fn test_get_current_user_with_valid_token() {
     let mut app = setup_test_app().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let register_response = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "user6@example.com",
+            "email": format!("user6{}@example.com", unique_id),
             "first_name": "Test",
             "last_name": "User",
             "password": "TestPassword123!",
@@ -492,7 +500,7 @@ async fn test_get_current_user_with_valid_token() {
     let (status, body) = make_request(&mut app, "GET", "/auth/me", None, Some(token)).await;
 
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["email"], "user6@example.com");
+    assert_eq!(body["email"], format!("user6{}@example.com", unique_id));
 }
 
 #[tokio::test]
@@ -508,13 +516,14 @@ async fn test_get_current_user_with_invalid_token() {
 #[tokio::test]
 async fn test_invite_user_by_admin() {
     let mut app = setup_test_app().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let register_response = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "admin5@example.com",
+            "email": format!("admin5{}@example.com", unique_id),
             "first_name": "Admin",
             "last_name": "User",
             "password": "AdminPassword123!",
@@ -531,14 +540,14 @@ async fn test_invite_user_by_admin() {
             "POST",
             "/auth/invitations/send",
             Some(json!({
-                "email": "newuser2@example.com"
+                "email": format!("newuser2{}@example.com", unique_id)
             })),
             Some(token),
         )
         .await;
 
         assert_eq!(status, StatusCode::CREATED);
-        assert_eq!(body["email"], "newuser2@example.com");
+        assert_eq!(body["email"], format!("newuser2{}@example.com", unique_id));
         assert!(body["expires_at"].is_string());
     } else {
         eprintln!("Registration response body: {}", register_response.1);
@@ -549,13 +558,14 @@ async fn test_invite_user_by_admin() {
 #[tokio::test]
 async fn test_invite_user_missing_email() {
     let mut app = setup_test_app().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let register_response = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "admin_invite_user_missing_email@example.com",
+            "email": format!("admin_invite_user_missing_email{}@example.com", unique_id),
             "first_name": "Admin",
             "last_name": "User",
             "password": "AdminPassword123!",
@@ -585,13 +595,14 @@ async fn test_invite_user_missing_email() {
 #[tokio::test]
 async fn test_invite_user_by_non_admin() {
     let mut app = setup_test_app().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let admin_response = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "adminuser2@example.com",
+            "email": format!("adminuser2{}@example.com", unique_id),
             "first_name": "Admin",
             "last_name": "User",
             "password": "AdminPassword123!",
@@ -610,7 +621,7 @@ async fn test_invite_user_by_non_admin() {
         "POST",
         "/auth/invitations/send",
         Some(json!({
-            "email": "memberuser1@example.com"
+            "email": format!("memberuser1{}@example.com", unique_id)
         })),
         Some(admin_token),
     )
@@ -631,7 +642,7 @@ async fn test_invite_user_by_non_admin() {
     } else {
         let all_invites =
             sqlx::query_as::<_, (String,)>("SELECT token FROM invitations WHERE email = $1")
-                .bind("memberuser1@example.com")
+                .bind(format!("memberuser1{}@example.com", unique_id))
                 .fetch_one(&pool)
                 .await
                 .map(|row| row.0)
@@ -661,7 +672,7 @@ async fn test_invite_user_by_non_admin() {
         "POST",
         "/auth/invitations/send",
         Some(json!({
-            "email": "anotheruser@example.com"
+            "email": format!("anotheruser{}@example.com", unique_id)
         })),
         Some(member_token),
     )
@@ -736,13 +747,14 @@ async fn test_accept_invitation_invalid_token() {
 #[tokio::test]
 async fn test_complete_registration_and_login_flow() {
     let mut app = setup_test_app().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let register_response = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "admin3@example.com",
+            "email": format!("admin3{}@example.com", unique_id),
             "first_name": "Admin",
             "last_name": "User",
             "password": "AdminPassword123!",
@@ -761,7 +773,7 @@ async fn test_complete_registration_and_login_flow() {
         "POST",
         "/auth/login",
         Some(json!({
-            "email": "admin3@example.com",
+            "email": format!("admin3{}@example.com", unique_id),
             "password": "AdminPassword123!"
         })),
         None,
@@ -775,20 +787,21 @@ async fn test_complete_registration_and_login_flow() {
         make_request(&mut app, "GET", "/auth/me", None, Some(&admin_token)).await;
 
     assert_eq!(me_status, StatusCode::OK);
-    assert_eq!(me_body["email"], "admin3@example.com");
+    assert_eq!(me_body["email"], format!("admin3{}@example.com", unique_id));
     assert_eq!(me_body["role"], "company_manager");
 }
 
 #[tokio::test]
 async fn test_register_duplicate_email() {
     let mut app = setup_test_app().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let _first_register = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "user@example.com",
+            "email": format!("user{}@example.com", unique_id),
             "first_name": "User",
             "last_name": "One",
             "password": "Password123!",
@@ -804,7 +817,7 @@ async fn test_register_duplicate_email() {
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "user@example.com",
+            "email": format!("user{}@example.com", unique_id),
             "first_name": "User",
             "last_name": "Two",
             "password": "Password456!",
@@ -823,13 +836,14 @@ async fn test_register_duplicate_email() {
 async fn test_security_logging_on_successful_registration() {
     let mut app = setup_test_app().await;
     let pool = get_test_db_pool().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let (status, _) = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "newuser@example.com",
+            "email": format!("newuser{}@example.com", unique_id),
             "first_name": "New",
             "last_name": "User",
             "password": "SecurePass123!",
@@ -842,7 +856,7 @@ async fn test_security_logging_on_successful_registration() {
 
     assert_eq!(status, StatusCode::CREATED);
 
-    let user = db::get_user_by_email(&pool, "newuser@example.com")
+    let user = db::get_user_by_email(&pool, &format!("newuser{}@example.com", unique_id))
         .await
         .unwrap()
         .unwrap();
@@ -854,7 +868,10 @@ async fn test_security_logging_on_successful_registration() {
     assert_eq!(logs.len(), 1);
     assert_eq!(logs[0].event_type, "registration");
     assert_eq!(logs[0].user_id, Some(user_id.to_string()));
-    assert_eq!(logs[0].email, Some("newuser@example.com".to_string()));
+    assert_eq!(
+        logs[0].email,
+        Some(format!("newuser{}@example.com", unique_id))
+    );
     assert!(logs[0].success);
 }
 
@@ -862,13 +879,14 @@ async fn test_security_logging_on_successful_registration() {
 async fn test_security_logging_on_successful_login() {
     let mut app = setup_test_app().await;
     let pool = get_test_db_pool().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let _ = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "logintest@example.com",
+            "email": format!("logintest{}@example.com", unique_id),
             "first_name": "Login",
             "last_name": "Test",
             "password": "MyPassword123!",
@@ -884,7 +902,7 @@ async fn test_security_logging_on_successful_login() {
         "POST",
         "/auth/login",
         Some(json!({
-            "email": "logintest@example.com",
+            "email": format!("logintest{}@example.com", unique_id),
             "password": "MyPassword123!"
         })),
         None,
@@ -893,7 +911,7 @@ async fn test_security_logging_on_successful_login() {
 
     assert_eq!(status, StatusCode::OK);
 
-    let user = db::get_user_by_email(&pool, "logintest@example.com")
+    let user = db::get_user_by_email(&pool, &format!("logintest{}@example.com", unique_id))
         .await
         .unwrap()
         .unwrap();
@@ -912,13 +930,14 @@ async fn test_security_logging_on_successful_login() {
 async fn test_security_logging_on_failed_login_wrong_password() {
     let mut app = setup_test_app().await;
     let pool = get_test_db_pool().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let _ = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "failtest@example.com",
+            "email": format!("failtest{}@example.com", unique_id),
             "first_name": "Fail",
             "last_name": "Test",
             "password": "CorrectPass123!",
@@ -934,7 +953,7 @@ async fn test_security_logging_on_failed_login_wrong_password() {
         "POST",
         "/auth/login",
         Some(json!({
-            "email": "failtest@example.com",
+            "email": format!("failtest{}@example.com", unique_id),
             "password": "WrongPassword123!"
         })),
         None,
@@ -949,7 +968,7 @@ async fn test_security_logging_on_failed_login_wrong_password() {
             .contains("Invalid email or password")
     );
 
-    let user = db::get_user_by_email(&pool, "failtest@example.com")
+    let user = db::get_user_by_email(&pool, &format!("failtest{}@example.com", unique_id))
         .await
         .unwrap()
         .unwrap();
@@ -963,7 +982,10 @@ async fn test_security_logging_on_failed_login_wrong_password() {
 
     let failed_log = failed_login.unwrap();
     assert_eq!(failed_log.user_id, Some(user_id.to_string()));
-    assert_eq!(failed_log.email, Some("failtest@example.com".to_string()));
+    assert_eq!(
+        failed_log.email,
+        Some(format!("failtest{}@example.com", unique_id))
+    );
     assert!(!failed_log.success);
     assert_eq!(failed_log.details, Some("Invalid password".to_string()));
 }
@@ -1014,12 +1036,21 @@ async fn test_security_logging_on_invitation_sent() {
     let mut app = setup_test_app().await;
     let pool = get_test_db_pool().await;
 
+    let admin_email = format!(
+        "admin{}@company.com",
+        Uuid::new_v4().to_string()[..8].to_string()
+    );
+    let employee_email = format!(
+        "employee{}@company.com",
+        Uuid::new_v4().to_string()[..8].to_string()
+    );
+
     let (_, register_response) = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "admin@company.com",
+            "email": admin_email,
             "first_name": "Admin",
             "last_name": "User",
             "password": "AdminPass123!",
@@ -1037,7 +1068,7 @@ async fn test_security_logging_on_invitation_sent() {
         "POST",
         "/auth/invitations/send",
         Some(json!({
-            "email": "newmember@company.com"
+            "email": employee_email
         })),
         Some(admin_token),
     )
@@ -1045,7 +1076,7 @@ async fn test_security_logging_on_invitation_sent() {
 
     assert_eq!(status, StatusCode::CREATED);
 
-    let admin = db::get_user_by_email(&pool, "admin@company.com")
+    let admin = db::get_user_by_email(&pool, &admin_email)
         .await
         .unwrap()
         .unwrap();
@@ -1059,7 +1090,7 @@ async fn test_security_logging_on_invitation_sent() {
 
     let log = invite_log.unwrap();
     assert_eq!(log.user_id, Some(admin_id.to_string()));
-    assert_eq!(log.email, Some("newmember@company.com".to_string()));
+    assert_eq!(log.email, Some(employee_email));
     assert!(log.success);
 }
 
@@ -1073,7 +1104,7 @@ async fn test_security_logging_on_invitation_accepted() {
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "boss@company.com",
+            "email": format!("boss{}@company.com", Uuid::new_v4().to_string()[..8].to_string()),
             "first_name": "Boss",
             "last_name": "User",
             "password": "BossPass123!",
@@ -1085,13 +1116,16 @@ async fn test_security_logging_on_invitation_accepted() {
     .await;
 
     let admin_token = register_response["token"].as_str().unwrap();
-
+    let employee_email = format!(
+        "employee{}@company.com",
+        Uuid::new_v4().to_string()[..8].to_string()
+    );
     make_request(
         &mut app,
         "POST",
         "/auth/invitations/send",
         Some(json!({
-            "email": "employee@company.com"
+            "email": employee_email
         })),
         Some(admin_token),
     )
@@ -1099,7 +1133,7 @@ async fn test_security_logging_on_invitation_accepted() {
 
     let invitation_token: String =
         sqlx::query_scalar("SELECT token FROM invitations WHERE email = $1")
-            .bind("employee@company.com")
+            .bind(&employee_email)
             .fetch_one(&pool)
             .await
             .unwrap();
@@ -1120,7 +1154,7 @@ async fn test_security_logging_on_invitation_accepted() {
 
     assert_eq!(status, StatusCode::CREATED);
 
-    let employee = db::get_user_by_email(&pool, "employee@company.com")
+    let employee = db::get_user_by_email(&pool, &employee_email)
         .await
         .unwrap()
         .unwrap();
@@ -1132,7 +1166,7 @@ async fn test_security_logging_on_invitation_accepted() {
     assert_eq!(logs.len(), 1);
     assert_eq!(logs[0].event_type, "invitation_accepted");
     assert_eq!(logs[0].user_id, Some(employee_id.to_string()));
-    assert_eq!(logs[0].email, Some("employee@company.com".to_string()));
+    assert_eq!(logs[0].email, Some(employee_email));
     assert!(logs[0].success);
 }
 
@@ -1140,13 +1174,14 @@ async fn test_security_logging_on_invitation_accepted() {
 async fn test_security_logs_order_by_time() {
     let mut app = setup_test_app().await;
     let pool = get_test_db_pool().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let _ = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "timetest@example.com",
+            "email": format!("timetest{}@example.com", unique_id),
             "first_name": "Time",
             "last_name": "Test",
             "password": "TimePass123!",
@@ -1162,7 +1197,7 @@ async fn test_security_logs_order_by_time() {
         "POST",
         "/auth/login",
         Some(json!({
-            "email": "timetest@example.com",
+            "email": format!("timetest{}@example.com", unique_id),
             "password": "TimePass123!"
         })),
         None,
@@ -1174,14 +1209,14 @@ async fn test_security_logs_order_by_time() {
         "POST",
         "/auth/login",
         Some(json!({
-            "email": "timetest@example.com",
+            "email": format!("timetest{}@example.com", unique_id),
             "password": "WrongPass123!"
         })),
         None,
     )
     .await;
 
-    let user = db::get_user_by_email(&pool, "timetest@example.com")
+    let user = db::get_user_by_email(&pool, &format!("timetest{}@example.com", unique_id))
         .await
         .unwrap()
         .unwrap();
@@ -1209,13 +1244,14 @@ async fn test_get_company_unauthorized() {
 #[tokio::test]
 async fn test_update_company_as_company_manager() {
     let mut app = setup_test_app().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let (_, register_body) = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "companymanager@example.com",
+            "email": format!("companymanager{}@example.com", unique_id),
             "first_name": "Company",
             "last_name": "Manager",
             "password": "SecurePass123!",
@@ -1248,13 +1284,14 @@ async fn test_update_company_as_company_manager() {
 #[tokio::test]
 async fn test_update_company_unauthorized() {
     let mut app = setup_test_app().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let (_, register_body) = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "owner1@example.com",
+            "email": format!("owner1{}@example.com", unique_id),
             "first_name": "Owner",
             "last_name": "One",
             "password": "SecurePass123!",
@@ -1272,7 +1309,7 @@ async fn test_update_company_unauthorized() {
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "owner2@example.com",
+            "email": format!("owner2{}@example.com", unique_id),
             "first_name": "Owner",
             "last_name": "Two",
             "password": "SecurePass123!",
@@ -1679,13 +1716,14 @@ async fn test_api_calls_blocked_after_company_deletion() {
 #[tokio::test]
 async fn test_update_company_details() {
     let mut app = setup_test_app().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let (_, register_body) = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "updatetest@example.com",
+            "email": format!("updatetest{}@example.com", unique_id),
             "first_name": "Update",
             "last_name": "Test",
             "password": "SecurePass123!",
@@ -1719,13 +1757,14 @@ async fn test_update_company_details() {
 #[tokio::test]
 async fn test_cannot_update_other_company() {
     let mut app = setup_test_app().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let (_, register_body1) = make_request(
         &mut app,
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "company1@example.com",
+            "email": format!("company1{}@example.com", unique_id),
             "first_name": "Company",
             "last_name": "One",
             "password": "SecurePass123!",
@@ -1743,7 +1782,7 @@ async fn test_cannot_update_other_company() {
         "POST",
         "/auth/register",
         Some(json!({
-            "email": "company2@example.com",
+            "email": format!("company2{}@example.com", unique_id),
             "first_name": "Company",
             "last_name": "Two",
             "password": "SecurePass123!",

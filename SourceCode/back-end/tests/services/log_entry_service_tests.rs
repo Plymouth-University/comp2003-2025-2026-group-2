@@ -21,9 +21,10 @@ fn create_mock_app_state() -> AppState {
 #[tokio::test]
 async fn test_create_log_entry_success() {
     let state = create_mock_app_state();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     
     // Create user with company
-    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Staff, Some("company123")).await;
+    let user = create_test_user_with_role(&state.postgres, &format!("user{}@example.com", unique_id), UserRole::Staff, Some("company123")).await;
     
     let template_name = "Daily Standup";
     
@@ -49,9 +50,10 @@ async fn test_create_log_entry_success() {
 #[tokio::test]
 async fn test_create_log_entry_user_no_company() {
     let state = create_mock_app_state();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     
     // Create user without company
-    let user = create_test_user(&state.postgres, "nocompany@example.com", None).await;
+    let user = create_test_user(&state.postgres, &format!("nocompany{}@example.com", unique_id), None).await;
     
     let template_name = "Daily Standup";
     
@@ -71,9 +73,10 @@ async fn test_create_log_entry_user_no_company() {
 #[tokio::test]
 async fn test_create_log_entry_template_not_found() {
     let state = create_mock_app_state();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     
     // Create user with company
-    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Staff, Some("company123")).await;
+    let user = create_test_user_with_role(&state.postgres, &format!("user{}@example.com", unique_id), UserRole::Staff, Some("company123")).await;
     
     let template_name = "Non-existent Template";
     
@@ -98,9 +101,10 @@ async fn test_create_log_entry_template_not_found() {
 #[tokio::test]
 async fn test_create_log_entry_duplicate_for_period() {
     let state = create_mock_app_state();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     
     // Create user with company
-    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Staff, Some("company123")).await;
+    let user = create_test_user_with_role(&state.postgres, &format!("user{}@example.com", unique_id), UserRole::Staff, Some("company123")).await;
     
     let template_name = "Daily Check-in";
     
@@ -134,9 +138,10 @@ async fn test_create_log_entry_duplicate_for_period() {
 #[tokio::test]
 async fn test_get_log_entry_success() {
     let state = create_mock_app_state();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     
     // Create user with company
-    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Staff, Some("company123")).await;
+    let user = create_test_user_with_role(&state.postgres, &format!("user{}@example.com", unique_id), UserRole::Staff, Some("company123")).await;
     
     let entry_id = "test-entry-id-123";
     
@@ -159,9 +164,10 @@ async fn test_get_log_entry_success() {
 #[tokio::test]
 async fn test_get_log_entry_not_found() {
     let state = create_mock_app_state();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     
     // Create user
-    let user = create_test_user(&state.postgres, "user@example.com", Some("company123")).await;
+    let user = create_test_user(&state.postgres, &format!("user{}@example.com", unique_id), Some("company123")).await;
     
     let entry_id = "non-existent-entry";
     
@@ -183,9 +189,10 @@ async fn test_get_log_entry_not_found() {
 async fn test_get_log_entry_forbidden() {
     let state = create_mock_app_state();
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create two users
-    let user1 = create_test_user(&state.postgres, "user1@example.com", Some("company123")).await;
-    let user2 = create_test_user(&state.postgres, "user2@example.com", Some("company123")).await;
+    let user1 = create_test_user(&state.postgres, &format!("user1{}@example.com", unique_id), Some("company123")).await;
+    let user2 = create_test_user(&state.postgres, &format!("user2{}@example.com", unique_id), Some("company123")).await;
     
     let entry_id = "entry-belonging-to-user1";
     
@@ -206,9 +213,10 @@ async fn test_get_log_entry_forbidden() {
 #[tokio::test]
 async fn test_update_log_entry_success() {
     let state = create_mock_app_state();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     
     // Create user
-    let user = create_test_user(&state.postgres, "user@example.com", Some("company123")).await;
+    let user = create_test_user(&state.postgres, &format!("user{}@example.com", unique_id), Some("company123")).await;
     
     let entry_id = "test-entry-to-update";
     let new_entry_data = json!({
@@ -241,9 +249,10 @@ async fn test_update_log_entry_success() {
 #[tokio::test]
 async fn test_update_log_entry_not_found() {
     let state = create_mock_app_state();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     
     // Create user
-    let user = create_test_user(&state.postgres, "user@example.com", Some("company123")).await;
+    let user = create_test_user(&state.postgres, &format!("user{}@example.com", unique_id), Some("company123")).await;
     
     let entry_id = "non-existent-entry";
     let entry_data = json!({"summary": "Test"});
@@ -270,9 +279,10 @@ async fn test_update_log_entry_not_found() {
 #[tokio::test]
 async fn test_submit_log_entry_success() {
     let state = create_mock_app_state();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     
     // Create user
-    let user = create_test_user(&state.postgres, "user@example.com", Some("company123")).await;
+    let user = create_test_user(&state.postgres, &format!("user{}@example.com", unique_id), Some("company123")).await;
     
     let entry_id = "draft-entry-to-submit";
     
@@ -294,8 +304,9 @@ async fn test_submit_log_entry_success() {
 async fn test_unsubmit_log_entry_admin_success() {
     let state = create_mock_app_state();
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create admin user
-    let admin = create_test_user_with_role(&state.postgres, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
+    let admin = create_test_user_with_role(&state.postgres, &format!("admin{}@example.com", unique_id), UserRole::CompanyManager, Some("company123")).await;
     
     let entry_id = "submitted-entry-to-unsubmit";
     
@@ -317,8 +328,9 @@ async fn test_unsubmit_log_entry_admin_success() {
 async fn test_unsubmit_log_entry_non_admin_forbidden() {
     let state = create_mock_app_state();
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create regular user
-    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Staff, Some("company123")).await;
+    let user = create_test_user_with_role(&state.postgres, &format!("user{}@example.com", unique_id), UserRole::Staff, Some("company123")).await;
     
     let entry_id = "submitted-entry";
     
@@ -334,9 +346,10 @@ async fn test_unsubmit_log_entry_non_admin_forbidden() {
 #[tokio::test]
 async fn test_delete_log_entry_owner_success() {
     let state = create_mock_app_state();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     
     // Create user
-    let user = create_test_user(&state.postgres, "user@example.com", Some("company123")).await;
+    let user = create_test_user(&state.postgres, &format!("user{}@example.com", unique_id), Some("company123")).await;
     
     let entry_id = "entry-to-delete";
     
@@ -363,9 +376,10 @@ async fn test_delete_log_entry_owner_success() {
 async fn test_delete_log_entry_admin_success() {
     let state = create_mock_app_state();
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create admin and regular user
-    let admin = create_test_user_with_role(&state.postgres, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
-    let user = create_test_user(&state.postgres, "user@example.com", Some("company123")).await;
+    let admin = create_test_user_with_role(&state.postgres, &format!("admin{}@example.com", unique_id), UserRole::CompanyManager, Some("company123")).await;
+    let user = create_test_user(&state.postgres, &format!("user{}@example.com", unique_id), Some("company123")).await;
     
     let entry_id = "user-entry-to-delete-by-admin";
     
@@ -392,9 +406,10 @@ async fn test_delete_log_entry_admin_success() {
 async fn test_delete_log_entry_forbidden() {
     let state = create_mock_app_state();
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create two users
-    let user1 = create_test_user(&state.postgres, "user1@example.com", Some("company123")).await;
-    let user2 = create_test_user(&state.postgres, "user2@example.com", Some("company123")).await;
+    let user1 = create_test_user(&state.postgres, &format!("user1{}@example.com", unique_id), Some("company123")).await;
+    let user2 = create_test_user(&state.postgres, &format!("user2{}@example.com", unique_id), Some("company123")).await;
     
     let entry_id = "user1-entry";
     
@@ -448,9 +463,10 @@ async fn test_list_due_forms_success() {
 #[tokio::test]
 async fn test_get_user_log_entries_success() {
     let state = create_mock_app_state();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     
     // Create user with company
-    let user = create_test_user_with_role(&state.postgres, "user@example.com", UserRole::Staff, Some("company123")).await;
+    let user = create_test_user_with_role(&state.postgres, &format!("user{}@example.com", unique_id), UserRole::Staff, Some("company123")).await;
     
     let company_id = "company123";
     

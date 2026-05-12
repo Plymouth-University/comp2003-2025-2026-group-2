@@ -7,11 +7,12 @@ use uuid::Uuid;
 async fn test_authenticate_user_success() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create test user with known password
-    let user = create_test_user(&pool, "test@example.com", Some("company123")).await;
+    let user = create_test_user(&pool, &format!("test{}@example.com", unique_id), Some("company123")).await;
     
     // Test successful authentication
-    let result = AuthService::authenticate(&pool, "test@example.com", "password123").await;
+    let result = AuthService::authenticate(&pool, &format!("test{}@example.com", unique_id), "password123").await;
     
     assert!(result.is_ok());
     let authenticated_user = result.unwrap();
@@ -35,11 +36,12 @@ async fn test_authenticate_user_invalid_email() {
 async fn test_authenticate_user_invalid_password() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create test user
-    create_test_user(&pool, "test@example.com", Some("company123")).await;
+    create_test_user(&pool, &format!("test{}@example.com", unique_id), Some("company123")).await;
     
     // Test with wrong password
-    let result = AuthService::authenticate(&pool, "test@example.com", "wrongpassword").await;
+    let result = AuthService::authenticate(&pool, &format!("test{}@example.com", unique_id), "wrongpassword").await;
     
     assert!(result.is_err());
     let error_msg = result.unwrap_err();
@@ -50,8 +52,9 @@ async fn test_authenticate_user_invalid_password() {
 async fn test_authenticate_user_missing_password() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create test user without password hash
-    let user = create_test_user(&pool, "test@example.com", Some("company123")).await;
+    let user = create_test_user(&pool, &format!("test{}@example.com", unique_id), Some("company123")).await;
     
     // Update user to have null password hash
     sqlx::query("UPDATE users SET password_hash = NULL WHERE id = $1")
@@ -61,7 +64,7 @@ async fn test_authenticate_user_missing_password() {
         .unwrap();
     
     // Test authentication should fail
-    let result = AuthService::authenticate(&pool, "test@example.com", "password123").await;
+    let result = AuthService::authenticate(&pool, &format!("test{}@example.com", unique_id), "password123").await;
     
     assert!(result.is_err());
     let error_msg = result.unwrap_err();
@@ -72,10 +75,11 @@ async fn test_authenticate_user_missing_password() {
 async fn test_register_user_success() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Test successful registration
     let result = AuthService::register(
         &pool,
-        "newuser@example.com",
+        &format!("newuser{}@example.com", unique_id),
         "Password123!",
         Some("New User"),
         Some("company123")
@@ -83,7 +87,7 @@ async fn test_register_user_success() {
     
     assert!(result.is_ok());
     let registered_user = result.unwrap();
-    assert_eq!(registered_user.email, "newuser@example.com");
+    assert_eq!(registered_user.email, format!("newuser{}@example.com", unique_id));
     assert_eq!(registered_user.full_name, Some("New User".to_string()));
     assert_eq!(registered_user.company_id, Some("company123".to_string()));
 }
@@ -92,13 +96,14 @@ async fn test_register_user_success() {
 async fn test_register_user_duplicate_email() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create existing user
-    create_test_user(&pool, "existing@example.com", Some("company123")).await;
+    create_test_user(&pool, &format!("existing{}@example.com", unique_id), Some("company123")).await;
     
     // Test registration with duplicate email
     let result = AuthService::register(
         &pool,
-        "existing@example.com",
+        &format!("existing{}@example.com", unique_id),
         "Password123!",
         Some("New User"),
         Some("company123")
@@ -113,10 +118,11 @@ async fn test_register_user_duplicate_email() {
 async fn test_register_user_weak_password() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Test registration with weak password
     let result = AuthService::register(
         &pool,
-        "weak@example.com",
+        &format!("weak{}@example.com", unique_id),
         "123",  // Too weak
         Some("Weak User"),
         Some("company123")
@@ -172,8 +178,9 @@ async fn test_hash_password_strength() {
 async fn test_token_generation_and_validation() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create test user
-    let user = create_test_user(&pool, "token@example.com", Some("company123")).await;
+    let user = create_test_user(&pool, &format!("token{}@example.com", unique_id), Some("company123")).await;
     
     // Generate token
     let token = AuthService::generate_token(&user).unwrap();

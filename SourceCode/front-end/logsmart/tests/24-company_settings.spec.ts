@@ -85,6 +85,8 @@ test.describe('Company Data Export & Deletion', () => {
 
 		await page.getByRole('button', { name: /Export Company Data|Re-export Company Data/ }).click();
 
+		await page.reload();
+
 		const deleteButton = page.getByRole('button', { name: 'Delete Company' });
 		await expect(deleteButton).toBeEnabled({ timeout: 1000 });
 	});
@@ -114,10 +116,6 @@ test.describe('Company Logo', () => {
 	});
 
 	test('delete_company_logo', async ({ page }) => {
-		page.on('dialog', async (dialog) => {
-			await dialog.accept();
-		});
-
 		await page.getByRole('link', { name: 'Company Settings' }).click();
 		await page.waitForURL('**/company-settings');
 
@@ -138,6 +136,7 @@ test.describe('Company Logo', () => {
 		const deleteBtn = page.getByRole('button', { name: 'Delete Picture', exact: true });
 		await expect(deleteBtn).toBeVisible({ timeout: 1000 });
 		await deleteBtn.click();
+		await page.getByRole('button', { name: 'Confirm' }).click();
 		await expect(deleteBtn).toBeHidden({ timeout: 1000 });
 		await page.reload();
 		await expect(page.locator('div.no-picture')).toBeVisible();

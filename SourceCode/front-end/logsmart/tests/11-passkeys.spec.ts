@@ -79,8 +79,6 @@ test.describe('Passkey Management', () => {
 	});
 
 	test('should delete a passkey', async ({ page }) => {
-		page.on('dialog', (dialog) => dialog.accept());
-
 		// 1. Enable Authenticator
 		const client = await page.context().newCDPSession(page);
 		await client.send('WebAuthn.enable');

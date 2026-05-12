@@ -4,6 +4,7 @@ use back_end::{
     dto::{AcceptInvitationRequest, InviteUserRequest, LoginRequest, RegisterRequest},
 };
 use sqlx::PgPool;
+use uuid::Uuid;
 
 /// Get a connection pool to the test database
 async fn get_test_pool() -> PgPool {
@@ -353,8 +354,9 @@ async fn test_token_expiration_validation() {
 
 #[tokio::test]
 async fn test_request_validation_structures() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let register_req = RegisterRequest {
-        email: "test@example.com".to_string(),
+        email: format!("test{}@example.com", unique_id),
         first_name: "John".to_string(),
         last_name: "Doe".to_string(),
         password: "password123".to_string(),
@@ -366,14 +368,14 @@ async fn test_request_validation_structures() {
     assert!(register_req.password.len() >= 1);
 
     let login_req = LoginRequest {
-        email: "test@example.com".to_string(),
+        email: format!("test{}@example.com", unique_id),
         password: "password123".to_string(),
     };
 
     assert!(!login_req.email.is_empty());
 
     let invite_req = InviteUserRequest {
-        email: "newuser@example.com".to_string(),
+        email: format!("newuser{}@example.com", unique_id),
         role: Some(UserRole::Staff),
         branch_id: None,
     };
