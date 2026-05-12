@@ -20,11 +20,11 @@ pub async fn setup_test_db() -> PgPool {
     let database_url = std::env::var("TEST_DATABASE_URL")
         .unwrap_or_else(|_| "postgres://admin:adminpassword@localhost:5432/logsmartdb".to_string());
 
-    let pool = PgPool::connect(&database_url)
-        .await
-        .expect("Failed to create test database pool");
+    
 
-    pool
+    PgPool::connect(&database_url)
+        .await
+        .expect("Failed to create test database pool")
 }
 
 /// Common test utilities and re-exports
