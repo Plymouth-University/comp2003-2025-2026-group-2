@@ -140,9 +140,12 @@ pub fn spawn_cleanup_task() {
 
 #[cfg(test)]
 mod tests {
+    use serial_test::serial;
+
     use super::*;
 
     #[test]
+    #[serial]
     fn test_safe_path_accepts_valid_filename() {
         let dir = PathBuf::from("/tmp/test_exports");
         std::fs::create_dir_all(&dir).unwrap();
@@ -158,6 +161,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_safe_path_rejects_double_dot() {
         let dir = PathBuf::from("/tmp/test_exports");
         std::fs::create_dir_all(&dir).unwrap();
@@ -167,6 +171,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_safe_path_rejects_forward_slash() {
         let dir = PathBuf::from("/tmp/test_exports");
         std::fs::create_dir_all(&dir).unwrap();
@@ -175,6 +180,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_safe_path_rejects_backslash() {
         let dir = PathBuf::from("/tmp/test_exports");
         std::fs::create_dir_all(&dir).unwrap();
@@ -182,6 +188,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_safe_path_rejects_null_byte() {
         let dir = PathBuf::from("/tmp/test_exports");
         std::fs::create_dir_all(&dir).unwrap();
@@ -189,6 +196,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_safe_path_rejects_empty_filename() {
         let dir = PathBuf::from("/tmp/test_exports");
         std::fs::create_dir_all(&dir).unwrap();
@@ -196,6 +204,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_exports_dir_uses_env_override() {
         unsafe { std::env::set_var("EXPORT_DIR", "/custom/exports") };
         assert_eq!(exports_dir(), PathBuf::from("/custom/exports"));
@@ -203,6 +212,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_exports_dir_defaults_to_exports() {
         unsafe { std::env::remove_var("EXPORT_DIR") };
         assert_eq!(exports_dir(), PathBuf::from("exports"));

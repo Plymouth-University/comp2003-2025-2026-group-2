@@ -202,6 +202,7 @@ test.describe('Reports route behavior', () => {
 
 		await page.goto('http://localhost:5173/reports');
 		await page.waitForURL('**/reports');
+		await page.waitForLoadState('domcontentloaded');
 
 		const logTypeFieldset = page.getByRole('group', { name: 'Log Types:' });
 		const allTypeButton = logTypeFieldset.getByRole('button', { name: 'All', exact: true });

@@ -10,6 +10,7 @@ export type DefaultTemplateBlueprint = {
 	category: 'checklist' | 'temperature' | 'combined';
 	schedule: ApiSchedule;
 	template_layout: ApiTemplateField[];
+	canvas_height?: number;
 };
 
 const WEEKDAY_DAILY: ApiSchedule = {

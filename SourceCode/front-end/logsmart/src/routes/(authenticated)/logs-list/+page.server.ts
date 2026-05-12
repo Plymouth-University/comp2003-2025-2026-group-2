@@ -13,7 +13,8 @@ export const load = async ({
 	fetch: typeof globalThis.fetch;
 	cookies: { get: (name: string) => string | undefined };
 }) => {
-	const { user } = await parent();
+	const { user: parentUser } = await parent();
+	const user = parentUser as User | null;
 	const token = cookies.get('ls-token');
 
 	if (!token) {

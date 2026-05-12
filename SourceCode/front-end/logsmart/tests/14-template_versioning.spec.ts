@@ -80,16 +80,12 @@ test.describe('Template Versioning', () => {
 		await expect(restoreButtons.first()).toBeVisible();
 		await expect(restoreButtons).toHaveCount(2);
 
-		// 6. Restore Version 1
-		// Setup dialog handler BEFORE clicking
-		page.once('dialog', async (dialog) => {
-			await dialog.accept();
-		});
-
 		// Restore the oldest version (last in list) which had "Field V1"
 		await restoreButtons.last().click();
 
-		// 7. Verify restoration
+		await page.getByRole('button', { name: 'Confirm' }).click();
+
+		// 6. Verify restoration
 		// Modal should close
 		await expect(page.getByRole('dialog')).not.toBeVisible();
 

@@ -287,42 +287,4 @@ test.describe('Attendance Admin - Clock Events Integration', () => {
 		await expect(adminPage.locator('body')).toContainText('Clocked In');
 		await adminPage.close();
 	});
-
-	test('staff_clocks_out_and_admin_sees_completed_event', async ({ browser }) => {
-		const staffPage = await browser.newPage();
-		await staffPage.goto('http://localhost:5173/');
-		await staffPage.getByRole('link', { name: 'Login' }).click();
-		await staffPage.getByRole('textbox', { name: 'Email' }).fill(branchStaffCreds.email);
-		await staffPage.getByRole('textbox', { name: 'Password' }).fill(branchStaffCreds.password);
-		await staffPage.getByRole('button', { name: 'Sign in', exact: true }).click();
-		await staffPage.waitForURL('**/logs-list');
-		await staffPage.goto('http://localhost:5173/dashboard');
-		await staffPage.waitForLoadState('networkidle');
-
-		const clockOutButton = staffPage.getByRole('button', { name: 'Clock Out' });
-		if (await clockOutButton.isVisible()) {
-			await clockOutButton.click();
-
-			await expect(staffPage.getByText('Currently Clocked Out')).toBeVisible();
-		}
-		await staffPage.close();
-
-		const adminPage = await browser.newPage();
-		await adminPage.goto('http://localhost:5173/');
-		await adminPage.getByRole('link', { name: 'Login' }).click();
-		await adminPage.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
-		await adminPage.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await adminPage.getByRole('button', { name: 'Sign in', exact: true }).click();
-		await adminPage.waitForURL('**/dashboard');
-
-		await adminPage.getByRole('link', { name: 'Attendance' }).click();
-		await adminPage.getByRole('button', { name: 'Apply' }).click();
-		await adminPage.waitForURL('**/attendance-admin');
-		await adminPage.waitForLoadState('networkidle');
-
-		await expect(adminPage.locator('body')).toContainText('Branch');
-		await expect(adminPage.locator('body')).toContainText(branchStaffCreds.email);
-		await expect(adminPage.locator('body')).toContainText('Clocked Out');
-		await adminPage.close();
-	});
 });

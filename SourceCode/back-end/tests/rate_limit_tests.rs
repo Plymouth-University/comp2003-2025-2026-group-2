@@ -22,6 +22,7 @@ use std::{
 use tower::Service;
 use tower::ServiceExt;
 use url::Url;
+use uuid::Uuid;
 use webauthn_rs::WebauthnBuilder;
 
 async fn setup_test_app_with_rate_limit() -> IntoMakeServiceWithConnectInfo<Router, SocketAddr> {
@@ -183,6 +184,7 @@ async fn test_rate_limit_different_ips_independent() {
 #[tokio::test]
 async fn test_rate_limit_middleware_allows_first_request() {
     let mut app = setup_test_app_with_rate_limit().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let sock_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)), 8080);
     let mut service = app.call(sock_addr).await.unwrap();
@@ -193,7 +195,7 @@ async fn test_rate_limit_middleware_allows_first_request() {
         .header("content-type", "application/json")
         .body(Body::from(
             serde_json::to_vec(&json!({
-                "email": "test@example.com",
+                "email": format!("test{}@example.com", unique_id),
                 "password": "TestPass123!"
             }))
             .unwrap(),
@@ -215,6 +217,7 @@ async fn test_rate_limit_middleware_allows_first_request() {
 #[tokio::test]
 async fn test_rate_limit_middleware_blocks_after_limit() {
     let mut app = setup_test_app_with_rate_limit().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let sock_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 1)), 8080);
     let mut service = app.call(sock_addr).await.unwrap();
@@ -226,7 +229,7 @@ async fn test_rate_limit_middleware_blocks_after_limit() {
             .header("content-type", "application/json")
             .body(Body::from(
                 serde_json::to_vec(&json!({
-                    "email": "test@example.com",
+                    "email": format!("test{}@example.com", unique_id),
                     "password": "TestPass123!"
                 }))
                 .unwrap(),
@@ -252,7 +255,7 @@ async fn test_rate_limit_middleware_blocks_after_limit() {
         .header("content-type", "application/json")
         .body(Body::from(
             serde_json::to_vec(&json!({
-                "email": "test@example.com",
+                "email": format!("test{}@example.com", unique_id),
                 "password": "TestPass123!"
             }))
             .unwrap(),
@@ -385,6 +388,7 @@ async fn test_rate_limit_concurrent_requests_same_ip() {
 #[tokio::test]
 async fn test_rate_limit_response_includes_retry_after() {
     let mut app = setup_test_app_with_rate_limit().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     let sock_addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(10, 0, 0, 20)), 8080);
     let mut service = app.call(sock_addr).await.unwrap();
@@ -396,7 +400,7 @@ async fn test_rate_limit_response_includes_retry_after() {
             .header("content-type", "application/json")
             .body(Body::from(
                 serde_json::to_vec(&json!({
-                    "email": "test@example.com",
+                    "email": format!("test{}@example.com", unique_id),
                     "password": "TestPass123!"
                 }))
                 .unwrap(),
@@ -414,7 +418,7 @@ async fn test_rate_limit_response_includes_retry_after() {
         .header("content-type", "application/json")
         .body(Body::from(
             serde_json::to_vec(&json!({
-                "email": "test@example.com",
+                "email": format!("test{}@example.com", unique_id),
                 "password": "TestPass123!"
             }))
             .unwrap(),
@@ -444,9 +448,10 @@ async fn test_rate_limit_response_includes_retry_after() {
 #[tokio::test]
 async fn test_rate_limit_email_login_allows_within_limit() {
     let state = RateLimitState::new();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     for i in 0..10 {
-        let allowed = state.check_login_email("test@example.com");
+        let allowed = state.check_login_email(&format!("test{}@example.com", unique_id));
         assert!(
             allowed,
             "Request {} should be allowed (limit is 10 per minute for email)",
@@ -458,40 +463,43 @@ async fn test_rate_limit_email_login_allows_within_limit() {
 #[tokio::test]
 async fn test_rate_limit_email_login_blocks_after_limit() {
     let state = RateLimitState::new();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     for _ in 0..10 {
         assert!(
-            state.check_login_email("test@example.com"),
+            state.check_login_email(&format!("test{}@example.com", unique_id)),
             "Should allow within limit"
         );
     }
 
-    let blocked = state.check_login_email("test@example.com");
+    let blocked = state.check_login_email(&format!("test{}@example.com", unique_id));
     assert!(!blocked, "Should block 11th request for same email");
 }
 
 #[tokio::test]
 async fn test_rate_limit_email_case_insensitive() {
     let state = RateLimitState::new();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     for _ in 0..5 {
-        assert!(state.check_login_email("Test@Example.COM"));
+        assert!(state.check_login_email(&format!("Test{}@Example.COM", unique_id)));
     }
 
     for _ in 0..5 {
-        assert!(state.check_login_email("test@example.com"));
+        assert!(state.check_login_email(&format!("test{}@example.com", unique_id)));
     }
 
-    let blocked = state.check_login_email("TEST@EXAMPLE.COM");
+    let blocked = state.check_login_email(&format!("TEST{}@EXAMPLE.COM", unique_id));
     assert!(!blocked, "Should be blocked regardless of case");
 }
 
 #[tokio::test]
 async fn test_rate_limit_email_register_allows_within_limit() {
     let state = RateLimitState::new();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     for i in 0..5 {
-        let allowed = state.check_register_email("newuser@example.com");
+        let allowed = state.check_register_email(&format!("newuser{}@example.com", unique_id));
         assert!(
             allowed,
             "Request {} should be allowed (limit is 5 per hour for email registration)",
@@ -503,15 +511,16 @@ async fn test_rate_limit_email_register_allows_within_limit() {
 #[tokio::test]
 async fn test_rate_limit_email_register_blocks_after_limit() {
     let state = RateLimitState::new();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     for _ in 0..20 {
         assert!(
-            state.check_register_email("spam@example.com"),
+            state.check_register_email(&format!("spam{}@example.com", unique_id)),
             "Should allow within limit"
         );
     }
 
-    let blocked = state.check_register_email("spam@example.com");
+    let blocked = state.check_register_email(&format!("spam{}@example.com", unique_id));
     assert!(
         !blocked,
         "Should block 6th registration attempt for same email"
@@ -521,18 +530,19 @@ async fn test_rate_limit_email_register_blocks_after_limit() {
 #[tokio::test]
 async fn test_rate_limit_different_emails_independent() {
     let state = RateLimitState::new();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     for _ in 0..10 {
-        assert!(state.check_login_email("user1@example.com"));
+        assert!(state.check_login_email(&format!("user1{}@example.com", unique_id)));
     }
     assert!(
-        !state.check_login_email("user1@example.com"),
+        !state.check_login_email(&format!("user1{}@example.com", unique_id)),
         "user1 should be blocked"
     );
 
     for _ in 0..10 {
         assert!(
-            state.check_login_email("user2@example.com"),
+            state.check_login_email(&format!("user2{}@example.com", unique_id)),
             "user2 should still be allowed"
         );
     }
@@ -541,16 +551,17 @@ async fn test_rate_limit_different_emails_independent() {
 #[tokio::test]
 async fn test_rate_limit_ip_and_email_both_enforced() {
     let state = RateLimitState::new();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let ip = IpAddr::V4(Ipv4Addr::new(192, 168, 5, 1));
 
     for _ in 0..5 {
         assert!(state.check_login(ip));
-        assert!(state.check_login_email("test@example.com"));
+        assert!(state.check_login_email(&format!("test{}@example.com", unique_id)));
     }
 
     assert!(!state.check_login(ip), "IP should be blocked");
     assert!(
-        state.check_login_email("test@example.com"),
+        state.check_login_email(&format!("test{}@example.com", unique_id)),
         "Email should still have attempts left"
     );
 }
@@ -558,6 +569,7 @@ async fn test_rate_limit_ip_and_email_both_enforced() {
 #[tokio::test]
 async fn test_rate_limit_botnet_scenario() {
     let state = RateLimitState::new();
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     for i in 0..20 {
         let ip = IpAddr::V4(Ipv4Addr::new(10, 0, 0, i as u8));
@@ -572,13 +584,13 @@ async fn test_rate_limit_botnet_scenario() {
 
     for i in 0..10 {
         assert!(
-            state.check_login_email("target@example.com"),
+            state.check_login_email(&format!("target{}@example.com", unique_id)),
             "Email attempt {}",
             i + 1
         );
     }
 
-    let blocked = state.check_login_email("target@example.com");
+    let blocked = state.check_login_email(&format!("target{}@example.com", unique_id));
     assert!(
         !blocked,
         "Email should be blocked even though many different IPs were used"
@@ -588,8 +600,8 @@ async fn test_rate_limit_botnet_scenario() {
 #[tokio::test]
 async fn test_rate_limit_middleware_checks_email_from_body() {
     let mut app = setup_test_app_with_rate_limit().await;
-
-    let email = "ratelimited@example.com";
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let email = format!("ratelimited{}@example.com", unique_id);
 
     for i in 0..10 {
         let ip = format!("10.0.0.{}", 30 + i);

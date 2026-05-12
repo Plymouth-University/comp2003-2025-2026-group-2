@@ -9,23 +9,22 @@ let adminCreds: {
 	lastName: string;
 };
 
-test.beforeAll(async ({ browser }) => {
-	await clearMailhogEmails();
-	const creds = await register(browser);
-	if (!creds) throw new Error('Failed to register admin user');
-	adminCreds = creds;
-});
-
-test.beforeEach(async ({ page }) => {
-	await page.goto('http://localhost:5173/');
-	await page.getByRole('link', { name: 'Login' }).click();
-	await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
-	await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-	await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-	await page.waitForURL('**/dashboard');
-});
-
 test.describe('Confirm Company Deletion Page', () => {
+	test.beforeAll(async ({ browser }) => {
+		await clearMailhogEmails();
+		const creds = await register(browser);
+		if (!creds) throw new Error('Failed to register admin user');
+		adminCreds = creds;
+	});
+
+	test.beforeEach(async ({ page }) => {
+		await page.goto('http://localhost:5173/');
+		await page.getByRole('link', { name: 'Login' }).click();
+		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
+		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+		await page.waitForURL('**/dashboard');
+	});
 	test('shows_error_when_missing_params', async ({ page }) => {
 		await page.goto('http://localhost:5173/confirm-company-deletion');
 		await expect(page.getByText('Missing company ID or confirmation token')).toBeVisible({
@@ -48,10 +47,10 @@ test.describe('Confirm Company Deletion Page', () => {
 test.describe('Complete Company Deletion Flow', () => {
 	test('full_deletion_flow_with_email_confirmation', async ({ browser }) => {
 		await clearMailhogEmails();
-		const creds = await register(browser);
+		const creds = await register(browser, false);
 		if (!creds) throw new Error('Failed to register admin user');
 
-		const page = await browser.newPage();
+		const page = creds.page!;
 		await page.goto('http://localhost:5173/login');
 		await page.getByRole('textbox', { name: 'Email' }).fill(creds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(creds.password);
@@ -62,17 +61,15 @@ test.describe('Complete Company Deletion Flow', () => {
 		await page.waitForURL('**/company-settings');
 		await page.reload();
 		await page.waitForURL('**/company-settings');
+		await page.waitForLoadState('networkidle');
 
 		await page.getByRole('button', { name: /Export Company Data|Re-export Company Data/ }).click();
-
+		await page.reload();
 		const deleteButton = page.getByRole('button', { name: 'Delete Company' });
 		await expect(deleteButton).toBeEnabled({ timeout: 1000 });
 
-		page.on('dialog', async (dialog) => {
-			await dialog.accept();
-		});
-
 		await deleteButton.click();
+		await page.getByRole('button', { name: 'Confirm' }).click();
 		await page.waitForTimeout(500);
 
 		const tokenData = await getCompanyDeletionToken(creds.email);
@@ -103,10 +100,11 @@ test.describe('Complete Company Deletion Flow', () => {
 		await confirmPage.close();
 	});
 
-	test('user_cannot_login_after_company_deletion', async ({ browser, page }) => {
+	test('user_cannot_login_after_company_deletion', async ({ browser }) => {
 		await clearMailhogEmails();
-		const creds = await register(browser);
+		const creds = await register(browser, false);
 		if (!creds) throw new Error('Failed to register admin user');
+		const page = creds.page!;
 
 		await page.goto('http://localhost:5173/login');
 		await page.getByRole('textbox', { name: 'Email' }).fill(creds.email);
@@ -124,11 +122,8 @@ test.describe('Complete Company Deletion Flow', () => {
 		const deleteButton = page.getByRole('button', { name: 'Delete Company' });
 		await expect(deleteButton).toBeEnabled({ timeout: 1000 });
 
-		page.on('dialog', async (dialog) => {
-			await dialog.accept();
-		});
-
 		await deleteButton.click();
+		await page.getByRole('button', { name: 'Confirm' }).click();
 
 		await page.close();
 
@@ -168,10 +163,10 @@ test.describe('Complete Company Deletion Flow', () => {
 
 	test('api_calls_blocked_after_company_deletion', async ({ browser }) => {
 		await clearMailhogEmails();
-		const creds = await register(browser);
+		const creds = await register(browser, false);
 		if (!creds) throw new Error('Failed to register admin user');
 
-		const page = await browser.newPage();
+		const page = creds.page!;
 		await page.goto('http://localhost:5173/login');
 		await page.getByRole('textbox', { name: 'Email' }).fill(creds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(creds.password);
@@ -192,12 +187,8 @@ test.describe('Complete Company Deletion Flow', () => {
 
 		const deleteButton = page.getByRole('button', { name: 'Delete Company' });
 		await expect(deleteButton).toBeEnabled({ timeout: 1000 });
-
-		page.on('dialog', async (dialog) => {
-			await dialog.accept();
-		});
-
 		await deleteButton.click();
+		await page.getByRole('button', { name: 'Confirm' }).click();
 
 		const tokenData = await getCompanyDeletionToken(creds.email);
 		expect(tokenData).toBeTruthy();
@@ -235,10 +226,10 @@ test.describe('Complete Company Deletion Flow', () => {
 
 	test('passkey_login_blocked_after_company_deletion', async ({ browser }) => {
 		await clearMailhogEmails();
-		const creds = await register(browser);
+		const creds = await register(browser, false);
 		if (!creds) throw new Error('Failed to register admin user');
 
-		const page = await browser.newPage();
+		const page = creds.page!;
 		await page.addInitScript(() => {
 			if (window.PublicKeyCredential) {
 				window.PublicKeyCredential.isConditionalMediationAvailable = async () => false;
@@ -281,11 +272,8 @@ test.describe('Complete Company Deletion Flow', () => {
 		const deleteButton = page.getByRole('button', { name: 'Delete Company' });
 		await expect(deleteButton).toBeEnabled({ timeout: 1000 });
 
-		page.on('dialog', async (dialog) => {
-			await dialog.accept();
-		});
-
 		await deleteButton.click();
+		await page.getByRole('button', { name: 'Confirm' }).click();
 
 		const tokenData = await getCompanyDeletionToken(creds.email, 60);
 		expect(tokenData).toBeTruthy();
@@ -329,10 +317,10 @@ test.describe('Complete Company Deletion Flow', () => {
 	test('oauth_login_blocked_after_company_deletion', async ({ browser }) => {
 		test.skip(!!process.env.CI, 'Skipping OAuth test on CI');
 		await clearMailhogEmails();
-		const creds = await register(browser);
+		const creds = await register(browser, false);
 		if (!creds) throw new Error('Failed to register admin user');
 
-		const page = await browser.newPage();
+		const page = creds.page!;
 		await page.goto('http://localhost:5173/login');
 		await page.getByRole('textbox', { name: 'Email' }).fill(creds.email);
 		await page.getByRole('textbox', { name: 'Password' }).fill(creds.password);
@@ -369,11 +357,8 @@ test.describe('Complete Company Deletion Flow', () => {
 		const deleteButton = page.getByRole('button', { name: 'Delete Company' });
 		await expect(deleteButton).toBeEnabled({ timeout: 1000 });
 
-		page.on('dialog', async (dialog) => {
-			await dialog.accept();
-		});
-
 		await deleteButton.click();
+		await page.getByRole('button', { name: 'Confirm' }).click();
 
 		const tokenData = await getCompanyDeletionToken(creds.email);
 		expect(tokenData).toBeTruthy();

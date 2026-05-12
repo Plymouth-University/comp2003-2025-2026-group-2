@@ -258,11 +258,11 @@ async fn test_get_company_clock_events_basic() {
         .await
         .expect("Failed to clock out");
 
-    let events = db::get_company_clock_events(&pool, &company.id, None, None, None)
+    let events = db::get_company_clock_events(&pool, &company.id, None, None, None, None, None)
         .await
         .expect("Failed to get company clock events");
 
-    let user_event = events.iter().find(|e| e.user_id == user.id);
+    let user_event = events.0.iter().find(|e| e.user_id == user.id);
     assert!(user_event.is_some());
 
     let event = user_event.unwrap();
@@ -348,21 +348,35 @@ async fn test_get_company_clock_events_branch_filter() {
         .await
         .expect("Failed to clock out user B");
 
-    let events_branch_a =
-        db::get_company_clock_events(&pool, &company.id, None, None, Some(branch_a.id.clone()))
-            .await
-            .expect("Failed to get branch A events");
+    let events_branch_a = db::get_company_clock_events(
+        &pool,
+        &company.id,
+        None,
+        None,
+        Some(branch_a.id.clone()),
+        None,
+        None,
+    )
+    .await
+    .expect("Failed to get branch A events");
 
-    assert!(events_branch_a.iter().any(|e| e.user_id == user_a.id));
-    assert!(!events_branch_a.iter().any(|e| e.user_id == user_b.id));
+    assert!(events_branch_a.0.iter().any(|e| e.user_id == user_a.id));
+    assert!(!events_branch_a.0.iter().any(|e| e.user_id == user_b.id));
 
-    let events_branch_b =
-        db::get_company_clock_events(&pool, &company.id, None, None, Some(branch_b.id.clone()))
-            .await
-            .expect("Failed to get branch B events");
+    let events_branch_b = db::get_company_clock_events(
+        &pool,
+        &company.id,
+        None,
+        None,
+        Some(branch_b.id.clone()),
+        None,
+        None,
+    )
+    .await
+    .expect("Failed to get branch B events");
 
-    assert!(events_branch_b.iter().any(|e| e.user_id == user_b.id));
-    assert!(!events_branch_b.iter().any(|e| e.user_id == user_a.id));
+    assert!(events_branch_b.0.iter().any(|e| e.user_id == user_b.id));
+    assert!(!events_branch_b.0.iter().any(|e| e.user_id == user_a.id));
 }
 
 #[tokio::test]
@@ -408,11 +422,13 @@ async fn test_get_company_clock_events_date_filter() {
         Some(one_hour_ago),
         Some(one_hour_ahead),
         None,
+        None,
+        None,
     )
     .await
     .expect("Failed to get events with date filter");
 
-    assert!(events.iter().any(|e| e.user_id == user.id));
+    assert!(events.0.iter().any(|e| e.user_id == user.id));
 
     let far_future = now + chrono::Duration::days(365);
     let empty_events = db::get_company_clock_events(
@@ -421,11 +437,13 @@ async fn test_get_company_clock_events_date_filter() {
         Some(far_future),
         Some(far_future + chrono::Duration::hours(1)),
         None,
+        None,
+        None,
     )
     .await
     .expect("Failed to get events with future date filter");
 
-    assert!(!empty_events.iter().any(|e| e.user_id == user.id));
+    assert!(!empty_events.0.iter().any(|e| e.user_id == user.id));
 }
 
 #[tokio::test]

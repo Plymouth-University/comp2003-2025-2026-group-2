@@ -4,7 +4,9 @@
 	import ClockInOut from '$lib/components/ClockInOut.svelte';
 	import LogRow from '$lib/components/logs/LogRow.svelte';
 	import LogSection from '$lib/components/logs/LogSection.svelte';
-	import { onDestroy, onMount } from 'svelte';
+	import { onMount } from 'svelte';
+	import { showSuccess, showError } from '$lib/toast';
+	import { confirm } from '$lib/confirm';
 	import { SvelteDate } from 'svelte/reactivity';
 
 	type LogEntry = components['schemas']['LogEntryResponse'];
@@ -73,49 +75,21 @@
 			: []
 	);
 
-	let showToast = $state(false);
-	let toastType = $state<'success' | 'error'>('success');
-	let toastMessage = $state('');
-	let toastSequence = $state(0);
-	let toastTimer = $state<number | null>(null);
-	const TOAST_DURATION_MS = 5000;
-
-	function showTimedToast(
-		type: 'success' | 'error',
-		message: string,
-		durationMs = TOAST_DURATION_MS
-	) {
-		toastType = type;
-		toastMessage = message;
-		toastSequence += 1;
-		showToast = true;
-
-		if (toastTimer !== null) {
-			window.clearTimeout(toastTimer);
-		}
-
-		toastTimer = window.setTimeout(() => {
-			showToast = false;
-			toastTimer = null;
-		}, durationMs);
-	}
-
 	onMount(() => {
 		const params = new URLSearchParams(window.location.search);
 		const toastToken = params.get('toast');
 
 		if (toastToken === 'log_submitted_success') {
-			showTimedToast('success', 'Log submitted successfully');
+			showSuccess('Log submitted successfully');
+		} else if (toastToken === 'log_unsubmitted_success') {
+			showSuccess('Log unsubmitted successfully');
+		}
+
+		if (toastToken) {
 			params.delete('toast');
 			const nextQuery = params.toString();
 			const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
 			window.history.replaceState(window.history.state, '', nextUrl);
-		}
-	});
-
-	onDestroy(() => {
-		if (toastTimer !== null) {
-			window.clearTimeout(toastTimer);
 		}
 	});
 
@@ -187,78 +161,35 @@
 	}
 
 	async function handleUnsubmit(entryId: string) {
-		if (
-			!confirm('Are you sure you want to unsubmit this log? This will allow it to be edited again.')
-		) {
-			return;
-		}
+		confirm(
+			'Unsubmit Log',
+			'Are you sure you want to unsubmit this log? This will allow it to be edited again.',
+			async () => {
+				try {
+					const response = await fetch(`/api/logs/entries/${entryId}/unsubmit`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json'
+						}
+					});
 
-		try {
-			const response = await fetch(`/api/logs/entries/${entryId}/unsubmit`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
+					if (response.ok) {
+						const url = new URL(window.location.href);
+						url.searchParams.set('toast', 'log_unsubmitted_success');
+						window.location.href = url.toString();
+					} else {
+						const error = await response.text();
+						console.error('Unsubmit failed:', error);
+						showError('Failed to unsubmit log');
+					}
+				} catch (error) {
+					console.error('Error unsubmitting log:', error);
+					showError('Error unsubmitting log');
 				}
-			});
-
-			if (response.ok) {
-				alert('Log unsubmitted successfully');
-				window.location.reload();
-			} else {
-				const error = await response.text();
-				console.error('Unsubmit failed:', error);
-				alert('Failed to unsubmit log');
 			}
-		} catch (error) {
-			console.error('Error unsubmitting log:', error);
-			alert('Error unsubmitting log');
-		}
+		);
 	}
 </script>
-
-{#if showToast}
-	{#key toastSequence}
-		<div
-			class="fixed right-4 bottom-4 z-50 w-full max-w-sm overflow-hidden rounded-lg border px-4 py-3 text-left shadow-lg"
-			style={toastType === 'success'
-				? 'border-color: var(--create-button); background-color: var(--clock-in-bg);'
-				: 'border-color: var(--button-secondary); background-color: var(--error-bg);'}
-		>
-			<div class="mb-2 flex items-start justify-between gap-3">
-				<p
-					class="text-sm font-semibold"
-					style={toastType === 'success'
-						? 'color: var(--create-button);'
-						: 'color: var(--button-secondary);'}
-				>
-					{toastMessage}
-				</p>
-				<button
-					type="button"
-					onclick={() => {
-						showToast = false;
-						if (toastTimer !== null) {
-							window.clearTimeout(toastTimer);
-							toastTimer = null;
-						}
-					}}
-					class="rounded px-2 py-0.5 text-xs font-semibold transition-opacity hover:opacity-80"
-					style={toastType === 'success'
-						? 'background-color: var(--clock-in-bg); color: var(--create-button); cursor: pointer;'
-						: 'background-color: var(--error-bg); color: var(--button-secondary); cursor: pointer;'}
-				>
-					Close
-				</button>
-			</div>
-			<div
-				class="logs-toast-progress absolute right-0 bottom-0 left-0 h-1"
-				style={toastType === 'success'
-					? `background-color: var(--create-button); animation-duration: ${TOAST_DURATION_MS}ms;`
-					: `background-color: var(--button-secondary); animation-duration: ${TOAST_DURATION_MS}ms;`}
-			></div>
-		</div>
-	{/key}
-{/if}
 
 <svelte:head>
 	<title>Logs List</title>
@@ -413,22 +344,6 @@
 </main>
 
 <style>
-	@keyframes logsToastCountdown {
-		from {
-			transform: scaleX(1);
-		}
-		to {
-			transform: scaleX(0);
-		}
-	}
-
-	.logs-toast-progress {
-		transform-origin: left center;
-		animation-name: logsToastCountdown;
-		animation-timing-function: linear;
-		animation-fill-mode: forwards;
-	}
-
 	.logs-page button:not(:disabled) {
 		cursor: pointer;
 	}

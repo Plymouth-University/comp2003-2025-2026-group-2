@@ -17,8 +17,9 @@ async function globalTeardown() {
 				process.kill(backendPid, 'SIGTERM');
 				await new Promise((resolve) => setTimeout(resolve, 500));
 			} catch (error: unknown) {
-				if (error.code !== 'ESRCH') {
-					console.log('Error killing backend process:', error.message);
+				if (error && typeof error === 'object' && 'code' in error && error.code !== 'ESRCH') {
+					const err = error as { message?: string };
+					console.log('Error killing backend process:', err.message ?? 'Unknown error');
 				}
 			}
 		}
@@ -29,8 +30,9 @@ async function globalTeardown() {
 				process.kill(frontendPid, 'SIGTERM');
 				await new Promise((resolve) => setTimeout(resolve, 500));
 			} catch (error: unknown) {
-				if (error.code !== 'ESRCH') {
-					console.log('Error killing frontend process:', error.message);
+				if (error && typeof error === 'object' && 'code' in error && error.code !== 'ESRCH') {
+					const err = error as { message?: string };
+					console.log('Error killing frontend process:', err.message ?? 'Unknown error');
 				}
 			}
 		}
