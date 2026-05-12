@@ -2,6 +2,7 @@ use back_end::auth::{
     Claims, JwtConfig, generate_uuid6_token, hash_password, validate_email,
     validate_password_policy, verify_password,
 };
+use uuid::Uuid;
 
 // ===== JWT Config Tests =====
 
@@ -258,23 +259,25 @@ fn test_claims_struct() {
 
 #[test]
 fn test_validate_email_valid() {
-    assert!(validate_email("user@example.com").is_ok());
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    assert!(validate_email(&format!("user{}@example.com", unique_id)).is_ok());
     assert!(validate_email("test.user+tag@domain.co.uk").is_ok());
     assert!(validate_email("user123@test-domain.com").is_ok());
 }
 
 #[test]
 fn test_validate_email_valid_emails() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let valid_emails = vec![
-        "test@example.com",
-        "user.name@domain.co.uk",
-        "user+tag@example.org",
-        "user_name123@test-domain.com",
-        "a@b.co",
+        format!("test{}@example.com", unique_id),
+        "user.name@domain.co.uk".to_string(),
+        "user+tag@example.org".to_string(),
+        "user_name123@test-domain.com".to_string(),
+        "a@b.co".to_string(),
     ];
 
     for email in valid_emails {
-        let result = validate_email(email);
+        let result = validate_email(&email);
         assert!(result.is_ok(), "Email {} should be valid", email);
     }
 }
@@ -534,14 +537,15 @@ fn test_authentication_workflow() {
 
 #[test]
 fn test_email_and_password_validation_combination() {
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let valid_combinations = vec![
-        ("user@example.com", "Password123!"),
-        ("test.user+tag@domain.co.uk", "SecureP@ssw0rd"),
+        (format!("user{}@example.com", unique_id), "Password123!"),
+        ("test.user+tag@domain.co.uk".to_string(), "SecureP@ssw0rd"),
     ];
 
     for (email, password) in valid_combinations {
         assert!(
-            validate_email(email).is_ok(),
+            validate_email(&email).is_ok(),
             "Email {} should be valid",
             email
         );

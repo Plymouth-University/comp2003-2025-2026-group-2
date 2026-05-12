@@ -15,10 +15,12 @@
 // - Common utilities: tests/common/mod.rs
 // ============================================================================
 
-mod common;
-
+use back_end::{
+    common::{CompanyFactory, UserFactory},
+    db::UserRole,
+};
 use chrono::Utc;
-use common::{CompanyFactory, UserFactory};
+use uuid::Uuid;
 
 // ============================================================================
 // TIER 3: DATABASE CONSTRAINT VIOLATION TESTS (2 tests)
@@ -30,25 +32,42 @@ use common::{CompanyFactory, UserFactory};
 /// Location: migrations/20260201000003_create_users_table.sql:4
 #[tokio::test]
 async fn test_email_unique_constraint_enforced() {
-    let pool = common::setup_test_db().await;
+    let pool = back_end::common::setup_test_db().await;
 
     let user1 = UserFactory::create_basic();
-    let email = "unique_test@example.com".to_string();
+    let email = format!("unique_test{}@example.com", user1.id);
+
+    let company = sqlx::query(
+        "INSERT INTO companies (id, name, created_at, address) VALUES ($1, $2, $3, $4)",
+    )
+    .bind(&user1.company_id)
+    .bind("Test Company")
+    .bind(Utc::now())
+    .bind("123 Test St")
+    .execute(&pool)
+    .await;
+
+    println!("Company insert result: {:?}", company);
+
+    assert!(company.is_ok(), "Company should be inserted");
 
     // Insert first user with unique email
     let result1 = sqlx::query(
-        "INSERT INTO users (id, email, first_name, last_name, company_id, role, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO users (id, email, first_name, last_name, company_id, role, created_at, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
     )
     .bind(&user1.id)
     .bind(&email)
     .bind("First")
     .bind("User")
     .bind(&user1.company_id)
-    .bind("staff")
+    .bind(UserRole::Staff)
     .bind(Utc::now())
+    .bind("password123hash")
     .execute(&pool)
     .await;
+
+    println!("First user insert result: {:?}", result1);
 
     assert!(
         result1.is_ok(),
@@ -58,16 +77,17 @@ async fn test_email_unique_constraint_enforced() {
     // Attempt to insert second user with same email - should fail
     let user2 = UserFactory::create_basic();
     let result2 = sqlx::query(
-        "INSERT INTO users (id, email, first_name, last_name, company_id, role, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO users (id, email, first_name, last_name, company_id, role, created_at, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
     )
     .bind(&user2.id)
     .bind(&email) // Same email as user1
     .bind("Second")
     .bind("User")
     .bind(&user2.company_id)
-    .bind("staff")
+    .bind(UserRole::Staff)
     .bind(Utc::now())
+    .bind("password123hash")
     .execute(&pool)
     .await;
 
@@ -83,7 +103,7 @@ async fn test_email_unique_constraint_enforced() {
 /// Location: migrations/20260201000003_create_users_table.sql:15
 #[tokio::test]
 async fn test_foreign_key_cascade_on_company_delete() {
-    let pool = common::setup_test_db().await;
+    let pool = back_end::common::setup_test_db().await;
 
     // Create company
     let company = CompanyFactory::create_basic();
@@ -103,24 +123,31 @@ async fn test_foreign_key_cascade_on_company_delete() {
     assert!(insert_company.is_ok(), "Company should be inserted");
 
     // Create user with foreign key to company
-    let user = UserFactory::create_basic();
+    let mut user = UserFactory::create_basic();
+    user.company_id = Some(company_id.clone());
     let user_id = user.id.clone();
 
     let insert_user = sqlx::query(
-        "INSERT INTO users (id, email, first_name, last_name, company_id, role, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO users (id, email, first_name, last_name, company_id, role, created_at, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
     )
     .bind(&user_id)
-    .bind("cascade_test@example.com")
+    .bind(format!("cascade_test{}@example.com", user_id))
     .bind(&user.first_name)
     .bind(&user.last_name)
     .bind(&company_id)
-    .bind("staff")
+    .bind(UserRole::Staff)
     .bind(Utc::now())
+    .bind("password123hash")
     .execute(&pool)
     .await;
 
-    assert!(insert_user.is_ok(), "User with company_id should be inserted");
+    println!("User insert result: {:?}", insert_user);
+
+    assert!(
+        insert_user.is_ok(),
+        "User with company_id should be inserted"
+    );
 
     // Verify user has company_id set
     let user_before: (Option<String>,) =
@@ -131,7 +158,8 @@ async fn test_foreign_key_cascade_on_company_delete() {
             .expect("User should exist");
 
     assert_eq!(
-        user_before.0, Some(company_id.clone()),
+        user_before.0,
+        Some(company_id.clone()),
         "User should have company_id set before deletion"
     );
 
@@ -141,19 +169,15 @@ async fn test_foreign_key_cascade_on_company_delete() {
         .execute(&pool)
         .await;
 
-    assert!(
-        delete_company.is_ok(),
-        "Company soft delete should succeed"
-    );
+    assert!(delete_company.is_ok(), "Company soft delete should succeed");
 
     // Verify company is marked as deleted
-    let company_after: (Option<chrono::DateTime<Utc>>,) = sqlx::query_as(
-        "SELECT deleted_at FROM companies WHERE id = $1"
-    )
-    .bind(&company_id)
-    .fetch_one(&pool)
-    .await
-    .expect("Company should still exist after soft delete");
+    let company_after: (Option<chrono::DateTime<Utc>>,) =
+        sqlx::query_as("SELECT deleted_at FROM companies WHERE id = $1")
+            .bind(&company_id)
+            .fetch_one(&pool)
+            .await
+            .expect("Company should still exist after soft delete");
 
     assert!(
         company_after.0.is_some(),
@@ -172,7 +196,8 @@ async fn test_foreign_key_cascade_on_company_delete() {
     // With soft delete, company_id remains (expected behavior)
     // With hard delete + ON DELETE SET NULL, it would be None
     assert_eq!(
-        user_final.0, Some(company_id),
+        user_final.0,
+        Some(company_id),
         "User company_id should remain in soft delete scenario"
     );
 }
@@ -187,10 +212,10 @@ async fn test_foreign_key_cascade_on_company_delete() {
 /// exists in the database.
 #[tokio::test]
 async fn test_concurrent_user_creation_same_email_race_condition() {
-    let pool = common::setup_test_db().await;
+    let pool = back_end::common::setup_test_db().await;
 
     let email = "concurrent_race@example.com".to_string();
-    let company_id = "company_concurrent".to_string();
+    let company_id = Uuid::new_v4().to_string();
 
     // Insert company first
     sqlx::query("INSERT INTO companies (id, name, address, created_at) VALUES ($1, $2, $3, $4)")
@@ -215,32 +240,34 @@ async fn test_concurrent_user_creation_same_email_race_condition() {
 
     let handle1 = tokio::spawn(async move {
         sqlx::query(
-            "INSERT INTO users (id, email, first_name, last_name, company_id, role, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            "INSERT INTO users (id, email, first_name, last_name, company_id, role, created_at, password_hash)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         )
         .bind(&user1_id)
         .bind(&email_clone1)
         .bind("User")
         .bind("One")
         .bind(&company_id_clone1)
-        .bind("staff")
+        .bind(UserRole::Staff)
         .bind(Utc::now())
+        .bind("password123hash")
         .execute(&pool_clone1)
         .await
     });
 
     let handle2 = tokio::spawn(async move {
         sqlx::query(
-            "INSERT INTO users (id, email, first_name, last_name, company_id, role, created_at)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            "INSERT INTO users (id, email, first_name, last_name, company_id, role, created_at, password_hash)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         )
         .bind(&user2_id)
         .bind(&email_clone2)
         .bind("User")
         .bind("Two")
         .bind(&company_id_clone2)
-        .bind("staff")
+        .bind(UserRole::Staff)
         .bind(Utc::now())
+        .bind("password123hash")
         .execute(&pool_clone2)
         .await
     });
@@ -272,10 +299,10 @@ async fn test_concurrent_user_creation_same_email_race_condition() {
 /// Verify the user was not committed to database.
 #[tokio::test]
 async fn test_transaction_rollback_on_error_maintains_consistency() {
-    let pool = common::setup_test_db().await;
+    let pool = back_end::common::setup_test_db().await;
 
-    let user_email = "rollback_test@example.com".to_string();
-    let user_id = "user_rollback_test".to_string();
+    let user_id = Uuid::new_v4().to_string();
+    let user_email = format!("rollback_test{}@example.com", user_id);
 
     // Verify user doesn't exist initially
     let initial_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM users WHERE email = $1")
@@ -286,35 +313,55 @@ async fn test_transaction_rollback_on_error_maintains_consistency() {
 
     assert_eq!(initial_count.0, 0, "User should not exist initially");
 
+    let company_id = Uuid::new_v4().to_string();
+    let _company = sqlx::query(
+        "INSERT INTO companies (id, name, address, created_at)
+         VALUES ($1, $2, $3, $4)",
+    )
+    .bind(&company_id)
+    .bind("Test Company")
+    .bind("123 Test St")
+    .bind(Utc::now())
+    .execute(&pool)
+    .await
+    .expect("Company should be created");
+
     // Attempt a transaction that will fail
     let mut tx = pool.begin().await.expect("Transaction should begin");
 
     let insert_result = sqlx::query(
-        "INSERT INTO users (id, email, first_name, last_name, role, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6)",
+        "INSERT INTO users (id, email, first_name, last_name, role, created_at, company_id, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
     )
     .bind(&user_id)
     .bind(&user_email)
     .bind("Rollback")
     .bind("Test")
-    .bind("staff")
+    .bind(UserRole::Staff)
     .bind(Utc::now())
+    .bind(&company_id)
+    .bind("password123hash")
     .execute(&mut *tx)
     .await;
 
-    assert!(insert_result.is_ok(), "Insert should succeed within transaction");
+    assert!(
+        insert_result.is_ok(),
+        "Insert should succeed within transaction"
+    );
 
     // Introduce constraint violation (try to insert same email again in same transaction)
     let duplicate_insert = sqlx::query(
-        "INSERT INTO users (id, email, first_name, last_name, role, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6)",
+        "INSERT INTO users (id, email, first_name, last_name, role, created_at, company_id, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
     )
     .bind("user_rollback_duplicate")
     .bind(&user_email)
     .bind("Duplicate")
     .bind("User")
-    .bind("staff")
+    .bind(UserRole::Staff)
     .bind(Utc::now())
+    .bind(&company_id)
+    .bind("password123hash")
     .execute(&mut *tx)
     .await;
 
@@ -350,7 +397,8 @@ async fn test_transaction_rollback_on_error_maintains_consistency() {
 /// Location: migrations/20260201000003_create_users_table.sql:5-6
 #[tokio::test]
 async fn test_required_fields_cannot_be_null() {
-    let pool = common::setup_test_db().await;
+    let pool = back_end::common::setup_test_db().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     // Test 1: email is NOT NULL
     let result_null_email = sqlx::query(
@@ -361,7 +409,7 @@ async fn test_required_fields_cannot_be_null() {
     .bind::<Option<String>>(None) // Try to insert NULL email
     .bind("First")
     .bind("Last")
-    .bind("staff")
+    .bind(UserRole::Staff)
     .bind(Utc::now())
     .execute(&pool)
     .await;
@@ -377,10 +425,10 @@ async fn test_required_fields_cannot_be_null() {
          VALUES ($1, $2, $3, $4, $5, $6)",
     )
     .bind("user_null_first_name")
-    .bind("test@example.com")
+    .bind(format!("test{}@example.com", unique_id))
     .bind::<Option<String>>(None) // Try to insert NULL first_name
     .bind("Last")
-    .bind("staff")
+    .bind(UserRole::Staff)
     .bind(Utc::now())
     .execute(&pool)
     .await;
@@ -415,7 +463,8 @@ async fn test_required_fields_cannot_be_null() {
 /// that validation exists.)
 #[tokio::test]
 async fn test_empty_strings_rejected_appropriately() {
-    let pool = common::setup_test_db().await;
+    let pool = back_end::common::setup_test_db().await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
 
     // Test 1: Empty email should be allowed at database level (CHECK constraint handles format)
     // But email CHECK constraint should reject invalid format
@@ -427,7 +476,7 @@ async fn test_empty_strings_rejected_appropriately() {
     .bind("") // Empty email
     .bind("First")
     .bind("Last")
-    .bind("staff")
+    .bind(UserRole::Staff)
     .bind(Utc::now())
     .execute(&pool)
     .await;
@@ -446,10 +495,10 @@ async fn test_empty_strings_rejected_appropriately() {
          VALUES ($1, $2, $3, $4, $5, $6)",
     )
     .bind("user_empty_first_name")
-    .bind("empty_name@example.com")
+    .bind(format!("empty_name{}@example.com", unique_id))
     .bind("") // Empty first_name
     .bind("Last")
-    .bind("staff")
+    .bind(UserRole::Staff)
     .bind(Utc::now())
     .execute(&pool)
     .await;
@@ -477,21 +526,22 @@ async fn test_empty_strings_rejected_appropriately() {
 /// Location: migrations/20260201000003_create_users_table.sql:10
 #[tokio::test]
 async fn test_created_at_immutable_after_insert() {
-    let pool = common::setup_test_db().await;
+    let pool = back_end::common::setup_test_db().await;
 
-    let user_id = "user_created_at_immutable".to_string();
-    let email = "created_at_test@example.com".to_string();
+    let user_id = Uuid::new_v4().to_string();
+    let email = format!("created_at_test{}@example.com", user_id);
 
     // Insert user with DEFAULT created_at
     sqlx::query(
-        "INSERT INTO users (id, email, first_name, last_name, role, created_at)
-         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)",
+        "INSERT INTO users (id, email, first_name, last_name, role, created_at, password_hash)
+         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, $6)",
     )
     .bind(&user_id)
     .bind(&email)
     .bind("Created")
     .bind("Test")
-    .bind("staff")
+    .bind(UserRole::Staff)
+    .bind("password123hash")
     .execute(&pool)
     .await
     .expect("User insert should succeed");
@@ -547,21 +597,22 @@ async fn test_created_at_immutable_after_insert() {
 /// tracks both timestamps (document current schema).
 #[tokio::test]
 async fn test_updated_at_changes_while_created_at_unchanged() {
-    let pool = common::setup_test_db().await;
+    let pool = back_end::common::setup_test_db().await;
 
-    let user_id = "user_updated_at_test".to_string();
-    let email = "updated_at_test@example.com".to_string();
+    let user_id = Uuid::new_v4().to_string();
+    let email = format!("updated_at_test{}@example.com", user_id);
 
     // Insert user
     sqlx::query(
-        "INSERT INTO users (id, email, first_name, last_name, role, created_at)
-         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)",
+        "INSERT INTO users (id, email, first_name, last_name, role, created_at, password_hash)
+         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, $6)",
     )
     .bind(&user_id)
     .bind(&email)
     .bind("Update")
     .bind("Test")
-    .bind("staff")
+    .bind(UserRole::Staff)
+    .bind("password123hash")
     .execute(&pool)
     .await
     .expect("User insert should succeed");
@@ -611,10 +662,10 @@ async fn test_updated_at_changes_while_created_at_unchanged() {
 /// With current soft-delete design (deleted_at), orphaned records should not be created.
 #[tokio::test]
 async fn test_company_deletion_cascades_correctly() {
-    let pool = common::setup_test_db().await;
+    let pool = back_end::common::setup_test_db().await;
 
     // Create company
-    let company_id = "company_cascade_test".to_string();
+    let company_id = Uuid::new_v4().to_string();
     sqlx::query("INSERT INTO companies (id, name, address, created_at) VALUES ($1, $2, $3, $4)")
         .bind(&company_id)
         .bind("Cascade Test Co")
@@ -625,35 +676,37 @@ async fn test_company_deletion_cascades_correctly() {
         .expect("Company should be created");
 
     // Create multiple users in this company
-    let user1_id = "user_cascade_1".to_string();
-    let user2_id = "user_cascade_2".to_string();
+    let user1_id = Uuid::new_v4().to_string();
+    let user2_id = Uuid::new_v4().to_string();
 
     sqlx::query(
-        "INSERT INTO users (id, email, first_name, last_name, company_id, role, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO users (id, email, first_name, last_name, company_id, role, created_at, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
     )
     .bind(&user1_id)
-    .bind("cascade_user1@example.com")
+    .bind(format!("user1{}@example.com", user1_id))
     .bind("User")
     .bind("One")
     .bind(&company_id)
-    .bind("staff")
+    .bind(UserRole::Staff)
     .bind(Utc::now())
+    .bind("password123hash")
     .execute(&pool)
     .await
     .expect("User 1 should be created");
 
     sqlx::query(
-        "INSERT INTO users (id, email, first_name, last_name, company_id, role, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO users (id, email, first_name, last_name, company_id, role, created_at, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
     )
     .bind(&user2_id)
-    .bind("cascade_user2@example.com")
+    .bind(format!("user2{}@example.com", user2_id))
     .bind("User")
     .bind("Two")
     .bind(&company_id)
-    .bind("staff")
+    .bind(UserRole::Staff)
     .bind(Utc::now())
+    .bind("password123hash")
     .execute(&pool)
     .await
     .expect("User 2 should be created");
@@ -707,7 +760,7 @@ async fn test_company_deletion_cascades_correctly() {
 /// creation of records with invalid foreign key references.
 #[tokio::test]
 async fn test_orphaned_records_not_created() {
-    let pool = common::setup_test_db().await;
+    let pool = back_end::common::setup_test_db().await;
 
     // Attempt to create user with non-existent company_id
     let non_existent_company = "company_does_not_exist_123456".to_string();
@@ -718,11 +771,11 @@ async fn test_orphaned_records_not_created() {
          VALUES ($1, $2, $3, $4, $5, $6, $7)",
     )
     .bind(&orphan_user_id)
-    .bind("orphan@example.com")
+    .bind(format!("orphan{}@example.com", orphan_user_id))
     .bind("Orphan")
     .bind("User")
     .bind(&non_existent_company)
-    .bind("staff")
+    .bind(UserRole::Staff)
     .bind(Utc::now())
     .execute(&pool)
     .await;
@@ -756,23 +809,37 @@ async fn test_orphaned_records_not_created() {
             "Foreign key constraint should prevent orphaned record"
         );
     }
-
-    // Verify user with NULL company_id is allowed (expected for HQ staff)
-    let valid_user = sqlx::query(
-        "INSERT INTO users (id, email, first_name, last_name, company_id, role, created_at)
-         VALUES ($1, $2, $3, $4, NULL, $5, $6)",
+    let company_id = Uuid::new_v4().to_string();
+    let valid_company = sqlx::query(
+        "INSERT INTO companies (id, name, created_at, address) VALUES ($1, $2, $3, $4)",
     )
-    .bind("valid_hq_user")
-    .bind("hq_user@example.com")
-    .bind("HQ")
-    .bind("User")
-    .bind("staff")
+    .bind(&company_id)
+    .bind("Valid Company")
     .bind(Utc::now())
+    .bind("123 Main St")
     .execute(&pool)
     .await;
 
+    println!("Valid company insert result: {:?}", valid_company);
+    // Verify user with NULL branch_id is allowed (expected for HQ staff)
+    let valid_user = sqlx::query(
+        "INSERT INTO users (id, email, first_name, last_name, company_id, role, created_at, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+    )
+    .bind(Uuid::new_v4().to_string())
+    .bind(format!("hq_user{}@example.com", Uuid::new_v4()))
+    .bind("HQ")
+    .bind("User")
+    .bind(&company_id)
+    .bind(UserRole::Staff)
+    .bind(Utc::now())
+    .bind("password123hash")
+    .execute(&pool)
+    .await;
+
+    println!("Valid user insert result: {:?}", valid_user);
     assert!(
         valid_user.is_ok(),
-        "User with NULL company_id should be allowed (HQ staff)"
+        "User with NULL branch_id should be allowed (HQ staff)"
     );
 }

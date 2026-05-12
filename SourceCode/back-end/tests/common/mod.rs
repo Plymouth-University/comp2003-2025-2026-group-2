@@ -18,27 +18,11 @@ pub use factories::*;
 pub async fn setup_test_db() -> PgPool {
     // Use environment variable for database URL, with fallback to test database
     let database_url = std::env::var("TEST_DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://test:test@localhost:5432/test_db".to_string());
+        .unwrap_or_else(|_| "postgres://admin:adminpassword@localhost:5432/logsmartdb".to_string());
 
     let pool = PgPool::connect(&database_url)
         .await
         .expect("Failed to create test database pool");
-
-    // Clean up any existing test data
-    sqlx::query("DELETE FROM users WHERE email LIKE 'test%@%'")
-        .execute(&pool)
-        .await
-        .expect("Failed to clean test users");
-
-    sqlx::query("DELETE FROM companies WHERE name LIKE 'Test%'")
-        .execute(&pool)
-        .await
-        .expect("Failed to clean test companies");
-
-    sqlx::query("DELETE FROM invitations WHERE email LIKE 'test%@%'")
-        .execute(&pool)
-        .await
-        .expect("Failed to clean test invitations");
 
     pool
 }
@@ -81,7 +65,7 @@ pub async fn cleanup_test_database(pool: &PgPool) -> Result<(), sqlx::Error> {
 /// Panics if the database connection fails.
 pub async fn create_test_pool() -> PgPool {
     let database_url = std::env::var("TEST_DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://test:test@localhost/logsmart_test".to_string());
+        .unwrap_or_else(|_| "postgres://admin:adminpassword@localhost:5432/logsmartdb".to_string());
 
     sqlx::postgres::PgPoolOptions::new()
         .max_connections(5)

@@ -8,13 +8,11 @@
 //!
 //! Total: 10 tests across authorization layers
 
-mod common;
-
 use back_end::{
     auth::JwtConfig,
+    common::UserFactory,
     db::{UserRecord, UserRole},
 };
-use common::UserFactory;
 use uuid::Uuid;
 
 // ===== Role-Based Access Control Tests (4 tests) =====
@@ -23,7 +21,7 @@ use uuid::Uuid;
 /// Covers: src/middleware.rs:172-194 (ManageCompanyUser extractor)
 #[tokio::test]
 async fn test_admin_can_create_read_update_delete_logs() {
-    let _pool = common::setup_test_db().await;
+    let _pool = back_end::common::setup_test_db().await;
 
     // Create test company and admin user
     let company_id = Uuid::new_v4().to_string();
@@ -55,7 +53,7 @@ async fn test_admin_can_create_read_update_delete_logs() {
 /// Covers: src/middleware.rs:196-224 (AnyAuthUser extractor)
 #[tokio::test]
 async fn test_staff_can_read_create_but_not_delete_logs() {
-    let _pool = common::setup_test_db().await;
+    let _pool = back_end::common::setup_test_db().await;
 
     let company_id = Uuid::new_v4().to_string();
     let staff_user = UserRecord {
@@ -94,7 +92,7 @@ async fn test_staff_can_read_create_but_not_delete_logs() {
 /// Covers: src/middleware.rs:172-194, 199-224 (Role-based extractors)
 #[tokio::test]
 async fn test_unauthorized_role_rejected_from_endpoints() {
-    let pool = common::setup_test_db().await;
+    let pool = back_end::common::setup_test_db().await;
 
     // Create a user that doesn't exist (simulating unauthorized/deleted user)
     let unauthorized_id = Uuid::new_v4().to_string();
@@ -116,7 +114,7 @@ async fn test_unauthorized_role_rejected_from_endpoints() {
 /// Covers: src/middleware.rs:249-271 (LogSmartAdminUser extractor)
 #[tokio::test]
 async fn test_logsmart_admin_can_access_all_companies() {
-    let _pool = common::setup_test_db().await;
+    let _pool = back_end::common::setup_test_db().await;
 
     let admin_user = UserRecord {
         id: Uuid::new_v4().to_string(),
@@ -150,7 +148,7 @@ async fn test_logsmart_admin_can_access_all_companies() {
 /// Also: src/handlers/log_entry_handlers.rs (resource ownership checks)
 #[tokio::test]
 async fn test_user_cannot_access_other_company_logs() {
-    let _pool = common::setup_test_db().await;
+    let _pool = back_end::common::setup_test_db().await;
 
     let company1_id = Uuid::new_v4().to_string();
     let company2_id = Uuid::new_v4().to_string();
@@ -184,7 +182,7 @@ async fn test_user_cannot_access_other_company_logs() {
 /// Covers: src/handlers/company_handlers.rs:44 (company_id check)
 #[tokio::test]
 async fn test_company_manager_cannot_access_other_company() {
-    let _pool = common::setup_test_db().await;
+    let _pool = back_end::common::setup_test_db().await;
 
     let company1_id = Uuid::new_v4().to_string();
     let company2_id = Uuid::new_v4().to_string();
@@ -208,7 +206,7 @@ async fn test_company_manager_cannot_access_other_company() {
 /// Covers: src/handlers/company_handlers.rs:102 (is_logsmart_admin override)
 #[tokio::test]
 async fn test_logsmart_admin_can_access_all_company_resources() {
-    let _pool = common::setup_test_db().await;
+    let _pool = back_end::common::setup_test_db().await;
 
     let company1_id = Uuid::new_v4().to_string();
     let company2_id = Uuid::new_v4().to_string();
@@ -236,7 +234,7 @@ async fn test_logsmart_admin_can_access_all_company_resources() {
 /// Covers: src/db.rs:107-124 (permission hierarchy methods)
 #[tokio::test]
 async fn test_inherited_permissions_from_company_role() {
-    let _pool = common::setup_test_db().await;
+    let _pool = back_end::common::setup_test_db().await;
 
     // BranchManager inherits CompanyManager permissions
     let branch_manager = UserRecord {
@@ -276,7 +274,7 @@ async fn test_inherited_permissions_from_company_role() {
 /// Covers: src/db.rs:107-114 (permission hierarchy validation)
 #[tokio::test]
 async fn test_staff_cannot_escalate_own_permissions_admin_can_downgrade() {
-    let _pool = common::setup_test_db().await;
+    let _pool = back_end::common::setup_test_db().await;
 
     // Staff user cannot claim to be CompanyManager
     let staff_attempting_escalation = UserRecord {
@@ -292,7 +290,7 @@ async fn test_staff_cannot_escalate_own_permissions_admin_can_downgrade() {
     assert!(!staff_attempting_escalation.can_manage_company());
 
     // Admin can downgrade a manager to staff
-    let manager = UserRecord {
+    let _manager = UserRecord {
         id: Uuid::new_v4().to_string(),
         email: "manager@test.com".to_string(),
         role: UserRole::CompanyManager,
@@ -318,7 +316,7 @@ async fn test_staff_cannot_escalate_own_permissions_admin_can_downgrade() {
 /// Also: src/auth.rs (JWT generation and validation)
 #[tokio::test]
 async fn test_jwt_session_expiration_rejects_requests() {
-    let _pool = common::setup_test_db().await;
+    let _pool = back_end::common::setup_test_db().await;
 
     let jwt_config = JwtConfig::new("test_secret_key".to_string());
     let user_id = "test_user_123";

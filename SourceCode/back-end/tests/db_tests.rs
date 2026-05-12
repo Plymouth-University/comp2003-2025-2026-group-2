@@ -1,4 +1,6 @@
-use back_end::db::{Branch, Company, Invitation, Passkey, PasskeySession, SecurityLog, UserRecord, UserRole};
+use back_end::db::{
+    Branch, Company, Invitation, Passkey, PasskeySession, SecurityLog, UserRecord, UserRole,
+};
 use chrono::{Duration, Utc};
 
 // ===== Test Helper Functions =====

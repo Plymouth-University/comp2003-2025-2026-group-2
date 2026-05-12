@@ -3,6 +3,7 @@ use axum::http::StatusCode;
 use back_end::db::{self, UserRole};
 use back_end::tests::common::{factories::*, setup_test_db};
 use serde_json::json;
+use uuid::Uuid;
 
 #[tokio::test]
 async fn test_oauth_client_new_success() {
@@ -33,14 +34,15 @@ async fn test_oauth_client_new_success() {
 async fn test_get_or_create_user_existing_oauth_user() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create OAuth user directly in database
-    let existing_user = create_test_oauth_user(&pool, "oauth-user@example.com", "google", "google-sub-123").await;
+    let existing_user = create_test_oauth_user(&pool, &format!("oauth-user{}@example.com", unique_id), "google", "google-sub-123").await;
     
     // Create mock OAuth client
     let oauth_client = create_mock_oauth_client();
     
     let user_info = OAuthUserInfo {
-        email: "oauth-user@example.com".to_string(),
+        email: format!("oauth-user{}@example.com", unique_id),
         given_name: "Test".to_string(),
         family_name: "User".to_string(),
         picture: Some("https://example.com/pic.jpg".to_string()),
@@ -67,13 +69,14 @@ async fn test_get_or_create_user_existing_oauth_user() {
 async fn test_get_or_create_user_email_conflict() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create regular user with same email
-    let existing_user = create_test_user(&pool, "conflict@example.com", Some("company123")).await;
+    let existing_user = create_test_user(&pool, &format!("conflict{}@example.com", unique_id), Some("company123")).await;
     
     let oauth_client = create_mock_oauth_client();
     
     let user_info = OAuthUserInfo {
-        email: "conflict@example.com".to_string(),
+        email: format!("conflict{}@example.com", unique_id),
         given_name: "Test".to_string(),
         family_name: "User".to_string(),
         picture: Some("https://example.com/pic.jpg".to_string()),
@@ -104,8 +107,9 @@ async fn test_get_or_create_user_new_account_forbidden() {
     
     let oauth_client = create_mock_oauth_client();
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let user_info = OAuthUserInfo {
-        email: "newuser@example.com".to_string(),
+        email: format!("newuser{}@example.com", unique_id),
         given_name: "New".to_string(),
         family_name: "User".to_string(),
         picture: Some("https://example.com/pic.jpg".to_string()),
@@ -136,8 +140,9 @@ async fn test_get_or_create_user_new_oauth_user_success() {
     
     let oauth_client = create_mock_oauth_client();
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let user_info = OAuthUserInfo {
-        email: "newuser@example.com".to_string(),
+        email: format!("newuser{}@example.com", unique_id),
         given_name: "New".to_string(),
         family_name: "User".to_string(),
         picture: Some("https://example.com/pic.jpg".to_string()),
@@ -168,13 +173,14 @@ async fn test_get_or_create_user_new_oauth_user_success() {
 async fn test_link_google_account_success() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create regular user
-    let user = create_test_user(&pool, "user@example.com", Some("company123")).await;
+    let user = create_test_user(&pool, &format!("user{}@example.com", unique_id), Some("company123")).await;
     
     let oauth_client = create_mock_oauth_client();
     
     let user_info = OAuthUserInfo {
-        email: "user@example.com".to_string(),
+        email: format!("user{}@example.com", unique_id),
         given_name: "Test".to_string(),
         family_name: "User".to_string(),
         picture: Some("https://example.com/pic.jpg".to_string()),
@@ -197,14 +203,15 @@ async fn test_link_google_account_success() {
 async fn test_link_google_account_already_linked() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create two OAuth users with same Google subject
-    let user1 = create_test_oauth_user(&pool, "user1@example.com", "google", "google-sub-same").await;
-    let user2 = create_test_user(&pool, "user2@example.com", Some("company123")).await;
+    let user1 = create_test_oauth_user(&pool, &format!("user1{}@example.com", unique_id), "google", "google-sub-same").await;
+    let user2 = create_test_user(&pool, &format!("user2{}@example.com", unique_id), Some("company123")).await;
     
     let oauth_client = create_mock_oauth_client();
     
     let user_info = OAuthUserInfo {
-        email: "user2@example.com".to_string(),
+        email: format!("user2{}@example.com", unique_id),
         given_name: "User".to_string(),
         family_name: "Two".to_string(),
         picture: Some("https://example.com/pic2.jpg".to_string()),

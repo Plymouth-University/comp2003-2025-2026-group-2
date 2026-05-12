@@ -3,16 +3,18 @@ use axum::http::StatusCode;
 use back_end::db::{self, UserRole};
 use back_end::tests::common::{factories::*, setup_test_db};
 use serde_json::json;
+use uuid::Uuid;
 
 #[tokio::test]
 async fn test_get_user_by_email_success() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create test user
-    let user = create_test_user(&pool, "test@example.com", Some("company123")).await;
+    let user = create_test_user(&pool, &format!("test{}@example.com", unique_id), Some("company123")).await;
     
     // Test successful retrieval
-    let result = UserService::get_user_by_email(&pool, "test@example.com").await;
+    let result = UserService::get_user_by_email(&pool, &format!("test{}@example.com", unique_id)).await;
     
     assert!(result.is_ok());
     let retrieved_user = result.unwrap();
@@ -37,8 +39,9 @@ async fn test_get_user_by_email_not_found() {
 async fn test_get_user_by_id_success() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create test user
-    let user = create_test_user(&pool, "test@example.com", Some("company123")).await;
+    let user = create_test_user(&pool, &format!("test{}@example.com", unique_id), Some("company123")).await;
     
     // Test successful retrieval
     let result = UserService::get_user_by_id(&pool, &user.id).await;
@@ -66,8 +69,9 @@ async fn test_get_user_by_id_not_found() {
 async fn test_update_profile_success() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create test user
-    let user = create_test_user(&pool, "test@example.com", Some("company123")).await;
+    let user = create_test_user(&pool, &format!("test{}@example.com", unique_id), Some("company123")).await;
     
     // Test profile update
     let result = UserService::update_profile(
@@ -88,10 +92,11 @@ async fn test_get_company_members_success() {
     let pool = setup_test_db().await;
     
     // Create test company and users
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     let company_id = "company123".to_string();
-    let admin = create_test_user(&pool, "admin@example.com", Some(&company_id)).await;
-    let member1 = create_test_user(&pool, "member1@example.com", Some(&company_id)).await;
-    let member2 = create_test_user(&pool, "member2@example.com", Some(&company_id)).await;
+    let admin = create_test_user(&pool, &format!("admin{}@example.com", unique_id), Some(&company_id)).await;
+    let member1 = create_test_user(&pool, &format!("member1{}@example.com", unique_id), Some(&company_id)).await;
+    let member2 = create_test_user(&pool, &format!("member2{}@example.com", unique_id), Some(&company_id)).await;
     
     // Test getting company members
     let result = UserService::get_company_members(&pool, &company_id).await;
@@ -110,8 +115,9 @@ async fn test_get_company_members_success() {
 async fn test_get_user_company_id_success() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create test user with company
-    let user = create_test_user(&pool, "test@example.com", Some("company123")).await;
+    let user = create_test_user(&pool, &format!("test{}@example.com", unique_id), Some("company123")).await;
     
     // Test getting user company ID
     let result = UserService::get_user_company_id(&pool, &user.id).await;
@@ -125,8 +131,9 @@ async fn test_get_user_company_id_success() {
 async fn test_get_user_company_id_no_company() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create test user without company
-    let user = create_test_user(&pool, "test@example.com", None).await;
+    let user = create_test_user(&pool, &format!("test{}@example.com", unique_id), None).await;
     
     // Test getting company ID for user without company
     let result = UserService::get_user_company_id(&pool, &user.id).await;
@@ -142,14 +149,15 @@ async fn test_admin_update_member_profile_success() {
     let pool = setup_test_db().await;
     
     // Create admin and member users
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
-    let member = create_test_user_with_role(&pool, "member@example.com", UserRole::Staff, Some("company123")).await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let admin = create_test_user_with_role(&pool, &format!("admin{}@example.com", unique_id), UserRole::CompanyManager, Some("company123")).await;
+    let member = create_test_user_with_role(&pool, &format!("member{}@example.com", unique_id), UserRole::Staff, Some("company123")).await;
     
     // Test admin updating member profile
     let result = UserService::admin_update_member_profile(
         &pool,
         &admin.id,
-        "member@example.com",
+        &format!("member{}@example.com", unique_id),
         "UpdatedFirstName".to_string(),
         "UpdatedLastName".to_string(),
         UserRole::CompanyManager, // Promote to admin
@@ -167,14 +175,15 @@ async fn test_admin_update_member_profile_non_admin_forbidden() {
     let pool = setup_test_db().await;
     
     // Create regular user attempting to act as admin
-    let user1 = create_test_user_with_role(&pool, "user1@example.com", UserRole::Staff, Some("company123")).await;
-    let user2 = create_test_user_with_role(&pool, "user2@example.com", UserRole::Staff, Some("company123")).await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let user1 = create_test_user_with_role(&pool, &format!("user1{}@example.com", unique_id), UserRole::Staff, Some("company123")).await;
+    let user2 = create_test_user_with_role(&pool, &format!("user2{}@example.com", unique_id), UserRole::Staff, Some("company123")).await;
     
     // Test non-admin trying to update member profile
     let result = UserService::admin_update_member_profile(
         &pool,
         &user1.id,
-        "user2@example.com",
+        &format!("user2{}@example.com", unique_id),
         "UpdatedFirstName".to_string(),
         "UpdatedLastName".to_string(),
         UserRole::Staff,
@@ -191,14 +200,15 @@ async fn test_admin_update_member_profile_different_company_forbidden() {
     let pool = setup_test_db().await;
     
     // Create admin and member from different companies
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company1")).await;
-    let member = create_test_user_with_role(&pool, "member@example.com", UserRole::Staff, Some("company2")).await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let admin = create_test_user_with_role(&pool, &format!("admin{}@example.com", unique_id), UserRole::CompanyManager, Some("company1")).await;
+    let member = create_test_user_with_role(&pool, &format!("member{}@example.com", unique_id), UserRole::Staff, Some("company2")).await;
     
     // Test admin trying to update member from different company
     let result = UserService::admin_update_member_profile(
         &pool,
         &admin.id,
-        "member@example.com",
+        &format!("member{}@example.com", unique_id),
         "UpdatedFirstName".to_string(),
         "UpdatedLastName".to_string(),
         UserRole::Staff,
@@ -215,20 +225,21 @@ async fn test_admin_delete_member_success() {
     let pool = setup_test_db().await;
     
     // Create admin and member users
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
-    let member = create_test_user_with_role(&pool, "member@example.com", UserRole::Staff, Some("company123")).await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let admin = create_test_user_with_role(&pool, &format!("admin{}@example.com", unique_id), UserRole::CompanyManager, Some("company123")).await;
+    let member = create_test_user_with_role(&pool, &format!("member{}@example.com", unique_id), UserRole::Staff, Some("company123")).await;
     
     // Test admin deleting member
     let result = UserService::admin_delete_member(
         &pool,
         &admin.id,
-        "member@example.com",
+        &format!("member{}@example.com", unique_id),
     ).await;
     
     assert!(result.is_ok());
     
     // Verify member is deleted
-    let deleted_user = db::get_user_by_email(&pool, "member@example.com").await.unwrap();
+    let deleted_user = db::get_user_by_email(&pool, &format!("member{}@example.com", unique_id)).await.unwrap();
     assert!(deleted_user.is_none()); // User should be deleted
 }
 
@@ -237,13 +248,14 @@ async fn test_admin_delete_member_self_forbidden() {
     let pool = setup_test_db().await;
     
     // Create admin user
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let admin = create_test_user_with_role(&pool, &format!("admin{}@example.com", unique_id), UserRole::CompanyManager, Some("company123")).await;
     
     // Test admin trying to delete themselves
     let result = UserService::admin_delete_member(
         &pool,
         &admin.id,
-        "admin@example.com",
+        &format!("admin{}@example.com", unique_id),
     ).await;
     
     assert!(result.is_err());
@@ -257,14 +269,15 @@ async fn test_admin_delete_member_non_admin_forbidden() {
     let pool = setup_test_db().await;
     
     // Create regular users
-    let user1 = create_test_user_with_role(&pool, "user1@example.com", UserRole::Staff, Some("company123")).await;
-    let user2 = create_test_user_with_role(&pool, "user2@example.com", UserRole::Staff, Some("company123")).await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let user1 = create_test_user_with_role(&pool, &format!("user1{}@example.com", unique_id), UserRole::Staff, Some("company123")).await;
+    let user2 = create_test_user_with_role(&pool, &format!("user2{}@example.com", unique_id), UserRole::Staff, Some("company123")).await;
     
     // Test non-admin trying to delete member
     let result = UserService::admin_delete_member(
         &pool,
         &user1.id,
-        "user2@example.com",
+        &format!("user2{}@example.com", unique_id),
     ).await;
     
     assert!(result.is_err());
@@ -278,14 +291,15 @@ async fn test_admin_delete_logsmart_admin_forbidden() {
     let pool = setup_test_db().await;
     
     // Create company admin and LogSmart admin
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
-    let logsmart_admin = create_test_user_with_role(&pool, "logsmart@example.com", UserRole::LogSmartAdmin, Some("company123")).await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let admin = create_test_user_with_role(&pool, &format!("admin{}@example.com", unique_id), UserRole::CompanyManager, Some("company123")).await;
+    let logsmart_admin = create_test_user_with_role(&pool, &format!("logsmart{}@example.com", unique_id), UserRole::LogSmartAdmin, Some("company123")).await;
     
     // Test company admin trying to delete LogSmart admin
     let result = UserService::admin_delete_member(
         &pool,
         &admin.id,
-        "logsmart@example.com",
+        &format!("logsmart{}@example.com", unique_id),
     ).await;
     
     assert!(result.is_err());
@@ -299,14 +313,15 @@ async fn test_admin_update_logsmart_admin_forbidden() {
     let pool = setup_test_db().await;
     
     // Create company admin and LogSmart admin
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
-    let logsmart_admin = create_test_user_with_role(&pool, "logsmart@example.com", UserRole::LogSmartAdmin, Some("company123")).await;
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let admin = create_test_user_with_role(&pool, &format!("admin{}@example.com", unique_id), UserRole::CompanyManager, Some("company123")).await;
+    let logsmart_admin = create_test_user_with_role(&pool, &format!("logsmart{}@example.com", unique_id), UserRole::LogSmartAdmin, Some("company123")).await;
     
     // Test company admin trying to update LogSmart admin
     let result = UserService::admin_update_member_profile(
         &pool,
         &admin.id,
-        "logsmart@example.com",
+        &format!("logsmart{}@example.com", unique_id),
         "UpdatedFirstName".to_string(),
         "UpdatedLastName".to_string(),
         UserRole::LogSmartAdmin,

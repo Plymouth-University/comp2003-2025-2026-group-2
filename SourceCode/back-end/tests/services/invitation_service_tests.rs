@@ -4,20 +4,22 @@ use back_end::db::{self, UserRole};
 use back_end::tests::common::{factories::*, setup_test_db};
 use chrono::{Duration, Utc};
 use serde_json::json;
+use uuid::Uuid;
 
 #[tokio::test]
 async fn test_send_invitation_success() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create admin user
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
+    let admin = create_test_user_with_role(&pool, &format!("admin{}@example.com", unique_id), UserRole::CompanyManager, Some("company123")).await;
     
     // Test successful invitation sending
     let result = InvitationService::send_invitation(
         &pool,
         admin.id.clone(),
-        "admin@example.com".to_string(),
-        "newuser@example.com".to_string(),
+        format!("admin{}@example.com", unique_id),
+        format!("newuser{}@example.com", unique_id),
         "company123".to_string(),
         Some("127.0.0.1".to_string()),
         Some("test-agent".to_string()),
@@ -33,16 +35,17 @@ async fn test_send_invitation_success() {
 async fn test_send_invitation_user_already_exists() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create admin and existing user
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
-    let existing_user = create_test_user(&pool, "existing@example.com", Some("company123")).await;
+    let admin = create_test_user_with_role(&pool, &format!("admin{}@example.com", unique_id), UserRole::CompanyManager, Some("company123")).await;
+    let existing_user = create_test_user(&pool, &format!("existing{}@example.com", unique_id), Some("company123")).await;
     
     // Test invitation to existing user
     let result = InvitationService::send_invitation(
         &pool,
         admin.id.clone(),
-        "admin@example.com".to_string(),
-        "existing@example.com".to_string(),
+        format!("admin{}@example.com", unique_id),
+        format!("existing{}@example.com", unique_id),
         "company123".to_string(),
         None,
         None,
@@ -58,8 +61,9 @@ async fn test_send_invitation_user_already_exists() {
 async fn test_accept_invitation_success() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create invitation
-    let invitation = create_test_invitation(&pool, "company123", "newuser@example.com").await;
+    let invitation = create_test_invitation(&pool, "company123", &format!("newuser{}@example.com", unique_id)).await;
     
     // Test successful invitation acceptance
     let result = InvitationService::accept_invitation(&pool, &invitation.token).await;
@@ -87,11 +91,12 @@ async fn test_accept_invitation_not_found() {
 async fn test_accept_invitation_expired() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create expired invitation
     let expired_invitation = create_test_invitation_with_expiry(
         &pool,
         "company123",
-        "newuser@example.com",
+        &format!("newuser{}@example.com", unique_id),
         Utc::now() - Duration::hours(1) // Expired 1 hour ago
     ).await;
     
@@ -108,9 +113,10 @@ async fn test_accept_invitation_expired() {
 async fn test_get_invitation_details_success() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create company and invitation
     let company = create_test_company(&pool, "Test Company", "123 Test St").await;
-    let invitation = create_test_invitation(&pool, &company.id, "newuser@example.com").await;
+    let invitation = create_test_invitation(&pool, &company.id, &format!("newuser{}@example.com", unique_id)).await;
     
     // Test getting invitation details
     let result = InvitationService::get_invitation_details(&pool, &invitation.token).await;
@@ -138,8 +144,9 @@ async fn test_get_invitation_details_not_found() {
 async fn test_mark_invitation_accepted_success() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create invitation
-    let invitation = create_test_invitation(&pool, "company123", "newuser@example.com").await;
+    let invitation = create_test_invitation(&pool, "company123", &format!("newuser{}@example.com", unique_id)).await;
     
     // Test marking invitation as accepted
     let result = InvitationService::mark_invitation_accepted(&pool, &invitation.id).await;
@@ -155,10 +162,11 @@ async fn test_mark_invitation_accepted_success() {
 async fn test_get_pending_invitations_success() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create multiple pending invitations
-    let invitation1 = create_test_invitation(&pool, "company123", "user1@example.com").await;
-    let invitation2 = create_test_invitation(&pool, "company123", "user2@example.com").await;
-    let invitation3 = create_test_invitation(&pool, "company123", "user3@example.com").await;
+    let invitation1 = create_test_invitation(&pool, "company123", &format!("user1{}@example.com", unique_id)).await;
+    let invitation2 = create_test_invitation(&pool, "company123", &format!("user2{}@example.com", unique_id)).await;
+    let invitation3 = create_test_invitation(&pool, "company123", &format!("user3{}@example.com", unique_id)).await;
     
     // Test getting pending invitations
     let result = InvitationService::get_pending_invitations(&pool, "company123").await;
@@ -179,9 +187,10 @@ async fn test_get_pending_invitations_success() {
 async fn test_cancel_invitation_success() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create admin and invitation
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
-    let invitation = create_test_invitation(&pool, "company123", "newuser@example.com").await;
+    let admin = create_test_user_with_role(&pool, &format!("admin{}@example.com", unique_id), UserRole::CompanyManager, Some("company123")).await;
+    let invitation = create_test_invitation(&pool, "company123", &format!("newuser{}@example.com", unique_id)).await;
     
     // Test successful invitation cancellation
     let result = InvitationService::cancel_invitation(&pool, &admin.id, &invitation.id).await;
@@ -197,9 +206,10 @@ async fn test_cancel_invitation_success() {
 async fn test_cancel_invitation_non_admin_forbidden() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create regular user and invitation
-    let user = create_test_user_with_role(&pool, "user@example.com", UserRole::Staff, Some("company123")).await;
-    let invitation = create_test_invitation(&pool, "company123", "newuser@example.com").await;
+    let user = create_test_user_with_role(&pool, &format!("user{}@example.com", unique_id), UserRole::Staff, Some("company123")).await;
+    let invitation = create_test_invitation(&pool, "company123", &format!("newuser{}@example.com", unique_id)).await;
     
     // Test non-admin trying to cancel invitation
     let result = InvitationService::cancel_invitation(&pool, &user.id, &invitation.id).await;
@@ -214,9 +224,10 @@ async fn test_cancel_invitation_non_admin_forbidden() {
 async fn test_cancel_invitation_different_company_forbidden() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create admin from company1 and invitation for company2
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company1")).await;
-    let invitation = create_test_invitation(&pool, "company2", "newuser@example.com").await;
+    let admin = create_test_user_with_role(&pool, &format!("admin{}@example.com", unique_id), UserRole::CompanyManager, Some("company1")).await;
+    let invitation = create_test_invitation(&pool, "company2", &format!("newuser{}@example.com", unique_id)).await;
     
     // Test admin trying to cancel invitation from different company
     let result = InvitationService::cancel_invitation(&pool, &admin.id, &invitation.id).await;
@@ -231,9 +242,10 @@ async fn test_cancel_invitation_different_company_forbidden() {
 async fn test_cancel_invitation_already_accepted() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create admin and accepted invitation
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
-    let mut invitation = create_test_invitation(&pool, "company123", "newuser@example.com").await;
+    let admin = create_test_user_with_role(&pool, &format!("admin{}@example.com", unique_id), UserRole::CompanyManager, Some("company123")).await;
+    let mut invitation = create_test_invitation(&pool, "company123", &format!("newuser{}@example.com", unique_id)).await;
     invitation.accepted_at = Some(Utc::now());
     
     // Update invitation to accepted status
@@ -252,9 +264,10 @@ async fn test_cancel_invitation_already_accepted() {
 async fn test_cancel_invitation_already_cancelled() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create admin and cancelled invitation
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
-    let invitation = create_test_invitation(&pool, "company123", "newuser@example.com").await;
+    let admin = create_test_user_with_role(&pool, &format!("admin{}@example.com", unique_id), UserRole::CompanyManager, Some("company123")).await;
+    let invitation = create_test_invitation(&pool, "company123", &format!("newuser{}@example.com", unique_id)).await;
     
     // Cancel the invitation first
     db::cancel_invitation(&pool, &invitation.id).await.unwrap();
@@ -272,8 +285,9 @@ async fn test_cancel_invitation_already_cancelled() {
 async fn test_cancel_invitation_admin_not_found() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create invitation
-    let invitation = create_test_invitation(&pool, "company123", "newuser@example.com").await;
+    let invitation = create_test_invitation(&pool, "company123", &format!("newuser{}@example.com", unique_id)).await;
     
     // Test with non-existent admin ID
     let result = InvitationService::cancel_invitation(&pool, "non-existent-admin", &invitation.id).await;
@@ -288,8 +302,9 @@ async fn test_cancel_invitation_admin_not_found() {
 async fn test_cancel_invitation_not_found() {
     let pool = setup_test_db().await;
     
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
     // Create admin
-    let admin = create_test_user_with_role(&pool, "admin@example.com", UserRole::CompanyManager, Some("company123")).await;
+    let admin = create_test_user_with_role(&pool, &format!("admin{}@example.com", unique_id), UserRole::CompanyManager, Some("company123")).await;
     
     // Test with non-existent invitation ID
     let result = InvitationService::cancel_invitation(&pool, &admin.id, "non-existent-invitation").await;
