@@ -1,4 +1,7 @@
 import { redirect } from '@sveltejs/kit';
+import type { components } from '$lib/api-types';
+
+type User = components['schemas']['UserResponse'];
 
 export const load = async ({
 	parent,
@@ -9,7 +12,8 @@ export const load = async ({
 	fetch: typeof globalThis.fetch;
 	cookies: { get: (name: string) => string | undefined };
 }) => {
-	const { user } = await parent();
+	const { user: parentUser } = await parent();
+	const user = parentUser as User | null;
 	const token = cookies.get('ls-token');
 
 	if (!user || user.role !== 'logsmart_admin') {

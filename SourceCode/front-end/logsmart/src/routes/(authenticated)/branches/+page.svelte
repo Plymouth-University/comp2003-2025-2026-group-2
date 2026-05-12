@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { api } from '$lib/api';
 	import type { PageData } from './$types';
+	import { showError } from '$lib/toast';
 
 	const { data } = $props<{ data: PageData }>();
 	let branches = $derived([...data.branches]);
@@ -89,7 +90,11 @@
 			});
 
 			if (error) {
-				alert(`Failed to create branch: ${error.error}`);
+				const errorMsg =
+					typeof error === 'object' && error !== null && 'error' in error
+						? String(error.error)
+						: 'Unknown error';
+				showError('Failed to create branch', [errorMsg]);
 			} else if (branch) {
 				branches = [...branches, branch];
 				newBranchName = '';
@@ -98,7 +103,7 @@
 			}
 		} catch (error) {
 			console.error('Error creating branch:', error);
-			alert('An unexpected error occurred');
+			showError('An unexpected error occurred');
 		} finally {
 			isSubmitting = false;
 		}
@@ -199,14 +204,18 @@
 			});
 
 			if (error) {
-				alert(`Failed to update branch: ${error.error}`);
+				const errorMsg =
+					typeof error === 'object' && error !== null && 'error' in error
+						? String(error.error)
+						: 'Unknown error';
+				showError('Failed to update branch', [errorMsg]);
 			} else if (updatedBranch) {
 				branches = branches.map((b) => (b.id === editingBranchId ? updatedBranch : b));
 				cancelEditingBranch();
 			}
 		} catch (error) {
 			console.error('Error updating branch:', error);
-			alert('An unexpected error occurred');
+			showError('An unexpected error occurred');
 		} finally {
 			isUpdating = false;
 		}
@@ -246,13 +255,13 @@
 			const data = await response.json();
 
 			if (!response.ok) {
-				alert(`Failed to request deletion: ${data.error || 'Unknown error'}`);
+				showError('Failed to request deletion', [data.error || 'Unknown error']);
 			} else {
 				deletionMessage = data.message || 'A confirmation email has been sent to your inbox.';
 			}
 		} catch (error) {
 			console.error('Error requesting branch deletion:', error);
-			alert('An unexpected error occurred');
+			showError('An unexpected error occurred');
 		} finally {
 			isRequestingDeletion = false;
 		}
