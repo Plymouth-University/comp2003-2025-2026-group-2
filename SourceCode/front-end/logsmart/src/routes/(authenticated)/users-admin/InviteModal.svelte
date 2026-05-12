@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { api } from '$lib/api';
+	import { showError } from '$lib/toast';
 
 	const { showingCreateModel, setShowingCreateModel, branches, loggedInUserRole } = $props<{
 		showingCreateModel: boolean;
@@ -116,7 +117,11 @@
 							window.location.reload();
 						} else {
 							console.error('Error sending invite:', error);
-							alert(`Error: ${error.error}`);
+							const errorMsg =
+								typeof error === 'object' && error !== null && 'error' in error
+									? String(error.error)
+									: 'Unknown error';
+							showError('Failed to send invite', [errorMsg]);
 						}
 					}}
 				>

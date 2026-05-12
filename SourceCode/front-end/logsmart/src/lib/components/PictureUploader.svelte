@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount, tick } from 'svelte';
+	import { confirm } from '$lib/confirm';
 
 	let {
 		currentPictureUrl = null as string | null,
@@ -223,42 +224,43 @@
 			type === 'company_logo'
 				? 'Are you sure you want to delete the company logo?'
 				: 'Are you sure you want to delete your profile picture?';
-		if (!confirm(message)) return;
 
-		isLoading = true;
-		errorMessage = '';
+		confirm('Delete Picture', message, async () => {
+			isLoading = true;
+			errorMessage = '';
 
-		try {
-			let deleteUrl: string;
+			try {
+				let deleteUrl: string;
 
-			if (type === 'company_logo') {
-				if (!companyId) {
-					throw new Error('Company ID is required for company logo deletion');
+				if (type === 'company_logo') {
+					if (!companyId) {
+						throw new Error('Company ID is required for company logo deletion');
+					}
+					deleteUrl = `/api/companies/${encodeURIComponent(companyId)}/logo`;
+				} else {
+					deleteUrl = targetUserEmail
+						? `/api/auth/profile-picture?email=${encodeURIComponent(targetUserEmail)}`
+						: '/api/auth/profile-picture';
 				}
-				deleteUrl = `/api/companies/${encodeURIComponent(companyId)}/logo`;
-			} else {
-				deleteUrl = targetUserEmail
-					? `/api/auth/profile-picture?email=${encodeURIComponent(targetUserEmail)}`
-					: '/api/auth/profile-picture';
-			}
 
-			const response = await fetch(deleteUrl, {
-				method: 'DELETE'
-			});
+				const response = await fetch(deleteUrl, {
+					method: 'DELETE'
+				});
 
-			if (!response.ok) {
-				const err = await response.json();
-				throw new Error(err.error || 'Failed to delete picture');
-			}
+				if (!response.ok) {
+					const err = await response.json();
+					throw new Error(err.error || 'Failed to delete picture');
+				}
 
-			if (onDeleteComplete) {
-				onDeleteComplete();
+				if (onDeleteComplete) {
+					onDeleteComplete();
+				}
+			} catch (err) {
+				errorMessage = err instanceof Error ? err.message : 'Failed to delete picture';
+			} finally {
+				isLoading = false;
 			}
-		} catch (err) {
-			errorMessage = err instanceof Error ? err.message : 'Failed to delete picture';
-		} finally {
-			isLoading = false;
-		}
+		});
 	}
 
 	onDestroy(() => {

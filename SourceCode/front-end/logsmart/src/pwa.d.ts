@@ -8,6 +8,11 @@ declare module 'virtual:pwa-info' {
 	export const pwaInfo: PwaInfo | undefined;
 }
 
+interface BeforeInstallPromptEvent extends Event {
+	readonly prompt: () => Promise<void>;
+	readonly userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 declare module 'virtual:pwa-register/svelte' {
 	import type { Writable } from 'svelte/store';
 

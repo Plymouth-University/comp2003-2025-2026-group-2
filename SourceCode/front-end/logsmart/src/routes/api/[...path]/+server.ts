@@ -34,7 +34,7 @@ async function proxyRequest(event: RequestEvent) {
 	const originalUrl = new URL(request.url);
 	const queryString = originalUrl.search;
 	const url = `${API_URL}/${path}${queryString}`;
-	let requestBody: string | Uint8Array | undefined = undefined;
+	let requestBody: string | ArrayBuffer | undefined = undefined;
 	if (request.method !== 'GET' && request.method !== 'HEAD') {
 		const requestContentType = request.headers.get('content-type') || '';
 		if (
@@ -44,8 +44,7 @@ async function proxyRequest(event: RequestEvent) {
 		) {
 			requestBody = await request.text();
 		} else {
-			const buffer = await request.arrayBuffer();
-			requestBody = new Uint8Array(buffer);
+			requestBody = await request.arrayBuffer();
 		}
 	}
 
@@ -114,7 +113,7 @@ async function proxyRequest(event: RequestEvent) {
 			headers: { 'content-type': contentType || 'application/octet-stream' }
 		});
 	} catch (error: unknown) {
-		if (error?.status && error?.location) {
+		if (error && typeof error === 'object' && 'status' in error && 'location' in error) {
 			throw error;
 		}
 		console.error('Proxy error:', error);
