@@ -122,7 +122,9 @@ test.describe('Attendance Admin - Company Manager', () => {
 		}
 	});
 
-	test('should load attendance data with default 7-day range on initial page load', async ({ page }) => {
+	test('should load attendance data with default 7-day range on initial page load', async ({
+		page
+	}) => {
 		await page.getByRole('link', { name: 'Attendance' }).click();
 		await page.waitForURL('**/attendance-admin');
 		await page.waitForLoadState('networkidle');
