@@ -7,10 +7,13 @@ type UserResponse = components['schemas']['UserResponse'];
  * Calculate default date range for last 7 days
  * Returns timestamps with sevenDaysAgo at start of day (00:00:00 UTC)
  * and today at end of day (23:59:59.999 UTC)
+ *
+ * This gives us exactly 7 calendar days of coverage with a 6-day time difference
+ * (e.g., May 8 00:00 to May 14 23:59:59 = 6 days 23:59:59.999)
  */
 function getDefaultDateRange() {
 	const now = new Date();
-	const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+	const sevenDaysAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
 
 	// Set sevenDaysAgo to start of day (00:00:00 UTC)
 	sevenDaysAgo.setUTCHours(0, 0, 0, 0);
