@@ -108,9 +108,18 @@
 	const currentDateFormatted = `${dd}/${mm}/${yyyy}`;
 	const currentDateISO = `${yyyy}-${mm}-${dd}`;
 
-	let dateFrom = $state(currentDateFormatted);
+	// Calculate date from 7 days ago
+	const sevenDaysAgo = new Date(today);
+	sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+	const ddFrom = String(sevenDaysAgo.getDate()).padStart(2, '0');
+	const mmFrom = String(sevenDaysAgo.getMonth() + 1).padStart(2, '0');
+	const yyyyFrom = sevenDaysAgo.getFullYear();
+	const sevenDaysAgoFormatted = `${ddFrom}/${mmFrom}/${yyyyFrom}`;
+	const sevenDaysAgoISO = `${yyyyFrom}-${mmFrom}-${ddFrom}`;
+
+	let dateFrom = $state(sevenDaysAgoFormatted);
 	let dateTo = $state(currentDateFormatted);
-	let dateFromISO = $state(currentDateISO);
+	let dateFromISO = $state(sevenDaysAgoISO);
 	let dateToISO = $state(currentDateISO);
 
 	let reportGenerated = $state(false);
