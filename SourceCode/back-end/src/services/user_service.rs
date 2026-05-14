@@ -141,6 +141,13 @@ impl UserService {
             ));
         }
 
+        // Only LogSmart admins can assign the LogSmart admin role
+        if role == db::UserRole::LogSmartAdmin && !admin_user.is_logsmart_admin() {
+            return Err(svc_err_forbidden(
+                "Only LogSmart admins can assign the LogSmart admin role",
+            ));
+        }
+
         try_db!(
             db::update_user_profile_full(
                 db_pool,
