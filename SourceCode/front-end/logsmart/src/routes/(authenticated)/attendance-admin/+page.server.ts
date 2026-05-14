@@ -2,6 +2,27 @@ import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import type { components } from '../../../lib/api-types';
 type UserResponse = components['schemas']['UserResponse'];
+
+/**
+ * Calculate default date range for last 7 days
+ * Returns timestamps with sevenDaysAgo at start of day (00:00:00 UTC)
+ * and today at end of day (23:59:59.999 UTC)
+ */
+function getDefaultDateRange() {
+	const now = new Date();
+	const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+	// Set sevenDaysAgo to start of day (00:00:00 UTC)
+	sevenDaysAgo.setUTCHours(0, 0, 0, 0);
+
+	// Set now to end of day (23:59:59.999 UTC)
+	now.setUTCHours(23, 59, 59, 999);
+
+	return {
+		from: sevenDaysAgo.toISOString(),
+		to: now.toISOString()
+	};
+}
 export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 	const { user } = await parent();
 
@@ -27,9 +48,16 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 	}
 
 	try {
-		const from = url.searchParams.get('from');
-		const to = url.searchParams.get('to');
+		let from = url.searchParams.get('from');
+		let to = url.searchParams.get('to');
 		const cursor = url.searchParams.get('cursor');
+
+		// If no date range specified, use default (last 7 days)
+		if (!from || !to) {
+			const defaultRange = getDefaultDateRange();
+			from = defaultRange.from;
+			to = defaultRange.to;
+		}
 
 		let apiUrl = '/api/clock/company';
 		const params = new URLSearchParams();
