@@ -6,6 +6,7 @@
 	import type { Template, TemplateSchedule, DayOfWeek } from './types';
 	import TemplateRow from './TemplateRow.svelte';
 	import TemplateSettingsWizard from './TemplateSettingsWizard.svelte';
+	import FilterDialog from './FilterDialog.svelte';
 	import type { PageData } from './$types';
 
 	type ApiTemplateInfo = components['schemas']['TemplateInfo'];
@@ -234,13 +235,22 @@
 		</div>
 
 		<div class="mb-6">
-			<input
-				type="text"
-				bind:value={searchQuery}
-				maxlength="100"
-				placeholder="Search templates..."
-				class="w-full rounded-lg border-2 border-border-primary bg-bg-primary px-4 py-3 text-text-primary"
-			/>
+			<div class="search-bar-wrapper">
+				<div class="search-bar-container">
+					<input
+						type="text"
+						bind:value={searchQuery}
+						maxlength="100"
+						placeholder="Search templates..."
+						class="search-input"
+					/>
+					<div class="search-bar-divider"></div>
+					<FilterDialog
+						value={scheduleFilter}
+						onchange={(value) => (scheduleFilter = value)}
+					/>
+				</div>
+			</div>
 			<div
 				class="mt-1 text-right text-xs"
 				style={searchQuery.length >= 95
@@ -251,21 +261,6 @@
 			>
 				{searchQuery.length}/100 characters
 			</div>
-		</div>
-
-		<div class="mb-6 flex gap-4">
-			<select
-				bind:value={scheduleFilter}
-				class="flex-1 rounded-lg border-2 border-border-primary bg-bg-primary px-4 py-3 text-text-primary"
-			>
-				<option value="all">All Schedules</option>
-				<option value="daily">Daily</option>
-				<option value="weekly">Weekly</option>
-				<option value="monthly">Monthly</option>
-				<option value="quarterly">Quarterly</option>
-				<option value="yearly">Yearly</option>
-				<option value="custom">Custom</option>
-			</select>
 		</div>
 
 		{#if loading}
@@ -287,9 +282,14 @@
 			<div class="rounded-lg border-2 border-border-primary bg-bg-primary px-6 py-12 text-center">
 				{#if searchQuery || scheduleFilter !== 'all'}
 					<p class="text-lg text-text-secondary">
-						No templates found matching "{searchQuery}"{searchQuery && scheduleFilter !== 'all'
-							? ' and '
-							: ''}{scheduleFilter !== 'all' ? `with ${scheduleFilter} schedule` : ''}
+						No templates found
+						{#if searchQuery && scheduleFilter !== 'all'}
+							matching "{searchQuery}" with {scheduleFilter} schedule
+						{:else if searchQuery}
+							matching "{searchQuery}"
+						{:else if scheduleFilter !== 'all'}
+							with {scheduleFilter} schedule
+						{/if}
 					</p>
 				{:else}
 					<p class="text-lg text-text-secondary">
@@ -362,6 +362,44 @@
 {/if}
 
 <style>
+	.search-bar-wrapper {
+		position: relative;
+	}
+
+	.search-bar-container {
+		display: flex;
+		align-items: center;
+		width: 100%;
+		border-radius: 8px;
+		border: 2px solid var(--border-primary);
+		background-color: var(--bg-primary);
+		transition: border-color 0.15s ease;
+	}
+
+	.search-bar-container:focus-within {
+		border-color: var(--border-primary);
+	}
+
+	.search-input {
+		flex: 1;
+		border: none;
+		background: none;
+		color: var(--text-primary);
+		padding: 12px 16px;
+		font-size: 16px;
+		outline: none;
+	}
+
+	.search-input::placeholder {
+		color: var(--text-secondary);
+	}
+
+	.search-bar-divider {
+		width: 1px;
+		height: 24px;
+		background-color: var(--border-primary);
+	}
+
 	.btn-create {
 		background-color: var(--create-button);
 		transition: background-color 0.15s ease;
