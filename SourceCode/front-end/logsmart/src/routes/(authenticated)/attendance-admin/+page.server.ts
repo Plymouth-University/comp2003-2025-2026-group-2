@@ -51,12 +51,14 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 		let from = url.searchParams.get('from');
 		let to = url.searchParams.get('to');
 		const cursor = url.searchParams.get('cursor');
+		let appliedDefaults = false;
 
 		// If no date range specified, use default (last 7 days)
 		if (!from || !to) {
 			const defaultRange = getDefaultDateRange();
 			from = defaultRange.from;
 			to = defaultRange.to;
+			appliedDefaults = true;
 		}
 
 		let apiUrl = '/api/clock/company';
@@ -82,6 +84,8 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 				branches: [],
 				userRole: user.role,
 				members: [],
+				defaultFrom: appliedDefaults ? from : null,
+				defaultTo: appliedDefaults ? to : null,
 				error: 'Failed to load attendance data'
 			};
 		}
@@ -126,18 +130,23 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 			branches,
 			userRole: user.role,
 			isHQStaff,
-			members
+			members,
+			defaultFrom: appliedDefaults ? from : null,
+			defaultTo: appliedDefaults ? to : null
 		};
 
 		return d;
 	} catch (error) {
 		console.error('Error fetching attendance data:', error);
+		const defaultRange = getDefaultDateRange();
 		return {
 			clockEvents: [],
 			user,
 			branches: [],
 			userRole: user.role,
 			members: [],
+			defaultFrom: defaultRange.from,
+			defaultTo: defaultRange.to,
 			error: 'Failed to load attendance data'
 		};
 	}

@@ -63,14 +63,42 @@
 		return '';
 	}
 
-	let dateFrom = $state(isoToDisplay(page.url.searchParams.get('from')) || currentDateFormatted);
-	let dateTo = $state(isoToDisplay(page.url.searchParams.get('to')) || tomorrowDateFormatted);
+	let dateFrom = $state(
+		isoToDisplay(page.url.searchParams.get('from')) ||
+			isoToDisplay(data?.defaultFrom) ||
+			currentDateFormatted
+	);
+	let dateTo = $state(
+		isoToDisplay(page.url.searchParams.get('to')) ||
+			isoToDisplay(data?.defaultTo) ||
+			tomorrowDateFormatted
+	);
 
 	// For branch_manager, auto-select their branch
 	let selectedBranchId = $state('');
 	$effect(() => {
 		if (userRole === 'branch_manager' && data?.user?.branch_id) {
 			selectedBranchId = data.user.branch_id;
+		}
+	});
+
+	// If we have server defaults but no URL params, add them to the URL so data displays
+	$effect(() => {
+		if (
+			data?.defaultFrom &&
+			data?.defaultTo &&
+			!page.url.searchParams.has('from') &&
+			!page.url.searchParams.has('to')
+		) {
+			const params = new SvelteURLSearchParams();
+			params.set('from', data.defaultFrom);
+			params.set('to', data.defaultTo);
+			// Preserve branch_id if present
+			const branchId = page.url.searchParams.get('branch_id');
+			if (branchId) {
+				params.set('branch_id', branchId);
+			}
+			goto(`/attendance-admin?${params.toString()}`, { replaceState: true });
 		}
 	});
 
@@ -100,7 +128,9 @@
 	});
 
 	const hasAppliedFilter = $derived(
-		page.url.searchParams.has('from') || page.url.searchParams.has('to')
+		page.url.searchParams.has('from') ||
+			page.url.searchParams.has('to') ||
+			(data?.defaultFrom && data?.defaultTo)
 	);
 
 	// --- Apply / Clear ---
