@@ -4,6 +4,7 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
+		"local": "PUBLIC_API_URL=http://localhost:6767 vite dev",
 		"dev": "bun format --log-level error && vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
