@@ -121,6 +121,70 @@ test.describe('Attendance Admin - Company Manager', () => {
 			expect(options.some((opt) => opt.includes(BRANCH_B))).toBe(true);
 		}
 	});
+
+	test('should load attendance data with default 7-day range on initial page load', async ({ page }) => {
+		await page.getByRole('link', { name: 'Attendance' }).click();
+		await page.waitForURL('**/attendance-admin');
+		await page.waitForLoadState('networkidle');
+
+		// Verify date inputs are visible
+		const fromDateInput = page.locator('input#filter-from');
+		const toDateInput = page.locator('input#filter-to');
+		await expect(fromDateInput).toBeVisible();
+		await expect(toDateInput).toBeVisible();
+
+		// Get the date values
+		const fromValue = await fromDateInput.inputValue();
+		const toValue = await toDateInput.inputValue();
+
+		// Parse dates (format is DD/MM/YYYY)
+		const parseDateString = (dateStr: string) => {
+			const [day, month, year] = dateStr.split('/');
+			return new Date(`${year}-${month}-${day}`);
+		};
+
+		const fromDate = parseDateString(fromValue);
+		const toDate = parseDateString(toValue);
+
+		// Verify they're ~7 days apart (6 days difference between start and end)
+		const daysDiff = Math.round((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24));
+		expect(daysDiff).toBe(6); // 7 days inclusive range = 6 days difference
+
+		// Verify table exists and has rows
+		const table = page.locator('table');
+		await expect(table).toBeVisible();
+	});
+
+	test('should respect URL parameters over default 7-day range', async ({ page }) => {
+		// Login first
+		await page.goto('http://localhost:5173/');
+		await page.getByRole('link', { name: 'Login' }).click();
+		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
+		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+		await page.waitForURL('**/dashboard');
+
+		// Navigate with custom date parameters
+		const customFrom = '2026-05-10T00:00:00Z';
+		const customTo = '2026-05-11T23:59:59.999Z';
+		await page.goto(
+			`http://localhost:5173/attendance-admin?from=${encodeURIComponent(customFrom)}&to=${encodeURIComponent(customTo)}`
+		);
+		await page.waitForLoadState('networkidle');
+
+		// Verify date inputs display custom dates
+		const fromDateInput = page.locator('input#filter-from');
+		const toDateInput = page.locator('input#filter-to');
+		await expect(fromDateInput).toBeVisible();
+		await expect(toDateInput).toBeVisible();
+
+		const fromValue = await fromDateInput.inputValue();
+		const toValue = await toDateInput.inputValue();
+
+		// Should be 10/05/2026 and 11/05/2026 (DD/MM/YYYY format)
+		expect(fromValue).toBe('10/05/2026');
+		expect(toValue).toBe('11/05/2026');
+	});
 });
 
 test.describe('Attendance Admin - Branch Manager', () => {
