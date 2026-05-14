@@ -158,14 +158,6 @@ test.describe('Attendance Admin - Company Manager', () => {
 	});
 
 	test('should respect URL parameters over default 7-day range', async ({ page }) => {
-		// Login first
-		await page.goto('http://localhost:5173/');
-		await page.getByRole('link', { name: 'Login' }).click();
-		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
-		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
-		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-		await page.waitForURL('**/dashboard');
-
 		// Navigate with custom date parameters
 		const customFrom = '2026-05-10T00:00:00Z';
 		const customTo = '2026-05-11T23:59:59.999Z';
@@ -346,7 +338,7 @@ test.describe('Attendance Admin - Clock Events Integration', () => {
 
 		await adminPage.getByRole('link', { name: 'Attendance' }).click();
 		await adminPage.getByRole('button', { name: 'Apply' }).click();
-		await adminPage.waitForURL('**/attendance-admin');
+		await adminPage.waitForURL('**/attendance-admin*');
 		await adminPage.waitForLoadState('networkidle');
 
 		await expect(adminPage.locator('body')).toContainText(branchStaffCreds.email);
