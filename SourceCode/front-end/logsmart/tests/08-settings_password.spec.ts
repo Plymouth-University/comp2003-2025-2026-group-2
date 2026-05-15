@@ -52,45 +52,46 @@ test.describe('Settings - Profile Updates', () => {
 		await expect(emailField).toBeDisabled();
 	});
 
-	test('update_first_name', async ({ page }) => {
+	test('update_profile_fields', async ({ page }) => {
 		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
+
+		// Test 1: Update first name only (consolidated from update_first_name)
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill('UpdatedFirst');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-	});
+		await page.waitForLoadState('networkidle');
 
-	test('update_last_name', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings', exact: true }).click();
-		await page.waitForURL('**/settings');
+		// Test 2: Update last name only (consolidated from update_last_name)
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
 		await page.getByRole('textbox', { name: 'Last Name' }).fill('UpdatedLast');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
-	});
+		await page.waitForLoadState('networkidle');
 
-	test('update_both_names', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings', exact: true }).click();
-		await page.waitForURL('**/settings');
+		// Test 3: Update both names (consolidated from update_both_names)
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		await page.getByRole('textbox', { name: 'First Name' }).fill('Test');
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
 		await page.getByRole('textbox', { name: 'Last Name' }).fill('User');
 		await page.getByRole('button', { name: 'Save Profile' }).click();
+		await page.waitForLoadState('networkidle');
 	});
 
-	test('empty_first_name_validation', async ({ page }) => {
+	test('profile_field_validation', async ({ page }) => {
 		await page.getByRole('link', { name: 'Settings', exact: true }).click();
 		await page.waitForURL('**/settings');
+
+		// Test 1: Empty first name validation (consolidated from empty_first_name_validation)
 		await page.getByRole('textbox', { name: 'First Name' }).clear();
 		const saveButton = page.getByRole('button', { name: 'Save Profile' });
 		await expect(saveButton).toBeDisabled();
-	});
 
-	test('empty_last_name_validation', async ({ page }) => {
-		await page.getByRole('link', { name: 'Settings', exact: true }).click();
-		await page.waitForURL('**/settings');
+		// Restore first name, clear last name
+		const firstNameField = page.getByRole('textbox', { name: 'First Name' });
+		await firstNameField.fill('Test');
+
+		// Test 2: Empty last name validation (consolidated from empty_last_name_validation)
 		await page.getByRole('textbox', { name: 'Last Name' }).clear();
-		const saveButton = page.getByRole('button', { name: 'Save Profile' });
 		await expect(saveButton).toBeDisabled();
 	});
 
