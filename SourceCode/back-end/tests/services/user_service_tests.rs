@@ -332,3 +332,52 @@ async fn test_admin_update_logsmart_admin_forbidden() {
     assert_eq!(status, StatusCode::FORBIDDEN);
     assert_eq!(error_response, json!({"error": "Cannot modify LogSmart internal admin users"}));
 }
+
+#[tokio::test]
+async fn test_logsmart_admin_can_assign_logsmart_admin_role() {
+    let pool = setup_test_db().await;
+    
+    // Create LogSmart admin and regular staff member
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let logsmart_admin = create_test_user_with_role(&pool, &format!("logsmart_admin{}@example.com", unique_id), UserRole::LogSmartAdmin, Some("company123")).await;
+    let staff_member = create_test_user_with_role(&pool, &format!("staff{}@example.com", unique_id), UserRole::Staff, Some("company123")).await;
+    
+    // Test LogSmart admin assigning LogSmart admin role
+    let result = UserService::admin_update_member_profile(
+        &pool,
+        &logsmart_admin.id,
+        &format!("staff{}@example.com", unique_id),
+        "FirstName".to_string(),
+        "LastName".to_string(),
+        UserRole::LogSmartAdmin,
+    ).await;
+    
+    assert!(result.is_ok());
+    let updated_member = result.unwrap();
+    assert_eq!(updated_member.role, UserRole::LogSmartAdmin);
+}
+
+#[tokio::test]
+async fn test_company_admin_cannot_assign_logsmart_admin_role() {
+    let pool = setup_test_db().await;
+    
+    // Create company admin and staff member
+    let unique_id = Uuid::new_v4().to_string()[..8].to_string();
+    let admin = create_test_user_with_role(&pool, &format!("admin{}@example.com", unique_id), UserRole::CompanyManager, Some("company123")).await;
+    let staff_member = create_test_user_with_role(&pool, &format!("staff{}@example.com", unique_id), UserRole::Staff, Some("company123")).await;
+    
+    // Test company admin trying to assign LogSmart admin role (should fail)
+    let result = UserService::admin_update_member_profile(
+        &pool,
+        &admin.id,
+        &format!("staff{}@example.com", unique_id),
+        "FirstName".to_string(),
+        "LastName".to_string(),
+        UserRole::LogSmartAdmin,
+    ).await;
+    
+    assert!(result.is_err());
+    let (status, error_response) = result.unwrap_err();
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(error_response, json!({"error": "Only LogSmart admins can assign the LogSmart admin role"}));
+}

@@ -93,12 +93,13 @@ pub async fn admin_update_member_profile(
     }
 
     let role = match payload.role.as_str() {
+        "logsmart_admin" => db::UserRole::LogSmartAdmin,
         "company_manager" => db::UserRole::CompanyManager,
         "branch_manager" => db::UserRole::BranchManager,
         "staff" => db::UserRole::Staff,
         _ => {
             return Err(err_bad_request(
-                "Invalid role. Must be 'company_manager', 'branch_manager', or 'staff'",
+                "Invalid role. Must be 'logsmart_admin', 'company_manager', 'branch_manager', or 'staff'",
             ));
         }
     };
