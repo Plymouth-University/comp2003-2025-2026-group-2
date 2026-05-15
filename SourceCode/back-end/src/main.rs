@@ -343,6 +343,7 @@ async fn main() {
         .route("/health/slow-queries", get(handlers::get_db_slow_queries))
         .route("/health/index-usage", get(handlers::get_db_index_usage))
         .route("/health/table-sizes", get(handlers::get_db_table_sizes))
+        .route("/health/rate-limits", get(handlers::get_rate_limit_status))
         .route("/security/logs", get(handlers::get_security_logs))
         .route(
             "/security/logs/export",

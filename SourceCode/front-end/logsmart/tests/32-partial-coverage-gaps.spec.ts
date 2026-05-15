@@ -739,8 +739,8 @@ test.describe('Google OAuth - Reliable Mock Tests', () => {
 		// Should be on mockoidc or localhost OAuth page
 		expect(
 			currentUrl.includes('mockoidc') ||
-			currentUrl.includes('localhost:8080') ||
-			currentUrl.includes('google')
+				currentUrl.includes('localhost:8080') ||
+				currentUrl.includes('google')
 		).toBeTruthy();
 
 		await page.close();
@@ -851,8 +851,8 @@ test.describe('Google OAuth - Reliable Mock Tests', () => {
 			// Should redirect to an OAuth authorization URL
 			expect(
 				location.includes('mockoidc') ||
-				location.includes('accounts.google.com') ||
-				location.includes('openid')
+					location.includes('accounts.google.com') ||
+					location.includes('openid')
 			).toBeTruthy();
 		}
 

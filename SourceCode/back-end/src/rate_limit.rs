@@ -17,6 +17,12 @@ use std::num::NonZeroU32;
 use std::sync::Arc;
 use std::time::Instant;
 
+pub const LOGIN_IP_LIMIT: u32 = 5;
+pub const REGISTER_IP_LIMIT: u32 = 10;
+pub const GENERAL_IP_LIMIT: u32 = 60;
+pub const LOGIN_EMAIL_LIMIT: u32 = 10;
+pub const REGISTER_EMAIL_LIMIT: u32 = 20;
+
 type IpLimiter = DashMap<
     IpAddr,
     (
@@ -162,7 +168,7 @@ impl RateLimitState {
         if self.disabled {
             return true;
         }
-        let quota = Quota::per_minute(NonZeroU32::new(5).unwrap());
+        let quota = Quota::per_minute(NonZeroU32::new(LOGIN_IP_LIMIT).unwrap());
         let limiter = Self::get_or_create_ip_limiter(&self.ip_login_limiter, ip, quota);
         limiter.check().is_ok()
     }
@@ -176,7 +182,7 @@ impl RateLimitState {
         if self.disabled {
             return true;
         }
-        let quota = Quota::per_minute(NonZeroU32::new(10).unwrap());
+        let quota = Quota::per_minute(NonZeroU32::new(LOGIN_EMAIL_LIMIT).unwrap());
         let limiter = Self::get_or_create_string_limiter(
             &self.email_login_limiter,
             email.to_lowercase(),
@@ -194,7 +200,7 @@ impl RateLimitState {
         if self.disabled {
             return true;
         }
-        let quota = Quota::per_minute(NonZeroU32::new(10).unwrap());
+        let quota = Quota::per_minute(NonZeroU32::new(REGISTER_IP_LIMIT).unwrap());
         let limiter = Self::get_or_create_ip_limiter(&self.ip_register_limiter, ip, quota);
         limiter.check().is_ok()
     }
@@ -208,7 +214,7 @@ impl RateLimitState {
         if self.disabled {
             return true;
         }
-        let quota = Quota::per_minute(NonZeroU32::new(20).unwrap());
+        let quota = Quota::per_minute(NonZeroU32::new(REGISTER_EMAIL_LIMIT).unwrap());
         let limiter = Self::get_or_create_string_limiter(
             &self.email_register_limiter,
             email.to_lowercase(),
@@ -226,7 +232,7 @@ impl RateLimitState {
         if self.disabled {
             return true;
         }
-        let quota = Quota::per_minute(NonZeroU32::new(60).unwrap());
+        let quota = Quota::per_minute(NonZeroU32::new(GENERAL_IP_LIMIT).unwrap());
         let limiter = Self::get_or_create_ip_limiter(&self.ip_general_limiter, ip, quota);
         limiter.check().is_ok()
     }

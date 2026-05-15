@@ -1,4 +1,7 @@
 use crate::middleware::LogSmartAdminUser;
+use crate::rate_limit::{
+    GENERAL_IP_LIMIT, LOGIN_EMAIL_LIMIT, LOGIN_IP_LIMIT, REGISTER_EMAIL_LIMIT, REGISTER_IP_LIMIT,
+};
 use crate::{AppState, db};
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -182,4 +185,43 @@ pub async fn get_db_table_sizes(
         )
             .into_response(),
     }
+}
+
+#[derive(Serialize, utoipa::ToSchema)]
+pub struct RateLimitStatusResponse {
+    pub enabled: bool,
+    pub login_ip_limit: u32,
+    pub register_ip_limit: u32,
+    pub general_ip_limit: u32,
+    pub login_email_limit: u32,
+    pub register_email_limit: u32,
+    pub export_limit: u32,
+}
+
+#[utoipa::path(
+    get,
+    path = "/health/rate-limits",
+    responses(
+        (status = 200, description = "Rate limiting status retrieved successfully", body = RateLimitStatusResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Forbidden - LogSmart admin only"),
+    ),
+    security(("bearer_auth" = [])),
+    tag = "Health Monitoring"
+)]
+pub async fn get_rate_limit_status(
+    LogSmartAdminUser(_claims, _user): LogSmartAdminUser,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    let rate_limit = &state.rate_limit;
+    Json(RateLimitStatusResponse {
+        enabled: !rate_limit.disabled,
+        login_ip_limit: LOGIN_IP_LIMIT,
+        register_ip_limit: REGISTER_IP_LIMIT,
+        general_ip_limit: GENERAL_IP_LIMIT,
+        login_email_limit: LOGIN_EMAIL_LIMIT,
+        register_email_limit: REGISTER_EMAIL_LIMIT,
+        export_limit: 1,
+    })
+    .into_response()
 }

@@ -50,6 +50,21 @@ test.beforeAll(async ({ browser }) => {
 });
 
 test.describe('Cross-Cutting: Rate Limiting', () => {
+	let rateLimitingEnabled = false;
+
+	test.beforeAll(async () => {
+		const token = await loginApi(adminCreds.email, adminCreds.password);
+		const response = await fetch(`${API_URL}/health/rate-limits`, {
+			headers: { Authorization: `Bearer ${token}` }
+		});
+		if (response.ok) {
+			const data = await response.json();
+			rateLimitingEnabled = data.enabled;
+		}
+	});
+
+	test.skip(() => !rateLimitingEnabled, 'Rate limiting is disabled');
+
 	test('rate_limit_login_ip_threshold', async ({ page }) => {
 		const failedLogins = 12;
 		const rateLimited = [];
@@ -415,7 +430,9 @@ test.describe('Cross-Cutting: 404 Not Found', () => {
 		await result.page!.close();
 
 		const token = await loginApi(result.email, result.password);
-		const response = await (await browser.newPage()).request.get(`${API_URL}/companies/nonexistent-company-id`, {
+		const response = await (
+			await browser.newPage()
+		).request.get(`${API_URL}/companies/nonexistent-company-id`, {
 			headers: { Authorization: `Bearer ${token}` }
 		});
 		console.log(await response.text());

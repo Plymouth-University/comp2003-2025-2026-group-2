@@ -591,6 +591,22 @@ export interface paths {
 		patch?: never;
 		trace?: never;
 	};
+	'/health/rate-limits': {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		get: operations['get_rate_limit_status'];
+		put?: never;
+		post?: never;
+		delete?: never;
+		options?: never;
+		head?: never;
+		patch?: never;
+		trace?: never;
+	};
 	'/health/slow-queries': {
 		parameters: {
 			query?: never;
@@ -1270,6 +1286,21 @@ export interface components {
 			x: number;
 			/** Format: double */
 			y: number;
+		};
+		RateLimitStatusResponse: {
+			enabled: boolean;
+			/** Format: int32 */
+			export_limit: number;
+			/** Format: int32 */
+			general_ip_limit: number;
+			/** Format: int32 */
+			login_email_limit: number;
+			/** Format: int32 */
+			login_ip_limit: number;
+			/** Format: int32 */
+			register_email_limit: number;
+			/** Format: int32 */
+			register_ip_limit: number;
 		};
 		RegisterRequest: {
 			/** @example 123 Main St, City, Country */
@@ -3224,6 +3255,40 @@ export interface operations {
 			};
 			/** @description Server error */
 			500: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+		};
+	};
+	get_rate_limit_status: {
+		parameters: {
+			query?: never;
+			header?: never;
+			path?: never;
+			cookie?: never;
+		};
+		requestBody?: never;
+		responses: {
+			/** @description Rate limiting status retrieved successfully */
+			200: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content: {
+					'application/json': components['schemas']['RateLimitStatusResponse'];
+				};
+			};
+			/** @description Unauthorized */
+			401: {
+				headers: {
+					[name: string]: unknown;
+				};
+				content?: never;
+			};
+			/** @description Forbidden - LogSmart admin only */
+			403: {
 				headers: {
 					[name: string]: unknown;
 				};
