@@ -616,17 +616,20 @@ pub async fn link_oauth_to_user(
 /// # Errors
 /// Returns an error if database update fails.
 pub async fn unlink_oauth_from_user(pool: &PgPool, user_id: &str) -> Result<()> {
-    sqlx::query(
+    let query = sqlx::query(
         r"
         UPDATE users
         SET oauth_provider = NULL, oauth_subject = NULL, oauth_picture = NULL
-        WHERE id = $1
+        WHERE id = $1 AND oauth_provider IS NOT NULL AND oauth_subject IS NOT NULL
         ",
     )
     .bind(user_id)
     .execute(pool)
     .await?;
 
+    if query.rows_affected() == 0 {
+        return Err(anyhow::anyhow!("Oauth account not found for user"));
+    }
     Ok(())
 }
 
@@ -1667,8 +1670,8 @@ pub async fn update_passkey_usage(pool: &PgPool, id: &str, counter: i64) -> Resu
     .bind(chrono::Utc::now())
     .bind(id)
     .execute(pool)
-    .await?;
-
+    .await
+    .map_err(|e| anyhow::anyhow!("Failed to update passkey usage: {}", e))?;
     Ok(())
 }
 
@@ -1677,7 +1680,7 @@ pub async fn update_passkey_usage(pool: &PgPool, id: &str, counter: i64) -> Resu
 /// # Errors
 /// Returns an error if database deletion fails.
 pub async fn delete_passkey(pool: &PgPool, id: &str, user_id: &str) -> Result<()> {
-    sqlx::query(
+    let result = sqlx::query(
         r"
         DELETE FROM passkeys
         WHERE id = $1 AND user_id = $2
@@ -1687,6 +1690,10 @@ pub async fn delete_passkey(pool: &PgPool, id: &str, user_id: &str) -> Result<()
     .bind(user_id)
     .execute(pool)
     .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(anyhow::anyhow!("Passkey not found"));
+    }
 
     Ok(())
 }

@@ -655,7 +655,7 @@ test.describe('Edge Cases', () => {
 			expect(createResponse.ok()).toBeTruthy();
 
 			// Fetch templates and verify special characters are preserved
-			const templatesResponse = await page.request.get('/api/logs/templates', {
+			const templatesResponse = await page.request.get('/api/logs/templates/all', {
 				headers: {
 					Authorization: `Bearer ${token}`
 				}
@@ -748,7 +748,7 @@ test.describe('Edge Cases', () => {
 			});
 
 			// Fetch and verify data integrity
-			const response = await page.request.get('/api/logs/templates', {
+			const response = await page.request.get('/api/logs/templates/all', {
 				headers: {
 					Authorization: `Bearer ${token}`
 				}

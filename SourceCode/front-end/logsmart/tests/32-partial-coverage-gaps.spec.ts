@@ -2,7 +2,6 @@ import { expect, test } from '@playwright/test';
 import {
 	register,
 	dismissCookieBannerInTests,
-	sendInvitation,
 	getCompanyDeletionToken,
 	clearMailhogEmails,
 	getInvitationToken
@@ -186,7 +185,7 @@ test.describe('DELETE /companies/{id} - Company Deletion Edge Cases', () => {
 			.first()
 			.click();
 		await page.getByRole('button', { name: 'ADD BRANCH' }).click();
-		await expect(page.getByText('Test Branch')).toBeVisible();
+		await expect(page.getByRole('heading', { name: `Test Branch` })).toBeVisible();
 
 		// Attempt to delete without export - should fail
 		const response = await page.request.delete(`/api/companies/${companyId}`, {
@@ -240,10 +239,9 @@ test.describe('DELETE /companies/{id} - Company Deletion Edge Cases', () => {
 
 		const token = await loginAndGetToken(page, email, password);
 		const companyId = await getCompanyId(page, token);
-
+		await page.context().clearCookies();
 		// Attempt to delete without any auth token
 		const response = await page.request.delete(`/api/companies/${companyId}`);
-
 		expect([401, 403]).toContain(response.status());
 
 		await page.close();
@@ -407,7 +405,6 @@ test.describe('GET /auth/invitations/details - Error Cases', () => {
 		const { page, email, password } = adminResult;
 
 		const token = await loginAndGetToken(page, email, password);
-		const companyId = await getCompanyId(page, token);
 
 		// Create an invitation
 		const inviteeEmail = `used-invite-${Date.now()}@logsmart.app`;
@@ -537,10 +534,10 @@ test.describe('GET /companies/{id}/export/download/{filename} - Download Verific
 
 		const token = await loginAndGetToken(page, email, password);
 		const companyId = await getCompanyId(page, token);
-
+		await page.context().clearCookies();
 		// Attempt to download without auth
 		const response = await page.request.get(`/api/companies/${companyId}/export/download/test.zip`);
-
+		console.log(await response.text());
 		expect([401, 403]).toContain(response.status());
 
 		await page.close();
@@ -742,8 +739,8 @@ test.describe('Google OAuth - Reliable Mock Tests', () => {
 		// Should be on mockoidc or localhost OAuth page
 		expect(
 			currentUrl.includes('mockoidc') ||
-				currentUrl.includes('localhost:8080') ||
-				currentUrl.includes('google')
+			currentUrl.includes('localhost:8080') ||
+			currentUrl.includes('google')
 		).toBeTruthy();
 
 		await page.close();
@@ -787,7 +784,7 @@ test.describe('Google OAuth - Reliable Mock Tests', () => {
 		const unlinkResponse = await page.request.delete('/api/auth/google/unlink', {
 			headers: { Authorization: `Bearer ${token}` }
 		});
-
+		console.log(await unlinkResponse.text());
 		// Should return an error (either 400 because no OAuth linked, or 401)
 		expect([400, 401, 500]).toContain(unlinkResponse.status());
 
@@ -847,15 +844,15 @@ test.describe('Google OAuth - Reliable Mock Tests', () => {
 		});
 
 		// Should return a redirect (302) to Google's OAuth URL
-		expect([302, 500]).toContain(response.status());
+		expect([302, 303]).toContain(response.status());
 
-		if (response.status() === 302) {
+		if (response.status() === 303) {
 			const location = response.headers()['location'] || '';
 			// Should redirect to an OAuth authorization URL
 			expect(
 				location.includes('mockoidc') ||
-					location.includes('accounts.google.com') ||
-					location.includes('openid')
+				location.includes('accounts.google.com') ||
+				location.includes('openid')
 			).toBeTruthy();
 		}
 

@@ -977,11 +977,19 @@ pub async fn delete_passkey(
     db::delete_passkey(&state.postgres, &passkey_id, &user.id)
         .await
         .map_err(|e| {
-            tracing::error!("Database error deleting passkey: {:?}", e);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({ "error": "Database error" })),
-            )
+            let error_msg = e.to_string();
+            if error_msg.contains("Passkey not found") {
+                (
+                    StatusCode::NOT_FOUND,
+                    Json(json!({ "error": "Passkey not found" })),
+                )
+            } else {
+                tracing::error!("Database error deleting passkey: {:?}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({ "error": "Database error" })),
+                )
+            }
         })?;
 
     let _ = db::log_security_event(

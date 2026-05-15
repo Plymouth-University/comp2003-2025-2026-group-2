@@ -317,7 +317,7 @@ pub async fn get_profile_picture(
 > {
     if let Some((content_type, data)) = images_db::get_profile_picture(&state.mongodb, &file_id)
         .await
-        .map_err(|e| err_internal(&e.to_string()))?
+        .map_err(|e| err_not_found(&e.to_string()))?
     {
         let header_value = header::HeaderValue::from_str(&content_type)
             .unwrap_or_else(|_| header::HeaderValue::from_static("application/octet-stream"));

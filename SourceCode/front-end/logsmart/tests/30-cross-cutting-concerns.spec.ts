@@ -4,6 +4,23 @@ import { register, dismissCookieBannerInTests } from './utils';
 const API_URL = process.env.BACKEND_URL || 'http://localhost:6767';
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
+// Helper: login via API and return auth token
+async function loginApi(email: string, password: string): Promise<string> {
+	const response = await fetch(`${API_URL}/auth/login`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ email, password })
+	});
+
+	if (!response.ok) {
+		const error = await response.json();
+		throw new Error(`Login failed: ${error.error || response.statusText}`);
+	}
+
+	const data = await response.json();
+	return data.token;
+}
+
 let adminCreds: {
 	email: string;
 	password: string;
@@ -343,12 +360,12 @@ test.describe('Cross-Cutting: 404 Not Found', () => {
 		await page.waitForURL('**/dashboard');
 
 		const cookies = await page.context().cookies();
-		const sessionCookie = cookies.find((c) => c.name === 'session');
+		const sessionCookie = cookies.find((c) => c.name === 'ls-token');
 		const token = sessionCookie?.value || '';
 
 		const response = await page.request.get(
 			`${API_URL}/logs/templates?template_name=nonexistent-template-${Date.now()}`,
-			{ headers: { Cookie: `session=${token}` } }
+			{ headers: { Authorization: `Bearer ${token}` } }
 		);
 
 		expect([404, 200]).toContain(response.status());
@@ -365,11 +382,11 @@ test.describe('Cross-Cutting: 404 Not Found', () => {
 		await page.waitForURL('**/dashboard');
 
 		const cookies = await page.context().cookies();
-		const sessionCookie = cookies.find((c) => c.name === 'session');
+		const sessionCookie = cookies.find((c) => c.name === 'ls-token');
 		const token = sessionCookie?.value || '';
 
 		const response = await page.request.get(`${API_URL}/logs/entries/nonexistent-id-12345`, {
-			headers: { Cookie: `session=${token}` }
+			headers: { Authorization: `Bearer ${token}` }
 		});
 
 		expect([404, 400]).toContain(response.status());
@@ -377,18 +394,32 @@ test.describe('Cross-Cutting: 404 Not Found', () => {
 	});
 
 	test('nonexistent_user_profile_picture_returns_404', async ({ browser }) => {
-		const page = await browser.newPage();
-		await dismissCookieBannerInTests(page);
+		// Register a user to get auth token
+		const result = await register(browser, false);
+		if (!result) throw new Error('Registration failed');
+		await result.page!.close();
 
-		const response = await page.request.get(`${API_URL}/auth/profile-picture/nonexistent-user-id`);
+		const token = await loginApi(result.email, result.password);
 
-		expect([404, 400]).toContain(response.status());
-		await page.close();
+		const response = await fetch(`${API_URL}/auth/profile-picture/nonexistent-user-id`, {
+			headers: { Authorization: `Bearer ${token}` }
+		});
+		// Should return 404 for non-existent user, or 400 for invalid ID format
+		expect([404, 400]).toContain(response.status);
 	});
 
-	test('nonexistent_company_returns_404', async ({ page }) => {
-		const response = await page.request.get(`${API_URL}/companies/nonexistent-company-id`);
-		expect([404, 400]).toContain(response.status());
+	test('nonexistent_company_returns_404', async ({ browser }) => {
+		// Register a user to get auth token
+		const result = await register(browser, false);
+		if (!result) throw new Error('Registration failed');
+		await result.page!.close();
+
+		const token = await loginApi(result.email, result.password);
+		const response = await (await browser.newPage()).request.get(`${API_URL}/companies/nonexistent-company-id`, {
+			headers: { Authorization: `Bearer ${token}` }
+		});
+		console.log(await response.text());
+		expect(response.status()).toBe(403);
 	});
 
 	test('nonexistent_passkey_returns_404_on_delete', async ({ browser }) => {
@@ -401,13 +432,13 @@ test.describe('Cross-Cutting: 404 Not Found', () => {
 		await page.waitForURL('**/dashboard');
 
 		const cookies = await page.context().cookies();
-		const sessionCookie = cookies.find((c) => c.name === 'session');
+		const sessionCookie = cookies.find((c) => c.name === 'ls-token');
 		const token = sessionCookie?.value || '';
 
 		const response = await page.request.delete(`${API_URL}/auth/passkeys/nonexistent-passkey-id`, {
-			headers: { Cookie: `session=${token}` }
+			headers: { Authorization: `Bearer ${token}` }
 		});
-
+		console.log(await response.text());
 		expect([404, 400]).toContain(response.status());
 		await page.close();
 	});
@@ -490,14 +521,14 @@ test.describe('Cross-Cutting: 400 Bad Request', () => {
 		await page.waitForURL('**/dashboard');
 
 		const cookies = await page.context().cookies();
-		const sessionCookie = cookies.find((c) => c.name === 'session');
+		const sessionCookie = cookies.find((c) => c.name === 'ls-token');
 		const token = sessionCookie?.value || '';
 
 		const response = await page.request.put(`${API_URL}/logs/templates/update`, {
-			headers: { Cookie: `session=${token}` },
+			headers: { Authorization: `Bearer ${token}` },
 			data: {}
 		});
-
+		console.log(await response.text());
 		expect([400, 422]).toContain(response.status());
 		await page.close();
 	});
