@@ -239,9 +239,15 @@
 				{/if}
 
 				<label class="mb-4 flex flex-col">
-					<span class="mb-1 text-sm font-medium text-text-primary">Company Name</span>
+					<span
+						id="company-name-label"
+						aria-label="Company Name"
+						class="mb-1 text-sm font-medium text-text-primary">Company Name</span
+					>
 					<input
 						type="text"
+						aria-labelledby="company-name-label"
+						id="company-name-input"
 						bind:value={companyName}
 						onblur={() => (touched.companyName = true)}
 						aria-invalid={!companyNameValid}
@@ -260,6 +266,7 @@
 					<span class="mb-1 text-sm font-medium text-text-primary">Company Address</span>
 					<input
 						type="text"
+						id="company-address-input"
 						bind:value={companyAddress}
 						oninput={handleAddressInput}
 						onblur={() => (touched.companyAddress = true)}
@@ -271,13 +278,13 @@
 					/>
 					{#if isSearchingAddress}
 						<div
-							class="absolute top-[70px] z-10 w-full rounded-md border border-border-secondary bg-bg-primary p-2 text-center"
+							class="absolute top-17.5 z-10 w-full rounded-md border border-border-secondary bg-bg-primary p-2 text-center"
 						>
 							<span class="text-sm text-text-secondary">Searching...</span>
 						</div>
 					{:else if showAddressResults && addressSearchResults.length > 0}
 						<ul
-							class="absolute top-[70px] z-10 max-h-60 w-full overflow-auto rounded-md border border-border-secondary bg-bg-primary shadow-lg"
+							class="absolute top-17.5 z-10 max-h-60 w-full overflow-auto rounded-md border border-border-secondary bg-bg-primary shadow-lg"
 						>
 							{#each addressSearchResults as result (result.lat + '-' + result.lon)}
 								<li>
@@ -384,6 +391,7 @@
 					<span class="mb-1 text-sm font-medium text-text-primary">Password</span>
 					<div class="relative block">
 						<input
+							data-testid="password-input"
 							type={showPassword ? 'text' : 'password'}
 							bind:value={password}
 							onblur={() => (touched.password = true)}
@@ -465,6 +473,7 @@
 					<span class="mb-1 text-sm font-medium text-text-primary">Confirm Password</span>
 					<div class="relative block">
 						<input
+							data-testid="confirm-password-input"
 							type={showConfirmPassword ? 'text' : 'password'}
 							bind:value={confirmPassword}
 							onblur={() => (touched.confirmPassword = true)}

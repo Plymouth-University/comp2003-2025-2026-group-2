@@ -110,15 +110,15 @@ test('register_company_validate_password_requirements', async ({ page }) => {
 	await validatePasswordField(page, 'empty', 'registration');
 
 	// Fill valid password and confirm for next test
-	await page.getByRole('textbox', { name: 'Password Show password', exact: true }).fill('Test123!');
+	await page.getByTestId('password-input').fill('Test123!');
 
 	// Test 2: Mismatch validation (consolidated from register_company_invalid_password_mismatch)
-	await page.getByRole('textbox', { name: 'Confirm Password Show password' }).fill('Different456!');
+	await page.getByTestId('confirm-password-input').fill('Different456!');
 	await expect(page.getByRole('button', { name: 'Create Account' })).toBeDisabled();
 
 	// Test 3: Weak password validation
-	await page.getByRole('textbox', { name: 'Password Show password', exact: true }).fill('weak');
-	await page.getByRole('textbox', { name: 'Confirm Password Show password' }).fill('weak');
+	await page.getByTestId('password-input').fill('weak');
+	await page.getByTestId('confirm-password-input').fill('weak');
 	await validatePasswordField(page, 'weak', 'registration');
 });
 
@@ -134,8 +134,8 @@ test('register_company_invalid_duplicate_email', async ({ page, browser }) => {
 	await page.getByRole('textbox', { name: 'First Name' }).fill('Test');
 	await page.getByRole('textbox', { name: 'Last Name' }).fill('User');
 	await page.getByRole('textbox', { name: 'Email' }).fill(result.email);
-	await page.getByRole('textbox', { name: 'Password Show password', exact: true }).fill('Test123!');
-	await page.getByRole('textbox', { name: 'Confirm Password Show password' }).fill('Test123!');
+	await page.getByTestId('password-input').fill('Test123!');
+	await page.getByTestId('confirm-password-input').fill('Test123!');
 	await page.getByRole('button', { name: 'Create Account' }).click();
 	await expect(page.locator('body')).toContainText('Email already exists');
 	await expect(page).toHaveURL('/register-company');

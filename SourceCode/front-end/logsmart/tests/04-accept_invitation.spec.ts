@@ -61,8 +61,8 @@ test('accept_invitation_invalid_empty_first_name', async ({ page, browser }) => 
 	await page.waitForLoadState('networkidle');
 	await page.getByRole('button', { name: 'Accept Invitation' }).click();
 	await page.getByRole('textbox', { name: 'Last Name' }).fill('User');
-	await page.getByRole('textbox', { name: 'Password Show password', exact: true }).fill('Test123!');
-	await page.getByRole('textbox', { name: 'Confirm Password Show password' }).fill('Test123!');
+	await page.getByTestId('password-input').fill('Test123!');
+	await page.getByTestId('confirm-password-input').fill('Test123!');
 	await expect(page.getByRole('button', { name: 'Create Account' })).toBeDisabled();
 });
 
@@ -80,8 +80,8 @@ test('accept_invitation_invalid_empty_last_name', async ({ page, browser }) => {
 	await page.waitForLoadState('networkidle');
 	await page.getByRole('button', { name: 'Accept Invitation' }).click();
 	await page.getByRole('textbox', { name: 'First Name' }).fill('Test');
-	await page.getByRole('textbox', { name: 'Password Show password', exact: true }).fill('Test123!');
-	await page.getByRole('textbox', { name: 'Confirm Password Show password' }).fill('Test123!');
+	await page.getByTestId('password-input').fill('Test123!');
+	await page.getByTestId('confirm-password-input').fill('Test123!');
 	await expect(page.getByRole('button', { name: 'Create Account' })).toBeDisabled();
 });
 
@@ -105,10 +105,10 @@ test('accept_invitation_validate_password_requirements', async ({ page, browser 
 	await validatePasswordField(page, 'weak', 'invitation');
 
 	// Fill valid password and confirm for mismatch test
-	await page.getByRole('textbox', { name: 'Password Show password', exact: true }).fill('Test123!');
+	await page.getByTestId('password-input').fill('Test123!');
 
 	// Test mismatch validation (consolidated from accept_invitation_invalid_password_mismatch)
-	await page.getByRole('textbox', { name: 'Confirm Password Show password' }).fill('Different123!');
+	await page.getByTestId('confirm-password-input').fill('Different123!');
 	await expect(page.getByRole('button', { name: 'Create Account' })).toBeDisabled();
 });
 

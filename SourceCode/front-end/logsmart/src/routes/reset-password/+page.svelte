@@ -142,6 +142,7 @@
 					<label for="newPassword" class="text-sm font-medium text-gray-700">New password</label>
 					<div class="relative">
 						<input
+							data-testid="password-input"
 							id="newPassword"
 							type={showNewPassword ? 'text' : 'password'}
 							bind:value={newPassword}
@@ -216,6 +217,7 @@
 					<div class="relative">
 						<input
 							id="confirmPassword"
+							data-testid="confirm-password-input"
 							type={showConfirmPassword ? 'text' : 'password'}
 							bind:value={confirmPassword}
 							class="mt-1 w-full rounded border px-3 py-2 pr-10"

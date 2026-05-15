@@ -1,5 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { register, sendInvitation, acceptInvitation, createBranch, sendInvitationOnPage } from './utils';
+import {
+	register,
+	sendInvitation,
+	acceptInvitation,
+	createBranch,
+	sendInvitationOnPage
+} from './utils';
 
 let adminCreds: {
 	email: string;
@@ -403,7 +409,7 @@ test.describe('Integration Flow: Settings and Profile Management', () => {
 	});
 });
 
-	test.describe('Integration Flow: Error Recovery', () => {
+test.describe('Integration Flow: Error Recovery', () => {
 	test('journey_network_interruption_recovery', async ({ page }) => {
 		await page.goto('http://localhost:5173/');
 		await page.getByRole('link', { name: 'Login' }).click();

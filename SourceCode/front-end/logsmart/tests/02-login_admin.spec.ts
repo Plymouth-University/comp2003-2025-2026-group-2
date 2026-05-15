@@ -177,7 +177,12 @@ test.describe('Google OAuth Authentication', () => {
 		await page.getByRole('button', { name: 'Link Google Account' }).click();
 		await page.waitForURL(/localhost:8080/);
 
-		await fillMockOAuthForm(page, oauthAdminCreds.email, oauthAdminCreds.firstName, oauthAdminCreds.lastName);
+		await fillMockOAuthForm(
+			page,
+			oauthAdminCreds.email,
+			oauthAdminCreds.firstName,
+			oauthAdminCreds.lastName
+		);
 		await page.waitForURL('**/settings');
 		await expect(page.getByRole('button', { name: /unlink google account/i })).toBeVisible();
 		await page.getByRole('button', { name: /logout/i }).click();
@@ -186,7 +191,12 @@ test.describe('Google OAuth Authentication', () => {
 		await page.getByRole('button', { name: 'Sign in with Google' }).click();
 		await page.waitForURL(/localhost:8080/);
 
-		await fillMockOAuthForm(page, oauthAdminCreds.email, oauthAdminCreds.firstName, oauthAdminCreds.lastName);
+		await fillMockOAuthForm(
+			page,
+			oauthAdminCreds.email,
+			oauthAdminCreds.firstName,
+			oauthAdminCreds.lastName
+		);
 		await page.waitForURL('**/dashboard');
 		await expect(page.locator('body')).toContainText(oauthAdminCreds.email);
 	});
@@ -204,7 +214,12 @@ test.describe('Google OAuth Authentication', () => {
 		await page.getByRole('button', { name: 'Link Google Account' }).click();
 		await page.waitForURL(/localhost:8080/);
 
-		await fillMockOAuthForm(page, oauthAdminCreds.email, oauthAdminCreds.firstName, oauthAdminCreds.lastName);
+		await fillMockOAuthForm(
+			page,
+			oauthAdminCreds.email,
+			oauthAdminCreds.firstName,
+			oauthAdminCreds.lastName
+		);
 		await page.waitForURL('**/settings');
 		await expect(page.getByRole('button', { name: /unlink google account/i })).toBeVisible();
 
@@ -221,7 +236,12 @@ test.describe('Google OAuth Authentication', () => {
 		await page.getByRole('button', { name: 'Sign in with Google' }).click();
 		await page.waitForURL(/localhost:8080/);
 
-		await fillMockOAuthForm(page, oauthAdminCreds.email, oauthAdminCreds.firstName, oauthAdminCreds.lastName);
+		await fillMockOAuthForm(
+			page,
+			oauthAdminCreds.email,
+			oauthAdminCreds.firstName,
+			oauthAdminCreds.lastName
+		);
 		await expect(page.url()).toEqual(
 			'http://localhost:5173/login?oauth_error=authentication_failed'
 		);

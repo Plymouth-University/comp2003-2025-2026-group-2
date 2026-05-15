@@ -4,15 +4,15 @@ import { expect } from '@playwright/test';
 /**
  * Validates password field behavior across registration, invitation, and password reset flows.
  * Tests password requirements: min 8 chars, uppercase, lowercase, number, special char, and match.
- * 
+ *
  * @param page - Playwright page object
  * @param scenario - 'empty' | 'mismatch' | 'weak' - which validation to test
  * @param context - 'registration' | 'invitation' | 'reset' - which form context
- * 
+ *
  * Usage:
  *   // Test empty password in registration
  *   await validatePasswordField(page, 'empty', 'registration');
- *   
+ *
  *   // Test weak password in password reset
  *   await validatePasswordField(page, 'weak', 'reset');
  */
@@ -21,27 +21,27 @@ export async function validatePasswordField(
 	scenario: 'empty' | 'mismatch' | 'weak',
 	context: 'registration' | 'invitation' | 'reset'
 ): Promise<void> {
-	const passwordFieldName = 'Password Show password';
-	const confirmPasswordFieldName = 'Confirm Password Show password';
 	const submitButtonText =
-		context === 'registration' ? 'Create Account' :
-		context === 'invitation' ? 'Create Account' :
-		'Set new password';
+		context === 'registration'
+			? 'Create Account'
+			: context === 'invitation'
+				? 'Create Account'
+				: 'Set new password';
 
 	if (scenario === 'empty') {
 		// Test leaving password field empty
-		await page.getByRole('textbox', { name: passwordFieldName, exact: true }).press('Tab');
-		await page.getByRole('textbox', { name: confirmPasswordFieldName }).fill('Test123!');
+		await page.getByTestId('password-input').press('Tab');
+		await page.getByTestId('confirm-password-input').fill('Test123!');
 		await expect(page.getByRole('button', { name: submitButtonText })).toBeDisabled();
 	} else if (scenario === 'mismatch') {
 		// Test password fields with mismatched values
-		await page.getByRole('textbox', { name: passwordFieldName, exact: true }).fill('Test123!');
-		await page.getByRole('textbox', { name: confirmPasswordFieldName }).fill('Different456!');
+		await page.getByTestId('password-input').fill('Test123!');
+		await page.getByTestId('confirm-password-input').fill('Different456!');
 		await expect(page.getByRole('button', { name: submitButtonText })).toBeDisabled();
 	} else if (scenario === 'weak') {
 		// Test weak password (too short, fails requirements)
-		await page.getByRole('textbox', { name: passwordFieldName, exact: true }).fill('weak');
-		await page.getByRole('textbox', { name: confirmPasswordFieldName }).fill('weak');
+		await page.getByTestId('password-input').fill('weak');
+		await page.getByTestId('confirm-password-input').fill('weak');
 		await expect(page.getByRole('button', { name: submitButtonText })).toBeDisabled();
 	}
 }
@@ -49,11 +49,11 @@ export async function validatePasswordField(
 /**
  * Validates form field behavior for empty/invalid inputs.
  * Tests that form fields properly validate and disable submit when invalid.
- * 
+ *
  * @param page - Playwright page object
  * @param fieldName - Role-based field name (e.g., 'First Name', 'Email')
  * @param context - 'registration' | 'invitation' | 'settings' - which form context
- * 
+ *
  * Usage:
  *   await validateRequiredField(page, 'First Name', 'registration');
  */
@@ -63,9 +63,11 @@ export async function validateRequiredField(
 	context: 'registration' | 'invitation' | 'settings'
 ): Promise<void> {
 	const submitButtonText =
-		context === 'registration' ? 'Create Account' :
-		context === 'invitation' ? 'Create Account' :
-		'Save Profile';
+		context === 'registration'
+			? 'Create Account'
+			: context === 'invitation'
+				? 'Create Account'
+				: 'Save Profile';
 
 	// Clear the field
 	const field = page.getByRole('textbox', { name: fieldName });
