@@ -369,6 +369,7 @@ test.describe('Edge Cases: Concurrent Operations', () => {
 			await page.getByRole('textbox', { name: 'First Name' }).clear();
 			await page.getByRole('textbox', { name: 'First Name' }).fill(`Test${i}`);
 			await page.getByRole('button', { name: 'Save Profile' }).click();
+			await page.waitForLoadState('networkidle');
 		}
 		await page.reload();
 		await page.waitForLoadState('networkidle');

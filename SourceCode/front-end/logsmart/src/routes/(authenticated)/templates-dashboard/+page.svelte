@@ -245,10 +245,7 @@
 						class="search-input"
 					/>
 					<div class="search-bar-divider"></div>
-					<FilterDialog
-						value={scheduleFilter}
-						onchange={(value) => (scheduleFilter = value)}
-					/>
+					<FilterDialog value={scheduleFilter} onchange={(value) => (scheduleFilter = value)} />
 				</div>
 			</div>
 			<div

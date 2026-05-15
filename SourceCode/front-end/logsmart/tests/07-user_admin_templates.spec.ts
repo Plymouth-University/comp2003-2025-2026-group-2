@@ -534,7 +534,15 @@ test.describe('Templates Dashboard - Filter Tests', () => {
 		await filterButton.click();
 
 		// Check all filter options are visible
-		const options = ['All Schedules', 'Daily', 'Weekly', 'Monthly', 'Quarterly', 'Yearly', 'Custom'];
+		const options = [
+			'All Schedules',
+			'Daily',
+			'Weekly',
+			'Monthly',
+			'Quarterly',
+			'Yearly',
+			'Custom'
+		];
 		for (const option of options) {
 			const menuItem = page.getByRole('menuitem', { name: option });
 			await expect(menuItem).toBeVisible();
@@ -791,4 +799,3 @@ test.describe('Templates Dashboard - Filter Tests', () => {
 		await expect(page.locator('body')).toContainText('No templates found with weekly schedule');
 	});
 });
-
