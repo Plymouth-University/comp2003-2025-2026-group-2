@@ -6,6 +6,7 @@ import {
 	sendInvitation,
 	createBranch
 } from './utils';
+import { validatePasswordField } from './shared-validators';
 
 let adminCreds: { email: string; password: string; firstName?: string; lastName?: string };
 let passwordResetCreds: { email: string; password: string };
@@ -361,33 +362,24 @@ test.describe('Password Reset Flow - Unauthenticated', () => {
 		await expect(page.getByRole('textbox', { name: 'Email' })).toBeVisible();
 	});
 
-	test('reset_password_weak_password', async ({ page, browser }) => {
+	test('reset_password_validate_password_requirements', async ({ page, browser }) => {
 		const token = await requestPasswordResetToken(browser, passwordResetCreds.email);
 		if (!token) throw new Error('Failed to retrieve password reset token');
 		await page.goto(`http://localhost:5173/reset-password?token=${token}`);
 		await page.waitForLoadState('networkidle');
+
 		const passwordField = page.getByRole('textbox', { name: 'New Password' });
 		if (await passwordField.isVisible()) {
-			await passwordField.fill('weak');
-			await page.getByRole('textbox', { name: 'Confirm Password' }).fill('weak');
-			const resetButton = page.getByRole('button', { name: 'Set new password' });
-			await expect(resetButton).toBeDisabled();
+			// Test weak password validation (consolidated from reset_password_weak_password)
+			await validatePasswordField(page, 'weak', 'reset');
+
+			// Fill valid password and test mismatch (consolidated from reset_password_mismatch)
+			await page.getByRole('textbox', { name: 'New Password' }).fill('NewPassword123!');
+			await page.getByRole('textbox', { name: 'Confirm Password' }).fill('DifferentPassword123!');
+			await expect(page.getByRole('button', { name: 'Set new password' })).toBeDisabled();
 		}
 	});
 
-	test('reset_password_mismatch', async ({ page, browser }) => {
-		const token = await requestPasswordResetToken(browser, passwordResetCreds.email);
-		if (!token) throw new Error('Failed to retrieve password reset token');
-		await page.goto(`http://localhost:5173/reset-password?token=${token}`);
-		await page.waitForLoadState('networkidle');
-		const passwordField = page.getByRole('textbox', { name: 'New Password' });
-		if (await passwordField.isVisible()) {
-			await passwordField.fill('NewPassword123!');
-			await page.getByRole('textbox', { name: 'Confirm Password' }).fill('DifferentPassword123!');
-			const resetButton = page.getByRole('button', { name: 'Set new password' });
-			await expect(resetButton).toBeDisabled();
-		}
-	});
 
 	test('reset_password_invalid_token', async ({ page }) => {
 		await page.goto('http://localhost:5173/reset-password?token=invalid-token-xyz');
