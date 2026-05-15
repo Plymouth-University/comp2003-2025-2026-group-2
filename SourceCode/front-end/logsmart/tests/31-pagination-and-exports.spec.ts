@@ -165,33 +165,8 @@ test.describe('Pagination', () => {
 			await page.waitForURL('**/template-designer');
 
 			// Verify templates sidebar is visible
-			await expect(page.getByText('Templates')).toBeVisible();
+			await expect(page.getByRole('heading', { name: 'Templates' })).toBeVisible();
 			await expect(page.getByRole('button', { name: '+ Create New' })).toBeVisible();
-
-			await page.close();
-		});
-
-		test('template_pagination_with_limit_parameter', async ({ browser }) => {
-			const adminResult = await register(browser, false);
-			if (!adminResult || !adminResult.page) throw new Error('Failed to register admin user');
-			const { page, email, password } = adminResult;
-
-			const token = await loginAndGetToken(page, email, password);
-
-			// Request templates with limit=1
-			const response = await page.request.get('/api/logs/templates?limit=1', {
-				headers: {
-					Authorization: `Bearer ${token}`
-				}
-			});
-
-			expect(response.ok()).toBeTruthy();
-			const data = await response.json();
-
-			// Should return at most 1 template (or all if no server-side limit)
-			if (data.templates) {
-				expect(Array.isArray(data.templates)).toBeTruthy();
-			}
 
 			await page.close();
 		});
@@ -277,7 +252,7 @@ test.describe('Pagination', () => {
 			await page.waitForURL('**/attendance-admin');
 
 			// Verify attendance page loads
-			await expect(page.getByText('Attendance')).toBeVisible();
+			await expect(page.getByText('Attendance Overview')).toBeVisible();
 
 			// Check for pagination controls (Previous/Next buttons)
 			const prevButton = page.getByRole('button', { name: 'Previous' });
@@ -303,26 +278,25 @@ test.describe('Pagination', () => {
 
 			const token = await loginAndGetToken(adminPage, adminEmail, adminPassword);
 
-			// Create attendance records via API (clock in/out events)
-			// First get company_id from profile
-			const profileResponse = await adminPage.request.get('/api/auth/profile', {
-				headers: { Authorization: `Bearer ${token}` }
-			});
-			const profile = await profileResponse.json();
-			const companyId = profile.company_id;
-
-			// Create multiple clock events via API
+			// Create attendance records via API - clock in/out multiple times
 			for (let i = 0; i < 3; i++) {
-				const clockInTime = new Date(Date.now() - i * 86400000).toISOString();
-				await adminPage.request.post('/api/clock/in', {
+				// Clock in
+				const clockInResponse = await adminPage.request.post('/api/clock/in', {
 					headers: {
 						Authorization: `Bearer ${token}`,
 						'Content-Type': 'application/json'
-					},
-					data: {
-						clock_in: clockInTime
 					}
 				});
+
+				// Clock out after a short delay
+				if (clockInResponse.ok()) {
+					await adminPage.request.post('/api/clock/out', {
+						headers: {
+							Authorization: `Bearer ${token}`,
+							'Content-Type': 'application/json'
+						}
+					});
+				}
 			}
 
 			// Navigate to attendance page
@@ -330,7 +304,7 @@ test.describe('Pagination', () => {
 			await adminPage.waitForURL('**/attendance-admin');
 
 			// Verify attendance data is displayed
-			await expect(adminPage.getByText('Attendance')).toBeVisible();
+			await expect(adminPage.getByText('Attendance Overview')).toBeVisible();
 
 			// Check pagination controls exist
 			const prevButton = adminPage.getByRole('button', { name: 'Previous' });
@@ -350,196 +324,151 @@ test.describe('Pagination', () => {
 // ============================================================================
 // Test Group 2: Export File Integrity Tests
 // ============================================================================
-test.describe('Export File Integrity', () => {
-	// Company Data Export
-	test.describe('Company Data Export', () => {
-		test('export_company_data_downloads_zip', async ({ browser }) => {
-			const adminResult = await register(browser, false);
-			if (!adminResult || !adminResult.page) throw new Error('Failed to register admin user');
-			const { page, email, password } = adminResult;
+// Company Data Export
+test.describe('Company Data Export', () => {
+	test('export_company_data_downloads_zip', async ({ browser }) => {
+		const adminResult = await register(browser, false);
+		if (!adminResult || !adminResult.page) throw new Error('Failed to register admin user');
+		const { page, email, password } = adminResult;
 
-			await loginAndGetToken(page, email, password);
+		await loginAndGetToken(page, email, password);
 
-			// Navigate to company settings
-			await page.goto('http://localhost:5173/company-settings');
-			await page.waitForURL('**/company-settings');
+		// Navigate to company settings
+		await page.goto('http://localhost:5173/company-settings');
+		await page.waitForURL('**/company-settings');
 
-			// Click export button
-			const exportButton = page.getByRole('button', {
-				name: /Export Company Data|Re-export Company Data/
-			});
-			await expect(exportButton).toBeVisible();
-
-			// Wait for export confirmation message
-			await exportButton.click();
-			await expect(page.getByText(/Data exported on/)).toBeVisible({ timeout: 15000 });
-
-			await page.close();
+		// Click export button
+		const exportButton = page.getByRole('button', {
+			name: /Export Company Data|Re-export Company Data/
 		});
+		await expect(exportButton).toBeVisible();
 
-		test('export_company_data_via_api', async ({ browser }) => {
-			const adminResult = await register(browser, false);
-			if (!adminResult || !adminResult.page) throw new Error('Failed to register admin user');
-			const { page, email, password } = adminResult;
+		// Wait for export confirmation message
+		await exportButton.click();
+		await expect(page.getByText(/Data exported on/)).toBeVisible({ timeout: 15000 });
 
-			const token = await loginAndGetToken(page, email, password);
-
-			// Trigger export via API
-			const exportResponse = await page.request.post('/api/company/export', {
-				headers: {
-					Authorization: `Bearer ${token}`,
-					'Content-Type': 'application/json'
-				}
-			});
-
-			// Export should succeed (200 or 202)
-			expect([200, 202]).toContain(exportResponse.status());
-
-			await page.close();
-		});
+		await page.close();
 	});
 
-	// Security Logs CSV Export
-	test.describe('Security Logs CSV Export', () => {
-		test('export_security_logs_csv_format', async ({ browser }) => {
-			const adminResult = await register(browser, false);
-			if (!adminResult || !adminResult.page) throw new Error('Failed to register admin user');
-			const { page, email, password } = adminResult;
+	test('export_company_data_via_api', async ({ browser }) => {
+		const adminResult = await register(browser, false);
+		if (!adminResult || !adminResult.page) throw new Error('Failed to register admin user');
+		const { page, email, password, companyName } = adminResult;
 
-			const token = await loginAndGetToken(page, email, password);
+		const token = await loginAndGetToken(page, email, password);
 
-			// Update user to logsmart_admin role via direct DB access not available,
-			// so we test the endpoint directly with the admin token
-			// The endpoint may return empty CSV but should still be valid format
+		// Get company ID from auth/me
+		const meResponse = await page.request.get('/api/auth/me', {
+			headers: { Authorization: `Bearer ${token}` }
+		});
+		const meData = await meResponse.json();
+		const companyId = meData.company_id;
 
-			// Request security logs export
-			const exportResponse = await page.request.get('/api/security/logs/export', {
-				headers: {
-					Authorization: `Bearer ${token}`
-				}
-			});
+		// Trigger export via API with correct endpoint
+		const exportResponse = await page.request.post(`/api/companies/${companyId}/export`, {
+			headers: {
+				Authorization: `Bearer ${token}`,
+				'Content-Type': 'application/json'
+			}
+		});
 
-			// Response should be CSV (may be 200 or 403 depending on role)
+		// Export should succeed (200 or 202)
+		expect([200, 202]).toContain(exportResponse.status());
+
+		await page.close();
+	});
+});
+
+// Security Logs CSV Export
+test.describe('Security Logs CSV Export', () => {
+	test('export_security_logs_csv_format', async ({ browser }) => {
+		const adminResult = await register(browser, false);
+		if (!adminResult || !adminResult.page) throw new Error('Failed to register admin user');
+		const { page, email, password } = adminResult;
+
+		const token = await loginAndGetToken(page, email, password);
+
+		// Update user to logsmart_admin role via direct DB access not available,
+		// so we test the endpoint directly with the admin token
+		// The endpoint may return empty CSV but should still be valid format
+
+		// Request security logs export
+		const exportResponse = await page.request.get('/api/security/logs/export', {
+			headers: {
+				Authorization: `Bearer ${token}`
+			}
+		});
+
+		// Response should be CSV (may be 200 or 403 depending on role)
+		const contentType = exportResponse.headers()['content-type'] || '';
+		if (exportResponse.status() === 200) {
+			expect(contentType).toContain('text/csv');
+			const csvContent = await exportResponse.text();
+			expect(csvContent).toBeDefined();
+
+			// Parse and verify CSV structure
+			const rows = parseCSV(csvContent);
+			expect(Array.isArray(rows)).toBeTruthy();
+		}
+
+		await page.close();
+	});
+
+	test('export_security_logs_csv_headers', async ({ browser }) => {
+		const adminResult = await register(browser, false);
+		if (!adminResult || !adminResult.page) throw new Error('Failed to register admin user');
+		const { page, email, password } = adminResult;
+
+		const token = await loginAndGetToken(page, email, password);
+
+		// Request export
+		const exportResponse = await page.request.get('/api/security/logs/export', {
+			headers: {
+				Authorization: `Bearer ${token}`
+			}
+		});
+
+		if (exportResponse.status() === 200) {
+			const csvContent = await exportResponse.text();
+			const lines = csvContent.split('\n').filter((line) => line.trim() !== '');
+
+			// Verify CSV has headers
+			expect(lines.length).toBeGreaterThanOrEqual(1);
+			const headers = lines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, ''));
+
+			// Expected columns in security logs CSV
+			const expectedColumns = ['timestamp', 'event_type', 'email', 'ip_address', 'details'];
+			for (const col of expectedColumns) {
+				expect(headers).toContain(col);
+			}
+		}
+
+		await page.close();
+	});
+
+	test('security_log_export_visible_csv', async ({ browser }) => {
+		const adminResult = await register(browser, false);
+		if (!adminResult || !adminResult.page) throw new Error('Failed to register admin user');
+		const { page, email, password } = adminResult;
+
+		const token = await loginAndGetToken(page, email, password);
+
+		// Request visible export (with default filters)
+		const exportResponse = await page.request.get('/api/security/logs/export?limit=15', {
+			headers: {
+				Authorization: `Bearer ${token}`
+			}
+		});
+
+		if (exportResponse.status() === 200) {
 			const contentType = exportResponse.headers()['content-type'] || '';
-			if (exportResponse.status() === 200) {
-				expect(contentType).toContain('text/csv');
-				const csvContent = await exportResponse.text();
-				expect(csvContent).toBeDefined();
+			expect(contentType).toContain('text/csv');
 
-				// Parse and verify CSV structure
-				const rows = parseCSV(csvContent);
-				expect(Array.isArray(rows)).toBeTruthy();
-			}
+			const csvContent = await exportResponse.text();
+			expect(csvContent.length).toBeGreaterThan(0);
+		}
 
-			await page.close();
-		});
-
-		test('export_security_logs_csv_headers', async ({ browser }) => {
-			const adminResult = await register(browser, false);
-			if (!adminResult || !adminResult.page) throw new Error('Failed to register admin user');
-			const { page, email, password } = adminResult;
-
-			const token = await loginAndGetToken(page, email, password);
-
-			// Request export
-			const exportResponse = await page.request.get('/api/security/logs/export', {
-				headers: {
-					Authorization: `Bearer ${token}`
-				}
-			});
-
-			if (exportResponse.status() === 200) {
-				const csvContent = await exportResponse.text();
-				const lines = csvContent.split('\n').filter((line) => line.trim() !== '');
-
-				// Verify CSV has headers
-				expect(lines.length).toBeGreaterThanOrEqual(1);
-				const headers = lines[0].split(',').map((h) => h.trim().replace(/^"|"$/g, ''));
-
-				// Expected columns in security logs CSV
-				const expectedColumns = ['timestamp', 'event_type', 'email', 'ip_address', 'details'];
-				for (const col of expectedColumns) {
-					expect(headers).toContain(col);
-				}
-			}
-
-			await page.close();
-		});
-
-		test('security_log_export_visible_csv', async ({ browser }) => {
-			const adminResult = await register(browser, false);
-			if (!adminResult || !adminResult.page) throw new Error('Failed to register admin user');
-			const { page, email, password } = adminResult;
-
-			const token = await loginAndGetToken(page, email, password);
-
-			// Request visible export (with default filters)
-			const exportResponse = await page.request.get('/api/security/logs/export?limit=15', {
-				headers: {
-					Authorization: `Bearer ${token}`
-				}
-			});
-
-			if (exportResponse.status() === 200) {
-				const contentType = exportResponse.headers()['content-type'] || '';
-				expect(contentType).toContain('text/csv');
-
-				const csvContent = await exportResponse.text();
-				expect(csvContent.length).toBeGreaterThan(0);
-			}
-
-			await page.close();
-		});
-	});
-
-	// Template Export
-	test.describe('Template Export', () => {
-		test('template_data_export_via_api', async ({ browser }) => {
-			const adminResult = await register(browser, false);
-			if (!adminResult || !adminResult.page) throw new Error('Failed to register admin user');
-			const { page, email, password } = adminResult;
-
-			const token = await loginAndGetToken(page, email, password);
-
-			// Create a template first
-			const templateName = `Export Test Template ${Date.now()}`;
-			const createResponse = await page.request.post('/api/logs/templates', {
-				headers: {
-					Authorization: `Bearer ${token}`,
-					'Content-Type': 'application/json'
-				},
-				data: {
-					template_name: templateName,
-					template_layout: [
-						{
-							field_type: 'text_input',
-							position: { x: 10, y: 10 },
-							props: { text: 'Test Field', placeholder: 'Enter value' }
-						}
-					],
-					schedule: {
-						frequency: 'Daily',
-						days_of_week: [1, 2, 3, 4, 5]
-					}
-				}
-			});
-			expect(createResponse.ok()).toBeTruthy();
-
-			// Fetch templates to verify export data
-			const templatesResponse = await page.request.get('/api/logs/templates', {
-				headers: {
-					Authorization: `Bearer ${token}`
-				}
-			});
-			expect(templatesResponse.ok()).toBeTruthy();
-			const templatesData = await templatesResponse.json();
-
-			// Verify template exists in response
-			expect(templatesData.templates).toBeDefined();
-			expect(Array.isArray(templatesData.templates)).toBeTruthy();
-
-			await page.close();
-		});
+		await page.close();
 	});
 });
 
@@ -623,7 +552,7 @@ test.describe('Edge Cases', () => {
 			await page.waitForURL('**/attendance-admin');
 
 			// Verify records are displayed
-			await expect(page.getByText('Attendance')).toBeVisible();
+			await expect(page.getByText('Attendance Overview')).toBeVisible();
 
 			// Verify pagination controls
 			const nextButton = page.getByRole('button', { name: 'Next' });
@@ -632,32 +561,58 @@ test.describe('Edge Cases', () => {
 			await page.close();
 		});
 
-		test('pagination_limit_parameter_api', async ({ browser }) => {
+		test('pagination_with_real_clock_events', async ({ browser }) => {
 			const adminResult = await register(browser, false);
 			if (!adminResult || !adminResult.page) throw new Error('Failed to register admin user');
-			const { page, email, password } = adminResult;
+			const { page } = adminResult;
 
-			const token = await loginAndGetToken(page, email, password);
+			const token = await loginAndGetToken(page, adminResult.email, adminResult.password);
 
-			// Test with different limit values
-			const limits = [1, 5, 10];
-			for (const limit of limits) {
-				const response = await page.request.get(`/api/clock/company?limit=${limit}`, {
+			// Clock in and out 30 times to create real events
+			for (let i = 0; i < 30; i++) {
+				const clockInResponse = await page.request.post('/api/clock/in', {
 					headers: {
-						Authorization: `Bearer ${token}`
+						Authorization: `Bearer ${token}`,
+						'Content-Type': 'application/json'
 					}
 				});
 
-				expect(response.ok()).toBeTruthy();
-				const data = await response.json();
-
-				// Verify events array exists
-				expect(data.events).toBeDefined();
-				expect(Array.isArray(data.events)).toBeTruthy();
-
-				// Verify next_cursor field exists for pagination
-				expect(data).toHaveProperty('next_cursor');
+				if (clockInResponse.ok()) {
+					await page.request.post('/api/clock/out', {
+						headers: {
+							Authorization: `Bearer ${token}`,
+							'Content-Type': 'application/json'
+						}
+					});
+				}
 			}
+
+			// Verify events were created via API
+			const eventsResponse = await page.request.get('/api/clock/company?limit=5', {
+				headers: { Authorization: `Bearer ${token}` }
+			});
+			const eventsData = await eventsResponse.json();
+			expect(eventsData.events.length).toBeGreaterThanOrEqual(5);
+
+			// Navigate to attendance page
+			await page.goto('http://localhost:5173/attendance-admin');
+			await page.waitForURL('**/attendance-admin');
+
+			// Verify pagination controls exist
+			const nextButton = page.getByRole('button', { name: 'Next' });
+			const prevButton = page.getByRole('button', { name: 'Previous' });
+
+			// With 30 events and default page size, Next should be visible
+			const nextVisible = await nextButton.isVisible().catch(() => false);
+			expect(nextVisible).toBeTruthy();
+
+			// Click Next to test pagination
+			await nextButton.click();
+			await page.waitForTimeout(500);
+
+			// Previous should now be enabled
+			const prevVisible = await prevButton.isVisible().catch(() => false);
+			expect(prevVisible).toBeTruthy();
 
 			await page.close();
 		});

@@ -135,6 +135,22 @@ pub async fn update_branch(
         Json(json!({ "error": "User is not associated with a company" })),
     ))?;
 
+    // Validate branch name is not empty
+    if payload.name.trim().is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Branch name cannot be empty" })),
+        ));
+    }
+
+    // Validate address is not empty
+    if payload.address.trim().is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(json!({ "error": "Branch address cannot be empty" })),
+        ));
+    }
+
     // Verify the branch belongs to the user's company
     let branch = db::get_branch_by_id(&state.postgres, &payload.branch_id)
         .await

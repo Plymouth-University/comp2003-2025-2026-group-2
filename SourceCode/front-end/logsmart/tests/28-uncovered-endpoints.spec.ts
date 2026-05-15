@@ -302,7 +302,7 @@ test.describe('Remove Member', () => {
 
 		const staffPage = await browser.newPage();
 		await dismissCookieBannerInTests(staffPage);
-		await acceptInvitation(staffPage, inviteToken, 'Staff', 'User', 'Staff123!A', '**/dashboard');
+		await acceptInvitation(staffPage, inviteToken, 'Staff', 'User', 'Staff123!A', '**/logs-list');
 		await staffPage.close();
 
 		const staffToken = await loginApi(staffEmail, 'Staff123!A');
@@ -409,7 +409,7 @@ test.describe('Cancel Invitation', () => {
 
 		const staffPage = await browser.newPage();
 		await dismissCookieBannerInTests(staffPage);
-		await acceptInvitation(staffPage, inviteToken, 'Staff', 'User', 'Staff123!A', '**/dashboard');
+		await acceptInvitation(staffPage, inviteToken, 'Staff', 'User', 'Staff123!A', '**/logs-list');
 		await staffPage.close();
 
 		const staffToken = await loginApi(staffEmail, 'Staff123!A');
@@ -468,7 +468,8 @@ test.describe('Update Branch', () => {
 
 		expect(updateResponse.status).toBe(200);
 		const updateData = await updateResponse.json();
-		expect(updateData.message).toContain('updated');
+		console.log(updateData);
+		expect(updateData.name).toBe(newName);
 
 		// Verify the update
 		const getResponse = await fetch(`${BACKEND_URL}/auth/company/branches`, {
@@ -535,7 +536,7 @@ test.describe('Update Branch', () => {
 
 		const staffPage = await browser.newPage();
 		await dismissCookieBannerInTests(staffPage);
-		await acceptInvitation(staffPage, inviteToken, 'Staff', 'User', 'Staff123!A', '**/dashboard');
+		await acceptInvitation(staffPage, inviteToken, 'Staff', 'User', 'Staff123!A', '**/logs-list');
 		await staffPage.close();
 
 		const staffToken = await loginApi(staffEmail, 'Staff123!A');
@@ -586,6 +587,7 @@ test.describe('Update Branch', () => {
 			})
 		});
 
+		expect(await updateResponse.json()).toStrictEqual({ "error": "Branch name cannot be empty" });
 		expect([400, 422]).toContain(updateResponse.status);
 	});
 });

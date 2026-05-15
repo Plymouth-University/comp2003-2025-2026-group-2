@@ -145,28 +145,39 @@ test.describe('Pending Invitations', () => {
 	});
 
 	test('staff_can_view_pending_invitations', async ({ browser }) => {
-		// Staff can also view pending invitations (ReadBranchUser middleware allows it)
-		const staffPage = await browser.newPage();
-		await dismissCookieBannerInTests(staffPage);
-		await staffPage.goto('http://localhost:5173/login');
-		await staffPage.getByRole('textbox', { name: 'Email' }).fill(staffCreds.email);
-		await staffPage.getByRole('textbox', { name: 'Password' }).fill(staffCreds.password);
-		await staffPage.getByRole('button', { name: 'Sign in', exact: true }).click();
-		await staffPage.waitForURL('**/logs-list');
+		// Create an HQ staff user (no branch) who can view pending invitations
+		const hqStaffEmail = `hq-staff+${Date.now()}@logsmart.app`;
+		const hqStaffInviteToken = await sendInvitation(
+			browser,
+			adminCreds,
+			hqStaffEmail,
+			'staff',
+			undefined // No branch = HQ staff
+		);
+		if (!hqStaffInviteToken) throw new Error('Failed to get HQ staff invitation token');
 
-		const staffToken = await getAuthCookies(staffPage);
-		if (!staffToken) throw new Error('Failed to get staff auth token');
+		const hqStaffPage = await browser.newPage();
+		await dismissCookieBannerInTests(hqStaffPage);
+		await acceptInvitation(
+			hqStaffPage,
+			hqStaffInviteToken,
+			'HQ',
+			'Staff',
+			'HQStaff123!A',
+			'**/dashboard'
+		);
+		await hqStaffPage.close();
+
+		const hqStaffToken = await loginApi(hqStaffEmail, 'HQStaff123!A');
 
 		const pendingResponse = await fetch(`${BACKEND_URL}/auth/invitations/pending`, {
-			headers: { Authorization: `Bearer ${staffToken}` }
+			headers: { Authorization: `Bearer ${hqStaffToken}` }
 		});
 
-		// Staff can access the endpoint but may see filtered results based on branch
+		// HQ staff can view pending invitations
 		expect(pendingResponse.status).toBe(200);
 		const pendingData = await pendingResponse.json();
 		expect(pendingData.invitations).toBeDefined();
-
-		await staffPage.close();
 	});
 });
 
@@ -493,14 +504,8 @@ test.describe('Delete Profile Picture', () => {
 		branchName = `Branch-${Date.now()}`;
 		await createBranch(result.page!, branchName, '123 Test St');
 
-		// Create a staff member
-		const staffEmail = `staff-profile+${Date.now()}@logsmart.app`;
-		const inviteToken = await sendInvitation(browser, adminCreds, staffEmail, 'staff', branchName);
-		if (!result) throw new Error('Registration failed');
-		adminCreds = result;
-
 		// Upload a profile picture via the settings page
-		await adminCreds.page!.getByRole('link', { name: 'Settings' }).click();
+		await adminCreds.page!.getByRole('link', { name: 'Settings', exact: true }).click();
 		await adminCreds.page!.waitForURL('**/settings');
 
 		// Wait for the file input to be available and upload a test image
