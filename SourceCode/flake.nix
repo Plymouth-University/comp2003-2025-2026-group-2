@@ -7,7 +7,6 @@
   };
   outputs =
     {
-      self,
       nixpkgs,
       back-end,
       front-end,
@@ -27,7 +26,6 @@
             back-end.devShells.${system}.default
             front-end.devShells.${system}.default
           ];
-
         };
       }
     );
