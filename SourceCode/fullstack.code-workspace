@@ -1,7 +1,7 @@
 {
 	"folders": [
 		{
-			"path": ".",
+			"path": "."
 		},
 		{
 			"path": "back-end"
@@ -17,6 +17,9 @@
 		},
 		{
 			"path": "../.opencode"
+		},
+		{
+			"path": "../docs/superpowers"
 		}
 	],
 	"settings": {

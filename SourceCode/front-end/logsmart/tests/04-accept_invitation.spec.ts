@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { register, sendInvitation, acceptInvitation, createBranch } from './utils';
+import { validatePasswordField } from './shared-validators';
 
 let adminCreds: {
 	email: string;
@@ -60,8 +61,8 @@ test('accept_invitation_invalid_empty_first_name', async ({ page, browser }) => 
 	await page.waitForLoadState('networkidle');
 	await page.getByRole('button', { name: 'Accept Invitation' }).click();
 	await page.getByRole('textbox', { name: 'Last Name' }).fill('User');
-	await page.getByRole('textbox', { name: 'Password Show password', exact: true }).fill('Test123!');
-	await page.getByRole('textbox', { name: 'Confirm Password Show password' }).fill('Test123!');
+	await page.getByTestId('password-input').fill('Test123!');
+	await page.getByTestId('confirm-password-input').fill('Test123!');
 	await expect(page.getByRole('button', { name: 'Create Account' })).toBeDisabled();
 });
 
@@ -79,16 +80,16 @@ test('accept_invitation_invalid_empty_last_name', async ({ page, browser }) => {
 	await page.waitForLoadState('networkidle');
 	await page.getByRole('button', { name: 'Accept Invitation' }).click();
 	await page.getByRole('textbox', { name: 'First Name' }).fill('Test');
-	await page.getByRole('textbox', { name: 'Password Show password', exact: true }).fill('Test123!');
-	await page.getByRole('textbox', { name: 'Confirm Password Show password' }).fill('Test123!');
+	await page.getByTestId('password-input').fill('Test123!');
+	await page.getByTestId('confirm-password-input').fill('Test123!');
 	await expect(page.getByRole('button', { name: 'Create Account' })).toBeDisabled();
 });
 
-test('accept_invitation_invalid_password_requirements', async ({ page, browser }) => {
+test('accept_invitation_validate_password_requirements', async ({ page, browser }) => {
 	const token = await sendInvitation(
 		browser,
 		adminCreds,
-		'validation3@logsmart.app',
+		'validation_pwd@logsmart.app',
 		'staff',
 		BRANCH_NAME
 	);
@@ -99,28 +100,15 @@ test('accept_invitation_invalid_password_requirements', async ({ page, browser }
 	await page.getByRole('button', { name: 'Accept Invitation' }).click();
 	await page.getByRole('textbox', { name: 'First Name' }).fill('Test');
 	await page.getByRole('textbox', { name: 'Last Name' }).fill('User');
-	await page.getByRole('textbox', { name: 'Password Show password', exact: true }).fill('weak');
-	await page.getByRole('textbox', { name: 'Confirm Password Show password' }).fill('weak');
-	await expect(page.getByRole('button', { name: 'Create Account' })).toBeDisabled();
-});
 
-test('accept_invitation_invalid_password_mismatch', async ({ page, browser }) => {
-	const token = await sendInvitation(
-		browser,
-		adminCreds,
-		'validation4@logsmart.app',
-		'staff',
-		BRANCH_NAME
-	);
-	expect(token).toBeTruthy();
+	// Test weak password validation (consolidated from accept_invitation_invalid_password_requirements)
+	await validatePasswordField(page, 'weak', 'invitation');
 
-	await page.goto(`http://localhost:5173/accept-invitation?token=${token}`);
-	await page.waitForLoadState('networkidle');
-	await page.getByRole('button', { name: 'Accept Invitation' }).click();
-	await page.getByRole('textbox', { name: 'First Name' }).fill('Test');
-	await page.getByRole('textbox', { name: 'Last Name' }).fill('User');
-	await page.getByRole('textbox', { name: 'Password Show password', exact: true }).fill('Test123!');
-	await page.getByRole('textbox', { name: 'Confirm Password Show password' }).fill('Different123!');
+	// Fill valid password and confirm for mismatch test
+	await page.getByTestId('password-input').fill('Test123!');
+
+	// Test mismatch validation (consolidated from accept_invitation_invalid_password_mismatch)
+	await page.getByTestId('confirm-password-input').fill('Different123!');
 	await expect(page.getByRole('button', { name: 'Create Account' })).toBeDisabled();
 });
 

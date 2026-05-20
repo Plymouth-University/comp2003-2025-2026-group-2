@@ -206,6 +206,7 @@
 						<span class="label-text">Password</span>
 						<div class="password-input-wrapper">
 							<input
+								data-testid="password-input"
 								type={showPassword ? 'text' : 'password'}
 								bind:value={password}
 								onblur={() => (touched.password = true)}
@@ -289,6 +290,7 @@
 								aria-invalid={!passwordsMatch}
 								placeholder="Re-enter password"
 								class="password-input"
+								data-testid="confirm-password-input"
 								required
 							/>
 							<button
