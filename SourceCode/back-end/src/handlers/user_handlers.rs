@@ -93,12 +93,13 @@ pub async fn admin_update_member_profile(
     }
 
     let role = match payload.role.as_str() {
+        "logsmart_admin" => db::UserRole::LogSmartAdmin,
         "company_manager" => db::UserRole::CompanyManager,
         "branch_manager" => db::UserRole::BranchManager,
         "staff" => db::UserRole::Staff,
         _ => {
             return Err(err_bad_request(
-                "Invalid role. Must be 'company_manager', 'branch_manager', or 'staff'",
+                "Invalid role. Must be 'logsmart_admin', 'company_manager', 'branch_manager', or 'staff'",
             ));
         }
     };
@@ -316,7 +317,7 @@ pub async fn get_profile_picture(
 > {
     if let Some((content_type, data)) = images_db::get_profile_picture(&state.mongodb, &file_id)
         .await
-        .map_err(|e| err_internal(&e.to_string()))?
+        .map_err(|e| err_not_found(&e.to_string()))?
     {
         let header_value = header::HeaderValue::from_str(&content_type)
             .unwrap_or_else(|_| header::HeaderValue::from_static("application/octet-stream"));

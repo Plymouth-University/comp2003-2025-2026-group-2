@@ -452,3 +452,350 @@ test.describe('Templates Dashboard - Member Access Control', () => {
 		await expect(usersLink).not.toBeVisible();
 	});
 });
+
+test.describe('Templates Dashboard - Filter Tests', () => {
+	let adminCreds: {
+		email: string;
+		password: string;
+		companyName: string;
+		firstName: string;
+		lastName: string;
+	};
+
+	test.beforeAll(async ({ browser }) => {
+		const creds = await register(browser, false);
+		if (!creds) throw new Error('Failed to register admin user');
+		adminCreds = creds;
+		await creds.page!.close();
+	});
+
+	test.beforeEach(async ({ page }) => {
+		await page.goto('http://localhost:5173/');
+		await page.getByRole('link', { name: 'Login' }).click();
+		await page.getByRole('textbox', { name: 'Email' }).fill(adminCreds.email);
+		await page.getByRole('textbox', { name: 'Password' }).fill(adminCreds.password);
+		await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+		await page.waitForURL('**/dashboard');
+	});
+
+	test('filter_button_visible_in_search_bar', async ({ page }) => {
+		// Mock the templates API to return empty list
+		await page.route('**/api/logs/templates/all', async (route) => {
+			await route.abort();
+		});
+
+		await page.getByRole('link', { name: 'Templates Dashboard' }).click();
+		await page.waitForURL('**/templates-dashboard');
+
+		// Filter button should be visible in search bar
+		const filterButton = page.getByRole('button', { name: 'Open schedule filter' });
+		await expect(filterButton).toBeVisible();
+	});
+
+	test('filter_dropdown_opens_on_click', async ({ page }) => {
+		// Mock templates API
+		await page.route('**/api/logs/templates/all', async (route) => {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					templates: []
+				})
+			});
+		});
+
+		await page.getByRole('link', { name: 'Templates Dashboard' }).click();
+		await page.waitForURL('**/templates-dashboard');
+
+		// Click filter button
+		const filterButton = page.getByRole('button', { name: 'Open schedule filter' });
+		await filterButton.click();
+
+		// Dropdown menu should appear
+		const menuItem = page.getByRole('menuitem', { name: 'Daily' });
+		await expect(menuItem).toBeVisible();
+	});
+
+	test('filter_dropdown_shows_all_options', async ({ page }) => {
+		await page.route('**/api/logs/templates/all', async (route) => {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					templates: []
+				})
+			});
+		});
+
+		await page.getByRole('link', { name: 'Templates Dashboard' }).click();
+		await page.waitForURL('**/templates-dashboard');
+
+		const filterButton = page.getByRole('button', { name: 'Open schedule filter' });
+		await filterButton.click();
+
+		// Check all filter options are visible
+		const options = [
+			'All Schedules',
+			'Daily',
+			'Weekly',
+			'Monthly',
+			'Quarterly',
+			'Yearly',
+			'Custom'
+		];
+		for (const option of options) {
+			const menuItem = page.getByRole('menuitem', { name: option });
+			await expect(menuItem).toBeVisible();
+		}
+	});
+
+	test('filter_by_daily_schedule', async ({ page }) => {
+		const dailyTemplate = {
+			template_name: 'Daily Report',
+			schedule: { frequency: 'Daily' },
+			created_by: 'admin@test.com',
+			created_at: '2024-01-01T00:00:00Z',
+			updated_at: '2024-01-01T00:00:00Z'
+		};
+
+		const weeklyTemplate = {
+			template_name: 'Weekly Report',
+			schedule: { frequency: 'Weekly', days_of_week: [1, 3, 5] },
+			created_by: 'admin@test.com',
+			created_at: '2024-01-01T00:00:00Z',
+			updated_at: '2024-01-01T00:00:00Z'
+		};
+
+		await page.route('**/api/logs/templates/all', async (route) => {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					templates: [dailyTemplate, weeklyTemplate]
+				})
+			});
+		});
+
+		await page.getByRole('link', { name: 'Templates Dashboard' }).click();
+		await page.waitForURL('**/templates-dashboard');
+
+		// Initially both templates should be visible
+		await expect(page.locator('body')).toContainText('Daily Report');
+		await expect(page.locator('body')).toContainText('Weekly Report');
+
+		// Open filter and select Daily
+		const filterButton = page.getByRole('button', { name: 'Open schedule filter' });
+		await filterButton.click();
+
+		const dailyOption = page.getByRole('menuitem', { name: 'Daily' });
+		await dailyOption.click();
+
+		// Wait for filter to apply
+		await page.waitForTimeout(500);
+
+		// Only Daily Report should be visible
+		await expect(page.locator('body')).toContainText('Daily Report');
+		// Weekly Report should not be visible (or be in "No templates found" message)
+		const weeklyRow = page.locator('text=Weekly Report');
+		if (await weeklyRow.isVisible()) {
+			throw new Error('Weekly template should not be visible when Daily filter is applied');
+		}
+	});
+
+	test('filter_by_weekly_schedule', async ({ page }) => {
+		const dailyTemplate = {
+			template_name: 'Daily Report',
+			schedule: { frequency: 'Daily' },
+			created_by: 'admin@test.com',
+			created_at: '2024-01-01T00:00:00Z',
+			updated_at: '2024-01-01T00:00:00Z'
+		};
+
+		const weeklyTemplate = {
+			template_name: 'Weekly Report',
+			schedule: { frequency: 'Weekly', days_of_week: [1, 3, 5] },
+			created_by: 'admin@test.com',
+			created_at: '2024-01-01T00:00:00Z',
+			updated_at: '2024-01-01T00:00:00Z'
+		};
+
+		await page.route('**/api/logs/templates/all', async (route) => {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					templates: [dailyTemplate, weeklyTemplate]
+				})
+			});
+		});
+
+		await page.getByRole('link', { name: 'Templates Dashboard' }).click();
+		await page.waitForURL('**/templates-dashboard');
+
+		// Open filter and select Weekly
+		const filterButton = page.getByRole('button', { name: 'Open schedule filter' });
+		await filterButton.click();
+
+		const weeklyOption = page.getByRole('menuitem', { name: 'Weekly' });
+		await weeklyOption.click();
+
+		// Wait for filter to apply
+		await page.waitForTimeout(500);
+
+		// Only Weekly Report should be visible
+		await expect(page.locator('body')).toContainText('Weekly Report');
+		const dailyRow = page.locator('text=Daily Report');
+		if (await dailyRow.isVisible()) {
+			throw new Error('Daily template should not be visible when Weekly filter is applied');
+		}
+	});
+
+	test('reset_filter_shows_all_templates', async ({ page }) => {
+		const templates = [
+			{
+				template_name: 'Daily Report',
+				schedule: { frequency: 'Daily' },
+				created_by: 'admin@test.com',
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z'
+			},
+			{
+				template_name: 'Weekly Report',
+				schedule: { frequency: 'Weekly', days_of_week: [1, 3, 5] },
+				created_by: 'admin@test.com',
+				created_at: '2024-01-01T00:00:00Z',
+				updated_at: '2024-01-01T00:00:00Z'
+			}
+		];
+
+		await page.route('**/api/logs/templates/all', async (route) => {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					templates: templates
+				})
+			});
+		});
+
+		await page.getByRole('link', { name: 'Templates Dashboard' }).click();
+		await page.waitForURL('**/templates-dashboard');
+
+		// Filter by Daily
+		const filterButton = page.getByRole('button', { name: 'Open schedule filter' });
+		await filterButton.click();
+		const dailyOption = page.getByRole('menuitem', { name: 'Daily' });
+		await dailyOption.click();
+		await page.waitForTimeout(500);
+
+		// Reset to All Schedules
+		await filterButton.click();
+		const allOption = page.getByRole('menuitem', { name: 'All Schedules' });
+		await allOption.click();
+		await page.waitForTimeout(500);
+
+		// Both templates should be visible again
+		await expect(page.locator('body')).toContainText('Daily Report');
+		await expect(page.locator('body')).toContainText('Weekly Report');
+	});
+
+	test('filter_dropdown_closes_on_menu_item_click', async ({ page }) => {
+		await page.route('**/api/logs/templates/all', async (route) => {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					templates: []
+				})
+			});
+		});
+
+		await page.getByRole('link', { name: 'Templates Dashboard' }).click();
+		await page.waitForURL('**/templates-dashboard');
+
+		const filterButton = page.getByRole('button', { name: 'Open schedule filter' });
+		await filterButton.click();
+
+		// Menu should be visible
+		let menuItem = page.getByRole('menuitem', { name: 'Daily' });
+		await expect(menuItem).toBeVisible();
+
+		// Click an option
+		await menuItem.click();
+		await page.waitForTimeout(500);
+
+		// Menu should be closed
+		menuItem = page.getByRole('menuitem', { name: 'Daily' });
+		const isVisible = await menuItem.isVisible().catch(() => false);
+		if (isVisible) {
+			throw new Error('Menu should be closed after selecting an option');
+		}
+	});
+
+	test('filter_dropdown_closes_on_escape_key', async ({ page }) => {
+		await page.route('**/api/logs/templates/all', async (route) => {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					templates: []
+				})
+			});
+		});
+
+		await page.getByRole('link', { name: 'Templates Dashboard' }).click();
+		await page.waitForURL('**/templates-dashboard');
+
+		const filterButton = page.getByRole('button', { name: 'Open schedule filter' });
+		await filterButton.click();
+
+		// Menu should be visible
+		let menuItem = page.getByRole('menuitem', { name: 'Daily' });
+		await expect(menuItem).toBeVisible();
+
+		// Press Escape
+		await page.keyboard.press('Escape');
+		await page.waitForTimeout(500);
+
+		// Menu should be closed
+		menuItem = page.getByRole('menuitem', { name: 'Daily' });
+		const isVisible = await menuItem.isVisible().catch(() => false);
+		if (isVisible) {
+			throw new Error('Menu should be closed after pressing Escape');
+		}
+	});
+
+	test('empty_state_message_with_filter', async ({ page }) => {
+		await page.route('**/api/logs/templates/all', async (route) => {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					templates: [
+						{
+							template_name: 'Daily Report',
+							schedule: { frequency: 'Daily' },
+							created_by: 'admin@test.com',
+							created_at: '2024-01-01T00:00:00Z',
+							updated_at: '2024-01-01T00:00:00Z'
+						}
+					]
+				})
+			});
+		});
+
+		await page.getByRole('link', { name: 'Templates Dashboard' }).click();
+		await page.waitForURL('**/templates-dashboard');
+
+		// Filter by Weekly (no weekly templates)
+		const filterButton = page.getByRole('button', { name: 'Open schedule filter' });
+		await filterButton.click();
+
+		const weeklyOption = page.getByRole('menuitem', { name: 'Weekly' });
+		await weeklyOption.click();
+		await page.waitForTimeout(500);
+
+		// Should show appropriate empty message
+		await expect(page.locator('body')).toContainText('No templates found with weekly schedule');
+	});
+});

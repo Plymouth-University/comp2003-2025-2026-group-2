@@ -66,14 +66,14 @@
 
         # --- Swagger UI ---
         swaggerUiZip = pkgs.fetchurl {
-          url = "https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.17.14.zip";
-          hash = "sha256-SBJE0IEgl7Efuu73n3HZQrFxYX+cn5UU5jrL4T5xzNw=";
+          url = "https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.32.6.zip";
+          hash = "sha256-s8B+CRVZtZqDP2ZUfrH8GPKJb5bj8flT4vHvsyiqM5Q=";
         };
 
         swaggerPreBuild = ''
           mkdir -p /tmp/swagger-ui
-          cp ${swaggerUiZip} /tmp/swagger-ui/v5.17.14.zip
-          chmod 644 /tmp/swagger-ui/v5.17.14.zip
+          cp ${swaggerUiZip} /tmp/swagger-ui/v5.32.6.zip
+          chmod 644 /tmp/swagger-ui/v5.32.6.zip
         '';
 
         # --- Common Build Logic ---
@@ -82,7 +82,7 @@
           strictDeps = true;
           doCheck = false;
           preBuild = swaggerPreBuild;
-          SWAGGER_UI_DOWNLOAD_URL = "file:///tmp/swagger-ui/v5.17.14.zip";
+          SWAGGER_UI_DOWNLOAD_URL = "file:///tmp/swagger-ui/v5.32.6.zip";
           SQLX_OFFLINE = "true";
         };
 

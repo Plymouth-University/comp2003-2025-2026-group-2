@@ -1,6 +1,9 @@
 {
 	"folders": [
 		{
+			"path": "."
+		},
+		{
 			"path": "back-end"
 		},
 		{
@@ -11,9 +14,16 @@
 		},
 		{
 			"path": "docs"
+		},
+		{
+			"path": "../.opencode"
+		},
+		{
+			"path": "../docs/superpowers"
 		}
 	],
 	"settings": {
-		"compile-hero.disable-compile-files-on-did-save-code": true
+		"compile-hero.disable-compile-files-on-did-save-code": true,
+		"playwright.showTrace": true
 	}
 }

@@ -267,7 +267,7 @@ test.describe('Users admin save error handling', () => {
 			.locator('#userSidebar')
 			.getByRole('button', { name: 'Save', exact: true });
 		await saveButton.click();
-		await expect(page.getByText('Failed to update member: network error')).toBeVisible();
+		await expect(page.getByText('Unable to update profile')).toBeVisible();
 		await expect(saveButton).toBeEnabled();
 
 		await saveButton.click();

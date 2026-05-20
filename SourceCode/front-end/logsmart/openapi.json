@@ -1316,6 +1316,25 @@
 				"security": [{ "bearer_auth": [] }]
 			}
 		},
+		"/health/rate-limits": {
+			"get": {
+				"tags": ["Health Monitoring"],
+				"operationId": "get_rate_limit_status",
+				"responses": {
+					"200": {
+						"description": "Rate limiting status retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": { "$ref": "#/components/schemas/RateLimitStatusResponse" }
+							}
+						}
+					},
+					"401": { "description": "Unauthorized" },
+					"403": { "description": "Forbidden - LogSmart admin only" }
+				},
+				"security": [{ "bearer_auth": [] }]
+			}
+		},
 		"/health/slow-queries": {
 			"get": {
 				"tags": ["Health Monitoring"],
@@ -3078,6 +3097,27 @@
 				"properties": {
 					"x": { "type": "number", "format": "double" },
 					"y": { "type": "number", "format": "double" }
+				}
+			},
+			"RateLimitStatusResponse": {
+				"type": "object",
+				"required": [
+					"enabled",
+					"login_ip_limit",
+					"register_ip_limit",
+					"general_ip_limit",
+					"login_email_limit",
+					"register_email_limit",
+					"export_limit"
+				],
+				"properties": {
+					"enabled": { "type": "boolean" },
+					"export_limit": { "type": "integer", "format": "int32", "minimum": 0 },
+					"general_ip_limit": { "type": "integer", "format": "int32", "minimum": 0 },
+					"login_email_limit": { "type": "integer", "format": "int32", "minimum": 0 },
+					"login_ip_limit": { "type": "integer", "format": "int32", "minimum": 0 },
+					"register_email_limit": { "type": "integer", "format": "int32", "minimum": 0 },
+					"register_ip_limit": { "type": "integer", "format": "int32", "minimum": 0 }
 				}
 			},
 			"RegisterRequest": {

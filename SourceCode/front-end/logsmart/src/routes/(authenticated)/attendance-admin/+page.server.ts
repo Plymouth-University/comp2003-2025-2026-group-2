@@ -2,6 +2,30 @@ import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import type { components } from '../../../lib/api-types';
 type UserResponse = components['schemas']['UserResponse'];
+
+/**
+ * Calculate default date range for last 7 days
+ * Returns timestamps with sevenDaysAgo at start of day (00:00:00 UTC)
+ * and today at end of day (23:59:59.999 UTC)
+ *
+ * This gives us exactly 7 calendar days of coverage with a 6-day time difference
+ * (e.g., May 8 00:00 to May 14 23:59:59 = 6 days 23:59:59.999)
+ */
+function getDefaultDateRange() {
+	const now = new Date();
+	const sevenDaysAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+
+	// Set sevenDaysAgo to start of day (00:00:00 UTC)
+	sevenDaysAgo.setUTCHours(0, 0, 0, 0);
+
+	// Set now to end of day (23:59:59.999 UTC)
+	now.setUTCHours(23, 59, 59, 999);
+
+	return {
+		from: sevenDaysAgo.toISOString(),
+		to: now.toISOString()
+	};
+}
 export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 	const { user } = await parent();
 
@@ -27,9 +51,18 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 	}
 
 	try {
-		const from = url.searchParams.get('from');
-		const to = url.searchParams.get('to');
+		let from = url.searchParams.get('from');
+		let to = url.searchParams.get('to');
 		const cursor = url.searchParams.get('cursor');
+		let appliedDefaults = false;
+
+		// If no date range specified, use default (last 7 days)
+		if (!from || !to) {
+			const defaultRange = getDefaultDateRange();
+			from = defaultRange.from;
+			to = defaultRange.to;
+			appliedDefaults = true;
+		}
 
 		let apiUrl = '/api/clock/company';
 		const params = new URLSearchParams();
@@ -54,6 +87,8 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 				branches: [],
 				userRole: user.role,
 				members: [],
+				defaultFrom: appliedDefaults ? from : null,
+				defaultTo: appliedDefaults ? to : null,
 				error: 'Failed to load attendance data'
 			};
 		}
@@ -98,18 +133,23 @@ export const load: PageServerLoad = async ({ parent, fetch, cookies, url }) => {
 			branches,
 			userRole: user.role,
 			isHQStaff,
-			members
+			members,
+			defaultFrom: appliedDefaults ? from : null,
+			defaultTo: appliedDefaults ? to : null
 		};
 
 		return d;
 	} catch (error) {
 		console.error('Error fetching attendance data:', error);
+		const defaultRange = getDefaultDateRange();
 		return {
 			clockEvents: [],
 			user,
 			branches: [],
 			userRole: user.role,
 			members: [],
+			defaultFrom: defaultRange.from,
+			defaultTo: defaultRange.to,
 			error: 'Failed to load attendance data'
 		};
 	}
